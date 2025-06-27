@@ -2,8 +2,8 @@ class ClientAdvertisementData {
   constructor({
     title,
     type,
+    // type: "apartment" | "villa" | "commercial"
     price,
-    status,
     area,
     date_of_building,
     images,
@@ -20,7 +20,6 @@ class ClientAdvertisementData {
     this.title = title;
     this.type = type;
     this.price = price;
-    this.status = status;
     this.area = area;
     this.date_of_building = date_of_building;
     this.images = images;

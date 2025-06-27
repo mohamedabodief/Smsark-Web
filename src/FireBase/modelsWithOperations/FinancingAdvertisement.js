@@ -7,7 +7,7 @@ import {
   updateDoc,
   query,
   where,
-  onSnapshot, // أضفنا onSnapshot
+  onSnapshot,
 } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 
@@ -28,6 +28,11 @@ class FinancingAdvertisement {
     this.userId = data.userId;
     this.ads = data.ads !== undefined ? data.ads : false;
     this.adExpiryTime = data.adExpiryTime || null;
+
+    // نسب الفائدة حسب سنوات السداد
+    this.interest_rate_upto_5 = data.interest_rate_upto_5;
+    this.interest_rate_upto_10 = data.interest_rate_upto_10;
+    this.interest_rate_above_10 = data.interest_rate_above_10;
   }
 
   get id() {
@@ -49,6 +54,9 @@ class FinancingAdvertisement {
       userId: this.userId,
       ads: this.ads,
       adExpiryTime: this.adExpiryTime,
+      interest_rate_upto_5: this.interest_rate_upto_5,
+      interest_rate_upto_10: this.interest_rate_upto_10,
+      interest_rate_above_10: this.interest_rate_above_10,
     });
 
     this.#id = docRef.id;
@@ -68,9 +76,6 @@ class FinancingAdvertisement {
     await deleteDoc(docRef);
   }
 
-  /**
-   * إيقاف الإعلانات يدويًا
-   */
   async removeAds() {
     if (!this.#id) throw new Error('الإعلان بدون ID صالح لإيقاف الإعلانات');
     this.ads = false;
@@ -109,10 +114,6 @@ class FinancingAdvertisement {
     return new FinancingAdvertisement(data);
   }
 
-  /**
-   * دالة الاستماع اللحظي (onSnapshot) للإعلانات النشطة فقط
-   * يتم استدعاؤها داخل التطبيق وتوفر لك آخر تحديث دايمًا
-   */
   static subscribeActiveAds(callback) {
     const colRef = collection(db, 'FinancingAdvertisements');
     const q = query(colRef, where('ads', '==', true));
@@ -121,7 +122,7 @@ class FinancingAdvertisement {
       for (const docSnap of querySnapshot.docs) {
         ads.push(await FinancingAdvertisement.#handleExpiry(docSnap.data()));
       }
-      callback(ads); // ترجع مصفوفة الإعلانات النشطة محدثة دايمًا
+      callback(ads);
     });
   }
 }

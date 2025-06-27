@@ -1,10 +1,22 @@
 import { doc, setDoc, getDoc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
+import { auth } from '../firebaseConfig';
 
 class User {
   static allowedUserTypes = ['admin', 'client', 'organization'];
 
   constructor(data) {
+    // ✅ جلب UID من البيانات أو من Firebase Auth
+    const uid = data.uid || auth.currentUser?.uid;
+
+    // ✅ تحقق: لا يمكن إنشاء مستخدم بدون UID
+    if (!uid) {
+      throw new Error(
+        'لا يمكن إنشاء كائن المستخدم: لم يتم تمرير UID، ولا يوجد مستخدم مسجل دخول في Firebase Auth.'
+      );
+    }
+
+    // ✅ تحقق من نوع المستخدم
     if (!User.allowedUserTypes.includes(data.type_of_user)) {
       throw new Error(
         `نوع المستخدم غير صالح! الأنواع المسموحة هي: ${User.allowedUserTypes.join(
@@ -13,7 +25,7 @@ class User {
       );
     }
 
-    this.uid = data.uid;
+    this.uid = uid;
     this.type_of_user = data.type_of_user;
     this.phone = data.phone;
     this.image = data.image || null;
@@ -21,7 +33,7 @@ class User {
     this.governorate = data.governorate || null;
     this.address = data.address || null;
 
-    // الحقول الخاصة بكل نوع
+    // الحقول الخاصة بأنواع المستخدم المختلفة
     this.cli_name = data.cli_name || null;
     this.gender = data.gender || null;
     this.age = data.age || null;
@@ -33,8 +45,7 @@ class User {
     this.user_name = data.user_name || null;
   }
 
-  
-   // ميثودات مصنع لإنشاء User من كل نوع من الداتا
+  // ميثودات مصنع لإنشاء User من كل نوع من الداتا
   static fromClientData(clientData) {
     return new User(clientData);
   }
@@ -46,8 +57,6 @@ class User {
   static fromAdminData(adminData) {
     return new User(adminData);
   }
-
-
 
   // حفظ المستخدم
   async saveToFirestore() {
