@@ -69,6 +69,7 @@
 //     </Card>
 //   );
 // }
+// src/searchComponents/CardSearch.jsx
 import * as React from 'react';
 import {
   Card,
@@ -81,7 +82,7 @@ import {
 } from '@mui/material';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 
-export default function CardSearch() {
+export default function CardSearch({ property }) {
   return (
     <Card
       sx={{
@@ -95,43 +96,53 @@ export default function CardSearch() {
       <CardMedia
         component="img"
         height="180"
-        image="h.jpg"
-        alt="صورة العقار"
+        // image={property.images || 'placeholder.jpg'}
+        image='h.jpg'
+        alt={property.title}
         sx={{ objectFit: 'cover' }}
       />
-      <CardContent sx={{textAlign:'center'}}>
+      <CardContent sx={{ textAlign: 'center' }}>
         <Typography gutterBottom variant="h6" fontWeight="bold">
-          عنوان الاعلان
+          {property.title}
         </Typography>
-
         <Typography variant="body2" color="text.secondary">
-       الوصف
+          {property.description}
         </Typography>
-
-        <Box display={'flex'} justifyContent={'center'} mt={'auto'}>
-            <Typography
-          variant="subtitle1"
-          fontWeight="bold"
-          sx={{ mt: 1, color: 'primary.main' }}
-        >
-          السعر: 450,000 ج.م
-        </Typography>
-        <Typography
-          variant="subtitle1"
-          sx={{ mt: 1, color: 'gray' }}
-        >
-          العنوان 
-        </Typography>
+        <Box display="flex" justifyContent="space-between" mt={2}>
+          <Typography variant="subtitle2" color="text.secondary">
+            السعر: {property.price}
+          </Typography>
+          <Typography variant="subtitle2" color="text.secondary">
+            {property.address}
+          </Typography>
         </Box>
       </CardContent>
-
-     
-      <Box sx={{ px: 2, pb: 2, display: 'flex', justifyContent: 'flex-end' }}>
+      <Box
+        sx={{
+          px: 2,
+          pb: 2,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
+      >
         <Tooltip title="إضافة إلى المفضلة">
-          <IconButton color="error">
+          <IconButton color="gray">
             <FavoriteBorderIcon />
           </IconButton>
         </Tooltip>
+        <Box
+          sx={{
+            backgroundColor: '#6E00FE',
+            padding: '5px 12px',
+            borderRadius: '15px',
+            color: 'white',
+            fontSize: '0.8rem',
+          }}
+        >
+          {/* <Typography>{property.ad_status}</Typography> */}
+          <Typography>تحت التفاوض</Typography>
+        </Box>
       </Box>
     </Card>
   );

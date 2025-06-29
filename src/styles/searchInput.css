@@ -1,0 +1,13 @@
+.btn-search{
+    background-color: #6E00FE;
+    color: white;
+}
+.tileSearch{
+    color: #6E00FE;
+    text-align: center;
+    margin-top: 30px;
+}
+.btn-search:hover{
+  background-color: #6e00fec7;
+   color: white;
+}
