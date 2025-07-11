@@ -8,6 +8,7 @@ import {
   query,
   where,
   onSnapshot,
+   getDocs,
 } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 
@@ -105,7 +106,19 @@ class ClientAdvertisement {
     }
     return null;
   }
+  // get all ads
+  ////////////////////////////////////////////////
+static async getAll() {
+  const colRef = collection(db, 'ClientAdvertisements');
+  const snapshot = await getDocs(colRef);
+  const allAds = [];
+  for (const docSnap of snapshot.docs) {
+    allAds.push(new ClientAdvertisement(docSnap.data()));
+  }
 
+  return allAds;
+}
+////////////////////////////////////////////
   static async #handleExpiry(data) {
     const now = Date.now();
     if (data.ads === true && data.adExpiryTime && data.adExpiryTime <= now) {

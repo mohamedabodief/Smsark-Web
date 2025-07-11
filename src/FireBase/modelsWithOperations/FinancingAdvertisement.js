@@ -8,6 +8,7 @@ import {
   query,
   where,
   onSnapshot,
+  getDocs
 } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 
@@ -28,7 +29,6 @@ class FinancingAdvertisement {
     this.userId = data.userId;
     this.ads = data.ads !== undefined ? data.ads : false;
     this.adExpiryTime = data.adExpiryTime || null;
-
     // نسب الفائدة حسب سنوات السداد
     this.interest_rate_upto_5 = data.interest_rate_upto_5;
     this.interest_rate_upto_10 = data.interest_rate_upto_10;
@@ -93,7 +93,16 @@ class FinancingAdvertisement {
 
     setTimeout(() => this.removeAds().catch((e) => console.error(e)), ms);
   }
-
+//getAll
+static async getAll() {
+  const colRef = collection(db, 'FinancingAdvertisements');
+  const snapshot = await getDocs(colRef);
+  const allAds = [];
+  for (const docSnap of snapshot.docs) {
+    allAds.push(new FinancingAdvertisement(docSnap.data()));
+  }
+  return allAds;
+}
   static async getById(id) {
     const docRef = doc(db, 'FinancingAdvertisements', id);
     const snapshot = await getDoc(docRef);
@@ -126,5 +135,7 @@ class FinancingAdvertisement {
     });
   }
 }
+
+
 
 export default FinancingAdvertisement;
