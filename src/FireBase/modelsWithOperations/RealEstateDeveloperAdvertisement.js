@@ -125,6 +125,67 @@ class RealEstateDeveloperAdvertisement {
       callback(ads);
     });
   }
+
+  /**
+   * جلب جميع إعلانات المطورين العقاريين
+   */
+  static async getAll() {
+    const { getDocs, collection } = await import('firebase/firestore');
+    const colRef = collection(db, 'RealEstateDeveloperAdvertisements');
+    const snapshot = await getDocs(colRef);
+    const ads = [];
+    for (const docSnap of snapshot.docs) {
+      const ad = await RealEstateDeveloperAdvertisement.#handleExpiry(
+        docSnap.data()
+      );
+      if (ad) ads.push(ad); // استبعاد اللي انتهت صلاحيتهم وتم إيقافهم
+    }
+    return ads;
+  }
+
+  /**
+   * جلب جميع إعلانات مطور معيّن حسب userId
+   */
+  static async getByUserId(userId) {
+    const { getDocs, collection, where, query } = await import(
+      'firebase/firestore'
+    );
+    const colRef = collection(db, 'RealEstateDeveloperAdvertisements');
+    const q = query(colRef, where('userId', '==', userId));
+    const snapshot = await getDocs(q);
+    const ads = [];
+    for (const docSnap of snapshot.docs) {
+      const ad = await RealEstateDeveloperAdvertisement.#handleExpiry(
+        docSnap.data()
+      );
+      if (ad) ads.push(ad);
+    }
+    return ads;
+  }
+
+  /**
+   * جلب الإعلانات النشطة فقط المرتبطة بمطور معيّن
+   */
+  static async getActiveByUser(userId) {
+    const { getDocs, collection, where, query } = await import(
+      'firebase/firestore'
+    );
+    const colRef = collection(db, 'RealEstateDeveloperAdvertisements');
+    const q = query(
+      colRef,
+      where('userId', '==', userId),
+      where('ads', '==', true)
+    );
+    const snapshot = await getDocs(q);
+    const ads = [];
+    for (const docSnap of snapshot.docs) {
+      const ad = await RealEstateDeveloperAdvertisement.#handleExpiry(
+        docSnap.data()
+      );
+      if (ad) ads.push(ad);
+    }
+    return ads;
+  }
 }
 
 export default RealEstateDeveloperAdvertisement;

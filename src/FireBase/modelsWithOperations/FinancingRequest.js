@@ -36,9 +36,20 @@ class FinancingRequest {
   }
 
   /**
-   * حفظ الطلب في قاعدة البيانات
+   * حفظ الطلب في قاعدة البيانات بعد التحقق من الإعلان
    */
   async save() {
+    // تحقق من وجود إعلان التمويل المرتبط
+    if (!this.advertisement_id) {
+      throw new Error('لم يتم تمرير معرّف إعلان التمويل.');
+    }
+
+    const adRef = doc(db, 'FinancingAdvertisements', this.advertisement_id);
+    const adSnap = await getDoc(adRef);
+    if (!adSnap.exists()) {
+      throw new Error('إعلان التمويل غير موجود أو تم حذفه.');
+    }
+
     const colRef = collection(db, 'FinancingRequests');
     const docRef = await addDoc(colRef, {
       user_id: this.user_id,
@@ -54,6 +65,7 @@ class FinancingRequest {
       status: this.status,
       submitted_at: this.submitted_at,
     });
+
     this.#id = docRef.id;
     await updateDoc(docRef, { id: this.#id });
     return this.#id;
@@ -129,6 +141,21 @@ class FinancingRequest {
       (principal * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
 
     return monthlyInstallment.toFixed(2);
+  }
+
+  /**
+   * جلب إعلان التمويل المرتبط بالطلب
+   */
+  async getAdvertisement() {
+    if (!this.advertisement_id) return null;
+    const { getDoc, doc } = await import('firebase/firestore');
+    const adRef = doc(db, 'FinancingAdvertisements', this.advertisement_id);
+    const adSnap = await getDoc(adRef);
+    if (adSnap.exists()) {
+      const { default: FinancingAdvertisement } = await import('./FinancingAdvertisement.js');
+      return new FinancingAdvertisement({ id: adSnap.id, ...adSnap.data() });
+    }
+    return null;
   }
 }
 
