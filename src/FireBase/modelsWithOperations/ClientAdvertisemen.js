@@ -35,6 +35,7 @@ class ClientAdvertisement {
     this.type_of_user = data.type_of_user || 'client';
     this.ads = data.ads !== undefined ? data.ads : false;
     this.adExpiryTime = data.adExpiryTime || null;
+    this.description = data.description;
   }
 
   get id() {
@@ -62,6 +63,7 @@ class ClientAdvertisement {
       type_of_user: this.type_of_user,
       ads: this.ads,
       adExpiryTime: this.adExpiryTime,
+    description:this.description 
     });
 
     this.#id = docRef.id;

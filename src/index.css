@@ -24,7 +24,9 @@
 
 }
 
-
+.details-button:hover{
+background-color: #F7F7FC !important;
+}
 /* :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;

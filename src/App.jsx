@@ -5,6 +5,7 @@ import { Route, Routes } from 'react-router-dom';
 import SearchPage from './pages/SearchPage';
 import AddMultipleAdsOnce from './pages/addads';
 import AddAdvertisement from './pages/addClientAds';
+import DetailsForDevelopment from './pages/Details/detailsForDevelopment';
 
 
 function App() {
@@ -14,11 +15,13 @@ function App() {
  <Routes>
       <Route path="details">
         <Route path="financingAds/:id" element={<DetailsForFinincingAds />} />
-        <Route path="clientAds/:id" element={<DetailsForClient />} />   
+        <Route path="clientAds/:id" element={<DetailsForClient />} />  
+        <Route path='developmentAds/:id' element={<DetailsForDevelopment/>}/>
       </Route>
       <Route path='search' element={<SearchPage/>}/>
      <Route path="AddAdvertisement" element={<AddAdvertisement/>}></Route>
     </Routes>
+    {/* <AddMultipleAdsOnce/> */}
     </>
   );
 };

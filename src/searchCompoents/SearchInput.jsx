@@ -49,8 +49,8 @@ function SearchInput() {
   const isPriceOpen = Boolean(anchorPrice);
 
   const menuItems = {
-    purpose: ['للبيع', 'للايجار', 'مطور عقارى', 'ممول عقارى'],
-    propertyType: ['منزل', 'شقة', 'فيلا', 'دوبلكس', 'محل تجاري'],
+    purpose: ['بيع', 'ايجار', 'مطور عقارى', 'ممول عقارى'],
+    propertyType: ['منزل', 'شقة', 'فيلا', 'دوبلكس','محل'],
   };
 
   return (

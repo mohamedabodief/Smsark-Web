@@ -67,8 +67,9 @@ const filteredFinancingAds = useMemo(() => {
       !filters.priceFrom || ad.start_limit >= parseFloat(filters.priceFrom);
     const matchesPriceTo =
       !filters.priceTo || ad.end_limit <= parseFloat(filters.priceTo);
-
+    
     return matchesSearch && matchesPriceFrom && matchesPriceTo;
+
   });
 }, [financingAds, filters, searchWord]);
 
@@ -125,7 +126,7 @@ const filteredDeveloperAds = useMemo(() => {
 
       {shouldShowResults && (
         <>
-          {['للبيع', 'للايجار', 'الغرض'].includes(filters.purpose) &&
+          {['بيع', 'ايجار', 'الغرض'].includes(filters.purpose) &&
             filteredClientAds.map((ad, idx) => (
               <Link to={`/details/clientAds/${ad.id}`}  key={`client-${idx}`} style={{ textDecoration: 'none', color: 'inherit' }}>
               <HorizontalCard
@@ -160,7 +161,7 @@ const filteredDeveloperAds = useMemo(() => {
           {/* إعلانات المطورين */}
           {filters.purpose === 'مطور عقارى' &&
             filteredDeveloperAds.map((ad, idx) => (
-              <Link  key={`developer-${idx}`} style={{ textDecoration: 'none', color: 'inherit' }} to={`details/developer-${idx}`} >
+              <Link  key={`developer-${idx}`} style={{ textDecoration: 'none', color: 'inherit' }} to={`/details/developmentAds/${ad.id}`} >
               <HorizontalCard
                
                 title={ad.developer_name}

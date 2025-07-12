@@ -19,9 +19,9 @@ import {
 import HomeIcon from '@mui/icons-material/Home';
 import { useParams, Link } from 'react-router-dom';
 import MapPicker from '../../LocationComponents/MapPicker';
-import ClientAdvertisement from '../../FireBase/modelsWithOperations/ClientAdvertisemen';
+import RealEstateDeveloperAdvertisement from '../../FireBase/modelsWithOperations/RealEstateDeveloperAdvertisement';
 import PhoneIcon from '@mui/icons-material/Phone';
-function DetailsForClient() {
+function DetailsForDevelopment() {
   const { id } = useParams();
   const [clientAds, setClientAds] = useState(null);
   const [mainImage, setMainImage] = useState('');
@@ -34,11 +34,11 @@ function DetailsForClient() {
 
   useEffect(() => {
     const fetchAd = async () => {
-      const ad = await ClientAdvertisement.getById(id);
+      const ad = await RealEstateDeveloperAdvertisement.getById(id);
       if (ad) {
         setClientAds(ad);
-        if (Array.isArray(ad.images) && ad.images.length > 0) {
-          setMainImage(ad.images[0]);
+        if (Array.isArray(ad.image) && ad.image.length > 0) {
+          setMainImage(ad.image[0]);
         }
       }
     };
@@ -66,8 +66,23 @@ function DetailsForClient() {
   }
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-
+    <Container maxWidth="lg" sx={{ py: 4 ,position:'relative'}}>
+    <Box
+                sx={{
+                    position: 'fixed',
+                    top: 10,
+                    left: 10,
+                    backgroundColor: '#1976d2',
+                    color: 'white',
+                    px: 2,
+                    py: 0.5,
+                    borderRadius: '8px',
+                    fontWeight: 'bold',
+                    zIndex: 10,
+                }}
+            >
+                🏗️ مطور عقارى {clientAds.project_types[0]} , {clientAds.project_types[1]}
+            </Box>
       {/* واتساب*/}
       <Box
         sx={{
@@ -99,9 +114,8 @@ function DetailsForClient() {
       <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
         <Box sx={{ mb: 5, display: 'flex', gap: 4 }}>
           <Box sx={{ display: 'flex', gap: 1 ,color:'#807AA6'}}><Typography fontWeight="bold">مفضلة</Typography><FavoriteBorderIcon /></Box>
-          <Box sx={{ display: 'flex', gap: 1 }}><Typography fontWeight="bold">حفظ</Typography><BookmarkBorderIcon /></Box>
-          <Box sx={{ display: 'flex', gap: 1 }}><Typography fontWeight="bold">إبلاغ</Typography><OutlinedFlagIcon /></Box>
-          <Box sx={{ display: 'flex', gap: 1 }}><Typography fontWeight="bold">مشاركة</Typography><ShareOutlinedIcon /></Box>
+          <Box sx={{ display: 'flex', gap: 1 ,color:'#807AA6'}}><Typography fontWeight="bold">إبلاغ</Typography><OutlinedFlagIcon /></Box>
+          <Box sx={{ display: 'flex', gap: 1 ,color:'#807AA6'}}><Typography fontWeight="bold">مشاركة</Typography><ShareOutlinedIcon /></Box>
         </Box>
         
       </Box>
@@ -173,9 +187,10 @@ function DetailsForClient() {
 </Box>
   </Box>
 </Box>
+
       {/* بيانات الإعلان */}
-      <Box dir="rtl" sx={{ mt: 6, width: '50%', textAlign: 'right', marginLeft: 'auto' }}>
-        <Typography variant="h4" fontWeight="bold">{clientAds.title}</Typography>
+      <Box dir="rtl" sx={{ mt: 6, width: '50%', textAlign: 'right', marginLeft: 'auto' ,boxShadow:'1px 1px 20px #c7c5c5',padding:'20px',borderRadius:'20px'}}>
+        <Typography variant="h4" fontWeight="bold">{clientAds.developer_name}</Typography>
 
         <Typography sx={{
           mt: 3,
@@ -206,79 +221,40 @@ function DetailsForClient() {
             {showFull ? 'إخفاء التفاصيل' : 'عرض المزيد'}
           </button>
         )}
+         <Typography variant="body1" mt={2}>{clientAds.location}</Typography>
+        <Typography variant="subtitle1" fontWeight="bold" mt={2}>
+        الجهة: {clientAds.developer_name}
+      </Typography>
+       <Typography variant="subtitle1" mt={2}>
+        السعر من: {clientAds.price_start_from} ج.م إلى: {clientAds.price_end_to} ج.م
+      </Typography>
+         <Typography variant="subtitle1" mt={2}>
+        الهاتف للتواصل: {clientAds.phone}
+      </Typography>
+
+      {/* نسب الفائدة */}
+     
+      
       </Box>
 
 </Box>
 
-      {/*العنوان بالتفاصيل*/}
-      <Typography sx={{ mt: 5 ,fontWeight:'bold'}} variant="h5" dir='rtl'>
-        العنوان
-      </Typography>
-      <Breadcrumbs
-        aria-label="breadcrumb"
-        sx={{ my: 6 }}
-        dir="rtl"
-        separator="›"
-      >
-        <Link to="/" style={{color:'inherit', display: 'flex', alignItems: 'center', fontWeight: 'bold' ,textDecoration:'none'}}>
-          <HomeIcon sx={{ ml: 1 }}  /> الرئيسية
-        </Link>
-        {clientAds.governorate && <Typography fontWeight="bold" >{clientAds.governorate}</Typography>}
-        {clientAds.address && <Typography fontWeight="bold">{clientAds.address}</Typography>}
-      </Breadcrumbs>
 
-      {/* تفاصيل الموقع والخريطة */}
-      <Box sx={{
-        dir:'rtl',
-        mt: 4,
-         display: 'flex',
-        flexDirection: { xs: 'column', md: 'row' },
-        gap: 4,
-        alignItems: 'stretch',
-       
-        marginLeft:'auto'
-      }}>
-      
-   <Box sx={{width:'50%',display:'flex'}} dir='rtl'>
-    <Box sx={{backgroundColor:'#F7F7FC',display:'flex',gap:'30px',height:'20%',width:'100%',padding:'20px',borderRadius:'10px'}}>
-      <Avatar alt={`${clientAds.user_name}`} src="/static/images/avatar/1.jpg" />
-          <Typography sx={{ fontSize: '20px', }}>نشر بواسطة: {clientAds.user_name}</Typography>
-    </Box>
-       
-        </Box>
-        <Box
-          sx={{
-            flex: 1,
-            minHeight: '300px',
-            width:'50%',
-            borderRadius: '16px',
-            overflow: 'hidden',
-            boxShadow: '0 4px 16px rgba(0,0,0,0.06)',
-            border: '1px solid #e0e0e0',
-          }}
-        >
-          <MapPicker
-  lat={clientAds.latitude}
-  lng={clientAds.longitude}
-/>
-
-
-        </Box>
-     
-      </Box>
-     </Box>   
+     </Box>  
+     <Box sx={{width:'50%',display:'flex',marginTop:'30px',marginLeft:'auto'}} dir='rtl'>
+         <Box sx={{backgroundColor:'#F7F7FC',display:'flex',gap:'30px',height:'20%',width:'100%',padding:'20px',borderRadius:'10px'}}>
+           <Avatar alt={`${clientAds.org_name}`} src="/static/images/avatar/1.jpg" />
+               <Typography sx={{ fontSize: '20px', }}>نشر بواسطة: {clientAds.developer_name}</Typography>
+               <Box>
+                   <Typography>يمكنك الاطلاع على مزيد من التفاصيل من خلال اللينك الاتى</Typography>
+               <Link to={`${clientAds.website_url}`} target='_blank'>{clientAds.website_url}</Link>
+               </Box>
+            
+         </Box>
+            
+             </Box> 
     </Container>
   );
 }
 
-export default DetailsForClient;
-
-
-
-
-
-
-
-
-
-
+export default DetailsForDevelopment;
