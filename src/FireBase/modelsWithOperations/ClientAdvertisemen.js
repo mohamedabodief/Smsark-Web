@@ -8,6 +8,7 @@ import {
   query,
   where,
   onSnapshot,
+   getDocs,
 } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 
@@ -34,6 +35,7 @@ class ClientAdvertisement {
     this.type_of_user = data.type_of_user || 'client';
     this.ads = data.ads !== undefined ? data.ads : false;
     this.adExpiryTime = data.adExpiryTime || null;
+    this.description = data.description;
   }
 
   get id() {
@@ -61,6 +63,7 @@ class ClientAdvertisement {
       type_of_user: this.type_of_user,
       ads: this.ads,
       adExpiryTime: this.adExpiryTime,
+    description:this.description 
     });
 
     this.#id = docRef.id;
@@ -105,7 +108,19 @@ class ClientAdvertisement {
     }
     return null;
   }
+  // get all ads
+  ////////////////////////////////////////////////
+static async getAll() {
+  const colRef = collection(db, 'ClientAdvertisements');
+  const snapshot = await getDocs(colRef);
+  const allAds = [];
+  for (const docSnap of snapshot.docs) {
+    allAds.push(new ClientAdvertisement(docSnap.data()));
+  }
 
+  return allAds;
+}
+////////////////////////////////////////////
   static async #handleExpiry(data) {
     const now = Date.now();
     if (data.ads === true && data.adExpiryTime && data.adExpiryTime <= now) {

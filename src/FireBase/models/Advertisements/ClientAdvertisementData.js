@@ -12,6 +12,7 @@ class ClientAdvertisementData {
     city,
     governorate,
     phone,
+    description,
     user_name,
     userId,
     ad_type = "بيع",             // القيمة الافتراضية
@@ -30,7 +31,7 @@ class ClientAdvertisementData {
     this.phone = phone;
     this.user_name = user_name;
     this.userId = userId;
-
+    this.description = description;
     this.ad_type = ad_type;
     // القيم المحتملة: "بيع" | "إيجار" | "شراء"
 

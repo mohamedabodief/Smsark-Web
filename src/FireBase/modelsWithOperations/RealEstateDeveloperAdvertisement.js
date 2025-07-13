@@ -5,6 +5,7 @@ import {
   getDoc,
   deleteDoc,
   updateDoc,
+  getDocs,
   query,
   where,
   onSnapshot,
@@ -86,6 +87,15 @@ class RealEstateDeveloperAdvertisement {
 
     setTimeout(() => this.removeAds().catch((e) => console.error(e)), ms);
   }
+static async getAll() {
+  const colRef = collection(db, 'RealEstateDeveloperAdvertisements');
+  const snapshot = await getDocs(colRef); 
+  const allAds = [];
+  for (const docSnap of snapshot.docs) {
+    allAds.push(new RealEstateDeveloperAdvertisement(docSnap.data()));
+  }
+  return allAds;
+}
 
   static async getById(id) {
     const docRef = doc(db, 'RealEstateDeveloperAdvertisements', id);

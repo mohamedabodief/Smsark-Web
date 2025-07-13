@@ -8,6 +8,7 @@ import {
   query,
   where,
   onSnapshot,
+  getDocs
 } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 
@@ -28,7 +29,6 @@ class FinancingAdvertisement {
     this.userId = data.userId;
     this.ads = data.ads !== undefined ? data.ads : false;
     this.adExpiryTime = data.adExpiryTime || null;
-
     // نسب الفائدة حسب سنوات السداد
     this.interest_rate_upto_5 = data.interest_rate_upto_5;
     this.interest_rate_upto_10 = data.interest_rate_upto_10;
@@ -228,5 +228,7 @@ class FinancingAdvertisement {
     return ads;
   }
 }
+
+
 
 export default FinancingAdvertisement;
