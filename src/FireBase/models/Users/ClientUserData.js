@@ -1,7 +1,10 @@
 class ClientUserData {
-  constructor({ uid, cli_name, phone, gender, age, image, city, governorate, address }) {
+  constructor(
+    uid,
+    { cli_name, phone, gender, age, image, city, governorate, address }
+  ) {
     this.uid = uid;
-    this.type_of_user = "client";
+    this.type_of_user = 'client';
     this.cli_name = cli_name;
     this.phone = phone;
     this.gender = gender;
