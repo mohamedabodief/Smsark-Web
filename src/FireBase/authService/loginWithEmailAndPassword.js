@@ -1,19 +1,23 @@
+// src/auth/loginWithEmailAndPassword.js
+
 import { auth } from '../firebaseConfig';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import requestForToken from '../MessageAndNotification/firebaseMessaging';
-import User from '../models/User'; // تأكد من المسار
+import { requestForToken } from '../MessageAndNotification/firebaseMessaging';
+import User from '../models/User'; // تأكد من صحة المسار
 
+/**
+ * تسجيل الدخول باستخدام الإيميل والباسورد + تخزين FCM Token
+ * @param {string} email
+ * @param {string} password
+ * @returns {Promise<{success: boolean, uid?: string, user?: object, error?: string}>}
+ */
 export default async function loginWithEmailAndPassword(email, password) {
   try {
-    const userCredential = await signInWithEmailAndPassword(
-      auth,
-      email,
-      password
-    );
-
+    // ✅ تسجيل الدخول
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
     const uid = userCredential.user.uid;
 
-    // ✅ جلب التوكن من FCM
+    // ✅ جلب FCM Token
     const fcmToken = await requestForToken();
 
     // ✅ حفظ التوكن داخل مستند المستخدم
@@ -21,15 +25,20 @@ export default async function loginWithEmailAndPassword(email, password) {
       const userInstance = await User.getByUid(uid);
       if (userInstance) {
         await userInstance.saveFcmToken(fcmToken);
+      } else {
+        console.warn(`⚠️ المستخدم UID: ${uid} لم يتم العثور عليه في Firestore`);
       }
+    } else {
+      console.warn('⚠️ لم يتم توليد FCM Token لهذا المستخدم.');
     }
 
     return {
       success: true,
-      uid: uid,
+      uid,
       user: userCredential.user,
     };
   } catch (error) {
+    console.error('❌ خطأ أثناء تسجيل الدخول:', error);
     return { success: false, error: error.message };
   }
 }

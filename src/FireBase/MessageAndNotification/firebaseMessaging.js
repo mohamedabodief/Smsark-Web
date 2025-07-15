@@ -1,13 +1,15 @@
+// src/MessageAndNotification/firebaseMessaging.js
+
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
-import { app } from './firebaseConfig'; // تأكد إن app معمول export في firebaseConfig.js
+import { app } from '../firebaseConfig'; // تأكد أن `app` معمول له export
 
 const messaging = getMessaging(app);
 
-// ✅ طلب صلاحية الإشعارات وجلب التوكن
+// ✅ طلب صلاحية الإشعارات وجلب FCM Token
 export const requestForToken = async () => {
   try {
     const currentToken = await getToken(messaging, {
-      vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY, // من .env
+      vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY,
     });
 
     if (currentToken) {
@@ -23,7 +25,7 @@ export const requestForToken = async () => {
   }
 };
 
-// ✅ استقبال الإشعارات أثناء عمل الموقع (foreground)
+// ✅ استقبال الإشعارات أثناء عمل الموقع (Foreground)
 export const onMessageListener = () =>
   new Promise((resolve) => {
     onMessage(messaging, (payload) => {
@@ -31,3 +33,5 @@ export const onMessageListener = () =>
       resolve(payload);
     });
   });
+
+export { messaging };
