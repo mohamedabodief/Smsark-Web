@@ -1,0 +1,228 @@
+import { Box, Grid, Typography, Button } from '@mui/material';
+import { AttachMoney, HomeWork, Key, WorkOutline } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
+
+const cards = [
+  {
+    icon: <WorkOutline fontSize="large" />,
+    title: 'بيع',
+    desc: 'اعرض عقارك للبيع بكل سهولة وسرعة.',
+    path: '/services/sell',
+  },
+  {
+    icon: <HomeWork fontSize="large" />,
+    title: 'شراء',
+    desc: 'استكشف آلاف العقارات المتاحة للشراء.',
+    path: '/services/buy',
+  },
+  {
+    icon: <Key fontSize="large" />,
+    title: 'تأجير',
+    desc: 'قم بتأجير عقارك الآن للوصول للمستأجر المناسب.',
+    path: '/services/rent',
+  },
+  {
+    icon: <AttachMoney fontSize="large" />,
+    title: 'تمويل',
+    desc: 'احصل على حلول تمويلية مخصصة لك بسهولة.',
+    path: '/services/finance',
+  },
+  {
+    icon: <AttachMoney fontSize="large" />,
+    title: 'تطوير',
+    desc: 'احصل على حلول تطويريه مخصصة لك بسهولة.',
+    path: '/services/finance',
+  },
+];
+
+export default function Needs() {
+  const navigate = useNavigate();
+
+  return (
+    <Box
+      sx={{
+        backgroundColor: '#200D3A',
+        color: 'white',
+        px: { xs: 2, md: 2 },
+        py: 10,
+        width: "100%",
+        direction: 'rtl',
+      }}
+    >
+      <Grid
+        container
+        alignItems="stretch"
+        sx={{
+          gap: { xs: 4, sm: 6, md: 10 },
+        }}
+      >
+        <Grid
+          item
+          xs={12}
+          md={6}
+          sx={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+        >
+          <Typography variant="h4" fontWeight="bold" textAlign="center" sx={{ p: 18 }}>
+            ماذا تريد؟
+          </Typography>
+        </Grid>
+
+        <Grid
+          item
+          xs={12}
+          md={6}
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+
+          <Grid
+            container
+            spacing={3}
+            mb={3}
+            justifyContent="center"
+            alignItems="center"
+            sx={{ maxWidth: 900 }}
+          >
+            {cards.slice(0, 3).map((item, i) => (
+              <Grid item xs={12} sm={4} key={i}>
+                <Box
+                  sx={{
+                    borderRadius: 3,
+                    px: 3,
+                    py: 5,
+                    minHeight: 230,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'flex-start',
+                    justifyContent: 'space-between',
+                    transition: '0.3s',
+                    '&:hover': {
+                      backgroundColor: 'rgba(255,255,255,0.1)',
+                    },
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <Box
+                      sx={{
+                        width: 50,
+                        height: 50,
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'gray',
+                      }}
+                    >
+                      {item.icon}
+                    </Box>
+                    <Typography variant="h6">{item.title}</Typography>
+                  </Box>
+
+                  <Typography variant="body2" mb={3} sx={{ color: '#ccc' }}>
+                    {item.desc}
+                  </Typography>
+
+                  <Button
+                    variant="contained"
+                    size="small"
+                    onClick={() => navigate(item.path)}
+                    sx={{
+                      color: 'white',
+                      fontSize: '0.8rem',
+                      borderRadius: '30px',
+                      textTransform: 'none',
+                      mr: 4,
+                      px: 3,
+                      '&:hover': {
+                        backgroundColor: 'rgba(255,255,255,0.3)',
+                      },
+                    }}
+                  >
+                    استكشف العقارات
+                  </Button>
+                </Box>
+              </Grid>
+            ))}
+          </Grid>
+
+          <Grid
+            container
+            spacing={3}
+            justifyContent="center"
+            alignItems="center"
+            sx={{ maxWidth: 600 }}
+          >
+            {cards.slice(3).map((item, i) => (
+              <Grid item xs={12} sm={6} key={i}>
+                <Box
+                  sx={{
+                    borderRadius: 3,
+                    px: 3,
+                    py: 5,
+                    minHeight: 230,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'flex-start',
+                    justifyContent: 'space-between',
+                    transition: '0.3s',
+                    '&:hover': {
+                      backgroundColor: 'rgba(255,255,255,0.1)',
+                    },
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <Box
+                      sx={{
+                        width: 50,
+                        height: 50,
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'gray',
+                      }}
+                    >
+                      {item.icon}
+                    </Box>
+                    <Typography variant="h6">{item.title}</Typography>
+                  </Box>
+
+                  <Typography variant="body2" mb={3} sx={{ color: '#ccc' }}>
+                    {item.desc}
+                  </Typography>
+
+                  <Button
+                    variant="contained"
+                    size="small"
+                    onClick={() => navigate(item.path)}
+                    sx={{
+                      color: 'white',
+                      fontSize: '0.8rem',
+                      borderRadius: '30px',
+                      textTransform: 'none',
+                      mr: 4,
+                      px: 3,
+                      '&:hover': {
+                        backgroundColor: 'rgba(255,255,255,0.3)',
+                      },
+                    }}
+                  >
+                    استكشف العقارات
+                  </Button>
+                </Box>
+              </Grid>
+            ))}
+          </Grid>
+        </Grid>
+      </Grid>
+    </Box>
+  );
+}
