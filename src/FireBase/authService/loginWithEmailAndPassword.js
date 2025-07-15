@@ -1,10 +1,9 @@
 // src/auth/loginWithEmailAndPassword.js
 
-import { auth } from '../firebaseConfig';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { requestForToken } from '../MessageAndNotification/firebaseMessaging';
-import User from '../models/User'; // تأكد من صحة المسار
-
+import { auth } from "../firebaseConfig";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { requestForToken } from "../MessageAndNotification/firebaseMessaging";
+import User from '../modelsWithOperations/User'; // تأكد من صحة المسار
 /**
  * تسجيل الدخول باستخدام الإيميل والباسورد + تخزين FCM Token
  * @param {string} email
@@ -14,7 +13,11 @@ import User from '../models/User'; // تأكد من صحة المسار
 export default async function loginWithEmailAndPassword(email, password) {
   try {
     // ✅ تسجيل الدخول
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    const userCredential = await signInWithEmailAndPassword(
+      auth,
+      email,
+      password
+    );
     const uid = userCredential.user.uid;
 
     // ✅ جلب FCM Token
@@ -29,7 +32,7 @@ export default async function loginWithEmailAndPassword(email, password) {
         console.warn(`⚠️ المستخدم UID: ${uid} لم يتم العثور عليه في Firestore`);
       }
     } else {
-      console.warn('⚠️ لم يتم توليد FCM Token لهذا المستخدم.');
+      console.warn("⚠️ لم يتم توليد FCM Token لهذا المستخدم.");
     }
 
     return {
@@ -37,8 +40,15 @@ export default async function loginWithEmailAndPassword(email, password) {
       uid,
       user: userCredential.user,
     };
-  } catch (error) {
-    console.error('❌ خطأ أثناء تسجيل الدخول:', error);
-    return { success: false, error: error.message };
+  }  catch (error) {
+    let errorMessage = 'حدث خطأ أثناء تسجيل الدخول';
+    if (error.code === 'auth/invalid-credential') {
+      errorMessage = 'البريد الإلكتروني أو كلمة المرور غير صحيحة';
+    } else if (error.code === 'auth/too-many-requests') {
+      errorMessage = 'تم تجاوز عدد المحاولات المسموح بها، يرجى المحاولة لاحقًا';
+    }
+    return { success: false, error: errorMessage };
   }
 }
+
+
