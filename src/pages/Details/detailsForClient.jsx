@@ -21,6 +21,7 @@ import { useParams, Link } from 'react-router-dom';
 import MapPicker from '../../LocationComponents/MapPicker';
 import ClientAdvertisement from '../../FireBase/modelsWithOperations/ClientAdvertisemen';
 import PhoneIcon from '@mui/icons-material/Phone';
+import { useNavigate } from 'react-router-dom';
 function DetailsForClient() {
   const { id } = useParams();
   const [clientAds, setClientAds] = useState(null);
@@ -29,7 +30,7 @@ function DetailsForClient() {
   const [governorate, setGovernorate] = useState('');
   const [road, setRoad] = useState('');
   const [showFull, setShowFull] = useState(false);
-
+  const navigate = useNavigate();
   const toggleShow = () => setShowFull((prev) => !prev);
 
   useEffect(() => {
@@ -266,7 +267,15 @@ function DetailsForClient() {
         </Box>
      
       </Box>
-     </Box>   
+     </Box> 
+     <Button
+             variant="contained"
+             color="primary"
+             sx={{ mt: 3 }}
+             onClick={() => navigate('/add-financing-ad')}
+           >
+             اضف اعلانك الان
+           </Button>  
     </Container>
   );
 }
