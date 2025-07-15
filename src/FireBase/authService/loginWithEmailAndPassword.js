@@ -1,9 +1,10 @@
 // src/auth/loginWithEmailAndPassword.js
 
-import { auth } from "../firebaseConfig";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { requestForToken } from "../MessageAndNotification/firebaseMessaging";
+import { auth } from '../firebaseConfig';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { requestForToken } from '../MessageAndNotification/firebaseMessaging';
 import User from '../modelsWithOperations/User'; // تأكد من صحة المسار
+
 /**
  * تسجيل الدخول باستخدام الإيميل والباسورد + تخزين FCM Token
  * @param {string} email
