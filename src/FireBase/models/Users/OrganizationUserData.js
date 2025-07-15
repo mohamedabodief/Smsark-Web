@@ -1,18 +1,19 @@
-class OrganizationUserData {
-  constructor(
-    uid,
-    { org_name, type_of_organization, phone, image, city, governorate, address }
-  ) {
-    this.uid = uid;
-    this.type_of_user = 'organization';
-    this.org_name = org_name;
-    this.type_of_organization = type_of_organization;
-    this.phone = phone;
-    this.image = image;
-    this.city = city;
-    this.governorate = governorate;
-    this.address = address;
+
+// src/FireBase/models/Users/OrganizationUserData.js
+export default class OrganizationUserData {
+  constructor(data) {
+    this.uid = data.uid;
+    this.type_of_user = "organization";
+    this.org_name = data.org_name;
+    this.type_of_organization = data.type_of_organization;
+    this.phone = data.phone;
+    this.city = data.city;
+    this.governorate = data.governorate;
+    this.address = data.address;
+    this.created_at = new Date().toISOString();
+    this.profile_completed = true;
+    this.verified = false;
   }
 }
 
-export default OrganizationUserData;
+
