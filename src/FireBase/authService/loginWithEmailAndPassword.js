@@ -3,7 +3,7 @@
 import { auth } from '../firebaseConfig';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { requestForToken } from '../MessageAndNotification/firebaseMessaging';
-import User from '../models/User'; // تأكد من صحة المسار
+import User from '../modelsWithOperations/User'; // تأكد من صحة المسار
 
 /**
  * تسجيل الدخول باستخدام الإيميل والباسورد + تخزين FCM Token
