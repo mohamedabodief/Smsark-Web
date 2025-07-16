@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchAllFinancingAds } from "../feature/ads/financingAdsSlice";
+import { fetchAllDeveloperAds } from "../feature/ads/developerAdsSlice";
 import HorizontalCard from "../searchCompoents/CardSearch";
 import {
   Box,
@@ -15,19 +15,20 @@ import SearchIcon from "@mui/icons-material/Search";
 import { Link } from "react-router-dom";
 import HomeIcon from "@mui/icons-material/Home";
 
-const FinancingAdsPage = () => {
+const DeveloperAdsPage = () => {
   const [searchInput, setSearchInput] = useState("");
   const dispatch = useDispatch();
-  const { all: allFinancingAds, loading, error } = useSelector(
-    (state) => state.financingAds
+  const { all: allDeveloperAds, loading, error } = useSelector(
+    (state) => state.developerAds
   );
 
   useEffect(() => {
-    if (allFinancingAds.length === 0) {
-      dispatch(fetchAllFinancingAds());
+    if (allDeveloperAds.length === 0) {
+      dispatch(fetchAllDeveloperAds());
     }
-  }, [dispatch, allFinancingAds]);
-  const filteredAds = allFinancingAds.filter((ad) => {
+  }, [dispatch, allDeveloperAds]);
+
+  const filteredAds = allDeveloperAds.filter((ad) => {
     const search = searchInput.trim().toLowerCase();
     return (
       ad.org_name?.toLowerCase().includes(search) ||
@@ -38,11 +39,11 @@ const FinancingAdsPage = () => {
   return (
     <Container sx={{ mt: "100px" }} dir="rtl">
       <Typography sx={{ m: "20px" }} variant="h3" color="#6E00FE">
-        أبرز عروض التمويل
+        أبرز عروض المطورين
       </Typography>
 
       <TextField
-        placeholder="ادخل اسم الجهة أو وصف العرض"
+        placeholder="ادخل اسم المطور أو وصف العرض"
         variant="outlined"
         value={searchInput}
         onChange={(e) => setSearchInput(e.target.value)}
@@ -67,7 +68,7 @@ const FinancingAdsPage = () => {
 
       <Breadcrumbs
         aria-label="breadcrumb"
-        sx={{ marginTop: "30px", marginBottom: "30px", marginRight: "25px" }}
+        sx={{ mt: 3, mb: 3, mr: "25px" }}
         dir="rtl"
         separator="›"
       >
@@ -94,7 +95,7 @@ const FinancingAdsPage = () => {
       </Breadcrumbs>
 
       {loading && (
-        <Box sx={{ width: "100%" }}>
+        <Box sx={{ width: "100%", display: "flex", justifyContent: "center" }}>
           <CircularProgress />
         </Box>
       )}
@@ -115,24 +116,22 @@ const FinancingAdsPage = () => {
           </Typography>
         </Box>
       ) : (
-        <ul>
-        {filteredAds.map((ad) => (
-    <HorizontalCard
-      key={ad.id} 
-      title={ad.title}
-      price={`${ad.start_limit} - ${ad.end_limit}`}
-      adress={ad.org_name}
-      image={[ad.image || ""]}
-      type={ad.financing_model}
-      status={ad.ads ? "مفعّل" : "غير مفعّل"}
-      city={"تمويل عقاري"}
-      governoment={""}
-    />
-  ))}
-        </ul>
+        <Box display="flex" flexDirection="column" gap={2}>
+          {filteredAds.map((ad) => (
+             <HorizontalCard
+               key={ad.id}
+                title={ad.developer_name}
+                price={`من ${ad.price_start_from} إلى ${ad.price_end_to}`}
+                adress={ad.location}
+              
+                type={ad.project_types}
+               
+              />
+          ))}
+        </Box>
       )}
     </Container>
   );
 };
 
-export default FinancingAdsPage;
+export default DeveloperAdsPage;
