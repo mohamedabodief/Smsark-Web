@@ -1,3 +1,4 @@
+//scr/FireBase/modelsWithOperations/RealEstateDeveloperAdvertisement.js
 import {
   collection,
   addDoc,
@@ -213,3 +214,11 @@ class RealEstateDeveloperAdvertisement {
 }
 
 export default RealEstateDeveloperAdvertisement;
+
+
+
+
+
+
+
+
