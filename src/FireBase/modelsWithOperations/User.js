@@ -19,7 +19,9 @@ class User {
       !User.allowedUserTypes.includes(data.type_of_user)
     ) {
       throw new Error(
-        `❌ نوع المستخدم غير صالح! الأنواع المسموحة هي: ${User.allowedUserTypes.join(', ')}`
+        `❌ نوع المستخدم غير صالح! الأنواع المسموحة هي: ${User.allowedUserTypes.join(
+          ', '
+        )}`
       );
     }
 
@@ -43,7 +45,6 @@ class User {
 
     // Admin
     this.adm_name = data.adm_name || null;
-    this.user_name = data.user_name || null;
   }
 
   static fromClientData(clientData) {
@@ -69,7 +70,9 @@ class User {
       !User.allowedUserTypes.includes(updates.type_of_user)
     ) {
       throw new Error(
-        `❌ نوع المستخدم غير صالح! الأنواع المسموحة هي: ${User.allowedUserTypes.join(', ')}`
+        `❌ نوع المستخدم غير صالح! الأنواع المسموحة هي: ${User.allowedUserTypes.join(
+          ', '
+        )}`
       );
     }
 
@@ -94,21 +97,29 @@ class User {
   static async getAllUsers() {
     const { getDocs, collection } = await import('firebase/firestore');
     const querySnapshot = await getDocs(collection(db, 'users'));
-    return querySnapshot.docs.map((doc) => new User({ uid: doc.id, ...doc.data() }));
+    return querySnapshot.docs.map(
+      (doc) => new User({ uid: doc.id, ...doc.data() })
+    );
   }
 
   static async getAllUsersByType(type) {
-    const { getDocs, collection, query, where } = await import('firebase/firestore');
+    const { getDocs, collection, query, where } = await import(
+      'firebase/firestore'
+    );
     if (!User.allowedUserTypes.includes(type)) {
       throw new Error(
-        `❌ نوع المستخدم غير صالح! الأنواع المسموحة هي: ${User.allowedUserTypes.join(', ')}`
+        `❌ نوع المستخدم غير صالح! الأنواع المسموحة هي: ${User.allowedUserTypes.join(
+          ', '
+        )}`
       );
     }
 
     const usersRef = collection(db, 'users');
     const q = query(usersRef, where('type_of_user', '==', type));
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map((doc) => new User({ uid: doc.id, ...doc.data() }));
+    return querySnapshot.docs.map(
+      (doc) => new User({ uid: doc.id, ...doc.data() })
+    );
   }
 
   /**

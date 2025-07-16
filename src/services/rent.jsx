@@ -1,64 +1,142 @@
-import { Box, Typography, Button, Container } from '@mui/material';
+import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchAllClientAds } from "../feature/ads/clientAdsSlice";
+import HorizontalCard from "../searchCompoents/CardSearch";
+import { Box, CircularProgress, Container, LinearProgress, Typography ,TextField, InputAdornment, Breadcrumbs} from "@mui/material";
+import SearchIcon from '@mui/icons-material/Search';
+import { Link } from "react-router-dom";
+import HomeIcon from '@mui/icons-material/Home';
+const RentAds = () => {
+  const [serachInput,setSearchInput]=useState("")
+  const dispatch = useDispatch();
+  const { all: allClientAds, loading, error } = useSelector((state) => state.clientAds);
 
-export default function Rent() {
+  useEffect(() => {
+    if (allClientAds.length === 0) {
+      dispatch(fetchAllClientAds());
+    }
+  }, [dispatch, allClientAds]);
+
+  const buyAds = allClientAds
+  .filter(ad => ad.ad_type === "إيجار")
+  .filter(ad => {
+    const search = serachInput.trim();
+    return (
+      ad.address?.includes(search) ||
+      ad.city?.includes(search)
+    );
+  });
+
   return (
-    <Box sx={{ py: 12, px: { xs: 2, md: 6 }, backgroundColor: '#f9f9f9', minHeight: '100vh', direction: 'rtl' }}>
-      <Container maxWidth="md">
-        <Typography variant="h4" fontWeight="bold" gutterBottom>
-          تأجير عقارك بسهولة، ووصل للمستأجر المناسب
+    
+    <Container  sx={{mt:'100px'}}  dir='rtl'>
+      <Typography sx={{m:'20px'}} variant="h3" color="#6E00FE">ابرز العقارات المعروضه للايجار</Typography>
+       <TextField
+      placeholder="ادخل اسم المدينة أو المنطقة"
+   
+      variant="outlined"
+     value={serachInput}
+     onChange={(e)=>{
+      setSearchInput(e.target.value)
+     }}
+     sx={{
+      width: '50vw',
+   margin:'20px',
+      '& .MuiOutlinedInput-root': {
+        borderRadius: '100px',
+        height: '50px',
+        padding: '0 10px',
+        backgroundColor: '#F7F7F7',
+        color: '#333',
+        transition: 'none', 
+        '& fieldset': {
+          border: '0',
+        },
+        '&:hover fieldset': {
+          border: '0',
+        },
+        '&.Mui-focused fieldset': {
+          border: '2px solid #1976d2',
+        },
+        '&.Mui-focused': {
+          backgroundColor: '#F7F7F7 !important', 
+          boxShadow: 'none !important', 
+        },
+      },
+      '& input': {
+        color: '#333',
+        fontSize:'20px'
+      },
+      'input:-webkit-autofill': {
+      WebkitBoxShadow: '0 0 0 1000px transparent inset !important',
+      backgroundColor: 'transparent !important',
+    },
+    }}
+    
+      InputProps={{
+        endAdornment: (
+          <InputAdornment position="end">
+            <SearchIcon style={{ color: '#666' }} />
+          </InputAdornment>
+        ),
+      }}
+    />
+    <Breadcrumbs
+            aria-label="breadcrumb"
+            sx={{ marginTop: '30px', marginBottom: '30px' ,marginRight:'25px'}}
+            dir="rtl"
+            separator="›"
+            
+          >
+            <Link
+            style={{color:'inherit',display: 'flex', alignItems: 'center', fontSize: '18px', fontWeight: 'bold'}}
+             to="/"
+              underline="hover"
+             
+            >
+              <HomeIcon sx={{ mr: 0.5, ml: '3px' }} fontSize="medium" />
+            </Link>
+           <Typography
+      color="text.primary"
+      sx={{ display: 'flex', alignItems: 'center', fontSize: '18px' }}
+    >
+      {serachInput && (
+        <Typography component="span" sx={{fontSize:'20px'}}>
+          نتائج البحث عن "{serachInput}"
         </Typography>
-
-        <Typography variant="body1" sx={{ mb: 4, lineHeight: 2 }}>
-          إذا كنت تمتلك شقة، فيلا، أو محل تجاري وترغب في تأجيره، فأنت في المكان المناسب. منصتنا تساعدك في عرض عقارك أمام آلاف الباحثين عن سكن أو مساحة عمل بطريقة احترافية وسهلة.
-        </Typography>
-
-        <Typography variant="h6" fontWeight="bold" gutterBottom>
-          لماذا تعرض عقارك للإيجار معنا؟
-        </Typography>
-
-        <ul style={{ paddingRight: '20px', marginBottom: '2.5rem', lineHeight: '2', fontSize: '1rem' }}>
-          <li>وصول مباشر لعدد كبير من المستأجرين المحتملين يوميًا.</li>
-          <li>نظام تصفية متقدم يساعد المهتمين في العثور على عقارك بسهولة.</li>
-          <li>دعم كامل لإدخال الصور، الفيديو، والموقع الجغرافي.</li>
-          <li>خيارات ترويجية لزيادة عدد المشاهدات.</li>
-          <li>سهولة في إدارة العقارات المؤجرة من خلال لوحة تحكم احترافية.</li>
+      )}
+    </Typography>
+    
+          </Breadcrumbs>
+      {loading &&  <Box sx={{ width: '100%' }}>
+     <CircularProgress />
+    </Box>}
+      {error && <p>حدث خطأ: {error}</p>}
+      {buyAds.length === 0 ? (
+        <Box sx={{display:'flex',justifyContent:'center',alignItems:'center',height:'100vh'}}>
+              <Typography sx={{fontWeight:'800',color:'red'}}>لايوجد اعلانات حاليا</Typography>
+        </Box>
+      ) : (
+        <ul>
+          {buyAds.map((ad) => (
+          
+              <HorizontalCard
+               key={ad.key}
+                title={ad.title}
+                price={ad.price}
+                adress={ad.address}
+                image={ad.images}
+                type={ad.type}
+                 status={ad.ad_status}
+                 city={ad.city}
+                 governoment={ad.governoment}
+              />
+              
+          ))}
         </ul>
-
-        <Typography variant="h6" fontWeight="bold" gutterBottom>
-          خطوات عرض عقارك للإيجار:
-        </Typography>
-
-        <ol style={{ paddingRight: '20px', marginBottom: '2.5rem', lineHeight: '2', fontSize: '1rem' }}>
-          <li>قم بتسجيل الدخول إلى حسابك أو أنشئ حسابًا جديدًا.</li>
-          <li>اضغط على "أضف إعلان" واختر نوع العقار والتفاصيل.</li>
-          <li>أضف وصف دقيق وصور واضحة للعقار.</li>
-          <li>حدّد مدة الإيجار والسعر المناسب.</li>
-          <li>انتظر رسائل المهتمين وتواصل معهم مباشرة عبر المنصة.</li>
-        </ol>
-
-        <Typography variant="body1" sx={{ mb: 4, lineHeight: 2 }}>
-          منصة الإيجار العقاري لدينا مصممة لتوفر لك تجربة سهلة وسريعة مع نتائج فعّالة. لا تتردد، أضف عقارك الآن وابدأ في تحقيق دخل شهري ثابت من خلال الإيجار.
-        </Typography>
-
-        <Button
-          variant="contained"
-          size="large"
-          sx={{
-            borderRadius: '30px',
-            textTransform: 'none',
-            fontWeight: 'bold',
-            px: 5,
-            py: 1.5,
-            fontSize: '1rem',
-            backgroundColor: '#673ab7',
-            '&:hover': {
-              backgroundColor: '#5e35b1',
-            },
-          }}
-        >
-          أضف عقارك للإيجار
-        </Button>
-      </Container>
-    </Box>
+      )}
+    </Container>
   );
-}
+};
+
+export default RentAds;
