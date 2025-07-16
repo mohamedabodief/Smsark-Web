@@ -1,16 +1,16 @@
-class ClientUserData {
-  constructor({ uid, cli_name, phone, gender, age, image, city, governorate, address }) {
-    this.uid = uid;
+/// src/FireBase/models/Users/ClientUserData.js
+export default class ClientUserData {
+  constructor(data) {
+    this.uid = data.uid;
     this.type_of_user = "client";
-    this.cli_name = cli_name;
-    this.phone = phone;
-    this.gender = gender;
-    this.age = age;
-    this.image = image;
-    this.city = city;
-    this.governorate = governorate;
-    this.address = address;
+    this.cli_name = data.cli_name;
+    this.phone = data.phone;
+    this.gender = data.gender;
+    this.age = data.age;
+    this.city = data.city;
+    this.governorate = data.governorate;
+    this.address = data.address;
+    this.created_at = new Date().toISOString();
+    this.profile_completed = true;
   }
 }
-
-export default ClientUserData;

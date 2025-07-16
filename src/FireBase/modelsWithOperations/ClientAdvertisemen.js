@@ -143,6 +143,34 @@ static async getAll() {
       callback(ads);
     });
   }
+
+  static async getAll() {
+    const { getDocs, collection } = await import('firebase/firestore');
+    const colRef = collection(db, 'ClientAdvertisements');
+    const snapshot = await getDocs(colRef);
+    const ads = [];
+    for (const docSnap of snapshot.docs) {
+      ads.push(await ClientAdvertisement.#handleExpiry(docSnap.data()));
+    }
+    return ads;
+  }
+  /**
+   * جلب كل إعلانات العميل الخاصة بمستخدم معيّن
+   */
+  static async getByUserId(userId) {
+    const { getDocs, collection, query, where } = await import(
+      'firebase/firestore'
+    );
+    const colRef = collection(db, 'ClientAdvertisements');
+    const q = query(colRef, where('userId', '==', userId));
+    const snapshot = await getDocs(q);
+    const ads = [];
+    for (const docSnap of snapshot.docs) {
+      const ad = await ClientAdvertisement.#handleExpiry(docSnap.data());
+      if (ad) ads.push(ad);
+    }
+    return ads;
+  }
 }
 
 export default ClientAdvertisement;
