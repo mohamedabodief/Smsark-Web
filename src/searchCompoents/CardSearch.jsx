@@ -60,7 +60,7 @@ function HorizontalCard({ image, title, price,adress,type,status,city,governomen
 
   <Box sx={{ width: 250, height: '100%', position: 'relative' }}>
     <Slider {...settings}>
-      {image.map((img, index) => (
+      {(image||[]).map((img, index) => (
         <img
           key={index}
           src={img}

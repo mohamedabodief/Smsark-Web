@@ -4,7 +4,7 @@ export const fetchAllDeveloperAds = createAsyncThunk(
   "developerAds/fetchAll",
   async () => {
     const ads = await RealEstateDeveloperAdvertisement.getAll();
-    return ads;
+   return ads.map(ad => ({ ...ad }));
   }
 );
 export const fetchDeveloperAdsByUser = createAsyncThunk(

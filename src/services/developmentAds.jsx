@@ -119,11 +119,10 @@ const DeveloperAdsPage = () => {
         <Box display="flex" flexDirection="column" gap={2}>
           {filteredAds.map((ad) => (
              <HorizontalCard
-               key={ad.id}
+               key={`${ad.developer_name}-${ad.location}-${Math.random()}`}
                 title={ad.developer_name}
                 price={`من ${ad.price_start_from} إلى ${ad.price_end_to}`}
                 adress={ad.location}
-              
                 type={ad.project_types}
                
               />
