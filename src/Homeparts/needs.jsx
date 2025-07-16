@@ -1,19 +1,13 @@
 import { Box, Grid, Typography, Button } from '@mui/material';
 import { AttachMoney, HomeWork, Key, WorkOutline } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 const cards = [
-  {
-    icon: <WorkOutline fontSize="large" />,
-    title: 'بيع',
-    desc: 'اعرض عقارك للبيع بكل سهولة وسرعة.',
-    path: '/services/sell',
-  },
   {
     icon: <HomeWork fontSize="large" />,
     title: 'شراء',
     desc: 'استكشف آلاف العقارات المتاحة للشراء.',
-    path: '/services/buy',
+    path: '/services/sell',
   },
   {
     icon: <Key fontSize="large" />,
@@ -31,7 +25,7 @@ const cards = [
     icon: <AttachMoney fontSize="large" />,
     title: 'تطوير',
     desc: 'احصل على حلول تطويريه مخصصة لك بسهولة.',
-    path: '/services/finance',
+    path: '/services/developmentAds',
   },
 ];
 
@@ -146,7 +140,7 @@ export default function Needs() {
                       },
                     }}
                   >
-                    استكشف العقارات
+                  <ArrowForwardIcon/>
                   </Button>
                 </Box>
               </Grid>
@@ -215,7 +209,8 @@ export default function Needs() {
                       },
                     }}
                   >
-                    استكشف العقارات
+                   
+                    <ArrowForwardIcon/>
                   </Button>
                 </Box>
               </Grid>
