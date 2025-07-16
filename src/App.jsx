@@ -23,8 +23,8 @@ import { messaging } from "./FireBase/firebaseConfig";
 import { requestPermissionAndSaveToken } from "./FireBase/MessageAndNotification/fcmHelper";
 import LoginRegister from "./LoginAndRegister/modulesLR/LoginRegister";
 import { Navigate } from "react-router-dom";
-
-
+import PropertyPage from "./RealEstateDeveloperAnnouncement/PropertyPage";
+import AboutUs from "./aboutUs/AboutUs";
 
 function App() {
   useEffect(() => {
@@ -49,11 +49,13 @@ function App() {
       <Layout>
         <Routes>
           {/* <Route path="/" element={<Home />} /> */}
-           <Route path="/" element={<Navigate to="login" replace />} />
+          <Route path="/" element={<Navigate to="RealEstateDeveloperAnnouncement" replace />} />
 
-       {/* <Route path="/auth"> */}
-        <Route path="login" element={<LoginRegister />} />
-        <Route path="register" element={<LoginRegister />} />
+          {/* <Route path="/auth"> */}
+          <Route path="login" element={<LoginRegister />} />
+          <Route path="register" element={<LoginRegister />} />
+          <Route path="/about" element={<AboutUs />} />
+          <Route path="/RealEstateDeveloperAnnouncement" element={<PropertyPage />} />
 
           {/* <Route path="/services/sell" element={<Sell />} /> */}
           {/* <Route path="/services/rent" element={<Rent />} /> */}
