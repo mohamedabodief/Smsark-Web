@@ -3,9 +3,8 @@ import DetailsForClient from './pages/Details/detailsForClient'
 import DetailsForFinincingAds from './pages/Details/detailsForFinaccingAds';
 import { Route, Routes } from 'react-router-dom';
 import SearchPage from './pages/SearchPage';
-import AddMultipleAdsOnce from './pages/addads';
-import AddAdvertisement from './pages/addClientAds';
 import DetailsForDevelopment from './pages/Details/detailsForDevelopment';
+import AddAdaForClient from './pages/ModernRealEstateForm';
 
 
 function App() {
@@ -19,7 +18,7 @@ function App() {
         <Route path='developmentAds/:id' element={<DetailsForDevelopment/>}/>
       </Route>
       <Route path='search' element={<SearchPage/>}/>
-     <Route path="AddAdvertisement" element={<AddAdvertisement/>}></Route>
+     <Route path="AddAdaForClient" element={<AddAdaForClient/>}></Route>
     </Routes>
     {/* <AddMultipleAdsOnce/> */}
     </>
