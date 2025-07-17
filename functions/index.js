@@ -1,32 +1,56 @@
-/**
- * Import function triggers from their respective submodules:
- *
- * const {onCall} = require("firebase-functions/v2/https");
- * const {onDocumentWritten} = require("firebase-functions/v2/firestore");
- *
- * See a full list of supported triggers at https://firebase.google.com/docs/functions
- */
+const { setGlobalOptions } = require("firebase-functions");
+const { onDocumentCreated } = require("firebase-functions/v2/firestore");
+const { initializeApp } = require("firebase-admin/app");
+const { getFirestore } = require("firebase-admin/firestore");
+const { getMessaging } = require("firebase-admin/messaging");
 
-const {setGlobalOptions} = require("firebase-functions");
-const {onRequest} = require("firebase-functions/https");
-const logger = require("firebase-functions/logger");
-
-// For cost control, you can set the maximum number of containers that can be
-// running at the same time. This helps mitigate the impact of unexpected
-// traffic spikes by instead downgrading performance. This limit is a
-// per-function limit. You can override the limit for each function using the
-// `maxInstances` option in the function's options, e.g.
-// `onRequest({ maxInstances: 5 }, (req, res) => { ... })`.
-// NOTE: setGlobalOptions does not apply to functions using the v1 API. V1
-// functions should each use functions.runWith({ maxInstances: 10 }) instead.
-// In the v1 API, each function can only serve one request per container, so
-// this will be the maximum concurrent request count.
 setGlobalOptions({ maxInstances: 10 });
 
-// Create and deploy your first functions
-// https://firebase.google.com/docs/functions/get-started
+initializeApp();
+const db = getFirestore();
 
-// exports.helloWorld = onRequest((request, response) => {
-//   logger.info("Hello logs!", {structuredData: true});
-//   response.send("Hello from Firebase!");
-// });
+// ✅ دالة إرسال إشعار عند وصول رسالة جديدة
+exports.sendMessageNotification = onDocumentCreated("messages/{messageId}", async (event) => {
+  const message = event.data.data();
+
+  const senderId = message.sender_id;
+  const receiverId = message.receiver_id;
+  const content = message.content || "لديك رسالة جديدة";
+
+  try {
+    // جلب بيانات المستخدم المستلم
+    const recipientDoc = await db.collection("users").doc(receiverId).get();
+
+    if (!recipientDoc.exists) {
+      console.log(`⚠️ المستلم ${receiverId} غير موجود في قاعدة البيانات.`);
+      return;
+    }
+
+    const fcmToken = recipientDoc.data().fcm_token;
+
+    if (!fcmToken) {
+      console.log(`⚠️ المستخدم ${receiverId} لا يمتلك FCM Token.`);
+      return;
+    }
+
+    const payload = {
+      notification: {
+        title: "رسالة جديدة",
+        body: content,
+        sound: "default",
+      },
+      data: {
+        senderId,
+        type: "message",
+      },
+      token: fcmToken,
+    };
+
+    // إرسال الإشعار
+    await getMessaging().send(payload);
+    console.log(`✅ تم إرسال إشعار إلى المستخدم ${receiverId}`);
+
+  } catch (error) {
+    console.error("❌ خطأ أثناء إرسال الإشعار:", error);
+  }
+});

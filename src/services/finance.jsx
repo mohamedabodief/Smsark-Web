@@ -1,68 +1,138 @@
-import { Box, Typography, Button, Container } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchAllFinancingAds } from "../feature/ads/financingAdsSlice";
+import HorizontalCard from "../searchCompoents/CardSearch";
+import {
+  Box,
+  CircularProgress,
+  Container,
+  Typography,
+  TextField,
+  InputAdornment,
+  Breadcrumbs,
+} from "@mui/material";
+import SearchIcon from "@mui/icons-material/Search";
+import { Link } from "react-router-dom";
+import HomeIcon from "@mui/icons-material/Home";
 
-export default function Finance() {
-  const navigate = useNavigate();
+const FinancingAdsPage = () => {
+  const [searchInput, setSearchInput] = useState("");
+  const dispatch = useDispatch();
+  const { all: allFinancingAds, loading, error } = useSelector(
+    (state) => state.financingAds
+  );
+
+  useEffect(() => {
+    if (allFinancingAds.length === 0) {
+      dispatch(fetchAllFinancingAds());
+    }
+  }, [dispatch, allFinancingAds]);
+  const filteredAds = allFinancingAds.filter((ad) => {
+    const search = searchInput.trim().toLowerCase();
+    return (
+      ad.org_name?.toLowerCase().includes(search) ||
+      ad.description?.toLowerCase().includes(search)
+    );
+  });
 
   return (
-    <Box sx={{ py: 12, px: { xs: 2, md: 6 }, backgroundColor: '#f9f9f9', minHeight: '100vh', direction: 'rtl' }}>
-      <Container maxWidth="md">
-        <Typography variant="h4" fontWeight="bold" gutterBottom>
-          حلول تمويلية مرنة لشراء عقارك بسهولة
-        </Typography>
+    <Container sx={{ mt: "100px" }} dir="rtl">
+      <Typography sx={{ m: "20px" }} variant="h3" color="#6E00FE">
+        أبرز عروض التمويل
+      </Typography>
 
-        <Typography variant="body1" sx={{ mb: 4, lineHeight: 2 }}>
-          بنقدملك مجموعة متنوعة من حلول التمويل العقاري اللي بتناسب احتياجاتك، سواء كنت بتشتري شقة، فيلا، أو مكتب. مع شركائنا من البنوك وشركات التمويل، هتقدر توصل لتمويل مضمون، سهل، وبشروط مريحة.
-        </Typography>
+      <TextField
+        placeholder="ادخل اسم الجهة أو وصف العرض"
+        variant="outlined"
+        value={searchInput}
+        onChange={(e) => setSearchInput(e.target.value)}
+        sx={{
+          width: "50vw",
+          margin: "20px",
+          "& .MuiOutlinedInput-root": {
+            borderRadius: "100px",
+            height: "50px",
+            backgroundColor: "#F7F7F7",
+          },
+          "& input": { fontSize: "20px" },
+        }}
+        InputProps={{
+          endAdornment: (
+            <InputAdornment position="end">
+              <SearchIcon style={{ color: "#666" }} />
+            </InputAdornment>
+          ),
+        }}
+      />
 
-        <Typography variant="h6" fontWeight="bold" gutterBottom>
-          ليه تختار التمويل العقاري من خلالنا؟
-        </Typography>
+      <Breadcrumbs
+        aria-label="breadcrumb"
+        sx={{ marginTop: "30px", marginBottom: "30px", marginRight: "25px" }}
+        dir="rtl"
+        separator="›"
+      >
+        <Link
+          style={{
+            color: "inherit",
+            display: "flex",
+            alignItems: "center",
+            fontSize: "18px",
+            fontWeight: "bold",
+          }}
+          to="/"
+        >
+          <HomeIcon sx={{ mr: 0.5, ml: "3px" }} fontSize="medium" />
+        </Link>
+        {searchInput && (
+          <Typography
+            color="text.primary"
+            sx={{ fontSize: "18px", display: "flex", alignItems: "center" }}
+          >
+            نتائج البحث عن "{searchInput}"
+          </Typography>
+        )}
+      </Breadcrumbs>
 
-        <ul style={{ paddingRight: '20px', marginBottom: '2.5rem', lineHeight: '2', fontSize: '1rem' }}>
-          <li>شراكات موثوقة مع أكبر البنوك وشركات التمويل.</li>
-          <li>نسب فائدة تنافسية وخطط سداد مرنة.</li>
-          <li>دعم كامل في تجهيز الأوراق والإجراءات.</li>
-          <li>استشارات مجانية لمساعدتك على اختيار الأنسب لك.</li>
-          <li>تحديث دائم للعروض التمويلية والعقارات المؤهلة للتمويل.</li>
-        </ul>
+      {loading && (
+        <Box sx={{ width: "100%" }}>
+          <CircularProgress />
+        </Box>
+      )}
 
-        <Typography variant="h6" fontWeight="bold" gutterBottom>
-          خطوات الحصول على التمويل العقاري:
-        </Typography>
+      {error && <p>حدث خطأ: {error}</p>}
 
-        <ol style={{ paddingRight: '20px', marginBottom: '2.5rem', lineHeight: '2', fontSize: '1rem' }}>
-          <li>سجل على منصتنا واختر العقار اللي حابب تشتريه.</li>
-          <li>قدّم طلب التمويل إلكترونيًا مع تفاصيلك الشخصية والمالية.</li>
-          <li>هنراجع الطلب ونتواصل معاك خلال 48 ساعة.</li>
-          <li>نرشحلك أفضل العروض التمويلية المتاحة.</li>
-          <li>نساعدك في تجهيز الأوراق وتوقيع العقد مع الجهة الممولة.</li>
-        </ol>
-
-        <Typography variant="body1" sx={{ mb: 4, lineHeight: 2 }}>
-          هدفنا هو تمكينك من تملك عقارك بأقل مجهود، وأسرع وقت، وبدون تعقيدات. لو مش عارف تبدأ منين، فريقنا هنا لمساعدتك خطوة بخطوة.
-        </Typography>
-
-        <Button
-          variant="contained"
-          size="large"
-          onClick={() => navigate('/services/finance/financing-request')} 
+      {filteredAds.length === 0 ? (
+        <Box
           sx={{
-            borderRadius: '30px',
-            textTransform: 'none',
-            fontWeight: 'bold',
-            px: 5,
-            py: 1.5,
-            fontSize: '1rem',
-            backgroundColor: '#673ab7',
-            '&:hover': {
-              backgroundColor: '#5e35b1',
-            },
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            height: "50vh",
           }}
         >
-          اطلع علي طلب التمويل
-        </Button>
-      </Container>
-    </Box>
+          <Typography sx={{ fontWeight: "800", color: "red" }}>
+            لا يوجد إعلانات حالياً
+          </Typography>
+        </Box>
+      ) : (
+        <ul>
+        {filteredAds.map((ad) => (
+    <HorizontalCard
+      key={ad.id} 
+      title={ad.title}
+      price={`${ad.start_limit} - ${ad.end_limit}`}
+      adress={ad.org_name}
+      image={[ad.image || ""]}
+      type={ad.financing_model}
+      status={ad.ads ? "مفعّل" : "غير مفعّل"}
+      city={"تمويل عقاري"}
+      governoment={""}
+    />
+  ))}
+        </ul>
+      )}
+    </Container>
   );
-}
+};
+
+export default FinancingAdsPage;
