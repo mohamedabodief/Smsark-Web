@@ -7,6 +7,9 @@ import RegisterStep1LR from "../componentsLR/authLR/RegisterStep1LR";
 import RegisterStep2LR from "../componentsLR/authLR/RegisterStep2LR";
 import RegisterStep3LR from "../componentsLR/authLR/RegisterStep3LR";
 import background from "../../assets/background.jpg";
+
+import { useNavigate } from 'react-router-dom';
+
 // import { red } from "@mui/material/colors";
 
 const StyledContainer = styled(Box)({
@@ -18,10 +21,19 @@ const StyledContainer = styled(Box)({
   backgroundColor: "#000000ff", // Fallback color
   backgroundSize: "cover",
   backgroundPosition: "center",
+
+  padding: "0 px",
+  // margin: "0",
+});
+
+
+
+
   // padding: "0 px",
 
   // margin: "0",
 });
+
 
 const StyledPaper = styled(Paper)(({ theme }) => ({
   // background: "rgba(255, 255, 255, 0.95)",
@@ -30,13 +42,16 @@ const StyledPaper = styled(Paper)(({ theme }) => ({
   width: "100%",
   maxWidth: "500px", // زيادة maxWidth لتتناسب مع التصميم الجديد
   margin: "auto", // لتوسيط الكارد
+
   // boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1)",
 
   backgroundColor: "transparent",
   boxShadow: "none",
 
+  
   // height: "70%"// عشان يأخذ الحجم الطبيعي
 }));
+
 
 export default function LoginRegister() {
   const [isLogin, setIsLogin] = useState(true);
@@ -44,12 +59,15 @@ export default function LoginRegister() {
   const [userType, setUserType] = useState(null);
   const [registerData, setRegisterData] = useState({ email: "", password: "" });
   const [message, setMessage] = useState({ text: "", type: "" });
-
+  const navigate = useNavigate();
   const handleLoginSuccess = () => {
     setMessage({
       text: "تم تسجيل الدخول بنجاح! يتم تحويلك...",
       type: "success",
     });
+    setTimeout(() => {
+    navigate('/home');
+  }, 1500);
   };
 
   const handleRegisterStep1Success = (data) => {

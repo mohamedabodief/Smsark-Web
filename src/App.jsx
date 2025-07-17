@@ -51,33 +51,33 @@ function App() {
       <Layout>
         <Routes>
 
-          {/* <Route path="/" element={<Home />} /> */}
-          <Route path="/" element={<Navigate to="RealEstateDeveloperAnnouncement" replace />} />
+    <Route path="/home" element={<Home />} />
+           <Route path="/" element={<Navigate to="login" replace />} />
 
+       {/* <Route path="/auth"> */}
+        <Route path="login" element={<LoginRegister />} />
+        <Route path="register" element={<LoginRegister />} />
+
+          <Route path="/services/sell" element={<Sell />} />
+          <Route path="/services/rent" element={<Rent />} />
+          <Route path="/services/buy" element={<Buy />} />
+          <Route path="/services/finance" element={<Finance />} />
+
+            
           {/* <Route path="/auth"> */}
           <Route path="login" element={<LoginRegister />} />
           <Route path="register" element={<LoginRegister />} />
           <Route path="/about" element={<AboutUs />} />
           <Route path="/RealEstateDeveloperAnnouncement" element={<PropertyPage />} />
 
-          {/* <Route path="/services/sell" element={<Sell />} /> */}
-          {/* <Route path="/services/rent" element={<Rent />} /> */}
-          {/* <Route path="/services/buy" element={<Buy />} /> */}
-          {/* <Route path="/services/finance" element={<Finance />} /> */}
-          {/* <Route path="/favorite" element={<Favorite />} /> */}
-          {/* <Route
-          <Route path="/" element={<Home />} />
-          {/* <Route path="/" element={<Navigate to="login" replace />} /> */}
-
-          {/* <Route path="/auth"> */}
-          {/* <Route path="login" element={<LoginRegister />} />
-        <Route path="register" element={<LoginRegister />} /> */}
       
             <Route path="/services/sell" element={<SellAds/>} />
             <Route path="/services/rent" element={<RentAds />} />
             {/* <Route path="/services/buy" element={<Buy />} /> */}
             <Route path="/services/finance" element={<FinancingAdsPage />} />
            <Route path="/services/developmentAds" element={<DeveloperAdsPage/>}/>
+
+             
           <Route path="/favorite" element={<Favorite />} />
           <Route
             path="/insert-finance-data"
@@ -105,8 +105,12 @@ function App() {
             />
           </Route>
           <Route path="search" element={<SearchPage />} />
-          {/* <Route path="AddAdvertisement" element={<ModernRealEstateForm/>}></Route>  */}
-        </Routes>
+
+            <Route path="AddAdvertisement" element={<AddAdvertisement />}></Route> 
+
+{/* <Route path="AddAdvertisement" element={<ModernRealEstateForm/>}></Route>  */}
+
+</Routes>
       </Layout>
       <Footer />
 
