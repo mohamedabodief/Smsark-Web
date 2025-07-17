@@ -23,6 +23,7 @@ import SellAds from "./services/sell";
 import DeveloperAdsPage from "./services/developmentAds";
 import RentAds from "./services/rent";
 import FinancingAdsPage from "./services/finance";
+import ModernRealEstateForm from "./pages/ModernRealEstateForm";
 
 
 
@@ -87,7 +88,8 @@ function App() {
             />
           </Route>
           <Route path="search" element={<SearchPage />} />
-          {/* <Route path="AddAdvertisement" element={<ModernRealEstateForm/>}></Route>  */}
+          <Route path="AddAdvertisement" element={<ModernRealEstateForm/>}></Route> 
+          {/*  */}
         </Routes>
       </Layout>
       <Footer />

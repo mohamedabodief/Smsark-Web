@@ -12,7 +12,12 @@ export const fetchAllClientAds = createAsyncThunk(
   "clientAds/fetchAll",
   async () => {
     const ads = await ClientAdvertisement.getAll();
-     return ads.map(ad => ({ ...ad }));
+    
+    // هنا نضيف id وهمي لو مش موجود
+    return ads.map((ad, index) => ({
+      ...ad,
+      id: ad.id || `temp-id-${index}`, // أو أي طريقة تضمن وجود id
+    }));
   }
 );
 const clientAdsSlice = createSlice({

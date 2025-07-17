@@ -42,8 +42,8 @@ import {
   Map
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
-import { storage } from '../FireBase/firebaseConfig';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+// import { storage } from '../FireBase/firebaseConfig';
+// import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import MapDisplay from '../LocationComponents/MapDisplay';
 import MapPicker from '../LocationComponents/MapPicker';
 
