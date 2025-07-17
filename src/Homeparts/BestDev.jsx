@@ -3,6 +3,11 @@ import {
 } from '@mui/material';
 import { ArrowBackIos, ArrowForwardIos } from '@mui/icons-material';
 import FavoriteIcon from '@mui/icons-material/Favorite';
+import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
+import { useDispatch, useSelector } from 'react-redux';
+// import { toggleFavoriteAsync } from '../redux/favoritesSlice';
+// import { useAuthContext } from '../contexts/AuthContext'; // لو عندك يوزر
+import FavoriteButton from './FavoriteButton';
 import { useRef, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import RealEstateDeveloperAdvertisement from '../FireBase/modelsWithOperations/RealEstateDeveloperAdvertisement';
@@ -84,11 +89,9 @@ export default function BestDev() {
               >
                 <Card sx={{ minWidth: { xs: 260, sm: 300, md: 320 }, scrollSnapAlign: 'start', flexShrink: 0, borderRadius: 3, position: 'relative' }}>
                   <CardMedia component="img" height="160" image={item.image || '/default-placeholder.png'} />
-                  <Tooltip title="قائمة المفضل">
-                    <IconButton size="small" onClick={() => navigate('/favorite')} sx={{ position: 'absolute', top: 10, left: 10, backgroundColor: '#fff', '&:hover': { backgroundColor: '#f0f0f0' } }}>
-                      <FavoriteIcon color="error" />
-                    </IconButton>
-                  </Tooltip>
+
+                  <FavoriteButton advertisementId={item.id} type="developer" />
+
                   <CardContent>
                     <Typography color="primary" fontWeight="bold">
                       {item.price_start_from?.toLocaleString()} - {item.price_end_to?.toLocaleString()} ج.م
@@ -98,6 +101,7 @@ export default function BestDev() {
                     <Typography variant="body2" mt={1}>{item.description}</Typography>
                   </CardContent>
                 </Card>
+
               </Box>
             ))
           )}

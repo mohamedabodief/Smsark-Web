@@ -104,7 +104,22 @@ const handleSend = async () => {
       </Box>
     );
   }
-
+const handleShare = async () => {
+  if (navigator.share) {
+    try {
+      await navigator.share({
+        title: `${clientAds.title}`,
+        text: `${clientAds.description}`,
+        url: window.location.href, // يشارك الرابط الحالي
+      });
+      console.log('تمت المشاركة بنجاح');
+    } catch (error) {
+      console.error('حدث خطأ أثناء المشاركة:', error);
+    }
+  } else {
+    alert('المتصفح لا يدعم خاصية المشاركة.');
+  }
+};
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
 
@@ -160,12 +175,11 @@ const handleSend = async () => {
       </Dialog>
 
       {/* أزرار التفاعل + اسم الناشر */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between',mt:'100px' }}>
         <Box sx={{ mb: 5, display: 'flex', gap: 4 }}>
-          <Box sx={{ display: 'flex', gap: 1 ,color:'#807AA6'}}><Typography fontWeight="bold">مفضلة</Typography><FavoriteBorderIcon /></Box>
-          <Box sx={{ display: 'flex', gap: 1 }}><Typography fontWeight="bold">حفظ</Typography><BookmarkBorderIcon /></Box>
-          <Box sx={{ display: 'flex', gap: 1 }}><Typography fontWeight="bold">إبلاغ</Typography><OutlinedFlagIcon /></Box>
-          <Box sx={{ display: 'flex', gap: 1 }}><Typography fontWeight="bold">مشاركة</Typography><ShareOutlinedIcon /></Box>
+          <Box sx={{ display: 'flex', gap: 1 ,color:'#807AA6'}}><Button><Typography fontWeight="bold">حفظ</Typography><FavoriteBorderIcon /></Button></Box>
+          <Box sx={{ display: 'flex', gap: 1 ,color:'#807AA6'}}><Button><Typography fontWeight="bold">إبلاغ</Typography><OutlinedFlagIcon /></Button></Box>
+          <Box sx={{ display: 'flex', gap: 1,color:'#807AA6' }}><Button onClick={handleShare}><Typography fontWeight="bold">مشاركة</Typography><ShareOutlinedIcon /></Button></Box>
         </Box>
         
       </Box>
@@ -226,11 +240,19 @@ const handleSend = async () => {
 <Typography>نقدا أو تقسيط</Typography>
 </Box>
 <Box sx={{display:'flex',justifyContent:'space-between',gap:'8px',marginBottom:'20px'}} padding={"10px 10px"}>
-<Button sx={{backgroundColor:'#DF3631',width:'50%'}}>
+<Button sx={{backgroundColor:'#DF3631',width:'50%'}}  onClick={() => {
+    const phoneNumber = clientAds.phone;
+    window.open(`tel:${phoneNumber}`, '_self');
+  }}>
   <Typography sx={{color:'white',mx:'5px',fontSize:'18px',fontWeight:'bold'}}>اتصل</Typography>
   <PhoneIcon sx={{color:'white'}}/>
 </Button>
-<Button sx={{backgroundColor:'#4DBD43',width:'50%'}}>
+<Button sx={{backgroundColor:'#4DBD43',width:'50%'}}  onClick={() => {
+    const phoneNumber = clientAds.phone; 
+    const message = 'مرحبًا، أريد الاستفسار عن الإعلان الخاص بك';
+    const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+    window.open(url, '_blank');
+  }}>
   <Typography sx={{color:'white',mx:'5px',fontSize:'18px',fontWeight:'bold'}}>واتساب</Typography>
   <WhatsAppIcon sx={{color:'white'}}/>
 </Button>

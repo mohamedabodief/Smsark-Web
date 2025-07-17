@@ -1,3 +1,5 @@
+// src/LoginAndRegister/componentsLR/authLR/RegisterStep3LR.jsx
+
 import React, { useState } from "react";
 import {
   Box,
