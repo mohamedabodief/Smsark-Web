@@ -24,7 +24,9 @@ import { SearchProvider } from "./context/searchcontext";
 import SellAds from "./services/sell";
 import DeveloperAdsPage from "./services/developmentAds";
 import RentAds from "./services/rent";
+import buyAds from "./services/buy"
 import FinancingAdsPage from "./services/finance";
+// import DeveloperAdsPage from "./services/developmentAds";
 
 
 
@@ -57,13 +59,13 @@ function App() {
        {/* <Route path="/auth"> */}
         <Route path="login" element={<LoginRegister />} />
         <Route path="register" element={<LoginRegister />} />
-
+{/* 
           <Route path="/services/sell" element={<Sell />} />
           <Route path="/services/rent" element={<Rent />} />
           <Route path="/services/buy" element={<Buy />} />
           <Route path="/services/finance" element={<Finance />} />
 
-            
+             */}
           {/* <Route path="/auth"> */}
           <Route path="login" element={<LoginRegister />} />
           <Route path="register" element={<LoginRegister />} />
@@ -73,7 +75,7 @@ function App() {
       
             <Route path="/services/sell" element={<SellAds/>} />
             <Route path="/services/rent" element={<RentAds />} />
-            {/* <Route path="/services/buy" element={<Buy />} /> */}
+            <Route path="/services/buy" element={<buyAds/>} />
             <Route path="/services/finance" element={<FinancingAdsPage />} />
            <Route path="/services/developmentAds" element={<DeveloperAdsPage/>}/>
 
@@ -106,7 +108,7 @@ function App() {
           </Route>
           <Route path="search" element={<SearchPage />} />
 
-            <Route path="AddAdvertisement" element={<AddAdvertisement />}></Route> 
+            {/* <Route path="AddAdvertisement" element={<AddAdvertisement />}></Route>  */}
 
 {/* <Route path="AddAdvertisement" element={<ModernRealEstateForm/>}></Route>  */}
 

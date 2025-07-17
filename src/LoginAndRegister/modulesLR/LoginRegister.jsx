@@ -27,14 +27,6 @@ const StyledContainer = styled(Box)({
 });
 
 
-
-
-  // padding: "0 px",
-
-  // margin: "0",
-});
-
-
 const StyledPaper = styled(Paper)(({ theme }) => ({
   // background: "rgba(255, 255, 255, 0.95)",
   borderRadius: "16px",
