@@ -28,9 +28,6 @@ function App() {
 
       <Layout>
         <Routes>
-<<<<<<< HEAD
-          <Route path="/" element={<Home />} />
-=======
           <Route path="/home" element={<Home />} />
            <Route path="/" element={<Navigate to="login" replace />} />
 
@@ -38,16 +35,11 @@ function App() {
         <Route path="login" element={<LoginRegister />} />
         <Route path="register" element={<LoginRegister />} />
 
->>>>>>> 624c28b (add Favorite and adv)
           <Route path="/services/sell" element={<Sell />} />
           <Route path="/services/rent" element={<Rent />} />
           <Route path="/services/buy" element={<Buy />} />
           <Route path="/services/finance" element={<Finance />} />
           <Route path="/favorite" element={<Favorite />} />
-<<<<<<< HEAD
-          <Route path="/insert-finance-data" element={<FinancingAdvExample />} />
-          <Route path="/insert-dev-data" element={<RealEstateDevAdvExample />} />
-=======
           <Route
             path="/insert-finance-data"
             element={<FinancingAdvExample />}
@@ -56,7 +48,6 @@ function App() {
             path="/insert-dev-data"
             element={<RealEstateDevAdvExample />}
           />
->>>>>>> 624c28b (add Favorite and adv)
           <Route path="/add-financing-ad" element={<AddFinancingAdForm />} />
           <Route path="/services/finance/financing-request" element={<FinancingRequestForm />} />
 
@@ -65,14 +56,8 @@ function App() {
             <Route path="clientAds/:id" element={<DetailsForClient />} />  
             <Route path='developmentAds/:id' element={<DetailsForDevelopment/>}/>
           </Route>
-<<<<<<< HEAD
-          <Route path='search' element={<SearchPage/>}/>
-          <Route path="AddAdvertisement" element={<AddAdvertisement/>}></Route>
-        
-=======
           <Route path="search" element={<SearchPage />} />
           <Route path="AddAdvertisement" element={<AddAdvertisement />}></Route> 
->>>>>>> 624c28b (add Favorite and adv)
         </Routes>
       </Layout>
       <Footer />
