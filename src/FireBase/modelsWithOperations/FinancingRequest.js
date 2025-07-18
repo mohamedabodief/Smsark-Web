@@ -11,27 +11,29 @@ import {
   Timestamp,
 } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
+import Notification from '../MessageAndNotification/Notification';
 
 class FinancingRequest {
   #id = null;
 
   /**
-   * مُنشئ الكلاس - يستقبل بيانات الطلب
+   * منشئ الكائن - يستقبل بيانات الطلب ويهيئ القيم الافتراضية
    */
   constructor(data) {
     this.#id = data.id || null;
-    this.user_id = data.user_id; // رقم المستخدم صاحب الطلب
-    this.advertisement_id = data.advertisement_id || null; // رقم الإعلان التمويلي المرتبط
-    this.monthly_income = data.monthly_income; // الدخل الشهري
-    this.job_title = data.job_title; // الوظيفة
-    this.employer = data.employer; // جهة العمل
-    this.age = data.age; // السن
-    this.marital_status = data.marital_status; // الحالة الاجتماعية
-    this.dependents = data.dependents; // عدد المعالين
-    this.financing_amount = data.financing_amount; // المبلغ المطلوب
-    this.repayment_years = data.repayment_years; // عدد سنوات السداد
-    this.status = data.status || 'pending'; // حالة الطلب
-    this.submitted_at = data.submitted_at || Timestamp.now(); // وقت الإرسال
+    this.user_id = data.user_id;
+    this.advertisement_id = data.advertisement_id || null;
+    this.monthly_income = data.monthly_income;
+    this.job_title = data.job_title;
+    this.employer = data.employer;
+    this.age = data.age;
+    this.marital_status = data.marital_status;
+    this.dependents = data.dependents;
+    this.financing_amount = data.financing_amount;
+    this.repayment_years = data.repayment_years;
+    this.status = data.status || 'pending';
+    this.reviewStatus = data.reviewStatus || 'pending'; // ✅ حالة مراجعة الطلب
+    this.submitted_at = data.submitted_at || Timestamp.now();
   }
 
   get id() {
@@ -39,19 +41,16 @@ class FinancingRequest {
   }
 
   /**
-   * حفظ الطلب في قاعدة البيانات
-   * يتحقق أولًا من وجود الإعلان التمويلي المرتبط
+   * حفظ الطلب في قاعدة البيانات، مع إرسال إشعار لصاحب الإعلان المرتبط
    */
   async save() {
     if (!this.advertisement_id) {
       throw new Error('لم يتم تمرير معرّف إعلان التمويل.');
     }
 
-    const adRef = doc(db, 'FinancingAdvertisements', this.advertisement_id);
-    const adSnap = await getDoc(adRef);
-    if (!adSnap.exists()) {
-      throw new Error('إعلان التمويل غير موجود أو تم حذفه.');
-    }
+    // التأكد من وجود إعلان التمويل
+    const ad = await this.getAdvertisement();
+    if (!ad) throw new Error('إعلان التمويل غير موجود.');
 
     const colRef = collection(db, 'FinancingRequests');
     const docRef = await addDoc(colRef, {
@@ -66,11 +65,25 @@ class FinancingRequest {
       financing_amount: this.financing_amount,
       repayment_years: this.repayment_years,
       status: this.status,
+      reviewStatus: this.reviewStatus,
       submitted_at: this.submitted_at,
     });
 
     this.#id = docRef.id;
     await updateDoc(docRef, { id: this.#id });
+
+    // إرسال إشعار لصاحب الإعلان
+    if (ad.userId) {
+      const notif = new Notification({
+        receiver_id: ad.userId,
+        title: '📥 طلب تمويل جديد',
+        body: `تم تقديم طلب تمويل جديد على إعلانك: ${ad.org_name || ad.title}`,
+        type: 'system',
+        link: `/admin/financing-requests/${this.#id}`,
+      });
+      await notif.send();
+    }
+
     return this.#id;
   }
 
@@ -93,7 +106,7 @@ class FinancingRequest {
   }
 
   /**
-   * جلب طلب واحد حسب ID
+   * جلب طلب واحد باستخدام ID
    */
   static async getById(id) {
     const docRef = doc(db, 'FinancingRequests', id);
@@ -105,69 +118,99 @@ class FinancingRequest {
   }
 
   /**
-   * الاشتراك اللحظي في طلبات التمويل لمستخدم معيّن
-   * callback يتم تنفيذه عند أي تغيير
+   * الاشتراك اللحظي في طلبات مستخدم معين
    */
   static subscribeByUser(userId, callback) {
-    const colRef = collection(db, 'FinancingRequests');
-    const q = query(colRef, where('user_id', '==', userId));
-    return onSnapshot(q, (querySnapshot) => {
-      const requests = querySnapshot.docs.map(
-        (docSnap) => new FinancingRequest({ id: docSnap.id, ...docSnap.data() })
-      );
+    const q = query(collection(db, 'FinancingRequests'), where('user_id', '==', userId));
+    return onSnapshot(q, (snap) => {
+      const requests = snap.docs.map((doc) => new FinancingRequest({ id: doc.id, ...doc.data() }));
       callback(requests);
     });
   }
 
   /**
-   * حساب القسط الشهري بناءً على:
-   * - مبلغ التمويل
-   * - مدة السداد
-   * - نسب الفائدة وحدود المبلغ مأخوذة من إعلان التمويل المرتبط
+   * الاشتراك اللحظي في الطلبات حسب حالة المراجعة (approved, pending, rejected)
+   */
+  static subscribeByStatus(status, callback) {
+    const q = query(collection(db, 'FinancingRequests'), where('reviewStatus', '==', status));
+    return onSnapshot(q, (snap) => {
+      const requests = snap.docs.map((doc) => new FinancingRequest({ id: doc.id, ...doc.data() }));
+      callback(requests);
+    });
+  }
+
+  /**
+   * جلب جميع الطلبات حسب حالة المراجعة
+   */
+  static async getByReviewStatus(status) {
+    const q = query(collection(db, 'FinancingRequests'), where('reviewStatus', '==', status));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map((doc) => new FinancingRequest({ id: doc.id, ...doc.data() }));
+  }
+
+  /**
+   * إعادة الطلب لحالة pending مرة أخرى
+   */
+  async returnToPending() {
+    this.reviewStatus = 'pending';
+    await this.update({ reviewStatus: 'pending' });
+  }
+
+  /**
+   * رفض الطلب وتحديد سبب الرفض + إرسال إشعار للمستخدم
+   */
+  async reject(reason = 'لم يتم توضيح السبب') {
+    this.reviewStatus = 'rejected';
+    await this.update({ reviewStatus: 'rejected' });
+
+    const notif = new Notification({
+      receiver_id: this.user_id,
+      title: '❌ تم رفض طلب التمويل',
+      body: `تم رفض طلبك بسبب: ${reason}`,
+      type: 'system',
+      link: `/client/financing-requests/${this.#id}`,
+    });
+    await notif.send();
+  }
+
+  /**
+   * حساب القسط الشهري بناءً على مبلغ التمويل ومدة السداد ونسبة الفائدة من الإعلان المرتبط
    */
   async calculateMonthlyInstallment() {
-    const principal = this.financing_amount; // قيمة القرض
-    const years = this.repayment_years; // عدد سنوات السداد
+    const principal = this.financing_amount;
+    const years = this.repayment_years;
 
     if (!principal || !years) return '0.00';
 
-    // جلب الإعلان المرتبط للحصول على بيانات الفائدة والحدود
     const ad = await this.getAdvertisement();
     if (!ad) throw new Error('❌ إعلان التمويل غير موجود.');
 
-    const MIN_AMOUNT = ad.start_limit;
-    const MAX_AMOUNT = ad.end_limit;
+    const MIN = ad.start_limit;
+    const MAX = ad.end_limit;
 
-    // التحقق من أن مبلغ التمويل يقع داخل الحدود
-    if (principal < MIN_AMOUNT || principal > MAX_AMOUNT) {
-      throw new Error(
-        `❌ مبلغ التمويل يجب أن يكون بين ${MIN_AMOUNT.toLocaleString()} و ${MAX_AMOUNT.toLocaleString()}.`
-      );
+    if (principal < MIN || principal > MAX) {
+      throw new Error(`❌ مبلغ التمويل يجب أن يكون بين ${MIN} و ${MAX}`);
     }
 
-    // تحديد الفائدة حسب مدة السداد
     let annualRate;
     if (years <= 5) annualRate = ad.interest_rate_upto_5;
     else if (years <= 10) annualRate = ad.interest_rate_upto_10;
     else annualRate = ad.interest_rate_above_10;
 
-    // تحويل الفائدة الشهرية
     const r = annualRate / 12 / 100;
     const n = years * 12;
 
-    // حساب القسط الشهري باستخدام معادلة القرض المركب
     const monthlyInstallment =
       (principal * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
 
-    return monthlyInstallment.toFixed(2); // النتيجة كنص
+    return monthlyInstallment.toFixed(2);
   }
 
   /**
-   * جلب كائن إعلان التمويل المرتبط بالطلب
+   * جلب بيانات إعلان التمويل المرتبط بهذا الطلب
    */
   async getAdvertisement() {
     if (!this.advertisement_id) return null;
-    const { getDoc, doc } = await import('firebase/firestore');
     const adRef = doc(db, 'FinancingAdvertisements', this.advertisement_id);
     const adSnap = await getDoc(adRef);
     if (adSnap.exists()) {

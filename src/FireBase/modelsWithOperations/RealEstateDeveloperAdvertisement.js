@@ -114,7 +114,10 @@ class RealEstateDeveloperAdvertisement {
       this.receipt_image = receiptUrl;
     }
 
-    if (updates.status && !['تحت العرض', 'تحت التفاوض', 'منتهي'].includes(updates.status)) {
+    if (
+      updates.status &&
+      !['تحت العرض', 'تحت التفاوض', 'منتهي'].includes(updates.status)
+    ) {
       throw new Error('❌ الحالة غير صالحة');
     }
 
@@ -167,7 +170,9 @@ class RealEstateDeveloperAdvertisement {
     await new Notification({
       receiver_id: this.userId,
       title: '❌ تم رفض إعلانك العقاري',
-      body: `تم رفض إعلانك "${this.developer_name}". السبب: ${reason || 'غير مذكور'}`,
+      body: `تم رفض إعلانك "${this.developer_name}". السبب: ${
+        reason || 'غير مذكور'
+      }`,
       type: 'system',
       link: `/client/developer-ads/${this.#id}`,
     }).send();
@@ -215,12 +220,16 @@ class RealEstateDeveloperAdvertisement {
   static async getById(id) {
     const docRef = doc(db, 'RealEstateDeveloperAdvertisements', id);
     const snap = await getDoc(docRef);
-    return snap.exists() ? new RealEstateDeveloperAdvertisement(snap.data()) : null;
+    return snap.exists()
+      ? new RealEstateDeveloperAdvertisement(snap.data())
+      : null;
   }
 
   // 📥 جلب كل الإعلانات
   static async getAll() {
-    const snap = await getDocs(collection(db, 'RealEstateDeveloperAdvertisements'));
+    const snap = await getDocs(
+      collection(db, 'RealEstateDeveloperAdvertisements')
+    );
     return snap.docs.map((d) => new RealEstateDeveloperAdvertisement(d.data()));
   }
 
@@ -244,6 +253,20 @@ class RealEstateDeveloperAdvertisement {
     return snap.docs.map((d) => new RealEstateDeveloperAdvertisement(d.data()));
   }
 
+  // ✅ الاشتراك اللحظي في الإعلانات حسب حالة المراجعة
+  static subscribeByStatus(status, callback) {
+    const q = query(
+      collection(db, 'RealEstateDeveloperAdvertisements'),
+      where('reviewStatus', '==', status)
+    );
+    return onSnapshot(q, (snap) => {
+      const ads = snap.docs.map(
+        (d) => new RealEstateDeveloperAdvertisement(d.data())
+      );
+      callback(ads);
+    });
+  }
+
   // 🔁 استماع لحظي للإعلانات المفعلة
   static subscribeActiveAds(callback) {
     const q = query(
@@ -251,7 +274,9 @@ class RealEstateDeveloperAdvertisement {
       where('ads', '==', true)
     );
     return onSnapshot(q, (snap) => {
-      const ads = snap.docs.map((d) => new RealEstateDeveloperAdvertisement(d.data()));
+      const ads = snap.docs.map(
+        (d) => new RealEstateDeveloperAdvertisement(d.data())
+      );
       callback(ads);
     });
   }
@@ -262,7 +287,10 @@ class RealEstateDeveloperAdvertisement {
     const urls = [];
     const limited = files.slice(0, 4);
     for (let i = 0; i < limited.length; i++) {
-      const refPath = ref(storage, `developer_ads/${this.#id}/image_${i + 1}.jpg`);
+      const refPath = ref(
+        storage,
+        `developer_ads/${this.#id}/image_${i + 1}.jpg`
+      );
       await uploadBytes(refPath, limited[i]);
       urls.push(await getDownloadURL(refPath));
     }

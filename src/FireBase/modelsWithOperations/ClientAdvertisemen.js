@@ -164,7 +164,9 @@ class ClientAdvertisement {
     });
     await notif.send();
 
-    const otherAdmins = (await User.getAllUsersByType('admin')).filter((a) => a.uid !== admin.uid);
+    const otherAdmins = (await User.getAllUsersByType('admin')).filter(
+      (a) => a.uid !== admin.uid
+    );
     await Promise.all(
       otherAdmins.map((admin2) =>
         new Notification({
@@ -201,7 +203,9 @@ class ClientAdvertisement {
     });
     await notif.send();
 
-    const otherAdmins = (await User.getAllUsersByType('admin')).filter((a) => a.uid !== admin.uid);
+    const otherAdmins = (await User.getAllUsersByType('admin')).filter(
+      (a) => a.uid !== admin.uid
+    );
     await Promise.all(
       otherAdmins.map((admin2) =>
         new Notification({
@@ -238,7 +242,9 @@ class ClientAdvertisement {
     });
     await notif.send();
 
-    const otherAdmins = (await User.getAllUsersByType('admin')).filter((a) => a.uid !== admin.uid);
+    const otherAdmins = (await User.getAllUsersByType('admin')).filter(
+      (a) => a.uid !== admin.uid
+    );
     await Promise.all(
       otherAdmins.map((admin2) =>
         new Notification({
@@ -286,16 +292,40 @@ class ClientAdvertisement {
 
   // ✅ جلب حسب حالة reviewStatus (pending, approved, rejected)
   static async getByReviewStatus(status) {
-    const q = query(collection(db, 'ClientAdvertisements'), where('reviewStatus', '==', status));
+    const q = query(
+      collection(db, 'ClientAdvertisements'),
+      where('reviewStatus', '==', status)
+    );
     const snapshot = await getDocs(q);
-    return snapshot.docs.map((docSnap) => new ClientAdvertisement(docSnap.data()));
+    return snapshot.docs.map(
+      (docSnap) => new ClientAdvertisement(docSnap.data())
+    );
   }
 
   // ✅ جلب حسب حالة العرض (status)
   static async getByAdStatus(status) {
-    const q = query(collection(db, 'ClientAdvertisements'), where('status', '==', status));
+    const q = query(
+      collection(db, 'ClientAdvertisements'),
+      where('status', '==', status)
+    );
     const snapshot = await getDocs(q);
-    return snapshot.docs.map((docSnap) => new ClientAdvertisement(docSnap.data()));
+    return snapshot.docs.map(
+      (docSnap) => new ClientAdvertisement(docSnap.data())
+    );
+  }
+
+  // ✅ الاشتراك اللحظي في الإعلانات حسب حالة المراجعة (pending, approved, rejected)
+  static subscribeByStatus(status, callback) {
+    const q = query(
+      collection(db, 'ClientAdvertisements'),
+      where('reviewStatus', '==', status)
+    );
+    return onSnapshot(q, (querySnapshot) => {
+      const ads = querySnapshot.docs.map(
+        (docSnap) => new ClientAdvertisement(docSnap.data())
+      );
+      callback(ads);
+    });
   }
 
   // ✅ الاشتراك اللحظي في الإعلانات المفعّلة
@@ -331,7 +361,10 @@ class ClientAdvertisement {
     const limitedFiles = files.slice(0, 4);
     for (let i = 0; i < limitedFiles.length; i++) {
       const file = limitedFiles[i];
-      const imageRef = ref(storage, `client_ads/${this.#id}/image_${i + 1}.jpg`);
+      const imageRef = ref(
+        storage,
+        `client_ads/${this.#id}/image_${i + 1}.jpg`
+      );
       await uploadBytes(imageRef, file);
       const url = await getDownloadURL(imageRef);
       imageUrls.push(url);

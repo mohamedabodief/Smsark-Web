@@ -209,7 +209,9 @@ class HomepageAdvertisement {
   // ✅ جلب إعلان حسب ID
   static async getById(id) {
     const snap = await getDoc(doc(db, 'HomepageAdvertisements', id));
-    return snap.exists() ? await HomepageAdvertisement.#handleExpiry(snap.data()) : null;
+    return snap.exists()
+      ? await HomepageAdvertisement.#handleExpiry(snap.data())
+      : null;
   }
 
   // ✅ جلب كل الإعلانات
@@ -225,14 +227,36 @@ class HomepageAdvertisement {
 
   // ✅ جلب الإعلانات حسب حالة المراجعة
   static async getByReviewStatus(status) {
-    const q = query(collection(db, 'HomepageAdvertisements'), where('reviewStatus', '==', status));
+    const q = query(
+      collection(db, 'HomepageAdvertisements'),
+      where('reviewStatus', '==', status)
+    );
     const snap = await getDocs(q);
     return snap.docs.map((d) => new HomepageAdvertisement(d.data()));
   }
 
+  // ✅ الاشتراك اللحظي في الإعلانات حسب حالة المراجعة (pending | approved | rejected)
+  static subscribeByStatus(status, callback) {
+    const q = query(
+      collection(db, 'HomepageAdvertisements'),
+      where('reviewStatus', '==', status)
+    );
+    return onSnapshot(q, async (snap) => {
+      const ads = [];
+      for (const doc of snap.docs) {
+        const ad = await HomepageAdvertisement.#handleExpiry(doc.data());
+        if (ad) ads.push(ad);
+      }
+      callback(ads);
+    });
+  }
+
   // ✅ الاشتراك اللحظي في الإعلانات المفعلة
   static subscribeActiveAds(callback) {
-    const q = query(collection(db, 'HomepageAdvertisements'), where('ads', '==', true));
+    const q = query(
+      collection(db, 'HomepageAdvertisements'),
+      where('ads', '==', true)
+    );
     return onSnapshot(q, async (snap) => {
       const ads = [];
       for (const doc of snap.docs) {

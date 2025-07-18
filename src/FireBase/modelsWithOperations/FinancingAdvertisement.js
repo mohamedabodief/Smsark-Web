@@ -110,7 +110,10 @@ class FinancingAdvertisement {
     }
 
     // تحقق من صحة قيمة الحالة
-    if (updates.status && !['تحت العرض', 'تحت التفاوض', 'منتهي'].includes(updates.status)) {
+    if (
+      updates.status &&
+      !['تحت العرض', 'تحت التفاوض', 'منتهي'].includes(updates.status)
+    ) {
       throw new Error('❌ قيمة حالة الإعلان غير صالحة');
     }
 
@@ -229,21 +232,44 @@ class FinancingAdvertisement {
 
   // ✅ جلب الإعلانات حسب حالة المراجعة (pending | approved | rejected)
   static async getByReviewStatus(status) {
-    const q = query(collection(db, 'FinancingAdvertisements'), where('reviewStatus', '==', status));
+    const q = query(
+      collection(db, 'FinancingAdvertisements'),
+      where('reviewStatus', '==', status)
+    );
     const snap = await getDocs(q);
     return snap.docs.map((d) => new FinancingAdvertisement(d.data()));
   }
 
+  // ✅ الاشتراك اللحظي في الإعلانات حسب حالة المراجعة (pending | approved | rejected)
+  static subscribeByStatus(status, callback) {
+    const q = query(
+      collection(db, 'FinancingAdvertisements'),
+      where('reviewStatus', '==', status)
+    );
+    return onSnapshot(q, (snapshot) => {
+      const ads = snapshot.docs.map(
+        (docSnap) => new FinancingAdvertisement(docSnap.data())
+      );
+      callback(ads);
+    });
+  }
+
   // ✅ جلب الإعلانات الخاصة بمستخدم معيّن
   static async getByUserId(userId) {
-    const q = query(collection(db, 'FinancingAdvertisements'), where('userId', '==', userId));
+    const q = query(
+      collection(db, 'FinancingAdvertisements'),
+      where('userId', '==', userId)
+    );
     const snap = await getDocs(q);
     return snap.docs.map((d) => new FinancingAdvertisement(d.data()));
   }
 
   // ✅ الاشتراك اللحظي في الإعلانات المفعّلة فقط (Real-time listener)
   static subscribeActiveAds(callback) {
-    const q = query(collection(db, 'FinancingAdvertisements'), where('ads', '==', true));
+    const q = query(
+      collection(db, 'FinancingAdvertisements'),
+      where('ads', '==', true)
+    );
     return onSnapshot(q, (snap) => {
       const ads = snap.docs.map((d) => new FinancingAdvertisement(d.data()));
       callback(ads);
@@ -260,7 +286,10 @@ class FinancingAdvertisement {
     const urls = [];
     const limited = files.slice(0, 4);
     for (let i = 0; i < limited.length; i++) {
-      const refPath = ref(storage, `financing_ads/${this.#id}/image_${i + 1}.jpg`);
+      const refPath = ref(
+        storage,
+        `financing_ads/${this.#id}/image_${i + 1}.jpg`
+      );
       await uploadBytes(refPath, limited[i]);
       urls.push(await getDownloadURL(refPath));
     }
