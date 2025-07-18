@@ -15,20 +15,23 @@ import { db } from '../firebaseConfig';
 class FinancingRequest {
   #id = null;
 
+  /**
+   * مُنشئ الكلاس - يستقبل بيانات الطلب
+   */
   constructor(data) {
     this.#id = data.id || null;
-    this.user_id = data.user_id;
-    this.advertisement_id = data.advertisement_id || null;
-    this.monthly_income = data.monthly_income;
-    this.job_title = data.job_title;
-    this.employer = data.employer;
-    this.age = data.age;
-    this.marital_status = data.marital_status;
-    this.dependents = data.dependents;
-    this.financing_amount = data.financing_amount;
-    this.repayment_years = data.repayment_years;
-    this.status = data.status || 'pending'; // 'pending' | 'reviewed' | 'approved' | 'rejected'
-    this.submitted_at = data.submitted_at || Timestamp.now();
+    this.user_id = data.user_id; // رقم المستخدم صاحب الطلب
+    this.advertisement_id = data.advertisement_id || null; // رقم الإعلان التمويلي المرتبط
+    this.monthly_income = data.monthly_income; // الدخل الشهري
+    this.job_title = data.job_title; // الوظيفة
+    this.employer = data.employer; // جهة العمل
+    this.age = data.age; // السن
+    this.marital_status = data.marital_status; // الحالة الاجتماعية
+    this.dependents = data.dependents; // عدد المعالين
+    this.financing_amount = data.financing_amount; // المبلغ المطلوب
+    this.repayment_years = data.repayment_years; // عدد سنوات السداد
+    this.status = data.status || 'pending'; // حالة الطلب
+    this.submitted_at = data.submitted_at || Timestamp.now(); // وقت الإرسال
   }
 
   get id() {
@@ -36,10 +39,10 @@ class FinancingRequest {
   }
 
   /**
-   * حفظ الطلب في قاعدة البيانات بعد التحقق من الإعلان
+   * حفظ الطلب في قاعدة البيانات
+   * يتحقق أولًا من وجود الإعلان التمويلي المرتبط
    */
   async save() {
-    // تحقق من وجود إعلان التمويل المرتبط
     if (!this.advertisement_id) {
       throw new Error('لم يتم تمرير معرّف إعلان التمويل.');
     }
@@ -81,7 +84,7 @@ class FinancingRequest {
   }
 
   /**
-   * حذف الطلب
+   * حذف الطلب من قاعدة البيانات
    */
   async delete() {
     if (!this.#id) throw new Error('الطلب بدون ID غير قابل للحذف');
@@ -90,7 +93,7 @@ class FinancingRequest {
   }
 
   /**
-   * استرجاع طلب معين بالمعرّف
+   * جلب طلب واحد حسب ID
    */
   static async getById(id) {
     const docRef = doc(db, 'FinancingRequests', id);
@@ -102,7 +105,8 @@ class FinancingRequest {
   }
 
   /**
-   * استماع لحظي لجميع طلبات التمويل الخاصة بمستخدم
+   * الاشتراك اللحظي في طلبات التمويل لمستخدم معيّن
+   * callback يتم تنفيذه عند أي تغيير
    */
   static subscribeByUser(userId, callback) {
     const colRef = collection(db, 'FinancingRequests');
@@ -116,35 +120,50 @@ class FinancingRequest {
   }
 
   /**
-   * حساب القسط الشهري الثابت تلقائيًا بناءً على مدة السداد
-   * معدل الفائدة يُحدد تلقائيًا حسب عدد السنوات:
-   * - حتى 5 سنوات = 10%
-   * - حتى 10 سنوات = 12%
-   * - أكثر من 10 سنوات = 14%
-   * @returns {string} قيمة القسط الشهري بالتقريب
+   * حساب القسط الشهري بناءً على:
+   * - مبلغ التمويل
+   * - مدة السداد
+   * - نسب الفائدة وحدود المبلغ مأخوذة من إعلان التمويل المرتبط
    */
-  calculateMonthlyInstallment() {
-    const principal = this.financing_amount;
-    const years = this.repayment_years;
+  async calculateMonthlyInstallment() {
+    const principal = this.financing_amount; // قيمة القرض
+    const years = this.repayment_years; // عدد سنوات السداد
 
     if (!principal || !years) return '0.00';
 
-    let annualRate;
-    if (years <= 5) annualRate = 10;
-    else if (years <= 10) annualRate = 12;
-    else annualRate = 14;
+    // جلب الإعلان المرتبط للحصول على بيانات الفائدة والحدود
+    const ad = await this.getAdvertisement();
+    if (!ad) throw new Error('❌ إعلان التمويل غير موجود.');
 
+    const MIN_AMOUNT = ad.start_limit;
+    const MAX_AMOUNT = ad.end_limit;
+
+    // التحقق من أن مبلغ التمويل يقع داخل الحدود
+    if (principal < MIN_AMOUNT || principal > MAX_AMOUNT) {
+      throw new Error(
+        `❌ مبلغ التمويل يجب أن يكون بين ${MIN_AMOUNT.toLocaleString()} و ${MAX_AMOUNT.toLocaleString()}.`
+      );
+    }
+
+    // تحديد الفائدة حسب مدة السداد
+    let annualRate;
+    if (years <= 5) annualRate = ad.interest_rate_upto_5;
+    else if (years <= 10) annualRate = ad.interest_rate_upto_10;
+    else annualRate = ad.interest_rate_above_10;
+
+    // تحويل الفائدة الشهرية
     const r = annualRate / 12 / 100;
     const n = years * 12;
 
+    // حساب القسط الشهري باستخدام معادلة القرض المركب
     const monthlyInstallment =
       (principal * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
 
-    return monthlyInstallment.toFixed(2);
+    return monthlyInstallment.toFixed(2); // النتيجة كنص
   }
 
   /**
-   * جلب إعلان التمويل المرتبط بالطلب
+   * جلب كائن إعلان التمويل المرتبط بالطلب
    */
   async getAdvertisement() {
     if (!this.advertisement_id) return null;

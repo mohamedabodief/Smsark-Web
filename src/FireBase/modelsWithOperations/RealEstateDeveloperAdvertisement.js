@@ -1,3 +1,4 @@
+// استيراد وظائف Firebase
 import {
   collection,
   addDoc,
@@ -18,7 +19,9 @@ import {
   deleteObject,
   listAll,
 } from 'firebase/storage';
-import { db } from '../firebaseConfig';
+import { db, auth } from '../firebaseConfig';
+import Notification from '../MessageAndNotification/Notification';
+import User from './User';
 
 class RealEstateDeveloperAdvertisement {
   #id = null;
@@ -28,7 +31,7 @@ class RealEstateDeveloperAdvertisement {
     this.developer_name = data.developer_name;
     this.description = data.description;
     this.project_types = data.project_types;
-    this.images = data.images || []; // مصفوفة روابط الصور
+    this.images = data.images || [];
     this.phone = data.phone;
     this.location = data.location;
     this.price_start_from = data.price_start_from;
@@ -39,7 +42,7 @@ class RealEstateDeveloperAdvertisement {
     this.bathrooms = data.bathrooms || null;
     this.floor = data.floor || null;
     this.furnished = data.furnished || false;
-    this.status = data.status || null;
+    this.status = data.status || 'تحت العرض';
     this.paymentMethod = data.paymentMethod || null;
     this.negotiable = data.negotiable || false;
     this.deliveryTerms = data.deliveryTerms || null;
@@ -47,21 +50,22 @@ class RealEstateDeveloperAdvertisement {
     this.area = data.area || null;
     this.ads = data.ads !== undefined ? data.ads : false;
     this.adExpiryTime = data.adExpiryTime || null;
+    this.receipt_image = data.receipt_image || null;
+    this.reviewStatus = data.reviewStatus || 'pending';
+    this.reviewed_by = data.reviewed_by || null;
+    this.review_note = data.review_note || null;
   }
 
+  // ✅ getter للـ ID
   get id() {
     return this.#id;
   }
 
-  /**
-   * إنشاء إعلان جديد لمطور عقاري في Firestore
-   * + رفع الصور (بحد أقصى ٤ صور)
-   */
-  async save(imagesFiles = []) {
+  // ✅ إنشاء إعلان جديد + رفع الصور + إيصال الدفع + إرسال إشعار للمشرف
+  async save(imagesFiles = [], receiptFile = null) {
     const colRef = collection(db, 'RealEstateDeveloperAdvertisements');
     const docRef = await addDoc(colRef, this.#getAdData());
     this.#id = docRef.id;
-
     await updateDoc(docRef, { id: this.#id });
 
     if (imagesFiles.length > 0) {
@@ -70,56 +74,129 @@ class RealEstateDeveloperAdvertisement {
       await updateDoc(docRef, { images: imageUrls });
     }
 
+    if (receiptFile) {
+      const receiptUrl = await this.#uploadReceipt(receiptFile);
+      this.receipt_image = receiptUrl;
+      await updateDoc(docRef, { receipt_image: receiptUrl });
+    }
+
+    const admins = await User.getAllUsersByType('admin');
+    await Promise.all(
+      admins.map((admin) =>
+        new Notification({
+          receiver_id: admin.uid,
+          title: 'إعلان مطور جديد بانتظار المراجعة',
+          body: `المطور: ${this.developer_name}`,
+          type: 'system',
+          link: `/admin/developer-ads/${this.#id}`,
+        }).send()
+      )
+    );
+
     return this.#id;
   }
 
-  /**
-   * تحديث بيانات إعلان المطور العقاري
-   * + حذف الصور القديمة ورفع الجديدة إن وُجدت
-   */
-  async update(updates = {}, newImagesFiles = null) {
+  // ✅ تحديث بيانات الإعلان + صور جديدة + إيصال جديد
+  async update(updates = {}, newImagesFiles = null, newReceiptFile = null) {
     if (!this.#id) throw new Error('الإعلان بدون ID صالح للتحديث');
     const docRef = doc(db, 'RealEstateDeveloperAdvertisements', this.#id);
 
-    if (newImagesFiles && newImagesFiles.length > 0) {
+    if (newImagesFiles?.length > 0) {
       await this.#deleteAllImages();
-      const newImageUrls = await this.#uploadImages(newImagesFiles);
-      updates.images = newImageUrls;
-      this.images = newImageUrls;
+      const newUrls = await this.#uploadImages(newImagesFiles);
+      updates.images = newUrls;
+      this.images = newUrls;
+    }
+
+    if (newReceiptFile) {
+      const receiptUrl = await this.#uploadReceipt(newReceiptFile);
+      updates.receipt_image = receiptUrl;
+      this.receipt_image = receiptUrl;
+    }
+
+    if (updates.status && !['تحت العرض', 'تحت التفاوض', 'منتهي'].includes(updates.status)) {
+      throw new Error('❌ الحالة غير صالحة');
     }
 
     await updateDoc(docRef, updates);
   }
 
-  /**
-   * حذف الإعلان نهائيًا من Firestore
-   * + حذف جميع الصور المرتبطة به من التخزين
-   */
+  // ✅ حذف الإعلان بالكامل (من قاعدة البيانات + الصور)
   async delete() {
-    if (!this.#id) throw new Error('الإعلان بدون ID صالح للحذف');
+    if (!this.#id) throw new Error('الإعلان بدون ID');
     await this.#deleteAllImages();
-    const docRef = doc(db, 'RealEstateDeveloperAdvertisements', this.#id);
-    await deleteDoc(docRef);
+    await this.#deleteReceipt();
+    await deleteDoc(doc(db, 'RealEstateDeveloperAdvertisements', this.#id));
   }
 
-  /**
-   * إيقاف الإعلانات المدفوعة يدويًا
-   * (ads = false + حذف وقت الانتهاء)
-   */
-  async removeAds() {
-    if (!this.#id) throw new Error('الإعلان بدون ID صالح لإيقاف الإعلانات');
-    this.ads = false;
-    this.adExpiryTime = null;
-    await this.update({ ads: false, adExpiryTime: null });
+  // ✅ الموافقة على الإعلان
+  async approve() {
+    const admin = await User.getByUid(auth.currentUser.uid);
+    await this.update({
+      reviewStatus: 'approved',
+      reviewed_by: {
+        uid: admin.uid,
+        name: admin.adm_name,
+        image: admin.image || null,
+      },
+      review_note: null,
+    });
+
+    await new Notification({
+      receiver_id: this.userId,
+      title: '✅ تمت الموافقة على إعلانك العقاري',
+      body: `تمت الموافقة على إعلانك "${this.developer_name}" وسيظهر في الواجهة.`,
+      type: 'system',
+      link: `/client/developer-ads/${this.#id}`,
+    }).send();
   }
 
-  /**
-   * تفعيل الإعلان لفترة زمنية (باليوم)
-   * + تحديد وقت الانتهاء
-   * + يتم إيقاف الإعلان تلقائيًا بعد انتهاء المدة
-   */
+  // ❌ رفض الإعلان
+  async reject(reason = '') {
+    const admin = await User.getByUid(auth.currentUser.uid);
+    await this.update({
+      reviewStatus: 'rejected',
+      reviewed_by: {
+        uid: admin.uid,
+        name: admin.adm_name,
+        image: admin.image || null,
+      },
+      review_note: reason,
+    });
+
+    await new Notification({
+      receiver_id: this.userId,
+      title: '❌ تم رفض إعلانك العقاري',
+      body: `تم رفض إعلانك "${this.developer_name}". السبب: ${reason || 'غير مذكور'}`,
+      type: 'system',
+      link: `/client/developer-ads/${this.#id}`,
+    }).send();
+  }
+
+  // 🔁 إعادة الإعلان لحالة "pending"
+  async returnToPending() {
+    const admin = await User.getByUid(auth.currentUser.uid);
+    await this.update({
+      reviewStatus: 'pending',
+      reviewed_by: {
+        uid: admin.uid,
+        name: admin.adm_name,
+        image: admin.image || null,
+      },
+      review_note: null,
+    });
+
+    await new Notification({
+      receiver_id: this.userId,
+      title: '🔄 إعلانك الآن قيد المراجعة',
+      body: `تمت إعادة إعلانك "${this.developer_name}" للمراجعة.`,
+      type: 'system',
+      link: `/client/developer-ads/${this.#id}`,
+    }).send();
+  }
+
+  // ⏳ تفعيل الإعلان لفترة معينة
   async adsActivation(days) {
-    if (!this.#id) throw new Error('الإعلان بدون ID صالح لتفعيل الإعلانات');
     const ms = days * 24 * 60 * 60 * 1000;
     this.ads = true;
     this.adExpiryTime = Date.now() + ms;
@@ -127,144 +204,97 @@ class RealEstateDeveloperAdvertisement {
     setTimeout(() => this.removeAds().catch(console.error), ms);
   }
 
-  /**
-   * التحقق من انتهاء صلاحية الإعلان
-   * إذا انتهت المدة يتم تعطيل الإعلان تلقائيًا
-   */
-  static async #handleExpiry(data) {
-    const now = Date.now();
-    if (data.ads === true && data.adExpiryTime && data.adExpiryTime <= now) {
-      data.ads = false;
-      data.adExpiryTime = null;
-      const docRef = doc(db, 'RealEstateDeveloperAdvertisements', data.id);
-      await updateDoc(docRef, { ads: false, adExpiryTime: null });
-    }
-    return new RealEstateDeveloperAdvertisement(data);
+  // ❌ إلغاء التفعيل
+  async removeAds() {
+    this.ads = false;
+    this.adExpiryTime = null;
+    await this.update({ ads: false, adExpiryTime: null });
   }
 
-  /**
-   * جلب إعلان مطور عقاري محدد حسب ID
-   * + التحقق من صلاحية الإعلان
-   */
+  // 📥 جلب إعلان واحد بالـ ID
   static async getById(id) {
     const docRef = doc(db, 'RealEstateDeveloperAdvertisements', id);
-    const snapshot = await getDoc(docRef);
-    if (snapshot.exists()) {
-      return await RealEstateDeveloperAdvertisement.#handleExpiry(snapshot.data());
-    }
-    return null;
+    const snap = await getDoc(docRef);
+    return snap.exists() ? new RealEstateDeveloperAdvertisement(snap.data()) : null;
   }
 
-  /**
-   * جلب جميع إعلانات المطورين العقاريين
-   * + التحقق من صلاحية الإعلانات
-   */
+  // 📥 جلب كل الإعلانات
   static async getAll() {
-    const colRef = collection(db, 'RealEstateDeveloperAdvertisements');
-    const snapshot = await getDocs(colRef);
-    const ads = [];
-    for (const docSnap of snapshot.docs) {
-      const ad = await RealEstateDeveloperAdvertisement.#handleExpiry(docSnap.data());
-      if (ad) ads.push(ad);
-    }
-    return ads;
+    const snap = await getDocs(collection(db, 'RealEstateDeveloperAdvertisements'));
+    return snap.docs.map((d) => new RealEstateDeveloperAdvertisement(d.data()));
   }
 
-  /**
-   * جلب جميع إعلانات مستخدم معيّن (حسب userId)
-   */
-  static async getByUserId(userId) {
-    const colRef = collection(db, 'RealEstateDeveloperAdvertisements');
-    const q = query(colRef, where('userId', '==', userId));
-    const snapshot = await getDocs(q);
-    const ads = [];
-    for (const docSnap of snapshot.docs) {
-      const ad = await RealEstateDeveloperAdvertisement.#handleExpiry(docSnap.data());
-      if (ad) ads.push(ad);
-    }
-    return ads;
-  }
-
-  /**
-   * جلب الإعلانات المفعّلة (المدفوعة) فقط لمستخدم معيّن
-   */
-  static async getActiveByUser(userId) {
-    const colRef = collection(db, 'RealEstateDeveloperAdvertisements');
+  // 📥 جلب إعلانات حسب حالة المراجعة
+  static async getByReviewStatus(status) {
     const q = query(
-      colRef,
-      where('userId', '==', userId),
+      collection(db, 'RealEstateDeveloperAdvertisements'),
+      where('reviewStatus', '==', status)
+    );
+    const snap = await getDocs(q);
+    return snap.docs.map((d) => new RealEstateDeveloperAdvertisement(d.data()));
+  }
+
+  // 📥 جلب إعلانات مستخدم معين
+  static async getByUserId(userId) {
+    const q = query(
+      collection(db, 'RealEstateDeveloperAdvertisements'),
+      where('userId', '==', userId)
+    );
+    const snap = await getDocs(q);
+    return snap.docs.map((d) => new RealEstateDeveloperAdvertisement(d.data()));
+  }
+
+  // 🔁 استماع لحظي للإعلانات المفعلة
+  static subscribeActiveAds(callback) {
+    const q = query(
+      collection(db, 'RealEstateDeveloperAdvertisements'),
       where('ads', '==', true)
     );
-    const snapshot = await getDocs(q);
-    const ads = [];
-    for (const docSnap of snapshot.docs) {
-      const ad = await RealEstateDeveloperAdvertisement.#handleExpiry(docSnap.data());
-      if (ad) ads.push(ad);
-    }
-    return ads;
-  }
-
-  /**
-   * الاشتراك اللحظي (Real-time) في الإعلانات المفعّلة فقط
-   * يتم استدعاء callback عند أي تغيير
-   */
-  static subscribeActiveAds(callback) {
-    const colRef = collection(db, 'RealEstateDeveloperAdvertisements');
-    const q = query(colRef, where('ads', '==', true));
-    return onSnapshot(q, async (querySnapshot) => {
-      const ads = [];
-      for (const docSnap of querySnapshot.docs) {
-        const ad = await RealEstateDeveloperAdvertisement.#handleExpiry(docSnap.data());
-        if (ad) ads.push(ad);
-      }
+    return onSnapshot(q, (snap) => {
+      const ads = snap.docs.map((d) => new RealEstateDeveloperAdvertisement(d.data()));
       callback(ads);
     });
   }
 
-  // --------------------------------
-  // 🔒 دوال داخلية لإدارة الصور
-  // --------------------------------
-
-  /**
-   * رفع الصور إلى Firebase Storage (حتى ٤ صور)
-   * + حفظ روابطها
-   */
+  // 🔐 رفع صور الإعلان
   async #uploadImages(files = []) {
     const storage = getStorage();
-    const imageUrls = [];
-    const limitedFiles = files.slice(0, 4);
-
-    for (let i = 0; i < limitedFiles.length; i++) {
-      const file = limitedFiles[i];
-      const imageRef = ref(storage, `ads/${this.#id}/image_${i + 1}.jpg`);
-      await uploadBytes(imageRef, file);
-      const url = await getDownloadURL(imageRef);
-      imageUrls.push(url);
+    const urls = [];
+    const limited = files.slice(0, 4);
+    for (let i = 0; i < limited.length; i++) {
+      const refPath = ref(storage, `developer_ads/${this.#id}/image_${i + 1}.jpg`);
+      await uploadBytes(refPath, limited[i]);
+      urls.push(await getDownloadURL(refPath));
     }
-
-    return imageUrls;
+    return urls;
   }
 
-  /**
-   * حذف جميع الصور المرتبطة بالإعلان من Firebase Storage
-   */
-  async #deleteAllImages() {
+  // 🔐 رفع إيصال الدفع
+  async #uploadReceipt(file) {
     const storage = getStorage();
-    const dirRef = ref(storage, `ads/${this.#id}`);
+    const refPath = ref(storage, `developer_ads/${this.#id}/receipt.jpg`);
+    await uploadBytes(refPath, file);
+    return await getDownloadURL(refPath);
+  }
+
+  // 🗑️ حذف كل الصور
+  async #deleteAllImages() {
+    const dirRef = ref(getStorage(), `developer_ads/${this.#id}`);
     try {
       const list = await listAll(dirRef);
-      for (const itemRef of list.items) {
-        await deleteObject(itemRef);
-      }
-    } catch (err) {
-      console.warn('⚠️ فشل حذف الصور:', err.message);
-    }
+      for (const fileRef of list.items) await deleteObject(fileRef);
+    } catch (_) {}
   }
 
-  /**
-   * تجهيز كائن البيانات الكامل للإعلان
-   * يُستخدم في الدوال save/update
-   */
+  // 🗑️ حذف إيصال الدفع
+  async #deleteReceipt() {
+    const fileRef = ref(getStorage(), `developer_ads/${this.#id}/receipt.jpg`);
+    try {
+      await deleteObject(fileRef);
+    } catch (_) {}
+  }
+
+  // 📤 تجهيز بيانات الإعلان للتخزين
   #getAdData() {
     return {
       developer_name: this.developer_name,
@@ -289,6 +319,10 @@ class RealEstateDeveloperAdvertisement {
       area: this.area,
       ads: this.ads,
       adExpiryTime: this.adExpiryTime,
+      receipt_image: this.receipt_image,
+      reviewStatus: this.reviewStatus,
+      reviewed_by: this.reviewed_by,
+      review_note: this.review_note,
     };
   }
 }
