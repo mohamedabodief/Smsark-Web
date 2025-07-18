@@ -27,6 +27,8 @@ import RentAds from "./services/rent";
 import buyAds from "./services/buy"
 import FinancingAdsPage from "./services/finance";
 import ModernRealEstateForm from "./pages/ModernRealEstateForm";
+import InboxChats from "./pages/InboxChats";
+import ChatBox from "./pages/privechat";
 // import DeveloperAdsPage from "./services/developmentAds";
 
 
@@ -54,41 +56,31 @@ function App() {
 
       <Layout>
         <Routes>
+          <Route path="/home" element={<Home />} />
+          <Route path="/" element={<Navigate to="login" replace />} />
 
-    <Route path="/home" element={<Home />} />
-           <Route path="/" element={<Navigate to="login" replace />} />
-
-       {/* <Route path="/auth"> */}
-        <Route path="login" element={<LoginRegister />} />
-        <Route path="register" element={<LoginRegister />} />
-{/* 
-          <Route path="/services/sell" element={<Sell />} />
-          <Route path="/services/rent" element={<Rent />} />
-          <Route path="/services/buy" element={<Buy />} />
-          <Route path="/services/finance" element={<Finance />} />
+          {/* <Route path="/auth"> */}
+          <Route path="login" element={<LoginRegister />} />
+          <Route path="register" element={<LoginRegister />} />
 
           <Route path="/services/sell" element={<SellAds />} />
           <Route path="/services/rent" element={<RentAds />} />
           <Route path="/services/buy" element={<buyAds />} />
           <Route path="/services/finance" element={<FinancingAdsPage />} />
 
-
-             */}
           {/* <Route path="/auth"> */}
           <Route path="login" element={<LoginRegister />} />
-          <Route path="register" element={<LoginRegister />} />
+          <Route path="register" element={<LoginRegister/>} />
           <Route path="/about" element={<AboutUs />} />
           <Route path="/RealEstateDeveloperAnnouncement" element={<PropertyPage />} />
+          <Route path="/services/sell" element={<SellAds />} />
+          <Route path="/services/rent" element={<RentAds />} />
+          <Route path="/services/buy" element={<buyAds />} />
+          <Route path="/services/finance" element={<FinancingAdsPage />} />
 
-{/*       
-            <Route path="/services/sell" element={<SellAds/>} />
-            <Route path="/services/rent" element={<RentAds />} />
-            <Route path="/services/buy" element={<buyAds/>} />
-            <Route path="/services/finance" element={<FinancingAdsPage />} />
+          <Route path="/services/developmentAds" element={<DeveloperAdsPage />} />
 
-           <Route path="/services/developmentAds" element={<DeveloperAdsPage/>}/>
 
-             
           <Route path="/favorite" element={<Favorite />} />
           <Route
             path="/insert-finance-data"
@@ -116,17 +108,13 @@ function App() {
             />
           </Route>
           <Route path="search" element={<SearchPage />} />
-          <Route path="AddAdvertisement" element={<ModernRealEstateForm/>}></Route> 
-          {/*  */}
-      
-
-            {/* <Route path="AddAdvertisement" element={<AddAdvertisement />}></Route>  */}
-
-{/* <Route path="AddAdvertisement" element={<ModernRealEstateForm/>}></Route>  */}
-
-</Routes>
+          <Route path="AddAdvertisement" element={<ModernRealEstateForm />}></Route>
+          <Route path="AddAdvertisement" element={<ModernRealEstateForm />}></Route>
+          <Route path="inbox" element={<InboxChats/>}/>
+          <Route path="privateChat" element={<ChatBox/>}/>
+        </Routes>
       </Layout>
-      <Footer />
+     
 
       {/* <AddMultipleAdsOnce/> */}
     </>

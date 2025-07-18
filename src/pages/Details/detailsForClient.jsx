@@ -32,21 +32,23 @@ import { useNavigate } from 'react-router-dom';
 import MessageData from '../../FireBase/MessageAndNotification/MessageData';
 import { addDoc ,collection} from 'firebase/firestore';
 import { db } from '../../FireBase/firebaseConfig';
-
+import { auth } from '../../FireBase/firebaseConfig';
 function DetailsForClient() {
+  //useId
+  const currentUser=auth.currentUser?.uid;
   //dialoge
   const [open, setOpen] = useState(false);
 const [message, setMessage] = useState(""); 
+
 /////////////////
 //save in fire base
 const handleSend = async () => {
   const newMessage = new MessageData({
-    sender_id: "currentUserId", 
-    receiver_id: 'receiverId',
+    sender_id: currentUser, 
+    receiver_id: clientAds.id,
     content: message,
     timestamp: new Date(),
   });
-
   try {
     await addDoc(collection(db, "messages"), {
       ...newMessage
@@ -90,7 +92,6 @@ const handleSend = async () => {
     70% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(37, 211, 102, 0); }
     100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(37, 211, 102, 0); }
   `;
-
   if (!clientAds) {
     return (
       <Box sx={{

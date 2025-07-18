@@ -8,7 +8,8 @@ import {
   Tooltip,
   IconButton,
   Avatar,
-  Button
+  Button,
+  Popover
 } from '@mui/material';
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import Brightness4Icon from "@mui/icons-material/Brightness4";
@@ -18,7 +19,20 @@ import { useNavigate } from 'react-router-dom';
 export default function Nav({ toggleMode }) {
   const [anchorEl, setAnchorEl] = useState(null);
   const navigate = useNavigate();
+const handleClick = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
 
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+
+  const open = Boolean(anchorEl);
+
+  const handleMessagesClick = () => {
+    handleClose();
+    navigate("/inbox"); 
+  };
   return (
     <AppBar
       sx={{
@@ -71,11 +85,28 @@ export default function Nav({ toggleMode }) {
             </IconButton>
           </Tooltip>
 
-          <Tooltip title="ملفك الشخصي">
-            <IconButton size="small" sx={{ color: "#fff" }} onClick={() => navigate('/profile')}>
-              <AccountCircleIcon />
-            </IconButton>
-          </Tooltip>
+       <Box title="ملفك الشخصي">
+  <Button onClick={handleClick}>
+    <AccountCircleIcon sx={{ fontSize: 28, color: "#fff" }} />
+  </Button>
+
+  <Popover
+    open={open}
+    anchorEl={anchorEl}
+    onClose={handleClose}
+    anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+  >
+    <Box sx={{ p: 2 }}>
+      <Typography
+        sx={{ cursor: "pointer", "&:hover": { color: "#4DBD43" } }}
+        onClick={handleMessagesClick}
+      >
+        الرسائل
+      </Typography>
+    </Box>
+  </Popover>
+</Box>
+
         </Stack>
       </Toolbar>
     </AppBar>

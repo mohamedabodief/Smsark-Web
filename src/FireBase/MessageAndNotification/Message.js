@@ -126,6 +126,31 @@ class Message {
     const snapshot = await getDocs(q);
     return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
   }
+  /////all messages
+static async getAllMessagesInvolvingUser(userId) {
+  const senderQuery = query(
+    collection(db, 'messages'),
+    where('sender_id', '==', userId)
+  );
+
+  const receiverQuery = query(
+    collection(db, 'messages'),
+    where('receiver_id', '==', userId)
+  );
+
+  const [senderSnapshot, receiverSnapshot] = await Promise.all([
+    getDocs(senderQuery),
+    getDocs(receiverQuery),
+  ]);
+
+  const messages = [
+    ...senderSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })),
+    ...receiverSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })),
+  ];
+  messages.sort((a, b) => b.timestamp?.toMillis() - a.timestamp?.toMillis());
+
+  return messages;
+}
 
   /**
    * عدّ الرسائل غير المقروءة
