@@ -42,6 +42,7 @@ export default async function loginWithEmailAndPassword(email, password) {
       user: userCredential.user,
     };
   }  catch (error) {
+    console.error("Login error details:", error); // <--- Add this line
     let errorMessage = 'حدث خطأ أثناء تسجيل الدخول';
     if (error.code === 'auth/invalid-credential') {
       errorMessage = 'البريد الإلكتروني أو كلمة المرور غير صحيحة';

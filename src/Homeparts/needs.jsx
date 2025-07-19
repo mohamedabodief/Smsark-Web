@@ -1,14 +1,19 @@
 import { Box, Grid, Typography, Button } from '@mui/material';
 import { AttachMoney, HomeWork, Key, WorkOutline } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 
 const cards = [
+  {
+    icon: <WorkOutline fontSize="large" />,
+    title: 'بيع',
+    desc: 'اعرض عقارك للبيع بكل سهولة وسرعة.',
+    path: '/services/sell',
+  },
   {
     icon: <HomeWork fontSize="large" />,
     title: 'شراء',
     desc: 'استكشف آلاف العقارات المتاحة للشراء.',
-    path: '/services/sell',
+    path: '/services/buy',
   },
   {
     icon: <Key fontSize="large" />,
@@ -18,14 +23,14 @@ const cards = [
   },
   {
     icon: <AttachMoney fontSize="large" />,
-    title: 'تطوير',
-    desc: 'احصل على حلول تطويريه مخصصة لك بسهولة.',
-    path: '/services/developmentAds',
+    title: 'تمويل',
+    desc: 'احصل على حلول تمويلية مخصصة لك بسهولة.',
+    path: '/services/finance',
   },
   {
     icon: <AttachMoney fontSize="large" />,
-    title: 'تمويل',
-    desc: 'احصل على حلول تمويلية مخصصة لك بسهولة.',
+    title: 'تطوير',
+    desc: 'احصل على حلول تطويريه مخصصة لك بسهولة.',
     path: '/services/finance',
   },
 ];
@@ -59,7 +64,6 @@ export default function Needs() {
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
-            // textAlign: 'center',
           }}
         >
           <Typography variant="h4" fontWeight="bold" textAlign="center" sx={{ p: 18 }}>
@@ -74,7 +78,6 @@ export default function Needs() {
           sx={{
             display: 'flex',
             flexDirection: 'column',
-            // textAlign: 'center',
             alignItems: 'center',
             justifyContent: 'center',
           }}
@@ -88,8 +91,8 @@ export default function Needs() {
             alignItems="center"
             sx={{ maxWidth: 900 }}
           >
-            {cards.slice(0, 2).map((item, i) => (
-              <Grid item xs={12} sm={6} key={i}>
+            {cards.slice(0, 3).map((item, i) => (
+              <Grid item xs={12} sm={4} key={i}>
                 <Box
                   sx={{
                     borderRadius: 3,
@@ -143,7 +146,7 @@ export default function Needs() {
                       },
                     }}
                   >
-                    <ArrowForwardIcon />
+                    استكشف العقارات
                   </Button>
                 </Box>
               </Grid>
@@ -157,7 +160,7 @@ export default function Needs() {
             alignItems="center"
             sx={{ maxWidth: 600 }}
           >
-            {cards.slice(2).map((item, i) => (
+            {cards.slice(3).map((item, i) => (
               <Grid item xs={12} sm={6} key={i}>
                 <Box
                   sx={{
@@ -212,7 +215,7 @@ export default function Needs() {
                       },
                     }}
                   >
-                    <ArrowForwardIcon />
+                    استكشف العقارات
                   </Button>
                 </Box>
               </Grid>

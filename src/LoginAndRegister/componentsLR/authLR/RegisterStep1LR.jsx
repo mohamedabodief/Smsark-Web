@@ -56,23 +56,9 @@ export default function RegisterStep1LR({ onSuccess, onSwitchToLogin }) {
   };
 
   return (
-    <Box component="form" onSubmit={handleSubmit}
-     sx={{
-// mt:3 ,
-              backgroundColor: "white",
-              borderRadius: "12px",
-              maxWidth: 500,
-              minHeight: 305,
-              // /isplay: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              p: 4,
-              boxShadow: "0px 4px 12px rgba(0, 0, 0, 0.1)", // إضافة ظل خفيف للـ card
-            }}
-    >
-      
+    <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
       {error && (
-        <Alert severity="error" sx={{ mb: 2}}>
+        <Alert severity="error" sx={{ mb: 2 }}>
           {error}
         </Alert>
       )}
@@ -144,3 +130,127 @@ export default function RegisterStep1LR({ onSuccess, onSwitchToLogin }) {
     </Box>
   );
 }
+//=========================================================
+
+
+// import React, { useState } from 'react';
+// import { Button, Alert, Card, CircularProgress } from '@mui/material';
+// import { Email, Lock } from '@mui/icons-material';
+// import { useDispatch } from 'react-redux';
+// import { registerUser } from '../../featuresLR/authSlice';
+// import CustomTextField from '../CustomTextField'; // تعديل المسار
+
+// export default function RegisterStep1LR({ onSuccess, onSwitchToLogin }) {
+//   const [email, setEmail] = useState('');
+//   const [password, setPassword] = useState('');
+//   const [confirmPassword, setConfirmPassword] = useState('');
+//   const [isLoading, setIsLoading] = useState(false);
+//   const [error, setError] = useState('');
+//   const dispatch = useDispatch();
+
+//   const validateForm = () => {
+//     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+//       setError('البريد الإلكتروني غير صالح');
+//       return false;
+//     }
+//     if (password.length < 6) {
+//       setError('كلمة المرور يجب أن تكون 6 أحرف على الأقل');
+//       return false;
+//     }
+//     if (password !== confirmPassword) {
+//       setError('كلمات المرور غير متطابقة');
+//       return false;
+//     }
+//     return true;
+//   };
+
+//   const handleSubmit = async (e) => {
+//     e.preventDefault();
+//     setError('');
+
+//     if (!validateForm()) return;
+
+//     setIsLoading(true);
+//     const result = await dispatch(registerUser({ email, password }));
+
+//     if (result.meta.requestStatus === 'fulfilled') {
+//       onSuccess({ email, password });
+//     } else {
+//       setError(
+//         result.error?.code === 'auth/email-already-in-use'
+//           ? 'البريد الإلكتروني مسجل بالفعل'
+//           : result.error?.code === 'auth/weak-password'
+//           ? 'كلمة المرور ضعيفة جدًا'
+//           : result.error?.code === 'auth/invalid-email'
+//           ? 'البريد الإلكتروني غير صالح'
+//           : 'حدث خطأ أثناء التسجيل'
+//       );
+//     }
+
+//     setIsLoading(false);
+//   };
+
+//   return (
+//     <Card sx={{ bgcolor: 'background.paper', mt: 2 }}>
+//       <form onSubmit={handleSubmit}>
+//         {error && (
+//           <Alert severity="error" sx={{ mb: 2 }}>
+//             {error}
+//           </Alert>
+//         )}
+
+//         <CustomTextField
+//           label="البريد الإلكتروني"
+//           type="email"
+//           icon={<Email color="primary" />}
+//           value={email}
+//           onChange={(e) => setEmail(e.target.value)}
+//           required
+//         />
+
+//         <CustomTextField
+//           label="كلمة المرور"
+//           type="password"
+//           icon={<Lock color="primary" />}
+//           value={password}
+//           onChange={(e) => setPassword(e.target.value)}
+//           required
+//         />
+
+//         <CustomTextField
+//           label="تأكيد كلمة المرور"
+//           type="password"
+//           icon={<Lock color="primary" />}
+//           value={confirmPassword}
+//           onChange={(e) => setConfirmPassword(e.target.value)}
+//           required
+//         />
+
+//         <Button
+//           type="submit"
+//           fullWidth
+//           variant="contained"
+//           disabled={isLoading}
+//           sx={{
+//             mt: 3,
+//             py: 1.5,
+//             borderRadius: '12px',
+//             backgroundColor: '#6E00FE',
+//             '&:hover': { backgroundColor: '#5A00D6' },
+//           }}
+//           startIcon={isLoading && <CircularProgress size={20} color="inherit" />}
+//         >
+//           {isLoading ? 'جاري التحقق...' : 'التالي'}
+//         </Button>
+
+//         <Button
+//           fullWidth
+//           onClick={onSwitchToLogin}
+//           sx={{ mt: 2, color: '#6E00FE' }}
+//         >
+//           لديك حساب بالفعل؟ تسجيل الدخول
+//         </Button>
+//       </form>
+//     </Card>
+//   );
+// }

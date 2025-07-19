@@ -60,7 +60,7 @@ function HorizontalCard({ image, title, price,adress,type,status,city,governomen
 
   <Box sx={{ width: 250, height: '100%', position: 'relative' }}>
     <Slider {...settings}>
-      {(image||[]).map((img, index) => (
+      {image.map((img, index) => (
         <img
           key={index}
           src={img}
@@ -111,6 +111,7 @@ function HorizontalCard({ image, title, price,adress,type,status,city,governomen
         alignItems: 'center',
         gap: 1,
         fontWeight: 'bold',
+        color: 'black',
         px: 2,
         py: 0.5,
         borderRadius: '8px',
@@ -129,6 +130,7 @@ function HorizontalCard({ image, title, price,adress,type,status,city,governomen
         alignItems: 'center',
         gap: 1,
         fontWeight: 'bold',
+        color: 'black',
         px: 2,
         py: 0.5,
         borderRadius: '8px',
@@ -148,6 +150,7 @@ function HorizontalCard({ image, title, price,adress,type,status,city,governomen
         alignItems: 'center',
         gap: 1,
         fontWeight: 'bold',
+        color: 'black',
         px: 2,
         py: 0.5,
         borderRadius: '8px',
@@ -167,6 +170,7 @@ function HorizontalCard({ image, title, price,adress,type,status,city,governomen
         alignItems: 'center',
         gap: 1,
         fontWeight: 'bold',
+        color: 'black',
         px: 2,
         py: 0.5,
         borderRadius: '8px',

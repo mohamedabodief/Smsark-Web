@@ -1,21 +1,24 @@
-//scr/appLR/store.js
-import { createTheme } from "@mui/material/styles";
+
+
+
+
+import { createTheme } from '@mui/material/styles';
 
 const theme = createTheme({
-  direction: "rtl",
+  direction: 'rtl',
   palette: {
     primary: {
-      main: "#6E00FE",
-      light: "#9E4BFF",
-      dark: "#200D3A",
-      contrastText: "#FFFFFF",
+      main: '#6E00FE',
+      light: '#9E4BFF',
+      dark: '#200D3A',
+      contrastText: '#FFFFFF',
     },
     secondary: {
-      main: "#200D3A",
+      main: '#200D3A',
     },
     background: {
-      default: "linear-gradient(135deg, #F5F7FA 0%, #E0E7FF 100%)",
-      paper: "#FFFFFF",
+      default: 'linear-gradient(135deg, #F5F7FA 0%, #E0E7FF 100%)',
+      paper: '#FFFFFF',
     },
   },
   typography: {
@@ -26,7 +29,7 @@ const theme = createTheme({
     h4: { fontWeight: 700 },
     h5: { fontWeight: 700 },
     h6: { fontWeight: 700 },
-    button: { textTransform: "none", fontWeight: 700 },
+    button: { textTransform: 'none', fontWeight: 700 },
   },
   shape: { borderRadius: 12 },
   components: {
@@ -34,14 +37,14 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           borderRadius: 12,
-          padding: "10px 20px",
+          padding: '10px 20px',
         },
       },
     },
     MuiTextField: {
       styleOverrides: {
         root: {
-          "& .MuiOutlinedInput-root": {
+          '& .MuiOutlinedInput-root': {
             borderRadius: 12,
           },
         },
@@ -51,9 +54,7 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           borderRadius: 12,
-          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
-          backgroundColor: "transparent",
-          // boxShadow: "none",
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
         },
       },
     },
@@ -61,11 +62,11 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           borderRadius: 12,
-          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
-          maxWidth: "600px",
-          width: "90%",
-          margin: "auto",
-          padding: "24px",
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+          maxWidth: '600px',
+          width: '90%',
+          margin: 'auto',
+          padding: '24px',
         },
       },
     },
@@ -73,3 +74,23 @@ const theme = createTheme({
 });
 
 export default theme;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

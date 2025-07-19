@@ -13,11 +13,13 @@ import {
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import Brightness4Icon from "@mui/icons-material/Brightness4";
 import FavoriteIcon from '@mui/icons-material/Favorite';
-import { useNavigate } from 'react-router-dom';
 
 export default function Nav({ toggleMode }) {
   const [anchorEl, setAnchorEl] = useState(null);
-  const navigate = useNavigate();
+  const open = Boolean(anchorEl);
+  const handleClick = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
 
   return (
     <AppBar
@@ -44,16 +46,16 @@ export default function Nav({ toggleMode }) {
         </Box>
 
         <Stack direction="row" spacing={4} sx={{ direction: "rtl" }}>
-          <Typography variant="button" sx={{ cursor: "pointer", px: 4 }} onClick={() => navigate('/home')}>
+          <Typography variant="button" sx={{ cursor: "pointer", px: 4 }}>
             الصفحة الرئيسية
           </Typography>
-          <Typography variant="button" sx={{ cursor: "pointer" }} onClick={() => navigate('/about')}>
+          <Typography variant="button" sx={{ cursor: "pointer" }}>
             عن الموقع
           </Typography>
-          <Typography variant="button" sx={{ cursor: "pointer" }} onClick={() => navigate('/profile')}>
+          <Typography variant="button" sx={{ cursor: "pointer" }}>
             الصفحة الشخصية
           </Typography>
-          <Typography variant="button" sx={{ cursor: "pointer" }} onClick={() => navigate('/contact')}>
+          <Typography variant="button" sx={{ cursor: "pointer" }}>
             تواصل معنا
           </Typography>
         </Stack>
@@ -66,13 +68,17 @@ export default function Nav({ toggleMode }) {
           </Tooltip>
 
           <Tooltip title="تبديل الثيم">
-            <IconButton size="small" onClick={toggleMode}>
+            <IconButton
+              size="small"
+              
+              onClick={toggleMode}
+            >
               <Brightness4Icon />
             </IconButton>
           </Tooltip>
 
           <Tooltip title="ملفك الشخصي">
-            <IconButton size="small" sx={{ color: "#fff" }} onClick={() => navigate('#')}>
+            <IconButton size="small" sx={{ color: "#fff"}}>
               <AccountCircleIcon />
             </IconButton>
           </Tooltip>

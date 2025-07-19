@@ -1,9 +1,5 @@
 import { Timestamp } from 'firebase/firestore';
 
-/**
- * هيكل بيانات طلب التمويل (Data Only)
- * يُستخدم في النقل أو التهيئة دون منطق قواعد بيانات
- */
 class FinancingRequestData {
   constructor({
     id,
@@ -18,7 +14,6 @@ class FinancingRequestData {
     financing_amount,
     repayment_years,
     status,
-    reviewStatus,
     submitted_at,
   }) {
     this.id = id || null;
@@ -33,7 +28,6 @@ class FinancingRequestData {
     this.financing_amount = financing_amount;
     this.repayment_years = repayment_years;
     this.status = status || 'pending';
-    this.reviewStatus = reviewStatus || 'pending'; // ✅ حالة المراجعة (مضاف حديثًا)
     this.submitted_at = submitted_at || Timestamp.now();
   }
 }

@@ -2,12 +2,9 @@ import {
   Box, TextField, Button, Typography
 } from '@mui/material';
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom'; 
 import FinancingAdvertisement from '../FireBase/modelsWithOperations/FinancingAdvertisement';
 
 export default function AddFinancingAdForm() {
-  const navigate = useNavigate(); 
-
   const [form, setForm] = useState({
     title: '',
     description: '',
@@ -44,6 +41,7 @@ export default function AddFinancingAdForm() {
       }
     }
 
+    // تحقق منطقي للفائدة
     const above10 = Number(form.interest_rate_above_10);
     if (isNaN(above10) || above10 <= 0) {
       alert("الفائدة لأكثر من 10 سنوات يجب أن تكون رقمًا أكبر من صفر");
@@ -68,9 +66,6 @@ export default function AddFinancingAdForm() {
 
       await ad.save();
       alert(" تم حفظ إعلان التمويل بنجاح");
-
-      navigate(`/details/financingAds/${ad.id}`);
-
     } catch (err) {
       console.error(err);
       alert(" حدث خطأ أثناء حفظ الإعلان");
@@ -90,7 +85,7 @@ export default function AddFinancingAdForm() {
       </Typography>
 
       <Box component="form" display="flex" flexDirection="column" gap={3}>
-        {[ 
+        {[
           { name: 'title', label: 'العنوان' },
           { name: 'description', label: 'الوصف' },
           { name: 'financing_model', label: 'نموذج التمويل' },

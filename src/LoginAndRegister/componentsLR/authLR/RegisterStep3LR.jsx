@@ -1,5 +1,3 @@
-// src/LoginAndRegister/componentsLR/authLR/RegisterStep3LR.jsx
-
 import React, { useState } from "react";
 import {
   Box,
@@ -111,7 +109,7 @@ export default function RegisterStep3LR({
       // التوجيه بشكل مستقل
       setTimeout(() => {
         console.log("Navigating to /auth/login...");
-        navigate("/auth/login", { replace: true }); // replace عشان يمنع العودة
+        navigate("/login", { replace: true }); // replace عشان يمنع العودة
       }, 1500);
     } catch (err) {
       setError(err.message || "حدث خطأ أثناء حفظ البيانات");

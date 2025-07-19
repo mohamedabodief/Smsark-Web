@@ -3,7 +3,6 @@ import {
 } from '@mui/material';
 import { ArrowBackIos, ArrowForwardIos } from '@mui/icons-material';
 import FavoriteIcon from '@mui/icons-material/Favorite';
-import FavoriteButton from './FavoriteButton';
 import { useRef, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import FinancingAdvertisement from '../FireBase/modelsWithOperations/FinancingAdvertisement';
@@ -81,7 +80,11 @@ export default function BestFin() {
               >
                 <Card sx={{ minWidth: { xs: 260, sm: 300, md: 320 }, scrollSnapAlign: 'start', flexShrink: 0, borderRadius: 3, position: 'relative' }}>
                   <CardMedia component="img" height="160" image={item.image || '/default-placeholder.png'} />
-                  <FavoriteButton advertisementId={item.id} type="financing" />
+                  <Tooltip title="قائمة المفضل">
+                    <IconButton size="small" onClick={() => navigate('/favorite')} sx={{ position: 'absolute', top: 10, left: 10, backgroundColor: '#fff', '&:hover': { backgroundColor: '#f0f0f0' } }}>
+                      <FavoriteIcon color="error" />
+                    </IconButton>
+                  </Tooltip>
                   <CardContent>
                     <Typography color="primary" fontWeight="bold">
                       {item.start_limit?.toLocaleString()} - {item.end_limit?.toLocaleString()} ج.م
