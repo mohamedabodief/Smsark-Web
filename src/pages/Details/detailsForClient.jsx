@@ -47,6 +47,7 @@ const handleSend = async () => {
     sender_id: currentUser, 
     receiver_id: clientAds.id,
     content: message,
+   reciverName: clientAds.user_name,
     timestamp: new Date(),
   });
   try {
@@ -62,6 +63,7 @@ const handleSend = async () => {
     alert("فشل في إرسال الرسالة!");
   }
 };
+console.log("currentUser:", currentUser)
 
 /////////////////
   const { id } = useParams();

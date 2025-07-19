@@ -1,7 +1,6 @@
 import {
   Avatar,
   Box,
-  Button,
   Container,
   InputAdornment,
   TextField,
@@ -11,15 +10,31 @@ import React, { useEffect, useState } from "react";
 import { auth } from "../FireBase/firebaseConfig";
 import SearchIcon from "@mui/icons-material/Search";
 import Message from "../FireBase/MessageAndNotification/Message";
-import { getDoc, doc } from "firebase/firestore";
-import { db } from "../FireBase/firebaseConfig";
 import { useNavigate } from "react-router-dom";
+import { db } from "../FireBase/firebaseConfig";
+import { doc, getDoc } from "firebase/firestore";
+
 function InboxChats() {
-    const navagate=useNavigate()
+  const navigate = useNavigate();
   const [chats, setChats] = useState([]);
+  const [filteredChats, setFilteredChats] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const [currentUserEmail, setCurrentUserEmail] = useState(null);
   const [currentUserId, setCurrentUserId] = useState(null);
-  const [selectedUser, setSelectedUser] = useState(null);
+
+  // Fetch user name by ID from users collection (optional)
+  const getUserNameById = async (userId) => {
+    try {
+      const userDoc = await getDoc(doc(db, "users", userId));
+      if (userDoc.exists()) {
+        return userDoc.data().name || "Unknown User"; // Adjust 'name' to your users collection field
+      }
+      return "Unknown User";
+    } catch (err) {
+      console.error("Error fetching user name:", err);
+      return "Unknown User";
+    }
+  };
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
@@ -31,65 +46,101 @@ function InboxChats() {
 
     return () => unsubscribe();
   }, []);
+
   useEffect(() => {
     if (!currentUserId) return;
 
-   const fetchChats = async () => {
-  const conversations = {};
+    const fetchChats = async () => {
+      const conversationsMap = {};
 
-  try {
-    const allMessages = await Message.getAllMessagesInvolvingUser(currentUserId);
-    console.log("📥 الرسائل المسترجعة:", allMessages);
+      try {
+        const allMessages = await Message.getAllMessagesForUser(currentUserId);
+        const unreadMessages = await Message.getUnreadMessages(currentUserId);
 
-    for (const msg of allMessages) {
-      const isSender = msg.sender_id === currentUserId;
-      const otherUser = isSender ? msg.receiver_id : msg.sender_id;
+        for (const msg of allMessages) {
+          const otherUserId =
+            msg.sender_id === currentUserId ? msg.receiver_id : msg.sender_id;
 
-      if (!conversations[otherUser]) {
-        // جلب اسم المستخدم الحقيقي من Firestore
-        const userDoc = await getDoc(doc(db, "users", otherUser));
-        const userName = userDoc.exists()
-          ? userDoc.data().user_name || "مستخدم"
-          : "مستخدم";
+          // Determine the display name
+          let otherUserName;
+          if (msg.sender_id === currentUserId) {
+            otherUserName = msg.reciverName || "Unknown User"; // Use reciverName if sender
+          } else {
+            otherUserName = await getUserNameById(msg.sender_id); // Fetch sender name if receiver
+          }
 
-        conversations[otherUser] = {
-          userId: otherUser,
-          userName,
-          lastMessage: msg.content,
-          timestamp: msg.timestamp,
-          unreadCount: 0,
-        };
+          if (!conversationsMap[otherUserId]) {
+            conversationsMap[otherUserId] = {
+              userId: otherUserId,
+              userName: otherUserName,
+              lastMessage: msg.content,
+              timestamp: msg.timestamp,
+              unreadCount: 0,
+            };
+          }
+
+          if (
+            msg.timestamp?.toMillis() >
+            conversationsMap[otherUserId].timestamp?.toMillis()
+          ) {
+            conversationsMap[otherUserId].lastMessage = msg.content;
+            conversationsMap[otherUserId].timestamp = msg.timestamp;
+          }
+        }
+
+        for (const unreadMsg of unreadMessages) {
+          const otherUserId =
+            unreadMsg.sender_id === currentUserId
+              ? unreadMsg.receiver_id
+              : unreadMsg.sender_id;
+
+          let otherUserName;
+          if (unreadMsg.sender_id === currentUserId) {
+            otherUserName = unreadMsg.reciverName || "Unknown User";
+            console.log("المستخدم الآخر:", otherUserId, "الاسم:", otherUserName);
+          } else {
+            otherUserName = await getUserNameById(unreadMsg.sender_id);
+          }
+
+          if (conversationsMap[otherUserId]) {
+            conversationsMap[otherUserId].unreadCount += 1;
+          } else {
+            conversationsMap[otherUserId] = {
+              userId: otherUserId,
+              userName: otherUserName,
+              lastMessage: unreadMsg.content,
+              timestamp: unreadMsg.timestamp,
+              unreadCount: 1,
+            };
+          }
+        }
+
+        const sorted = Object.values(conversationsMap).sort(
+          (a, b) => b.timestamp?.toMillis() - a.timestamp?.toMillis()
+        );
+        setChats(sorted);
+        setFilteredChats(sorted);
+      } catch (err) {
+        console.error("Error fetching conversations:", err);
       }
-
-      // تحديث آخر رسالة
-      if (
-        msg.timestamp?.toMillis() >
-        conversations[otherUser].timestamp?.toMillis()
-      ) {
-        conversations[otherUser].lastMessage = msg.content;
-        conversations[otherUser].timestamp = msg.timestamp;
-      }
-
-      // تحديث عدد الرسائل غير المقروءة
-      if (!msg.is_read && msg.receiver_id === currentUserId) {
-        conversations[otherUser].unreadCount += 1;
-      }
-    }
-
-    // بعد الانتهاء من كل شيء
-    setChats(Object.values(conversations));
-  } catch (error) {
-    console.error("فشل تحميل الرسائل:", error);
-  }
-};
-
+    };
 
     fetchChats();
   }, [currentUserId]);
 
+  useEffect(() => {
+    if (searchQuery.trim() === "") {
+      setFilteredChats(chats);
+    } else {
+      const filtered = chats.filter((chat) =>
+        chat.userName.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      setFilteredChats(filtered);
+    }
+  }, [searchQuery, chats]);
+
   return (
     <Container maxWidth="md" dir="rtl">
-      {/* بيانات المستخدم */}
       <Box
         sx={{
           display: "flex",
@@ -99,17 +150,18 @@ function InboxChats() {
           alignItems: "center",
         }}
       >
-        <Avatar alt="Remy Sharp" sx={{ width: 56, height: 56 }} />
+        <Avatar alt="User" sx={{ width: 56, height: 56 }} />
         <Typography sx={{ fontSize: "20px", fontWeight: 600 }}>
-         {currentUserEmail?.split("@")[0]}
+          {currentUserEmail?.split("@")[0] || "User"}
         </Typography>
       </Box>
 
-      {/* مربع البحث */}
       <Box sx={{ mt: "20px" }}>
         <TextField
           variant="outlined"
           placeholder="ابحث هنا"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
           sx={{
             width: "100%",
             "& .MuiOutlinedInput-root": {
@@ -126,43 +178,50 @@ function InboxChats() {
         />
       </Box>
 
-      {/* عرض المحادثات */}
-      <Box sx={{ mt: 3 }}>
-        {chats.length === 0 && (
-          <Typography sx={{ textAlign: "center", color: "gray" }}>
-            لا توجد محادثات
-          </Typography>
-        )}
-
-        {chats.map((chat) => (
-            <Button sx={{display:'block',width:'100%'}} onClick={()=>{
-               navagate('/privateChat',{ state: { otherUser: chat } }) 
-            }}>
-          <Box
-          
-            key={chat.userId}
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              borderBottom: "1px solid #ccc",
-              paddingY: 2,
-              marginTop:'10px',
-              padding:'10px',
-           
-            }}
-          >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-              <Avatar />
-              <Box>
-                <Typography sx={{ fontWeight: "bold" }}>
-                 {chat.userName}
-                </Typography>
-                <Typography sx={{ color: "gray" }}>
-                   {chat.lastMessage} 
-                </Typography>
-              </Box>
+      {filteredChats.map((chat) => (
+        <Box
+          key={chat.userId}
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 2,
+            mt: 2,
+            justifyContent: "space-between",
+            borderBottom: "1px solid #eee",
+            pb: 1,
+            cursor: "pointer",
+          }}
+          onClick={() => navigate(`/chat/${chat.userId}`)}
+        >
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+            <Avatar />
+            <Box>
+              <Typography sx={{ fontWeight: "bold" }}>
+                {chat.userName}
+              </Typography>
+              <Typography sx={{ color: "gray" }}>{chat.lastMessage}</Typography>
             </Box>
+          </Box>
+
+          <Box sx={{ textAlign: "right" }}>
+            <Typography
+              sx={{
+                fontSize: "12px",
+                color: "gray",
+                ml: 1,
+                minWidth: "70px",
+              }}
+            >
+              {chat.timestamp
+                ? new Date(chat.timestamp.toMillis()).toLocaleTimeString(
+                    "ar-EG",
+                    {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    }
+                  )
+                : ""}
+            </Typography>
 
             {chat.unreadCount > 0 && (
               <Typography
@@ -171,16 +230,16 @@ function InboxChats() {
                   color: "white",
                   px: 2,
                   borderRadius: "50px",
+                  mt: 1,
+                  fontSize: "12px",
                 }}
               >
                 {chat.unreadCount}
               </Typography>
             )}
-            
           </Box>
-          </Button>
-        ))}
-      </Box>
+        </Box>
+      ))}
     </Container>
   );
 }
