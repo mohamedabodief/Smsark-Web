@@ -292,9 +292,9 @@ function DetailsForFinincingAds() {
         variant="contained"
         color="primary"
         sx={{ mt: 3 }}
-        onClick={() => navigate('/add-financing-ad')}
+        onClick={() => navigate('/financing-request', { state: { advertisementId: id } })}
       >
-        اضف اعلانك الان
+        انشاء طلب تمويل
       </Button>
     </Container>
   );

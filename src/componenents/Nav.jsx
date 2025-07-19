@@ -113,6 +113,11 @@ export default function Nav({ toggleMode }) {
             </Popover>
           </Box>
 
+          <Tooltip title="ملفك الشخصي">
+            <IconButton size="small" sx={{ color: "#fff" }} onClick={() => navigate('#')}>
+              <AccountCircleIcon />
+            </IconButton>
+          </Tooltip>
         </Stack>
       </Toolbar>
     </AppBar>

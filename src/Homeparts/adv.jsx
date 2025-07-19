@@ -24,7 +24,7 @@ export default function Advertise() {
   // }, []);
 
   // اختبار يدوي فقط
-  const user = { id: 'test-user', type: 'financer' }; // client | developer | financer
+  const user = { id: 'test-user', type: 'developer' }; // client | developer | financer
   const userType = user.type;
 
   const options = [
@@ -40,7 +40,7 @@ export default function Advertise() {
       title: 'مطور؟',
       description: 'أضف عقارك الآن وابدأ في تلقي العروض بسهولة وسرعة.',
       type: 'developer',
-      route: '/add-development-ad',
+      route: '/AdddeveloperAds',
     },
     {
       icon: <ApartmentRounded fontSize="large" sx={{ color: '#f57c00' }} />,
