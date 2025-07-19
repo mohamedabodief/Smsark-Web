@@ -26,7 +26,8 @@ import DeveloperAdsPage from "./services/developmentAds";
 import RentAds from "./services/rent";
 import buyAds from "./services/buy"
 import FinancingAdsPage from "./services/finance";
-// import DeveloperAdsPage from "./services/developmentAds";
+import Profile from "./componenents/profile";
+
 
 
 
@@ -54,13 +55,13 @@ function App() {
       <Layout>
         <Routes>
 
-    <Route path="/home" element={<Home />} />
-           <Route path="/" element={<Navigate to="login" replace />} />
+          <Route path="/home" element={<Home />} />
+          <Route path="/" element={<Navigate to="login" replace />} />
 
-       {/* <Route path="/auth"> */}
-        <Route path="login" element={<LoginRegister />} />
-        <Route path="register" element={<LoginRegister />} />
-{/* 
+          {/* <Route path="/auth"> */}
+          <Route path="login" element={<LoginRegister />} />
+          <Route path="register" element={<LoginRegister />} />
+          {/* 
           <Route path="/services/sell" element={<Sell />} />
           <Route path="/services/rent" element={<Rent />} />
           <Route path="/services/buy" element={<Buy />} />
@@ -79,7 +80,14 @@ function App() {
           <Route path="/about" element={<AboutUs />} />
           <Route path="/RealEstateDeveloperAnnouncement" element={<PropertyPage />} />
 
-{/*       
+
+          <Route path="/services/sell" element={<SellAds />} />
+          <Route path="/services/rent" element={<RentAds />} />
+          <Route path="/services/buy" element={<buyAds />} />
+          <Route path="/services/finance" element={<FinancingAdsPage />} />
+          <Route path="/services/developmentAds" element={<DeveloperAdsPage />} />
+          <Route path="/AdddeveloperAds" element={<PropertyPage />} />
+      
             <Route path="/services/sell" element={<SellAds/>} />
             <Route path="/services/rent" element={<RentAds />} />
             <Route path="/services/buy" element={<buyAds/>} />
@@ -87,7 +95,7 @@ function App() {
 
            <Route path="/services/developmentAds" element={<DeveloperAdsPage/>}/>
 
-             
+
           <Route path="/favorite" element={<Favorite />} />
           <Route
             path="/insert-finance-data"
@@ -99,7 +107,7 @@ function App() {
           />
           <Route path="/add-financing-ad" element={<AddFinancingAdForm />} />
           <Route
-            path="/services/finance/financing-request"
+            path="/financing-request"
             element={<FinancingRequestForm />}
           />
 
@@ -115,12 +123,13 @@ function App() {
             />
           </Route>
           <Route path="search" element={<SearchPage />} />
+          <Route path="profile" element={<Profile />} />
+          
+          {/* <Route path="AddAdvertisement" element={<AddAdvertisement />}></Route> 
 
-            {/* <Route path="AddAdvertisement" element={<AddAdvertisement />}></Route>  */}
+          {/* <Route path="AddAdvertisement" element={<ModernRealEstateForm/>}></Route>  */}
 
-{/* <Route path="AddAdvertisement" element={<ModernRealEstateForm/>}></Route>  */}
-
-</Routes>
+        </Routes>
       </Layout>
       <Footer />
 
