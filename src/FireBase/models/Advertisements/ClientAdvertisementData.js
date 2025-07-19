@@ -1,8 +1,7 @@
 class ClientAdvertisementData {
   constructor({
     title,
-    type,
-    // type: "apartment" | "villa" | "commercial"
+    type, // "apartment" | "villa" | "commercial"
     price,
     area,
     date_of_building,
@@ -15,30 +14,48 @@ class ClientAdvertisementData {
     description,
     user_name,
     userId,
-    ad_type = "بيع",             // القيمة الافتراضية
-    ad_status = "تحت العرض",     // القيمة الافتراضية
+    ad_type, // "بيع" | "إيجار" | "شراء"
+    ad_status, // "تحت العرض" | "تحت التفاوض" | "منتهي"
+    receipt_image, // رابط صورة الإيصال
+    reviewStatus, // "pending" | "approved" | "rejected"
+    reviewed_by, // بيانات الأدمن اللي راجع الإعلان
+    review_note, // ملاحظة الرفض أو المراجعة
+    ads, // هل الإعلان مفعّل؟
+    adExpiryTime, // وقت انتهاء التفعيل (timestamp)
   }) {
-    this.title = title;
-    this.type = type;
-    this.price = price;
-    this.area = area;
-    this.date_of_building = date_of_building;
-    this.images = images;
-    this.location = location;
-    this.address = address;
-    this.city = city;
-    this.governorate = governorate;
-    this.phone = phone;
-    this.user_name = user_name;
-    this.userId = userId;
-    this.description = description;
-    this.ad_type = ad_type;
-    // القيم المحتملة: "بيع" | "إيجار" | "شراء"
+    this.title = title || '';
+    this.type = type || '';
+    this.price = typeof price === 'number' ? price : null;
+    this.area = typeof area === 'number' ? area : null;
+    this.date_of_building = date_of_building || null;
+    this.images = Array.isArray(images) ? images : [];
+    this.location = location || null;
+    this.address = address || '';
+    this.city = city || '';
+    this.governorate = governorate || '';
+    this.phone = phone || '';
+    this.description = description || '';
+    this.user_name = user_name || '';
+    this.userId = userId || null;
 
-    this.ad_status = ad_status;
-    // القيم المحتملة: "تحت العرض" | "تحت التفاوض" | "منتهي"
+    this.ad_type = ad_type || '';
+    // "بيع" | "إيجار" | "شراء"
 
-    this.type_of_user = "client";
+    this.ad_status = ad_status || 'تحت العرض';
+    // "تحت العرض" | "تحت التفاوض" | "منتهي"
+
+    this.receipt_image = receipt_image || null;
+
+    this.reviewStatus = reviewStatus || 'pending';
+    // "pending" | "approved" | "rejected"
+
+    this.reviewed_by = reviewed_by || null;
+    this.review_note = review_note || null;
+
+    this.ads = ads !== undefined ? ads : false;
+    this.adExpiryTime = adExpiryTime || null;
+
+    this.type_of_user = 'client';
   }
 }
 

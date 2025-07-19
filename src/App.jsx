@@ -7,7 +7,7 @@ import DetailsForDevelopment from "./pages/Details/detailsForDevelopment";
 import Layout from "./Layout/Layout";
 import Home from "./componenents/Home";
 import Footer from "./componenents/Footer";
-import Sell from "./services/sell";
+// import Sell from "./services/sell";
 import Favorite from "./componenents/Favorite";
 import FinancingAdvExample from "./Homeparts/FinancingAdvExample";
 import RealEstateDevAdvExample from "./Homeparts/RealEstateDevAdvExample";
@@ -27,6 +27,7 @@ import RentAds from "./services/rent";
 import buyAds from "./services/buy"
 import FinancingAdsPage from "./services/finance";
 import Profile from "./componenents/profile";
+
 
 
 
@@ -66,6 +67,12 @@ function App() {
           <Route path="/services/buy" element={<Buy />} />
           <Route path="/services/finance" element={<Finance />} />
 
+          <Route path="/services/sell" element={<SellAds />} />
+          <Route path="/services/rent" element={<RentAds />} />
+          <Route path="/services/buy" element={<buyAds />} />
+          <Route path="/services/finance" element={<FinancingAdsPage />} />
+
+
              */}
           {/* <Route path="/auth"> */}
           <Route path="login" element={<LoginRegister />} />
@@ -80,6 +87,13 @@ function App() {
           <Route path="/services/finance" element={<FinancingAdsPage />} />
           <Route path="/services/developmentAds" element={<DeveloperAdsPage />} />
           <Route path="/AdddeveloperAds" element={<PropertyPage />} />
+      
+            <Route path="/services/sell" element={<SellAds/>} />
+            <Route path="/services/rent" element={<RentAds />} />
+            <Route path="/services/buy" element={<buyAds/>} />
+            <Route path="/services/finance" element={<FinancingAdsPage />} />
+
+           <Route path="/services/developmentAds" element={<DeveloperAdsPage/>}/>
 
 
           <Route path="/favorite" element={<Favorite />} />
@@ -111,7 +125,7 @@ function App() {
           <Route path="search" element={<SearchPage />} />
           <Route path="profile" element={<Profile />} />
           
-          {/* <Route path="AddAdvertisement" element={<AddAdvertisement />}></Route>  */}
+          {/* <Route path="AddAdvertisement" element={<AddAdvertisement />}></Route> 
 
           {/* <Route path="AddAdvertisement" element={<ModernRealEstateForm/>}></Route>  */}
 

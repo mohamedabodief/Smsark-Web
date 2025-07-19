@@ -27,6 +27,7 @@ const StyledContainer = styled(Box)({
 });
 
 
+
 const StyledPaper = styled(Paper)(({ theme }) => ({
   // background: "rgba(255, 255, 255, 0.95)",
   borderRadius: "16px",
