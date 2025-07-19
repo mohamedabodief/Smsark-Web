@@ -138,7 +138,20 @@ function InboxChats() {
       setFilteredChats(filtered);
     }
   }, [searchQuery, chats]);
-
+const getAvatarColor = (name) => {
+  const colors = [
+    "#4DBD43",
+    "#3F51B5", 
+    "#F44336",
+    "#FF9800", 
+    "#9C27B0", 
+    "#00BCD4", 
+    "#795548",
+  ];
+  const firstChar = name?.[0]?.toUpperCase() || "A";
+  const index = firstChar.charCodeAt(0) % colors.length;
+  return colors[index];
+};
   return (
     <Container maxWidth="md" dir="rtl">
       <Box
@@ -150,7 +163,10 @@ function InboxChats() {
           alignItems: "center",
         }}
       >
-        <Avatar alt="User" sx={{ width: 56, height: 56 }} />
+        <Avatar alt="User" sx={{ width: 56, height: 56 }} >{currentUserEmail?.split("@")[0].split(" ")
+    .map((word) => word[0])
+    .join("")
+    .toUpperCase() || "User"}</Avatar>
         <Typography sx={{ fontSize: "20px", fontWeight: 600 }}>
           {currentUserEmail?.split("@")[0] || "User"}
         </Typography>
@@ -191,10 +207,21 @@ function InboxChats() {
             pb: 1,
             cursor: "pointer",
           }}
-          onClick={() => navigate(`/chat/${chat.userId}`)}
+         onClick={() =>
+            navigate(`/privateChat/${chat.userId}`, {
+              state: { otherUser: { userId: chat.userId, userName: chat.userName } },
+            })
+          }
         >
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-            <Avatar />
+    <Avatar sx={{ bgcolor: getAvatarColor(chat.userName), color: "white" }}>
+  {chat.userName
+    .split(" ")
+    .map((word) => word[0])
+    .join("")
+    .toUpperCase()}
+</Avatar>
+
             <Box>
               <Typography sx={{ fontWeight: "bold" }}>
                 {chat.userName}

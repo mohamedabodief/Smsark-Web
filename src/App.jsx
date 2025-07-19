@@ -111,7 +111,7 @@ function App() {
           <Route path="AddAdvertisement" element={<ModernRealEstateForm />}></Route>
           <Route path="AddAdvertisement" element={<ModernRealEstateForm />}></Route>
           <Route path="inbox" element={<InboxChats/>}/>
-          <Route path="privateChat" element={<ChatBox/>}/>
+          <Route path="/privateChat/:id" element={<ChatBox/>}/>
         </Routes>
       </Layout>
      

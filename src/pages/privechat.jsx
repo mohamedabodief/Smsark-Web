@@ -1,4 +1,3 @@
-// components/ChatBox.jsx
 import React, { useEffect, useState, useRef } from "react";
 import { Box, Typography, TextField, Button } from "@mui/material";
 import { db, auth } from "../FireBase/firebaseConfig";
@@ -26,9 +25,11 @@ function ChatBox() {
   // تأكيد وجود المستخدم الآخر
   if (!otherUser) {
     return (
-      <Box sx={{ mt: 5, textAlign: "center" }}>
+      <Box sx={{ mt: "100px", textAlign: "center", direction: "rtl" }}>
         <Typography variant="h6">⚠️ لا يوجد مستخدم محدد</Typography>
-        <Button variant="contained" onClick={() => navigate(-1)}>عودة</Button>
+        <Button variant="contained" onClick={() => navigate(-1)}>
+          عودة
+        </Button>
       </Box>
     );
   }
@@ -47,7 +48,8 @@ function ChatBox() {
 
     const q = query(
       collection(db, "messages"),
-      where("participants", "array-contains", currentUser.uid),
+      where("sender_id", "in", [currentUser.uid, otherUser.userId]),
+      where("receiver_id", "in", [currentUser.uid, otherUser.userId]),
       orderBy("timestamp")
     );
 
@@ -56,8 +58,10 @@ function ChatBox() {
         .map((doc) => ({ id: doc.id, ...doc.data() }))
         .filter(
           (msg) =>
-            (msg.sender_id === currentUser.uid && msg.receiver_id === otherUser.userId) ||
-            (msg.sender_id === otherUser.userId && msg.receiver_id === currentUser.uid)
+            (msg.sender_id === currentUser.uid &&
+              msg.receiver_id === otherUser.userId) ||
+            (msg.sender_id === otherUser.userId &&
+              msg.receiver_id === currentUser.uid)
         );
       setMessages(allMsgs);
     });
@@ -74,23 +78,29 @@ function ChatBox() {
   const handleSend = async () => {
     if (!newMessage.trim()) return;
 
-    await addDoc(collection(db, "messages"), {
-      sender_id: currentUser.uid,
-      receiver_id: otherUser.userId,
-      content: newMessage,
-      is_read: false,
-      timestamp: serverTimestamp(),
-    });
-
-    setNewMessage("");
+    try {
+      await addDoc(collection(db, "messages"), {
+        sender_id: currentUser.uid,
+        receiver_id: otherUser.userId,
+        content: newMessage,
+        reciverName: otherUser.userName || "مستخدم غير معروف", // إضافة reciverName
+        is_read: false,
+        timestamp: serverTimestamp(),
+      });
+      setNewMessage("");
+    } catch (err) {
+      console.error("خطأ في إرسال الرسالة:", err);
+    }
   };
 
   return (
-    <Box sx={{ mt: "20px", mx: "auto", maxWidth: 600 }}>
-      <Button onClick={() => navigate(-1)} sx={{ mb: 2 }}>🔙 عودة للمحادثات</Button>
+    <Box sx={{ mt: "100px", mx: "auto", maxWidth: 600 }} dir="rtl">
+      <Button onClick={() => navigate(-1)} sx={{ mb: 2 }}>
+        🔙 عودة للمحادثات
+      </Button>
 
       <Typography variant="h6" sx={{ mb: 2 }}>
-        المحادثة مع: {otherUser.userName ?? "مستخدم"}
+        المحادثة مع: {otherUser.userName || "مستخدم غير معروف"}
       </Typography>
 
       <Box
@@ -109,13 +119,15 @@ function ChatBox() {
             key={msg.id}
             sx={{
               display: "flex",
-              justifyContent: msg.sender_id === currentUser?.uid ? "flex-end" : "flex-start",
+              justifyContent:
+                msg.sender_id === currentUser?.uid ? "flex-end" : "flex-start",
               mb: 1,
             }}
           >
-             <Box
+            <Box
               sx={{
-                backgroundColor: msg.sender_id === currentUser?.uid ? "#4DBD43" : "#e0e0e0",
+                backgroundColor:
+                  msg.sender_id === currentUser?.uid ? "#4DBD43" : "#e0e0e0",
                 color: msg.sender_id === currentUser?.uid ? "white" : "black",
                 px: 2,
                 py: 1,
@@ -123,8 +135,8 @@ function ChatBox() {
                 maxWidth: "70%",
               }}
             >
-               {msg.content} 
-            </Box> 
+              {msg.content}
+            </Box>
           </Box>
         ))}
         <div ref={bottomRef} />
@@ -137,7 +149,7 @@ function ChatBox() {
           onChange={(e) => setNewMessage(e.target.value)}
           placeholder="اكتب رسالتك..."
         />
-        <Button variant="contained" >
+        <Button variant="contained" onClick={handleSend}>
           إرسال
         </Button>
       </Box>

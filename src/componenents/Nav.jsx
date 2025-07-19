@@ -15,11 +15,11 @@ import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import Brightness4Icon from "@mui/icons-material/Brightness4";
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import { useNavigate } from 'react-router-dom';
-
+import EmailIcon from '@mui/icons-material/Email';
 export default function Nav({ toggleMode }) {
   const [anchorEl, setAnchorEl] = useState(null);
   const navigate = useNavigate();
-const handleClick = (event) => {
+  const handleClick = (event) => {
     setAnchorEl(event.currentTarget);
   };
 
@@ -31,7 +31,7 @@ const handleClick = (event) => {
 
   const handleMessagesClick = () => {
     handleClose();
-    navigate("/inbox"); 
+    navigate("/inbox");
   };
   return (
     <AppBar
@@ -75,37 +75,43 @@ const handleClick = (event) => {
         <Stack direction="row" spacing={1} alignItems="center">
           <Tooltip title="قائمة المفضل">
             <Button onClick={() => navigate('/favorite')} sx={{ color: '#fff' }}>
-              <FavoriteIcon /> 
+              <FavoriteIcon />
             </Button>
           </Tooltip>
 
+          <Tooltip title="الرسائل">
+            <IconButton size="small" sx={{color:'white'}} onClick={()=>{
+              navigate('/inbox')
+            }}>
+              <EmailIcon />
+            </IconButton>
+          </Tooltip>
           <Tooltip title="تبديل الثيم">
             <IconButton size="small" onClick={toggleMode}>
               <Brightness4Icon />
             </IconButton>
           </Tooltip>
+          <Box title="ملفك الشخصي">
+            <Button onClick={handleClick}>
+              <AccountCircleIcon sx={{ fontSize: 28, color: "#fff" }} />
+            </Button>
 
-       <Box title="ملفك الشخصي">
-  <Button onClick={handleClick}>
-    <AccountCircleIcon sx={{ fontSize: 28, color: "#fff" }} />
-  </Button>
-
-  <Popover
-    open={open}
-    anchorEl={anchorEl}
-    onClose={handleClose}
-    anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
-  >
-    <Box sx={{ p: 2 }}>
-      <Typography
-        sx={{ cursor: "pointer", "&:hover": { color: "#4DBD43" } }}
-        onClick={handleMessagesClick}
-      >
-        الرسائل
-      </Typography>
-    </Box>
-  </Popover>
-</Box>
+            <Popover
+              open={open}
+              anchorEl={anchorEl}
+              onClose={handleClose}
+              anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+            >
+              <Box sx={{ p: 2 }}>
+                <Typography
+                  sx={{ cursor: "pointer", "&:hover": { color: "#4DBD43" } }}
+                  onClick={handleMessagesClick}
+                >
+                  الرسائل
+                </Typography>
+              </Box>
+            </Popover>
+          </Box>
 
         </Stack>
       </Toolbar>
