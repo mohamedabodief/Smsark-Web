@@ -1,16 +1,23 @@
 import { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
-import { Box, Typography, Card, CardMedia, CardContent } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+import {
+  Box,
+  Typography,
+  Card,
+  CardMedia,
+  CardContent,
+  CardActionArea
+} from '@mui/material';
 import RealEstateDeveloperAdvertisement from '../FireBase/modelsWithOperations/RealEstateDeveloperAdvertisement';
 import FinancingAdvertisement from '../FireBase/modelsWithOperations/FinancingAdvertisement';
-
-// نفترض أن Redux يخزن المفضلة بهذا الشكل:
-// { advertisement_id: 'xyz', type: 'developer' أو 'financing' }
+import FavoriteButton from '../Homeparts/FavoriteButton';
 
 const Favorite = () => {
-  const favoriteItems = useSelector((state) => state.favorites.list); // array of {advertisement_id, type}
+  const favoriteItems = useSelector((state) => state.favorites.list);
   const [ads, setAds] = useState([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchAds = async () => {
@@ -25,7 +32,7 @@ const Favorite = () => {
         })
       );
 
-      setAds(results.filter(Boolean)); // إزالة أي null
+      setAds(results.filter(Boolean));
       setLoading(false);
     };
 
@@ -36,6 +43,15 @@ const Favorite = () => {
       setLoading(false);
     }
   }, [favoriteItems]);
+
+  const handleCardClick = (item) => {
+    const type = item.price_start_from ? 'developer' : 'financing';
+    if (type === 'developer') {
+      navigate(`/details/developmentAds/${item.id}`);
+    } else {
+      navigate(`/details/financingAds/${item.id}`);
+    }
+  };
 
   return (
     <Box sx={{ p: 4, pt: 13, pb: 8 }}>
@@ -50,35 +66,53 @@ const Favorite = () => {
       ) : (
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, justifyContent: 'center' }}>
           {ads.map((item) => (
-            <Card key={item.id} sx={{ width: 320, borderRadius: 3, position: 'relative' }}>
-              <CardMedia
-                component="img"
-                height="160"
-                image={item.image || '/default-placeholder.png'}
-              />
-              <CardContent>
-                {item.price_start_from ? (
-                  // عرض إعلان مطور 
-                  <>
-                    <Typography color="primary" fontWeight="bold">
-                      {item.price_start_from?.toLocaleString()} - {item.price_end_to?.toLocaleString()} ج.م
-                    </Typography>
-                    <Typography variant="subtitle1">{item.developer_name}</Typography>
-                    <Typography variant="body2" color="text.secondary">{item.location}</Typography>
-                    <Typography variant="body2" mt={1}>{item.description}</Typography>
-                  </>
-                ) : (
-                  // عرض إعلان تمويل 
-                  <>
-                    <Typography color="primary" fontWeight="bold">
-                      {item.start_limit?.toLocaleString()} - {item.end_limit?.toLocaleString()} ج.م
-                    </Typography>
-                    <Typography variant="subtitle1">{item.org_name}</Typography>
-                    <Typography variant="body2" color="text.secondary">{item.financing_model}</Typography>
-                  </>
-                )}
-              </CardContent>
+            <Card
+              key={item.id}
+              sx={{
+                width: 320,
+                borderRadius: 3,
+                position: 'relative',
+                cursor: 'pointer',
+              }}
+            >
+              <Box
+                sx={{ position: 'absolute', top: 10, left: 10, zIndex: 10 }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <FavoriteButton
+                  advertisementId={item.id}
+                  type={item.price_start_from ? 'developer' : 'financing'}
+                />
+              </Box>
+              <CardActionArea onClick={() => handleCardClick(item)}>
+                <CardMedia
+                  component="img"
+                  height="160"
+                  image={item.image || '/default-placeholder.png'}
+                />
+                <CardContent>
+                  {item.price_start_from ? (
+                    <>
+                      <Typography color="primary" fontWeight="bold">
+                        {item.price_start_from?.toLocaleString()} - {item.price_end_to?.toLocaleString()} ج.م
+                      </Typography>
+                      <Typography variant="subtitle1">{item.developer_name}</Typography>
+                      <Typography variant="body2" color="text.secondary">{item.location}</Typography>
+                      <Typography variant="body2" mt={1}>{item.description}</Typography>
+                    </>
+                  ) : (
+                    <>
+                      <Typography color="primary" fontWeight="bold">
+                        {item.start_limit?.toLocaleString()} - {item.end_limit?.toLocaleString()} ج.م
+                      </Typography>
+                      <Typography variant="subtitle1">{item.org_name}</Typography>
+                      <Typography variant="body2" color="text.secondary">{item.financing_model}</Typography>
+                    </>
+                  )}
+                </CardContent>
+              </CardActionArea>
             </Card>
+
           ))}
         </Box>
       )}

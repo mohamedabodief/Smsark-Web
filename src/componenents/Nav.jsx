@@ -72,7 +72,7 @@ export default function Nav({ toggleMode }) {
           </Tooltip>
 
           <Tooltip title="ملفك الشخصي">
-            <IconButton size="small" sx={{ color: "#fff" }} onClick={() => navigate('/profile')}>
+            <IconButton size="small" sx={{ color: "#fff" }} onClick={() => navigate('#')}>
               <AccountCircleIcon />
             </IconButton>
           </Tooltip>

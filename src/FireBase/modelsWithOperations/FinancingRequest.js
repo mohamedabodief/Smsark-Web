@@ -50,10 +50,12 @@ class FinancingRequest {
       throw new Error('إعلان التمويل غير موجود أو تم حذفه.');
     }
 
+    const adData = adSnap.data();
     const colRef = collection(db, 'FinancingRequests');
     const docRef = await addDoc(colRef, {
       user_id: this.user_id,
       advertisement_id: this.advertisement_id,
+      advertisement_title: adData.title || '',
       monthly_income: this.monthly_income,
       job_title: this.job_title,
       employer: this.employer,
