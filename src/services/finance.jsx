@@ -117,17 +117,16 @@ const FinancingAdsPage = () => {
       ) : (
         <ul>
         {filteredAds.map((ad) => (
-    <HorizontalCard
-      key={ad.id} 
-      title={ad.title}
-      price={`${ad.start_limit} - ${ad.end_limit}`}
-      adress={ad.org_name}
-      image={[ad.image || ""]}
-      type={ad.financing_model}
-      status={ad.ads ? "مفعّل" : "غير مفعّل"}
-      city={"تمويل عقاري"}
-      governoment={""}
-    />
+      <Link  to={`/details/financingAds/${ad.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+              <HorizontalCard
+                
+                title={ad.title}
+                price={`من ${ad.start_limit} إلى ${ad.end_limit}`}
+                adress={ad.org_name}
+                image={[ad.image]}
+                type={ad.financing_model}
+              />
+              </Link>
   ))}
         </ul>
       )}

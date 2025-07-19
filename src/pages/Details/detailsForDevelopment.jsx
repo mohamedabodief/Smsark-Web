@@ -7,7 +7,12 @@ import {
   CircularProgress,
   Breadcrumbs,
   Button,
-  Avatar
+  Avatar,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  TextField,
+  DialogActions
 } from '@mui/material';
 import {
   WhatsApp as WhatsAppIcon,
@@ -16,12 +21,15 @@ import {
   OutlinedFlag as OutlinedFlagIcon,
   ShareOutlined as ShareOutlinedIcon
 } from '@mui/icons-material';
+import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import HomeIcon from '@mui/icons-material/Home';
 import { useParams, Link } from 'react-router-dom';
 import MapPicker from '../../LocationComponents/MapPicker';
 import RealEstateDeveloperAdvertisement from '../../FireBase/modelsWithOperations/RealEstateDeveloperAdvertisement';
 import PhoneIcon from '@mui/icons-material/Phone';
 function DetailsForDevelopment() {
+    const [open, setOpen] = useState(false);
+  const [message, setMessage] = useState(""); 
   const { id } = useParams();
   const [clientAds, setClientAds] = useState(null);
   const [mainImage, setMainImage] = useState('');
@@ -83,32 +91,57 @@ function DetailsForDevelopment() {
             >
                 🏗️ مطور عقارى {clientAds.project_types[0]} , {clientAds.project_types[1]}
             </Box>
-      {/* واتساب*/}
-      <Box
-        sx={{
-          position: 'fixed',
-          bottom: 20,
-          right: 20,
-          backgroundColor: '#25D366',
-          color: 'white',
-          px: 2,
-          py: 1,
-          borderRadius: '50%',
-          zIndex: 999,
-          cursor: 'pointer',
-          animation: `${pulse} 2s infinite`,
-          transition: 'transform 0.3s',
-          '&:hover': { transform: 'scale(1.2)' },
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          boxShadow: '0px 4px 12px rgba(0,0,0,0.2)',
-          width: 50,
-          height: 50,
-        }}
-      >
-        <WhatsAppIcon sx={{ fontSize: 30 }} />
-      </Box>
+    
+      {/**contact with user */}
+  <Box
+  onClick={() => setOpen(true)} 
+  sx={{
+    position: 'fixed',
+    bottom: 20,
+    right: 20,
+    backgroundColor: '#1976d2',
+    color: 'white',
+    px: 2.5,
+    py: 1,
+    borderRadius: '30px',
+    zIndex: 999,
+    cursor: 'pointer',
+    animation: `${pulse} 2s infinite`,
+    transition: 'transform 0.3s',
+    '&:hover': { transform: 'scale(1.05)' },
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    boxShadow: '0px 4px 12px rgba(0,0,0,0.2)',
+  }}
+>
+  <ChatBubbleOutlineIcon sx={{ fontSize: 22, mr: 1 }} />
+  <Typography sx={{ fontWeight: 'bold', fontSize: '0.9rem' }}>
+    تواصل مع البائع
+  </Typography>
+</Box>
+<Dialog open={open} fullWidth dir='rtl' onClose={() => setOpen(false)}>
+        <DialogTitle>تواصل مع البائع بكل سهوله</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="اكتب رسالتك هنا"
+            fullWidth
+            multiline
+            rows={4}
+            variant="outlined"
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpen(false)}>إلغاء</Button>
+          <Button  variant="contained">
+            إرسال
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* أزرار التفاعل + اسم الناشر */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>

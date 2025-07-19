@@ -7,8 +7,15 @@ import {
   CircularProgress,
   Breadcrumbs,
   Button,
-  Avatar
+  Avatar,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  TextField,
+  DialogActions
 } from '@mui/material';
+import Message from '../../FireBase/MessageAndNotification/Message';
+import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import {
   WhatsApp as WhatsAppIcon,
   FavoriteBorder as FavoriteBorderIcon,
@@ -22,7 +29,43 @@ import MapPicker from '../../LocationComponents/MapPicker';
 import ClientAdvertisement from '../../FireBase/modelsWithOperations/ClientAdvertisemen';
 import PhoneIcon from '@mui/icons-material/Phone';
 import { useNavigate } from 'react-router-dom';
+import MessageData from '../../FireBase/MessageAndNotification/MessageData';
+import { addDoc ,collection} from 'firebase/firestore';
+import { db } from '../../FireBase/firebaseConfig';
+import { auth } from '../../FireBase/firebaseConfig';
 function DetailsForClient() {
+  //useId
+  const currentUser=auth.currentUser?.uid;
+  //dialoge
+  const [open, setOpen] = useState(false);
+const [message, setMessage] = useState(""); 
+
+/////////////////
+//save in fire base
+const handleSend = async () => {
+  const newMessage = new MessageData({
+    sender_id: currentUser, 
+    receiver_id: clientAds.id,
+    content: message,
+   reciverName: clientAds.user_name,
+    timestamp: new Date(),
+  });
+  try {
+    await addDoc(collection(db, "messages"), {
+      ...newMessage
+    });
+
+    alert("تم إرسال الرسالة!");
+    setMessage("");
+    setOpen(false);
+  } catch (error) {
+    console.error("حدث خطأ أثناء الإرسال:", error);
+    alert("فشل في إرسال الرسالة!");
+  }
+};
+console.log("currentUser:", currentUser)
+
+/////////////////
   const { id } = useParams();
   const [clientAds, setClientAds] = useState(null);
   const [mainImage, setMainImage] = useState('');
@@ -51,7 +94,6 @@ function DetailsForClient() {
     70% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(37, 211, 102, 0); }
     100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(37, 211, 102, 0); }
   `;
-
   if (!clientAds) {
     return (
       <Box sx={{
@@ -65,44 +107,82 @@ function DetailsForClient() {
       </Box>
     );
   }
-
+const handleShare = async () => {
+  if (navigator.share) {
+    try {
+      await navigator.share({
+        title: `${clientAds.title}`,
+        text: `${clientAds.description}`,
+        url: window.location.href, // يشارك الرابط الحالي
+      });
+      console.log('تمت المشاركة بنجاح');
+    } catch (error) {
+      console.error('حدث خطأ أثناء المشاركة:', error);
+    }
+  } else {
+    alert('المتصفح لا يدعم خاصية المشاركة.');
+  }
+};
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
 
-      {/* واتساب*/}
-      <Box
-        sx={{
-          position: 'fixed',
-          bottom: 20,
-          right: 20,
-          backgroundColor: '#25D366',
-          color: 'white',
-          px: 2,
-          py: 1,
-          borderRadius: '50%',
-          zIndex: 999,
-          cursor: 'pointer',
-          animation: `${pulse} 2s infinite`,
-          transition: 'transform 0.3s',
-          '&:hover': { transform: 'scale(1.2)' },
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          boxShadow: '0px 4px 12px rgba(0,0,0,0.2)',
-          width: 50,
-          height: 50,
-        }}
-      >
-        <WhatsAppIcon sx={{ fontSize: 30 }} />
-      </Box>
+    {/**contact with user */}
+  <Box
+  onClick={() => setOpen(true)} // هنا الإضافة
+  sx={{
+    position: 'fixed',
+    bottom: 20,
+    right: 20,
+    backgroundColor: '#1976d2',
+    color: 'white',
+    px: 2.5,
+    py: 1,
+    borderRadius: '30px',
+    zIndex: 999,
+    cursor: 'pointer',
+    animation: `${pulse} 2s infinite`,
+    transition: 'transform 0.3s',
+    '&:hover': { transform: 'scale(1.05)' },
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    boxShadow: '0px 4px 12px rgba(0,0,0,0.2)',
+  }}
+>
+  <ChatBubbleOutlineIcon sx={{ fontSize: 22, mr: 1 }} />
+  <Typography sx={{ fontWeight: 'bold', fontSize: '0.9rem' }}>
+    تواصل مع البائع
+  </Typography>
+</Box>
+<Dialog open={open} fullWidth dir='rtl' onClose={() => setOpen(false)}>
+        <DialogTitle>تواصل مع البائع بكل سهوله</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="اكتب رسالتك هنا"
+            fullWidth
+            multiline
+            rows={4}
+            variant="outlined"
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpen(false)}>إلغاء</Button>
+          <Button onClick={handleSend} variant="contained">
+            إرسال
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* أزرار التفاعل + اسم الناشر */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between',mt:'100px' }}>
         <Box sx={{ mb: 5, display: 'flex', gap: 4 }}>
-          <Box sx={{ display: 'flex', gap: 1 ,color:'#807AA6'}}><Typography fontWeight="bold">مفضلة</Typography><FavoriteBorderIcon /></Box>
-          <Box sx={{ display: 'flex', gap: 1 }}><Typography fontWeight="bold">حفظ</Typography><BookmarkBorderIcon /></Box>
-          <Box sx={{ display: 'flex', gap: 1 }}><Typography fontWeight="bold">إبلاغ</Typography><OutlinedFlagIcon /></Box>
-          <Box sx={{ display: 'flex', gap: 1 }}><Typography fontWeight="bold">مشاركة</Typography><ShareOutlinedIcon /></Box>
+          <Box sx={{ display: 'flex', gap: 1 ,color:'#807AA6'}}><Button><Typography fontWeight="bold">حفظ</Typography><FavoriteBorderIcon /></Button></Box>
+          <Box sx={{ display: 'flex', gap: 1 ,color:'#807AA6'}}><Button><Typography fontWeight="bold">إبلاغ</Typography><OutlinedFlagIcon /></Button></Box>
+          <Box sx={{ display: 'flex', gap: 1,color:'#807AA6' }}><Button onClick={handleShare}><Typography fontWeight="bold">مشاركة</Typography><ShareOutlinedIcon /></Button></Box>
         </Box>
         
       </Box>
@@ -163,11 +243,19 @@ function DetailsForClient() {
 <Typography>نقدا أو تقسيط</Typography>
 </Box>
 <Box sx={{display:'flex',justifyContent:'space-between',gap:'8px',marginBottom:'20px'}} padding={"10px 10px"}>
-<Button sx={{backgroundColor:'#DF3631',width:'50%'}}>
+<Button sx={{backgroundColor:'#DF3631',width:'50%'}}  onClick={() => {
+    const phoneNumber = clientAds.phone;
+    window.open(`tel:${phoneNumber}`, '_self');
+  }}>
   <Typography sx={{color:'white',mx:'5px',fontSize:'18px',fontWeight:'bold'}}>اتصل</Typography>
   <PhoneIcon sx={{color:'white'}}/>
 </Button>
-<Button sx={{backgroundColor:'#4DBD43',width:'50%'}}>
+<Button sx={{backgroundColor:'#4DBD43',width:'50%'}}  onClick={() => {
+    const phoneNumber = clientAds.phone; 
+    const message = 'مرحبًا، أريد الاستفسار عن الإعلان الخاص بك';
+    const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+    window.open(url, '_blank');
+  }}>
   <Typography sx={{color:'white',mx:'5px',fontSize:'18px',fontWeight:'bold'}}>واتساب</Typography>
   <WhatsAppIcon sx={{color:'white'}}/>
 </Button>
@@ -272,7 +360,7 @@ function DetailsForClient() {
              variant="contained"
              color="primary"
              sx={{ mt: 3 }}
-             onClick={() => navigate('/add-financing-ad')}
+             onClick={() => navigate('/AddAdvertisement')}
            >
              اضف اعلانك الان
            </Button>  
