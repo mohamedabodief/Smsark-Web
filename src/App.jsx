@@ -139,13 +139,13 @@ function App() {
           <Route path="/privateChat/:id" element={<ChatBox/>}/>
           <Route path="profile" element={<Profile />} />
           
-          {/* <Route path="AddAdvertisement" element={<AddAdvertisement />}></Route> 
+           {/* <Route path="AddAdvertisement" element={<AddAdvertisement />}></Route>  */}
 
           {/* <Route path="AddAdvertisement" element={<ModernRealEstateForm/>}></Route>  */}
 
         </Routes>
       </Layout>
-     
+      <Footer />
 
       {/* <AddMultipleAdsOnce/> */}
     </>
