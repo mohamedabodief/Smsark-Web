@@ -16,6 +16,9 @@ import Brightness4Icon from "@mui/icons-material/Brightness4";
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import { useNavigate } from 'react-router-dom';
 import EmailIcon from '@mui/icons-material/Email';
+import NotificationsIcon from '@mui/icons-material/Notifications'; // تم إضافته
+import NotificationBell from '../Homeparts/NotificationBell';
+
 export default function Nav({ toggleMode }) {
   const [anchorEl, setAnchorEl] = useState(null);
   const navigate = useNavigate();
@@ -33,6 +36,7 @@ export default function Nav({ toggleMode }) {
     handleClose();
     navigate("/inbox");
   };
+
   return (
     <AppBar
       sx={{
@@ -80,18 +84,26 @@ export default function Nav({ toggleMode }) {
           </Tooltip>
 
           <Tooltip title="الرسائل">
-            <IconButton size="small" sx={{color:'white'}} onClick={()=>{
-              navigate('/inbox')
-            }}>
+            <IconButton size="small" sx={{ color: 'white' }} onClick={() => { navigate('/inbox') }}>
               <EmailIcon />
             </IconButton>
           </Tooltip>
+
+          {/* إشعارات */}
+          <NotificationBell />
+          {/* <Tooltip title="الإشعارات">
+            <IconButton size="small" sx={{ color: 'white' }} onClick={() => { navigate('/notifications') }}>
+              <NotificationsIcon />
+            </IconButton>
+          </Tooltip> */}
+
           <Tooltip title="تبديل الثيم">
             <IconButton size="small" onClick={toggleMode}>
               <Brightness4Icon />
             </IconButton>
           </Tooltip>
-          <Box title="ملفك الشخصي">
+
+          {/* <Box title="ملفك الشخصي">
             <Button onClick={handleClick}>
               <AccountCircleIcon sx={{ fontSize: 28, color: "#fff" }} />
             </Button>
@@ -111,7 +123,7 @@ export default function Nav({ toggleMode }) {
                 </Typography>
               </Box>
             </Popover>
-          </Box>
+          </Box> */}
 
           <Tooltip title="ملفك الشخصي">
             <IconButton size="small" sx={{ color: "#fff" }} onClick={() => navigate('#')}>
