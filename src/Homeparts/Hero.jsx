@@ -1,23 +1,34 @@
-// components/SimpleHeroSlider.jsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Box, IconButton } from '@mui/material';
 import { ArrowBackIos, ArrowForwardIos } from '@mui/icons-material';
-
-const images = [
-  '/1.png',
-  '/1.png',
-  '/1.png',
-];
+import HomepageAdvertisement from '../FireBase/modelsWithOperations/HomepageAdvertisement';
 
 export default function SimpleHeroSlider() {
+  const [ads, setAds] = useState([]);
   const [index, setIndex] = useState(0);
 
+  useEffect(() => {
+    const unsubscribe = HomepageAdvertisement.subscribeActiveAds(async (data) => {
+      // const extraImage = {
+      //   image: 'https://www.google.com/url?sa=i&url=https%3A%2F%2Felbayt.com%2Far%2Funit%2Fvilla-for-sale-in-karma-4-sheikh-zayed-2758&psig=AOvVaw0-5fwpyDl-kNt3yrj_wJV2&ust=1753054230055000&source=images&cd=vfe&opi=89978449&ved=0CBUQjRxqFwoTCIjaiIiKyo4DFQAAAAAdAAAAABAL',
+      //   ads: true,
+      //   id: 'manual-img', 
+      // };
+
+      // const updatedData = [...data, extraImage];
+      // setAds(updatedData);
+      setAds(data);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
   const nextSlide = () => {
-    setIndex((prev) => (prev + 1) % images.length);
+    setIndex((prev) => (prev + 1) % ads.length);
   };
 
   const prevSlide = () => {
-    setIndex((prev) => (prev - 1 + images.length) % images.length);
+    setIndex((prev) => (prev - 1 + ads.length) % ads.length);
   };
 
   return (
@@ -29,19 +40,21 @@ export default function SimpleHeroSlider() {
         overflow: 'hidden',
         direction: 'rtl',
         margin: 0,
-        padding: 0, 
+        padding: 0,
       }}
     >
-      <Box
-        component="img"
-        src={images[index]}
-        alt="slider image"
-        sx={{
-          width: '100%',
-          height: '100%',
-          objectFit: 'cover',
-        }}
-      />
+      {ads.length > 0 && (
+        <Box
+          component="img"
+          src={ads[index].image}
+          alt="slider image"
+          sx={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+          }}
+        />
+      )}
 
       <IconButton
         onClick={nextSlide}

@@ -24,7 +24,7 @@ export default function Advertise() {
   // }, []);
 
   // اختبار يدوي فقط
-  const user = { id: 'test-user', type: 'developer' }; // client | developer | financer
+  const user = { id: 'test-user', type: 'client' }; // client | developer | financer
   const userType = user.type;
 
   const options = [
@@ -63,13 +63,13 @@ export default function Advertise() {
     <Box sx={{ py: 10, px: { xs: 2, md: 10 }, direction: 'rtl' }}>
       <Grid container spacing={4} justifyContent="center">
         <Grid item xs={12} textAlign="center">
-          <Typography variant="h4" fontWeight="bold" mt={14} mb={4}>
-            أعلن عن عقارك بكل سهولة
+          <Typography variant="h5" fontWeight="bold" mt={10} mb={4}>
+            أعلن عن عقارك 
           </Typography>
         </Grid>
 
         {options.map((item, index) => (
-          <Grid item xs={12} sm={6} md={4} key={index}>
+          <Grid item xs={12} sm={6} md={12} key={index}>
             <Box
               sx={{
                 borderRadius: 5,
