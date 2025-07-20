@@ -9,6 +9,9 @@ import {
   orderBy,
   onSnapshot,
   serverTimestamp,
+  getDocs,
+  updateDoc,
+  doc,
 } from "firebase/firestore";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -21,8 +24,6 @@ function ChatBox() {
   const [newMessage, setNewMessage] = useState("");
   const [currentUser, setCurrentUser] = useState(null);
   const bottomRef = useRef();
-
-  // تأكيد وجود المستخدم الآخر
   if (!otherUser) {
     return (
       <Box sx={{ mt: "100px", textAlign: "center", direction: "rtl" }}>
@@ -33,16 +34,12 @@ function ChatBox() {
       </Box>
     );
   }
-
-  // تسجيل المستخدم الحالي
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
       if (user) setCurrentUser(user);
     });
     return () => unsubscribe();
   }, []);
-
-  // جلب الرسائل بين المستخدمين
   useEffect(() => {
     if (!currentUser) return;
 
@@ -64,17 +61,41 @@ function ChatBox() {
               msg.receiver_id === currentUser.uid)
         );
       setMessages(allMsgs);
+      console.log("Messages:", allMsgs);
     });
 
     return () => unsubscribe();
   }, [currentUser, otherUser.userId]);
+  useEffect(() => {
+    if (!currentUser || !otherUser.userId) return;
 
-  // تمرير الشاشة لآخر رسالة
+    const markMessagesAsRead = async () => {
+      try {
+        const q = query(
+          collection(db, "messages"),
+          where("receiver_id", "==", currentUser.uid),
+          where("sender_id", "==", otherUser.userId),
+          where("is_read", "==", false)
+        );
+        const snapshot = await getDocs(q);
+        const updates = snapshot.docs.map(async (msgDoc) => {
+          await updateDoc(doc(db, "messages", msgDoc.id), {
+            is_read: true,
+          });
+        });
+        await Promise.all(updates);
+        console.log("Messages marked as read");
+      } catch (err) {
+        console.error("Error marking messages as read:", err);
+      }
+    };
+
+    markMessagesAsRead();
+  }, [currentUser, otherUser.userId]);
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
-
-  // إرسال رسالة
   const handleSend = async () => {
     if (!newMessage.trim()) return;
 
@@ -83,7 +104,7 @@ function ChatBox() {
         sender_id: currentUser.uid,
         receiver_id: otherUser.userId,
         content: newMessage,
-        reciverName: otherUser.userName || "مستخدم غير معروف", // إضافة reciverName
+        reciverName: otherUser.userName || "مستخدم غير معروف",
         is_read: false,
         timestamp: serverTimestamp(),
       });
@@ -127,7 +148,7 @@ function ChatBox() {
             <Box
               sx={{
                 backgroundColor:
-                  msg.sender_id === currentUser?.uid ? "#4DBD43" : "#e0e0e0",
+                  msg.sender_id === currentUser?.uid ? "#6E00FE" : "#e0e0e0",
                 color: msg.sender_id === currentUser?.uid ? "white" : "black",
                 px: 2,
                 py: 1,
