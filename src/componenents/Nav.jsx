@@ -9,14 +9,17 @@ import {
   IconButton,
   Avatar,
   Button,
-  Popover
+  Popover,
+  Badge
 } from '@mui/material';
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import Brightness4Icon from "@mui/icons-material/Brightness4";
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import { useNavigate } from 'react-router-dom';
 import EmailIcon from '@mui/icons-material/Email';
+import { useUnreadMessages } from '../context/unreadMessageContext';
 export default function Nav({ toggleMode }) {
+  const { totalUnreadCount } = useUnreadMessages();
   const [anchorEl, setAnchorEl] = useState(null);
   const navigate = useNavigate();
   const handleClick = (event) => {
@@ -78,40 +81,46 @@ export default function Nav({ toggleMode }) {
               <FavoriteIcon />
             </Button>
           </Tooltip>
+<Tooltip title="الرسائل">
+  <IconButton
+    size="small"
+    sx={{ color: "white" }}
+    onClick={() => {
+      navigate("/inbox");
+    }}
+  >
+    <Badge
+      badgeContent={totalUnreadCount}
+      color="error"
+      sx={{
+        "& .MuiBadge-badge": {
+          top: "0px",
+          right: "0px", 
+          backgroundColor: "#d1d1d1ff",
+          color: "black",
+          fontWeight: "bold",
+          minWidth: "20px",
+          height: "20px",
+          borderRadius: "50%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: "14px",
+          zIndex: "10000",
+        },
+      }}
+    >
+      <EmailIcon />
+    </Badge>
+  </IconButton>
+</Tooltip>
 
-          <Tooltip title="الرسائل">
-            <IconButton size="small" sx={{color:'white'}} onClick={()=>{
-              navigate('/inbox')
-            }}>
-              <EmailIcon />
-            </IconButton>
-          </Tooltip>
           <Tooltip title="تبديل الثيم">
             <IconButton size="small" onClick={toggleMode}>
               <Brightness4Icon />
             </IconButton>
           </Tooltip>
-          <Box title="ملفك الشخصي">
-            <Button onClick={handleClick}>
-              <AccountCircleIcon sx={{ fontSize: 28, color: "#fff" }} />
-            </Button>
-
-            <Popover
-              open={open}
-              anchorEl={anchorEl}
-              onClose={handleClose}
-              anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
-            >
-              <Box sx={{ p: 2 }}>
-                <Typography
-                  sx={{ cursor: "pointer", "&:hover": { color: "#4DBD43" } }}
-                  onClick={handleMessagesClick}
-                >
-                  الرسائل
-                </Typography>
-              </Box>
-            </Popover>
-          </Box>
+       
 
           <Tooltip title="ملفك الشخصي">
             <IconButton size="small" sx={{ color: "#fff" }} onClick={() => navigate('#')}>
