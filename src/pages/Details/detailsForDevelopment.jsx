@@ -27,6 +27,8 @@ import { useParams, Link } from 'react-router-dom';
 import MapPicker from '../../LocationComponents/MapPicker';
 import RealEstateDeveloperAdvertisement from '../../FireBase/modelsWithOperations/RealEstateDeveloperAdvertisement';
 import PhoneIcon from '@mui/icons-material/Phone';
+import Message from '../../FireBase/MessageAndNotification/Message';
+import { auth } from '../../FireBase/firebaseConfig';
 function DetailsForDevelopment() {
     const [open, setOpen] = useState(false);
   const [message, setMessage] = useState(""); 
@@ -37,7 +39,50 @@ function DetailsForDevelopment() {
   const [governorate, setGovernorate] = useState('');
   const [road, setRoad] = useState('');
   const [showFull, setShowFull] = useState(false);
-
+////////////////////////////////////messages
+const currentUser = auth.currentUser?.uid;
+const getReceiverName = async (userId) => {
+  try {
+    const userDoc = await getDoc(doc(db, "users", userId));
+    if (userDoc.exists()) {
+      const userData = userDoc.data();
+      console.log(`Receiver data for ${userId}:`, userData);
+      return userData.org_name || "Unknown User"; 
+    }
+    console.log(`No user document found for ${userId}`);
+    return "Unknown User";
+  } catch (err) {
+    console.error(`Error fetching receiver name for ${userId}:`, err);
+    return "Unknown User";
+  }
+};
+////////////
+  const handleSend = async () => {
+     if (!message.trim() || !currentUser || !clientAds?.userId) return;
+ 
+     try {
+       const receiverName = await getReceiverName(clientAds.userId);
+       const newMessage = new Message({
+         sender_id: currentUser,
+         receiver_id: clientAds.userId,
+         content: message,
+         reciverName: receiverName, 
+         timestamp: new Date(),
+         is_read: false,
+         message_type: 'text',
+       });
+ 
+       console.log('Sending message to:', { receiver_id: clientAds.userId, reciverName: receiverName });
+       await newMessage.send();
+       alert("تم إرسال الرسالة!");
+       setMessage("");
+       setOpen(false);
+     } catch (error) {
+       console.error("حدث خطأ أثناء الإرسال:", error);
+       alert("فشل في إرسال الرسالة!");
+     }
+   };
+/////////////////////////////////////////
   const toggleShow = () => setShowFull((prev) => !prev);
 
   useEffect(() => {
@@ -137,7 +182,7 @@ function DetailsForDevelopment() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpen(false)}>إلغاء</Button>
-          <Button  variant="contained">
+          <Button  variant="contained" onClick={handleSend}>
             إرسال
           </Button>
         </DialogActions>
@@ -254,7 +299,7 @@ function DetailsForDevelopment() {
             {showFull ? 'إخفاء التفاصيل' : 'عرض المزيد'}
           </button>
         )}
-         <Typography variant="body1" mt={2}>{clientAds.location}</Typography>
+         <Typography variant="body1" mt={2}>{clientAds.city}</Typography>
         <Typography variant="subtitle1" fontWeight="bold" mt={2}>
         الجهة: {clientAds.developer_name}
       </Typography>

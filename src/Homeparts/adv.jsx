@@ -7,25 +7,21 @@ import User from '../FireBase/modelsWithOperations/User';
 
 export default function Advertise() {
   const navigate = useNavigate();
-  // const [userType, setUserType] = useState(null);
+  const [userType, setUserType] = useState(null);
 
-  // useEffect(() => {
-  //   const fetchUserType = async () => {
-  //     const uid = auth.currentUser?.uid;
-  //     if (!uid) return;
+  useEffect(() => {
+    const fetchUserType = async () => {
+      const uid = auth.currentUser?.uid;
+      if (!uid) return;
 
-  //     const user = await User.getByUid(uid);
-  //     if (user) {
-  //       setUserType(user.type_of_user);
-  //     }
-  //   };
+      const user = await User.getByUid(uid);
+      if (user) {
+        setUserType(user.type_of_user);
+      }
+    };
 
-  //   fetchUserType();
-  // }, []);
-
-  // اختبار يدوي فقط
-  const user = { id: 'test-user', type: 'client' }; // client | developer | financer
-  const userType = user.type;
+    fetchUserType();
+  }, []);
 
   const options = [
     {
@@ -52,7 +48,20 @@ export default function Advertise() {
   ];
 
   const handleNavigate = (item) => {
-    if (userType === item.type) {
+    if (!userType) {
+      alert('يرجى تسجيل الدخول أولاً');
+      return;
+    }
+
+    if (userType === 'admin') {
+      navigate(item.route);
+    } else if (userType === 'organization') {
+      if (item.type === 'developer' || item.type === 'financer') {
+        navigate(item.route);
+      } else {
+        alert('غير مسموح للمُنظمات بإضافة إعلانات العملاء');
+      }
+    } else if (userType === item.type) {
       navigate(item.route);
     } else {
       alert('غير مصرح لك بالدخول لهذا القسم');
@@ -69,7 +78,7 @@ export default function Advertise() {
         </Grid>
 
         {options.map((item, index) => (
-          <Grid item xs={12} sm={6} md={12} key={index}>
+          <Grid item xs={12} sm={6} md={4} key={index}>
             <Box
               sx={{
                 borderRadius: 5,
