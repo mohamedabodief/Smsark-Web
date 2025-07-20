@@ -24,7 +24,7 @@ class Message {
     this.sender_id = data.sender_id;
     this.receiver_id = data.receiver_id;
     this.content = data.content;
-
+   this.reciverName = data.reciverName;
     this.timestamp = data.timestamp || timestamp.now();
     this.is_read = data.is_read ?? false;
     this.message_type = data.message_type || 'text';
@@ -43,6 +43,7 @@ class Message {
       is_read: this.is_read,
       message_type: this.message_type,
       reply_to_message_id: this.reply_to_message_id,
+      reciverName: this.reciverName,
     });
   }
 
@@ -94,23 +95,58 @@ class Message {
   /**
    * جلب كل الرسائل بين طرفين بدون الاشتراك اللحظي
    */
-  static async getConversation(user1, user2) {
-    const q = query(
+   static async getConversation(user1, user2) {
+    const messagesSent = query(
       collection(db, 'messages'),
-      where('sender_id', 'in', [user1, user2]),
-      where('receiver_id', 'in', [user1, user2]),
+      where('sender_id', '==', user1),
+      where('receiver_id', '==', user2),
       orderBy('timestamp', 'asc')
     );
 
-    const snapshot = await getDocs(q);
-    return snapshot.docs
-      .map((doc) => ({ id: doc.id, ...doc.data() }))
-      .filter(
-        (msg) =>
-          (msg.sender_id === user1 && msg.receiver_id === user2) ||
-          (msg.sender_id === user2 && msg.receiver_id === user1)
-      );
+    const messagesReceived = query(
+      collection(db, 'messages'),
+      where('sender_id', '==', user2),
+      where('receiver_id', '==', user1),
+      orderBy('timestamp', 'asc')
+    );
+
+    const [sentSnapshot, receivedSnapshot] = await Promise.all([
+      getDocs(messagesSent),
+      getDocs(messagesReceived),
+    ]);
+
+    const sentMessages = sentSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    const receivedMessages = receivedSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+
+    const allMessages = [...sentMessages, ...receivedMessages].sort(
+      (a, b) => a.timestamp?.toMillis?.() - b.timestamp?.toMillis?.()
+    );
+
+    return allMessages;
   }
+  ///
+static async getAllMessagesForUser(userId) {
+  const q = query(
+    collection(db, "messages"),
+    where("sender_id", "==", userId)
+  );
+
+  const q2 = query(
+    collection(db, "messages"),
+    where("receiver_id", "==", userId)
+  );
+
+  const [sentSnap, receivedSnap] = await Promise.all([
+    getDocs(q),
+    getDocs(q2),
+  ]);
+
+  const sentMessages = sentSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+  const receivedMessages = receivedSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+
+  return [...sentMessages, ...receivedMessages];
+}
+
 
   /**
    * جلب كل الرسائل غير المقروءة لمستخدم
@@ -126,7 +162,6 @@ class Message {
     const snapshot = await getDocs(q);
     return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
   }
-
   /**
    * عدّ الرسائل غير المقروءة
    */

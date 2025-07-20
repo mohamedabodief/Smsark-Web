@@ -4,9 +4,14 @@ export const fetchAllFinancingAds = createAsyncThunk(
   "financingAds/fetchAll",
   async () => {
     const ads = await FinancingAdvertisement.getAll();
-    return ads.map(ad => ({ ...ad }));
+
+    return ads.map((ad, index) => ({
+      ...ad,
+      id: ad.id || `financing-temp-id-${index}`,
+    }));
   }
 );
+
 export const fetchFinancingAdsByUser = createAsyncThunk(
   "financingAds/fetchByUser",
   async (userId) => {

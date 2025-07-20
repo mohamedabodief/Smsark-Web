@@ -1,12 +1,12 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 
-// تحميل المفضلة من localStorage
+// تحميل الفيفوريت من localStorage
 const loadFavoritesFromLocalStorage = () => {
   const data = localStorage.getItem('favorites');
   return data ? JSON.parse(data) : [];
 };
 
-// حفظ المفضلة في localStorage
+// حفظ الفيفوريت في localStorage
 const saveFavoritesToLocalStorage = (favorites) => {
   localStorage.setItem('favorites', JSON.stringify(favorites));
 };

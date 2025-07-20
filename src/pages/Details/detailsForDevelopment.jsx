@@ -18,7 +18,13 @@ import {
   IconButton,
   Alert,
   Paper,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  TextField,
+  DialogActions,
 } from "@mui/material";
+
 import {
   WhatsApp as WhatsAppIcon,
   FavoriteBorder as FavoriteBorderIcon,
@@ -43,13 +49,16 @@ import RealEstateDeveloperAdvertisement from "../../FireBase/modelsWithOperation
 
 import { auth } from "../../FireBase/firebaseConfig";
 
+import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
 function DetailsForDevelopment() {
+  const [open, setOpen] = useState(false);
+  const [message, setMessage] = useState("");
   const { id } = useParams();
   const navigate = useNavigate();
   const [clientAds, setClientAds] = useState(null);
   const [mainImage, setMainImage] = useState("");
   const [showFull, setShowFull] = useState(false);
-  const [loading, setLoading] = useState(false);
+  // const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   const toggleShow = () => setShowFull((prev) => !prev);
@@ -135,21 +144,21 @@ function DetailsForDevelopment() {
   console.log("Is owner:", isOwner);
 
   // دالة للحصول على أيقونة نوع العقار
-  const getPropertyTypeIcon = (type) => {
-    switch (type) {
-      case "شقق للبيع":
-      case "شقق للإيجار":
-        return <HomeIcon />;
-      case "فلل للبيع":
-      case "فلل للإيجار":
-        return <VillaIcon />;
-      case "عقارات مصايف للبيع":
-      case "عقارات مصايف للإيجار":
-        return <BeachAccessIcon />;
-      default:
-        return <BusinessIcon />;
-    }
-  };
+  // const getPropertyTypeIcon = (type) => {
+  //   switch (type) {
+  //     case "شقق للبيع":
+  //     case "شقق للإيجار":
+  //       return <HomeIcon />;
+  //     case "فلل للبيع":
+  //     case "فلل للإيجار":
+  //       return <VillaIcon />;
+  //     case "عقارات مصايف للبيع":
+  //     case "عقارات مصايف للإيجار":
+  //       return <BeachAccessIcon />;
+  //     default:
+  //       return <BusinessIcon />;
+  //   }
+  // };
 
   if (error) {
     return (
@@ -201,57 +210,72 @@ function DetailsForDevelopment() {
 
   return (
     <Container maxWidth="lg" sx={{ py: 4, position: "relative" }} dir="rtl">
-      {/* نوع العقار */}
-      <Paper
-        elevation={3}
+      <Box
         sx={{
           position: "fixed",
-          top: 20,
-          left: 20,
+          top: 10,
+          left: 10,
           backgroundColor: "#1976d2",
           color: "white",
-          px: 3,
-          py: 1,
-          borderRadius: "25px",
+          px: 2,
+          py: 0.5,
+          borderRadius: "8px",
           fontWeight: "bold",
           zIndex: 10,
-          display: "flex",
-          alignItems: "center",
-          gap: 1,
         }}
       >
-        {getPropertyTypeIcon(clientAds.project_types?.[0])}
-        <Typography>
-          {clientAds.project_types?.join(" - ") || "عقار"}
-        </Typography>
-      </Paper>
+        🏗️ مطور عقارى {clientAds.project_types[0]} ,{" "}
+        {clientAds.project_types[1]}
+      </Box>
 
-      {/* واتساب */}
+      {/**contact with user */}
       <Box
+        onClick={() => setOpen(true)}
         sx={{
           position: "fixed",
           bottom: 20,
           right: 20,
-          backgroundColor: "#25D366",
+          backgroundColor: "#1976d2",
           color: "white",
-          px: 2,
+          px: 2.5,
           py: 1,
-          borderRadius: "50%",
+          borderRadius: "30px",
           zIndex: 999,
           cursor: "pointer",
           animation: `${pulse} 2s infinite`,
           transition: "transform 0.3s",
-          "&:hover": { transform: "scale(1.2)" },
+          "&:hover": { transform: "scale(1.05)" },
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           boxShadow: "0px 4px 12px rgba(0,0,0,0.2)",
-          width: 60,
-          height: 60,
         }}
       >
-        <WhatsAppIcon sx={{ fontSize: 30 }} />
+        <ChatBubbleOutlineIcon sx={{ fontSize: 22, mr: 1 }} />
+        <Typography sx={{ fontWeight: "bold", fontSize: "0.9rem" }}>
+          تواصل مع البائع
+        </Typography>
       </Box>
+      <Dialog open={open} fullWidth dir="rtl" onClose={() => setOpen(false)}>
+        <DialogTitle>تواصل مع البائع بكل سهوله</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="اكتب رسالتك هنا"
+            fullWidth
+            multiline
+            rows={4}
+            variant="outlined"
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpen(false)}>إلغاء</Button>
+          <Button variant="contained">إرسال</Button>
+        </DialogActions>
+      </Dialog>
 
       {/* أزرار التفاعل */}
       <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 4 }}>
@@ -327,8 +351,8 @@ function DetailsForDevelopment() {
                 width: "100%",
                 height: "100%",
                 objectFit: "cover",
-                borderTopLeftRadius: "12px",
-                borderTopRightRadius: "12px",
+                borderRadius: "12px",
+                display: "block"
               }}
               onError={(e) => {
                 console.log("Image failed to load:", mainImage);

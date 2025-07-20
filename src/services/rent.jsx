@@ -120,17 +120,19 @@ const RentAds = () => {
         <ul>
           {buyAds.map((ad) => (
           
-              <HorizontalCard
-               key={ad.key}
-                title={ad.title}
-                price={ad.price}
-                adress={ad.address}
-                image={ad.images}
-                type={ad.type}
-                 status={ad.ad_status}
-                 city={ad.city}
-                 governoment={ad.governoment}
-              />
+             <Link to={`/details/clientAds/${ad.id}`} key={ad.id}  style={{ textDecoration: 'none', color: 'inherit' }}>
+                           <HorizontalCard
+                            
+                             title={ad.title}
+                             price={ad.price}
+                             adress={ad.address}
+                             image={ad.images}
+                             type={ad.type}
+                              status={ad.ad_status}
+                              city={ad.city}
+                              governoment={ad.governoment}
+                           />
+                           </Link>
               
           ))}
         </ul>

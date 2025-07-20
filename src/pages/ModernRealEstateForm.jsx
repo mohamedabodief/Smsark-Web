@@ -4,6 +4,8 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import '../styles/ModernRealEstateForm.css';
 import ClientAdvertisement from '../FireBase/modelsWithOperations/ClientAdvertisemen';
+import { auth, storage } from '../FireBase/firebaseConfig';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import {
   Box,
   Container,
@@ -42,8 +44,6 @@ import {
   Map
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
-import { storage } from '../FireBase/firebaseConfig';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import MapDisplay from '../LocationComponents/MapDisplay';
 import MapPicker from '../LocationComponents/MapPicker';
 
@@ -174,15 +174,13 @@ const validationSchema = yup.object().shape({
   adType: yup.string().required('نوع الإعلان مطلوب'),
   adStatus: yup.string().required('حالة الإعلان مطلوبة'),
   description: yup.string().required('الوصف مطلوب'),
-  images: yup.string().required("الصور مطلوبه ,اضف 4 صور على الاكثر")
 });
 
 const uploadImagesAndGetUrls = async (imageFiles) => {
-  // imageFiles: array of File objects
   const urls = [];
   for (let i = 0; i < imageFiles.length; i++) {
     const file = imageFiles[i];
-    const storageRef = ref(storage, `client-ads/${Date.now()}_${file.name}`);
+    const storageRef = ref(storage, `property_images/${auth.currentUser.uid}/${Date.now()}_${file.name}`); // تعديل: property_images/{userId}
     await uploadBytes(storageRef, file);
     const url = await getDownloadURL(storageRef);
     urls.push(url);
@@ -245,62 +243,60 @@ const ModernRealEstateForm = () => {
       return;
     }
 
-    // Instead of storing object URLs, store File objects
     setImages(prev => [...prev, ...files]);
-    setImageError(''); // Clear error when images are added successfully
+    setImageError('');
   };
 
   const removeImage = (index) => {
     setImages(prev => prev.filter((_, i) => i !== index));
-    setImageError(''); // Clear error when images are removed
+    setImageError('');
   };
 
   const onSubmit = async (data) => {
     setSubmitError('');
-    // Validate images before submission
     if (images.length === 0) {
       setImageError('الصور مطلوبة، أضف 4 صور على الأكثر');
       return;
     }
+    if (!auth.currentUser) {
+      setSubmitError('يجب تسجيل الدخول لإضافة إعلان. من فضلك، قم بتسجيل الدخول أولاً.');
+      return;
+    }
+
     try {
-      // رفع الصور إلى Firebase Storage
-      const imageUrls = await uploadImagesAndGetUrls(images);
-      // تجهيز البيانات للإرسال
+      console.log('Current User:', auth.currentUser); // سجل للتحقق من المستخدم
       const adData = {
         title: data.title,
         type: data.propertyType,
         price: data.price,
         area: data.area,
         date_of_building: data.buildingDate,
-        images: imageUrls,
         location: {
-          lat: coordinates.lat,
-          lng: coordinates.lng
-        },// لم يتم اختيار الموقع من الخريطة بعد
+          lat: coordinates?.lat || 0,
+          lng: coordinates?.lng || 0,
+        },
         address: data.address,
         city: data.city,
         governorate: data.governorate,
         phone: data.phone,
         user_name: data.username,
-        userId: null, // يمكن ربطه بالمستخدم لاحقاً
+        userId: auth.currentUser.uid,
         ad_type: data.adType,
         ad_status: data.adStatus,
         type_of_user: 'client',
         ads: data.adsActivation,
-        adExpiryTime: data.adsActivation ? Date.now() + (data.activationDays * 24 * 60 * 60 * 1000) : null,
-        description: data.description
+        adExpiryTime: data.adsActivation
+          ? Date.now() + data.activationDays * 24 * 60 * 60 * 1000
+          : null,
+        description: data.description,
       };
       const ad = new ClientAdvertisement(adData);
-      await ad.save();
+      await ad.save(images);
       setShowSuccess(true);
-      setTimeout(() => {
-        window.location.href = '/';
-      }, 2000);
       handleReset();
     } catch (error) {
-      alert(error.message || 'حدث خطأ أثناء إضافة الإعلان. حاول مرة أخرى.');
-      setSubmitError('حدث خطأ أثناء إضافة الإعلان. حاول مرة أخرى.');
-      console.error(error);
+      setSubmitError(error.message || 'حدث خطأ أثناء إضافة الإعلان. تأكد من أن الصور يتم رفعها إلى المسار الصحيح (property_images).');
+      console.error('Error during submission:', error);
     }
   };
 
@@ -321,8 +317,8 @@ const ModernRealEstateForm = () => {
     const fetchCoordinates = async () => {
       if (!addressValue && !cityValue && !governorateValue) return;
       const fullAddress = `${addressValue || ''}, ${cityValue || ''}, ${governorateValue || ''}`;
-      // const apiKey = 'YOUR_GOOGLE_MAPS_API_KEY'; // ضع مفتاحك هنا
-      // const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(fullAddress)}&key=${apiKey}`;
+      const apiKey = 'YOUR_GOOGLE_MAPS_API_KEY'; // استبدل بمفتاحك
+      const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(fullAddress)}&key=${apiKey}`;
       try {
         const res = await fetch(url);
         const data = await res.json();
@@ -331,11 +327,11 @@ const ModernRealEstateForm = () => {
           setCoordinates({ lat, lng });
         }
       } catch (err) {
-        // يمكن عرض رسالة خطأ أو تجاهل الخطأ
+        console.error('Failed to fetch coordinates:', err);
       }
     };
-    fetchCoordinates();
-  }, [addressValue, cityValue, governorateValue]);
+    if (!enableMapPick) fetchCoordinates();
+  }, [addressValue, cityValue, governorateValue, enableMapPick]);
 
   return (
     <Box
@@ -356,6 +352,7 @@ const ModernRealEstateForm = () => {
           component="h1"
           sx={{
             mb: 1,
+            mt:'100px',
             fontWeight: 700,
             color: '#6E00FE',
             textAlign: 'center',
@@ -383,8 +380,7 @@ const ModernRealEstateForm = () => {
             <CardContent>
               <Container maxWidth='lg' sx={{ display: 'flex', flexDirection: 'coloumn' }}>
                 {/* Basic Information - Full Width */}
-                <Grid item width={'100%'}
-                >
+                <Grid item width={'100%'}>
                   <Typography variant="h6" sx={{ mb: 3, color: '#6E00FE', fontWeight: 600 }}>
                     <Home sx={{ mr: 1, verticalAlign: 'middle', ml: '6px', mt: '-6px', }} />
                     المعلومات الأساسية
@@ -522,119 +518,119 @@ const ModernRealEstateForm = () => {
                   <Typography variant="body2" sx={{ color: '#666', fontSize: '20px', mt: '40px' }}>
                     الصور مطلوبة (1-4 صور) *
                   </Typography>
-                 <Box sx={{ display: 'flex', gap: '10px', marginBottom: '30px', flexDirection: 'column' }}>
-  <Button
-    variant="outlined"
-    component="label"
-    startIcon={<Add sx={{ marginLeft: '10px' }} />}
-    fullWidth
-    sx={{
-      height: '49px',
-      marginTop: '2px',
-      borderRadius: '12px',
-      py: 1.5,
-      borderColor: imageError ? '#d32f2f' : '#c6c9c9ff',
-      color: imageError ? '#d32f2f' : '#6E00FE',
-      '&:hover': {
-        borderColor: imageError ? '#d32f2f' : '#5a00d4',
-        backgroundColor: imageError ? 'rgba(211, 47, 47, 0.04)' : 'rgba(110, 0, 254, 0.04)',
-      },
-    }}
-  >
-    رفع الصور
-    <input
-      type="file"
-      multiple
-      accept="image/*"
-      hidden
-      onChange={handleImageUpload}
-    />
-  </Button>
+                  <Box sx={{ display: 'flex', gap: '10px', marginBottom: '30px', flexDirection: 'column' }}>
+                    <Button
+                      variant="outlined"
+                      component="label"
+                      startIcon={<Add sx={{ marginLeft: '10px' }} />}
+                      fullWidth
+                      sx={{
+                        height: '49px',
+                        marginTop: '2px',
+                        borderRadius: '12px',
+                        py: 1.5,
+                        borderColor: imageError ? '#d32f2f' : '#c6c9c9ff',
+                        color: imageError ? '#d32f2f' : '#6E00FE',
+                        '&:hover': {
+                          borderColor: imageError ? '#d32f2f' : '#5a00d4',
+                          backgroundColor: imageError ? 'rgba(211, 47, 47, 0.04)' : 'rgba(110, 0, 254, 0.04)',
+                        },
+                      }}
+                    >
+                      رفع الصور
+                      <input
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        hidden
+                        onChange={handleImageUpload}
+                      />
+                    </Button>
 
-  {imageError && (
-    <Typography
-      variant="body2"
-      sx={{
-        color: '#d32f2f',
-        fontSize: '0.75rem',
-        mb: 2,
-        textAlign: 'right'
-      }}
-    >
-      {imageError}
-    </Typography>
-  )}
+                    {imageError && (
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          color: '#d32f2f',
+                          fontSize: '0.75rem',
+                          mb: 2,
+                          textAlign: 'right'
+                        }}
+                      >
+                        {imageError}
+                      </Typography>
+                    )}
 
-  <ImagePreviewBox>
-    {images.map((image, index) => (
-      <ImagePreview key={index}>
-        <img
-          src={image.url}
-          alt={`صورة ${index + 1}`}
-          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-        />
-        <IconButton
-          size="small"
-          onClick={() => removeImage(index)}
-          sx={{
-            position: 'absolute',
-            top: 4,
-            right: 4,
-            backgroundColor: 'rgba(255, 255, 255, 0.8)',
-            '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.9)' },
-          }}
-        >
-          <Delete fontSize="small" />
-        </IconButton>
-      </ImagePreview>
-    ))}
-  </ImagePreviewBox>
+                    <ImagePreviewBox>
+                      {images.map((image, index) => (
+                        <ImagePreview key={index}>
+                          <img
+                            src={URL.createObjectURL(image)}
+                            alt={`صورة ${index + 1}`}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          />
+                          <IconButton
+                            size="small"
+                            onClick={() => removeImage(index)}
+                            sx={{
+                              position: 'absolute',
+                              top: 4,
+                              right: 4,
+                              backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                              '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.9)' },
+                            }}
+                          >
+                            <Delete fontSize="small" />
+                          </IconButton>
+                        </ImagePreview>
+                      ))}
+                    </ImagePreviewBox>
 
-  {images.length > 0 && (
-    <Typography
-      variant="body2"
-      sx={{
-        mt: 1,
-        color: images.length >= 1 ? '#2e7d32' : '#d32f2f',
-        fontSize: '0.75rem',
-        textAlign: 'right'
-      }}
-    >
-      تم رفع {images.length} من 4 صور
-    </Typography>
-  )}
+                    {images.length > 0 && (
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          mt: 1,
+                          color: images.length >= 1 ? '#2e7d32' : '#d32f2f',
+                          fontSize: '0.75rem',
+                          textAlign: 'right'
+                        }}
+                      >
+                        تم رفع {images.length} من 4 صور
+                      </Typography>
+                    )}
 
-  <Divider sx={{ my: 3 }} />
+                    <Divider sx={{ my: 3 }} />
 
-  {/* زر تفعيل الخريطة */}
-  <Button
-    variant="outlined"
-    startIcon={<Map sx={{ marginLeft: '10px' }} />}
-    fullWidth
-    sx={{ borderRadius: '12px', py: 1.5 }}
-    onClick={() => setEnableMapPick((prev) => !prev)}
-    type="button"
-  >
-    {enableMapPick ? 'إلغاء اختيار الموقع من الخريطة' : 'تفعيل اختيار الموقع على الخريطة'}
-  </Button>
+                    {/* زر تفعيل الخريطة */}
+                    <Button
+                      variant="outlined"
+                      startIcon={<Map sx={{ marginLeft: '10px' }} />}
+                      fullWidth
+                      sx={{ borderRadius: '12px', py: 1.5 }}
+                      onClick={() => setEnableMapPick((prev) => !prev)}
+                      type="button"
+                    >
+                      {enableMapPick ? 'إلغاء اختيار الموقع من الخريطة' : 'تفعيل اختيار الموقع على الخريطة'}
+                    </Button>
 
-  {/* عرض الخريطة عند التفعيل */}
-  {enableMapPick && (
-    <Box
-      sx={{
-        height: '400px',
-        width: '50%',
-        borderRadius: '12px',
-        overflow: 'hidden',
-        mt: 2,
-        boxShadow: 3,
-        border: 'none' // ⛔️ إزالة أي حدود
-      }}
-    >
-      <MapPicker onLocationSelect={(location) => setSelectedLocation(location)} />
-    </Box>
-  )}
-</Box>
+                    {/* عرض الخريطة عند التفعيل */}
+                    {enableMapPick && (
+                      <Box
+                        sx={{
+                          height: '400px',
+                          width: '50%',
+                          borderRadius: '12px',
+                          overflow: 'hidden',
+                          mt: 2,
+                          boxShadow: 3,
+                          border: 'none'
+                        }}
+                      >
+                        <MapPicker onLocationSelect={(location) => setCoordinates(location)} />
+                      </Box>
+                    )}
+                  </Box>
 
                   <Typography variant="body2" sx={{ mb: 1, color: '#666', fontWeight: 500, fontSize: '20px' }}>
                     العنوان التفصيلي
@@ -762,7 +758,6 @@ const ModernRealEstateForm = () => {
                         )}
                       />
                     </Box>
-
                   </Box>
                 </Grid>
 
@@ -983,4 +978,4 @@ const ModernRealEstateForm = () => {
   );
 };
 
-export default ModernRealEstateForm; 
+export default ModernRealEstateForm;
