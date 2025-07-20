@@ -46,6 +46,7 @@ import {
 import { styled } from '@mui/material/styles';
 import MapDisplay from '../LocationComponents/MapDisplay';
 import MapPicker from '../LocationComponents/MapPicker';
+import { useNavigate } from 'react-router-dom';
 
 // Custom styled components
 const StyledCard = styled(Card)(({ theme }) => ({
@@ -195,7 +196,7 @@ const ModernRealEstateForm = () => {
   const [submitError, setSubmitError] = useState('');
   const [coordinates, setCoordinates] = useState(null);
   const [enableMapPick, setEnableMapPick] = useState(false);
-
+ const navigate=useNavigate();
   const {
     control,
     handleSubmit,

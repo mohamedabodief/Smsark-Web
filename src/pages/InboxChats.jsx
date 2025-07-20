@@ -29,7 +29,7 @@ function InboxChats() {
     if (userDoc.exists()) {
       const userData = userDoc.data();
       console.log(`User data for ${userId}:`, userData);
-      return userData.cli_name || "Unknown User"; // تغيير من name إلى cli_name
+      return userData.cli_name || "Unknown User"; 
     }
     console.log(`No user document found for ${userId}`);
     return "Unknown User";
@@ -101,8 +101,6 @@ function InboxChats() {
       );
       setChats(sorted);
       setFilteredChats(sorted);
-
-      // حساب إجمالي عدد الرسائل غير المقروءة
       const totalUnread = sorted.reduce((sum, chat) => sum + chat.unreadCount, 0);
       setTotalUnreadCount(totalUnread);
       console.log('Total unread messages:', totalUnread);
