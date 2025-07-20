@@ -50,6 +50,9 @@ export default function Nav({ toggleMode }) {
           <Typography variant="button" sx={{ cursor: "pointer" }} onClick={() => navigate('/about')}>
             عن الموقع
           </Typography>
+          <Typography variant="button" sx={{ cursor: "pointer" }} onClick={() => navigate('/RealEstateDeveloperAnnouncement')}>
+            إضافة عقار
+          </Typography>
           <Typography variant="button" sx={{ cursor: "pointer" }} onClick={() => navigate('/profile')}>
             الصفحة الشخصية
           </Typography>

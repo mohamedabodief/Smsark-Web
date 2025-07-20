@@ -168,7 +168,7 @@ const ContactUs = () => {
         <Paper elevation={3} sx={{ borderRadius: 4, overflow: "hidden" }}>
           <Grid container>
             {/* Left side - map in colored box */}
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 4 }}>
               <Box
                 sx={{
                   backgroundColor: "#20063B",
@@ -200,15 +200,15 @@ const ContactUs = () => {
                 </Box>
               </Box>
             </Grid>
-
-            <Grid>
+            
+            <Grid size={{ xs: 12, md: 8 }}>
               <Box
                 sx={{
                   p: 4,
                   direction: "rtl",
-                  width: "50%",
+                  width: "75%",
                   position: "relative",
-                  left: "350px",
+                  left: "100px",
                 }}
               >
                 <Typography
