@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from "react";
 import { ThemeProvider, createTheme, CssBaseline, Box } from "@mui/material";
 import Nav from "../componenents/Nav";
-
+import { UnreadMessagesProvider } from "../context/unreadMessageContext";
 export default function Layout({ children }) {
   const [mode, setMode] = useState("light");
 
@@ -27,6 +27,7 @@ export default function Layout({ children }) {
   };
 
   return (
+    <UnreadMessagesProvider>
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Nav toggleMode={toggleMode} />
@@ -36,5 +37,6 @@ export default function Layout({ children }) {
         {children}
       </Box>
     </ThemeProvider>
+    </UnreadMessagesProvider>
   );
 }

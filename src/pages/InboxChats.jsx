@@ -7,126 +7,111 @@ import {
   Typography,
 } from "@mui/material";
 import React, { useEffect, useState } from "react";
-import { auth } from "../FireBase/firebaseConfig";
+import { auth, db } from "../FireBase/firebaseConfig";
 import SearchIcon from "@mui/icons-material/Search";
-import Message from "../FireBase/MessageAndNotification/Message";
 import { useNavigate } from "react-router-dom";
-import { db } from "../FireBase/firebaseConfig";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, collection, query, where, onSnapshot, or } from "firebase/firestore";
+import { useUnreadMessages } from "../context/unreadMessageContext";
 
 function InboxChats() {
   const navigate = useNavigate();
+  const { setTotalUnreadCount } = useUnreadMessages();
   const [chats, setChats] = useState([]);
   const [filteredChats, setFilteredChats] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentUserEmail, setCurrentUserEmail] = useState(null);
   const [currentUserId, setCurrentUserId] = useState(null);
 
-  // Fetch user name by ID from users collection (optional)
   const getUserNameById = async (userId) => {
-    try {
-      const userDoc = await getDoc(doc(db, "users", userId));
-      if (userDoc.exists()) {
-        return userDoc.data().name || "Unknown User"; // Adjust 'name' to your users collection field
-      }
-      return "Unknown User";
-    } catch (err) {
-      console.error("Error fetching user name:", err);
-      return "Unknown User";
+  try {
+    console.log(`Fetching user name for userId: ${userId}`);
+    const userDoc = await getDoc(doc(db, "users", userId));
+    if (userDoc.exists()) {
+      const userData = userDoc.data();
+      console.log(`User data for ${userId}:`, userData);
+      return userData.cli_name || "Unknown User"; // تغيير من name إلى cli_name
     }
-  };
+    console.log(`No user document found for ${userId}`);
+    return "Unknown User";
+  } catch (err) {
+    console.error(`Error fetching user name for ${userId}:`, err);
+    return "Unknown User";
+  }
+};
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
       if (user) {
         setCurrentUserEmail(user.email);
         setCurrentUserId(user.uid);
+        console.log('Current User ID:', user.uid);
       }
     });
-
     return () => unsubscribe();
   }, []);
 
   useEffect(() => {
     if (!currentUserId) return;
 
-    const fetchChats = async () => {
+    const q = query(
+      collection(db, 'messages'),
+      or(
+        where('sender_id', '==', currentUserId),
+        where('receiver_id', '==', currentUserId)
+      )
+    );
+
+    const unsubscribe = onSnapshot(q, async (snapshot) => {
+      console.log('Raw messages:', snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       const conversationsMap = {};
 
-      try {
-        const allMessages = await Message.getAllMessagesForUser(currentUserId);
-        const unreadMessages = await Message.getUnreadMessages(currentUserId);
+      for (const msg of snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))) {
+        const otherUserId =
+          msg.sender_id === currentUserId ? msg.receiver_id : msg.sender_id;
+        let otherUserName =
+          msg.sender_id === currentUserId
+            ? msg.reciverName || (await getUserNameById(msg.receiver_id))
+            : await getUserNameById(msg.sender_id);
 
-        for (const msg of allMessages) {
-          const otherUserId =
-            msg.sender_id === currentUserId ? msg.receiver_id : msg.sender_id;
-
-          // Determine the display name
-          let otherUserName;
-          if (msg.sender_id === currentUserId) {
-            otherUserName = msg.reciverName || "Unknown User"; // Use reciverName if sender
-          } else {
-            otherUserName = await getUserNameById(msg.sender_id); // Fetch sender name if receiver
-          }
-
-          if (!conversationsMap[otherUserId]) {
-            conversationsMap[otherUserId] = {
-              userId: otherUserId,
-              userName: otherUserName,
-              lastMessage: msg.content,
-              timestamp: msg.timestamp,
-              unreadCount: 0,
-            };
-          }
-
-          if (
-            msg.timestamp?.toMillis() >
-            conversationsMap[otherUserId].timestamp?.toMillis()
-          ) {
-            conversationsMap[otherUserId].lastMessage = msg.content;
-            conversationsMap[otherUserId].timestamp = msg.timestamp;
-          }
+        if (!conversationsMap[otherUserId]) {
+          conversationsMap[otherUserId] = {
+            userId: otherUserId,
+            userName: otherUserName,
+            lastMessage: msg.content,
+            timestamp: msg.timestamp,
+            unreadCount: 0,
+          };
         }
 
-        for (const unreadMsg of unreadMessages) {
-          const otherUserId =
-            unreadMsg.sender_id === currentUserId
-              ? unreadMsg.receiver_id
-              : unreadMsg.sender_id;
-
-          let otherUserName;
-          if (unreadMsg.sender_id === currentUserId) {
-            otherUserName = unreadMsg.reciverName || "Unknown User";
-            console.log("المستخدم الآخر:", otherUserId, "الاسم:", otherUserName);
-          } else {
-            otherUserName = await getUserNameById(unreadMsg.sender_id);
-          }
-
-          if (conversationsMap[otherUserId]) {
-            conversationsMap[otherUserId].unreadCount += 1;
-          } else {
-            conversationsMap[otherUserId] = {
-              userId: otherUserId,
-              userName: otherUserName,
-              lastMessage: unreadMsg.content,
-              timestamp: unreadMsg.timestamp,
-              unreadCount: 1,
-            };
-          }
+        if (
+          msg.timestamp?.toMillis() >
+          (conversationsMap[otherUserId].timestamp?.toMillis() || 0)
+        ) {
+          conversationsMap[otherUserId].lastMessage = msg.content;
+          conversationsMap[otherUserId].timestamp = msg.timestamp;
         }
 
-        const sorted = Object.values(conversationsMap).sort(
-          (a, b) => b.timestamp?.toMillis() - a.timestamp?.toMillis()
-        );
-        setChats(sorted);
-        setFilteredChats(sorted);
-      } catch (err) {
-        console.error("Error fetching conversations:", err);
+        if (msg.receiver_id === currentUserId && !msg.is_read) {
+          conversationsMap[otherUserId].unreadCount += 1;
+        }
       }
-    };
 
-    fetchChats();
-  }, [currentUserId]);
+      const sorted = Object.values(conversationsMap).sort(
+        (a, b) => (b.timestamp?.toMillis() || 0) - (a.timestamp?.toMillis() || 0)
+      );
+      setChats(sorted);
+      setFilteredChats(sorted);
+
+      // حساب إجمالي عدد الرسائل غير المقروءة
+      const totalUnread = sorted.reduce((sum, chat) => sum + chat.unreadCount, 0);
+      setTotalUnreadCount(totalUnread);
+      console.log('Total unread messages:', totalUnread);
+    }, (err) => {
+      console.error('Error fetching conversations:', err);
+    });
+
+    return () => unsubscribe();
+  }, [currentUserId, setTotalUnreadCount]);
 
   useEffect(() => {
     if (searchQuery.trim() === "") {
@@ -138,20 +123,22 @@ function InboxChats() {
       setFilteredChats(filtered);
     }
   }, [searchQuery, chats]);
-const getAvatarColor = (name) => {
-  const colors = [
-    "#4DBD43",
-    "#3F51B5", 
-    "#F44336",
-    "#FF9800", 
-    "#9C27B0", 
-    "#00BCD4", 
-    "#795548",
-  ];
-  const firstChar = name?.[0]?.toUpperCase() || "A";
-  const index = firstChar.charCodeAt(0) % colors.length;
-  return colors[index];
-};
+
+  const getAvatarColor = (name) => {
+    const colors = [
+      "#4DBD43",
+      "#3F51B5",
+      "#F44336",
+      "#FF9800",
+      "#9C27B0",
+      "#00BCD4",
+      "#795548",
+    ];
+    const firstChar = name?.[0]?.toUpperCase() || "A";
+    const index = firstChar.charCodeAt(0) % colors.length;
+    return colors[index];
+  };
+
   return (
     <Container maxWidth="md" dir="rtl">
       <Box
@@ -163,10 +150,12 @@ const getAvatarColor = (name) => {
           alignItems: "center",
         }}
       >
-        <Avatar alt="User" sx={{ width: 56, height: 56 }} >{currentUserEmail?.split("@")[0].split(" ")
-    .map((word) => word[0])
-    .join("")
-    .toUpperCase() || "User"}</Avatar>
+        <Avatar alt="User" sx={{ width: 56, height: 56 }}>
+          {currentUserEmail?.split("@")[0].split(" ")
+            .map((word) => word[0])
+            .join("")
+            .toUpperCase() || "User"}
+        </Avatar>
         <Typography sx={{ fontSize: "20px", fontWeight: 600 }}>
           {currentUserEmail?.split("@")[0] || "User"}
         </Typography>
@@ -207,21 +196,20 @@ const getAvatarColor = (name) => {
             pb: 1,
             cursor: "pointer",
           }}
-         onClick={() =>
+          onClick={() =>
             navigate(`/privateChat/${chat.userId}`, {
               state: { otherUser: { userId: chat.userId, userName: chat.userName } },
             })
           }
         >
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-    <Avatar sx={{ bgcolor: getAvatarColor(chat.userName), color: "white" }}>
-  {chat.userName
-    .split(" ")
-    .map((word) => word[0])
-    .join("")
-    .toUpperCase()}
-</Avatar>
-
+            <Avatar sx={{ bgcolor: getAvatarColor(chat.userName), color: "white" }}>
+              {chat.userName
+                .split(" ")
+                .map((word) => word[0])
+                .join("")
+                .toUpperCase()}
+            </Avatar>
             <Box>
               <Typography sx={{ fontWeight: "bold" }}>
                 {chat.userName}
@@ -253,12 +241,18 @@ const getAvatarColor = (name) => {
             {chat.unreadCount > 0 && (
               <Typography
                 sx={{
-                  backgroundColor: "#4DBD43",
+                  backgroundColor: "#6E00FE",
                   color: "white",
-                  px: 2,
-                  borderRadius: "50px",
+                  width: '24px',
+                  height: '24px',
+                  borderRadius: "50%",
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                   mt: 1,
-                  fontSize: "12px",
+                  fontSize: "14px",
+                  fontWeight: 'bold',
+                  lineHeight: 1,
                 }}
               >
                 {chat.unreadCount}

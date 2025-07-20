@@ -51,7 +51,6 @@ function App() {
       }
     });
   }, []);
-
   return (
     <>
       {/* https://nominatim.openstreetmap.org/ui/search.html */}
