@@ -18,7 +18,7 @@ import { SearchProvider } from "./context/searchcontext";
 import SellAds from "./services/sell";
 import DeveloperAdsPage from "./services/developmentAds";
 import RentAds from "./services/rent";
-// import buyAds from "./services/buy";
+import BuyAds from "./services/buy";
 import FinancingAdsPage from "./services/finance";
 import ModernRealEstateForm from "./pages/ModernRealEstateForm";
 import InboxChats from "./pages/InboxChats";
@@ -58,7 +58,7 @@ function App() {
     });
 
     return () => unsubscribe();
-  }, [setUser]);
+  }, []);
 
   if (loading) return null;
 
@@ -66,10 +66,7 @@ function App() {
     <SearchProvider>
       <Layout>
         <Routes>
-          <Route
-            path="/"
-            element={<Navigate to="/login" replace />}
-          />
+          <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/home" element={<Home />} />
           <Route path="/login" element={<LoginRegister />} />
           <Route path="/register" element={<LoginRegister />} />
@@ -84,51 +81,27 @@ function App() {
           {/* Services */}
           <Route path="/services/sell" element={<SellAds />} />
           <Route path="/services/rent" element={<RentAds />} />
-          <Route path="/services/buy" element={<buyAds />} />
+          <Route path="/services/buy" element={<BuyAds />} />
           <Route path="/services/finance" element={<FinancingAdsPage />} />
-          <Route
-            path="/services/developmentAds"
-            element={<DeveloperAdsPage />}
-          />
+          <Route path="/services/developmentAds" element={<DeveloperAdsPage />} />
 
           {/* Forms & Insert */}
           <Route path="/add-financing-ad" element={<AddFinancingAdForm />} />
-          <Route
-            path="/insert-finance-data"
-            element={<FinancingAdvExample />}
-          />
-          <Route
-            path="/insert-dev-data"
-            element={<RealEstateDevAdvExample />}
-          />
+          <Route path="/insert-finance-data" element={<FinancingAdvExample />} />
+          <Route path="/insert-dev-data" element={<RealEstateDevAdvExample />} />
           <Route path="/financing-request" element={<FinancingRequestForm />} />
           <Route path="/AddAdvertisement" element={<ModernRealEstateForm />} />
           <Route path="/AdddeveloperAds" element={<PropertyPage />} />
 
           {/* Real estate announcements */}
-          <Route
-            path="/RealEstateDeveloperAnnouncement"
-            element={<PropertyPage />}
-          />
+          <Route path="/RealEstateDeveloperAnnouncement" element={<PropertyPage />} />
 
           {/* Details */}
-          <Route
-            path="/detailsForDevelopment/:id"
-            element={<DetailsForDevelopment />}
-          />
-          <Route
-            path="/detailsForDevelopment"
-            element={<Navigate to="/RealEstateDeveloperAnnouncement" replace />}
-          />
-          <Route
-            path="/details/financingAds/:id"
-            element={<DetailsForFinaccingAds />}
-          />
+          <Route path="/detailsForDevelopment/:id" element={<DetailsForDevelopment />} />
+          <Route path="/detailsForDevelopment" element={<Navigate to="/RealEstateDeveloperAnnouncement" replace />} />
+          <Route path="/details/financingAds/:id" element={<DetailsForFinaccingAds />} />
           <Route path="/details/clientAds/:id" element={<DetailsForClient />} />
-          <Route
-            path="/details/developmentAds/:id"
-            element={<DetailsForDevelopment />}
-          />
+          <Route path="/details/developmentAds/:id" element={<DetailsForDevelopment />} />
         </Routes>
       </Layout>
       <Footer />
