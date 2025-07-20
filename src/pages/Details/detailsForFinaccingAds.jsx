@@ -28,7 +28,10 @@ import MapPicker from '../../LocationComponents/MapPicker';
 import FinancingAdvertisement from '../../FireBase/modelsWithOperations/FinancingAdvertisement';
 import PhoneIcon from '@mui/icons-material/Phone';
 import { useNavigate } from 'react-router-dom';
+import Message from '../../FireBase/MessageAndNotification/Message';
+import { auth } from '../../FireBase/firebaseConfig';
 function DetailsForFinincingAds() {
+  
     const [open, setOpen] = useState(false);
     const [message, setMessage] = useState(""); 
   const { id } = useParams();
@@ -73,7 +76,50 @@ function DetailsForFinincingAds() {
       </Box>
     );
   }
-
+////////////////////////////////////messages
+const currentUser = auth.currentUser?.uid;
+const getReceiverName = async (userId) => {
+  try {
+    const userDoc = await getDoc(doc(db, "users", userId));
+    if (userDoc.exists()) {
+      const userData = userDoc.data();
+      console.log(`Receiver data for ${userId}:`, userData);
+      return userData.org_name || "Unknown User"; 
+    }
+    console.log(`No user document found for ${userId}`);
+    return "Unknown User";
+  } catch (err) {
+    console.error(`Error fetching receiver name for ${userId}:`, err);
+    return "Unknown User";
+  }
+};
+////////////
+  const handleSend = async () => {
+     if (!message.trim() || !currentUser || !clientAds?.userId) return;
+ 
+     try {
+       const receiverName = await getReceiverName(clientAds.userId);
+       const newMessage = new Message({
+         sender_id: currentUser,
+         receiver_id: clientAds.userId,
+         content: message,
+         reciverName: receiverName, 
+         timestamp: new Date(),
+         is_read: false,
+         message_type: 'text',
+       });
+ 
+       console.log('Sending message to:', { receiver_id: clientAds.userId, reciverName: receiverName });
+       await newMessage.send();
+       alert("تم إرسال الرسالة!");
+       setMessage("");
+       setOpen(false);
+     } catch (error) {
+       console.error("حدث خطأ أثناء الإرسال:", error);
+       alert("فشل في إرسال الرسالة!");
+     }
+   };
+/////////////////////////////////////////
   return (
     <Container maxWidth="lg" sx={{ py: 4, position: 'relative' }}>
       <Box
@@ -137,7 +183,7 @@ function DetailsForFinincingAds() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpen(false)}>إلغاء</Button>
-          <Button  variant="contained">
+          <Button  variant="contained" onClick={handleSend}>
             إرسال
           </Button>
         </DialogActions>
