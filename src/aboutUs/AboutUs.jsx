@@ -17,6 +17,7 @@ import {
   TextField,
   IconButton,
 } from "@mui/material";
+import { useNavigate } from "react-router-dom";
 import { styled } from "@mui/material/styles";
 import ArrowBackIosIcon from "@mui/icons-material/ArrowBackIos";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
@@ -227,6 +228,7 @@ const StatsBox = styled(Box)(({ theme }) => ({
 
 const AboutUs = () => {
   const theme = useTheme();
+  const navigate = useNavigate();
   const [currentIndex, setCurrentIndex] = useState(0);
   const sliderRef = useRef(null);
 
@@ -243,6 +245,15 @@ const AboutUs = () => {
   useEffect(() => {
     scrollToIndex(currentIndex);
   }, [currentIndex]);
+
+  // وظائف الأزرار
+  const handleBrowseProperties = () => {
+    navigate('/home');
+  };
+
+  const handleContactUs = () => {
+    navigate('/contact');
+  };
 
   return (
     <Box sx={{ backgroundColor: theme.palette.background.default }}>
@@ -311,6 +322,7 @@ const AboutUs = () => {
             <Button
               variant="contained"
               size="large"
+              onClick={handleBrowseProperties}
               sx={{
                 backgroundColor: theme.palette.secondary.main,
                 "&:hover": {
@@ -323,6 +335,7 @@ const AboutUs = () => {
             <Button
               variant="outlined"
               size="large"
+              onClick={handleContactUs}
               sx={{
                 color: "white",
                 borderColor: "white",

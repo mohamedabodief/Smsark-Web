@@ -138,7 +138,7 @@ function DetailsForClient() {
   const toggleShow = () => setShowFull((prev) => !prev);
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
+    <Container maxWidth="lg" sx={{ py: 4 }} dir="rtl">
       {/* زر التواصل مع البائع */}
       <Box
         onClick={() => setOpen(true)}

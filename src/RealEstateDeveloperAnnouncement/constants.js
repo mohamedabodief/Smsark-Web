@@ -1,4 +1,4 @@
-//scr/property/constants.js
+//scr/RealEstateDeveloperAnnouncement/constants.js
 export const governorates = [
   "القاهرة",
   "الجيزة",
