@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { Route, Routes } from "react-router-dom";
+import { Route, Routes, Navigate } from "react-router-dom";
 import DetailsForClient from "./pages/Details/detailsForClient";
 import DetailsForFinincingAds from "./pages/Details/detailsForFinaccingAds";
 import SearchPage from "./pages/SearchPage";
@@ -17,7 +17,6 @@ import { onMessage } from "./FireBase/firebaseConfig";
 import { messaging } from "./FireBase/firebaseConfig";
 import { requestPermissionAndSaveToken } from "./FireBase/MessageAndNotification/fcmHelper";
 import LoginRegister from "./LoginAndRegister/modulesLR/LoginRegister";
-import { Navigate } from "react-router-dom";
 import PropertyPage from "./RealEstateDeveloperAnnouncement/PropertyPage";
 import AboutUs from "./aboutUs/AboutUs";
 import { SearchProvider } from "./context/searchcontext";
@@ -28,6 +27,11 @@ import buyAds from "./services/buy"
 import FinancingAdsPage from "./services/finance";
 import Profile from "./componenents/profile";
 
+import AdminDashboard from "./Dashboard/adminDashboard";
+import ClientDashboard from "./Dashboard/clientDashboard";
+import OrganizationDashboard from "./Dashboard/organization/organizationDashboard";
+import PrivateRoute from "./PrivateRoute";
+import AuthSync from "./AuthSync";
 
 
 
@@ -50,6 +54,7 @@ function App() {
 
   return (
     <>
+      <AuthSync />
       {/* https://nominatim.openstreetmap.org/ui/search.html */}
 
       <Layout>
@@ -59,8 +64,8 @@ function App() {
           <Route path="/" element={<Navigate to="login" replace />} />
 
           {/* <Route path="/auth"> */}
-          <Route path="login" element={<LoginRegister />} />
-          <Route path="register" element={<LoginRegister />} />
+          {/* <Route path="login" element={<LoginRegister />} />
+          <Route path="register" element={<LoginRegister />} /> */}
           {/* 
           <Route path="/services/sell" element={<Sell />} />
           <Route path="/services/rent" element={<Rent />} />
@@ -80,20 +85,28 @@ function App() {
           <Route path="/about" element={<AboutUs />} />
           <Route path="/RealEstateDeveloperAnnouncement" element={<PropertyPage />} />
 
+          <Route element={<PrivateRoute />}>
+            {/* Admin Dashboard */}
+            <Route path="/admin-dashboard" element={<AdminDashboard />} />
+            {/* Client Dashboard */}
+            <Route path="/client-dashboard" element={<ClientDashboard />} />
+            {/* Organization Dashboard */}
+            <Route path="/organization-dashboard" element={<OrganizationDashboard />} />
+          </Route>
 
-          <Route path="/services/sell" element={<SellAds />} />
+          {/* <Route path="/services/sell" element={<SellAds />} />
           <Route path="/services/rent" element={<RentAds />} />
           <Route path="/services/buy" element={<buyAds />} />
           <Route path="/services/finance" element={<FinancingAdsPage />} />
           <Route path="/services/developmentAds" element={<DeveloperAdsPage />} />
           <Route path="/AdddeveloperAds" element={<PropertyPage />} />
-      
-            <Route path="/services/sell" element={<SellAds/>} />
-            <Route path="/services/rent" element={<RentAds />} />
-            <Route path="/services/buy" element={<buyAds/>} />
-            <Route path="/services/finance" element={<FinancingAdsPage />} />
 
-           <Route path="/services/developmentAds" element={<DeveloperAdsPage/>}/>
+          <Route path="/services/sell" element={<SellAds />} />
+          <Route path="/services/rent" element={<RentAds />} />
+          <Route path="/services/buy" element={<buyAds />} />
+          <Route path="/services/finance" element={<FinancingAdsPage />} />
+
+          <Route path="/services/developmentAds" element={<DeveloperAdsPage />} />
 
 
           <Route path="/favorite" element={<Favorite />} />
@@ -123,8 +136,8 @@ function App() {
             />
           </Route>
           <Route path="search" element={<SearchPage />} />
-          <Route path="profile" element={<Profile />} />
-          
+          <Route path="profile" element={<Profile />} /> */}
+
           {/* <Route path="AddAdvertisement" element={<AddAdvertisement />}></Route> 
 
           {/* <Route path="AddAdvertisement" element={<ModernRealEstateForm/>}></Route>  */}
