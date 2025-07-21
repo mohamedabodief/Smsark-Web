@@ -7,7 +7,12 @@ import {
   CircularProgress,
   Breadcrumbs,
   Button,
-  Avatar
+  Avatar,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  TextField,
+  DialogActions
 } from '@mui/material';
 import {
   WhatsApp as WhatsAppIcon,
@@ -16,13 +21,19 @@ import {
   OutlinedFlag as OutlinedFlagIcon,
   ShareOutlined as ShareOutlinedIcon
 } from '@mui/icons-material';
+import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import HomeIcon from '@mui/icons-material/Home';
 import { useParams, Link } from 'react-router-dom';
 import MapPicker from '../../LocationComponents/MapPicker';
 import FinancingAdvertisement from '../../FireBase/modelsWithOperations/FinancingAdvertisement';
 import PhoneIcon from '@mui/icons-material/Phone';
 import { useNavigate } from 'react-router-dom';
+import Message from '../../FireBase/MessageAndNotification/Message';
+import { auth } from '../../FireBase/firebaseConfig';
 function DetailsForFinincingAds() {
+  
+    const [open, setOpen] = useState(false);
+    const [message, setMessage] = useState(""); 
   const { id } = useParams();
   const [clientAds, setClientAds] = useState(null);
   const [mainImage, setMainImage] = useState('');
@@ -65,9 +76,52 @@ function DetailsForFinincingAds() {
       </Box>
     );
   }
-
+////////////////////////////////////messages
+const currentUser = auth.currentUser?.uid;
+const getReceiverName = async (userId) => {
+  try {
+    const userDoc = await getDoc(doc(db, "users", userId));
+    if (userDoc.exists()) {
+      const userData = userDoc.data();
+      console.log(`Receiver data for ${userId}:`, userData);
+      return userData.org_name || "Unknown User"; 
+    }
+    console.log(`No user document found for ${userId}`);
+    return "Unknown User";
+  } catch (err) {
+    console.error(`Error fetching receiver name for ${userId}:`, err);
+    return "Unknown User";
+  }
+};
+////////////
+  const handleSend = async () => {
+     if (!message.trim() || !currentUser || !clientAds?.userId) return;
+ 
+     try {
+       const receiverName = await getReceiverName(clientAds.userId);
+       const newMessage = new Message({
+         sender_id: currentUser,
+         receiver_id: clientAds.userId,
+         content: message,
+         reciverName: receiverName, 
+         timestamp: new Date(),
+         is_read: false,
+         message_type: 'text',
+       });
+ 
+       console.log('Sending message to:', { receiver_id: clientAds.userId, reciverName: receiverName });
+       await newMessage.send();
+       alert("تم إرسال الرسالة!");
+       setMessage("");
+       setOpen(false);
+     } catch (error) {
+       console.error("حدث خطأ أثناء الإرسال:", error);
+       alert("فشل في إرسال الرسالة!");
+     }
+   };
+/////////////////////////////////////////
   return (
-    <Container maxWidth="lg" sx={{ py: 4, position: 'relative' }}>
+    <Container maxWidth="lg" sx={{ py: 4, position: 'relative' }} dir="rtl">
       <Box
         sx={{
           position: 'fixed',
@@ -84,32 +138,56 @@ function DetailsForFinincingAds() {
       >
         💰 تمويل عقاري {clientAds.financing_model}
       </Box>
-      {/* واتساب*/}
-      <Box
-        sx={{
-          position: 'fixed',
-          bottom: 20,
-          right: 20,
-          backgroundColor: '#25D366',
-          color: 'white',
-          px: 2,
-          py: 1,
-          borderRadius: '50%',
-          zIndex: 999,
-          cursor: 'pointer',
-          animation: `${pulse} 2s infinite`,
-          transition: 'transform 0.3s',
-          '&:hover': { transform: 'scale(1.2)' },
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          boxShadow: '0px 4px 12px rgba(0,0,0,0.2)',
-          width: 50,
-          height: 50,
-        }}
-      >
-        <WhatsAppIcon sx={{ fontSize: 30 }} />
-      </Box>
+         {/**contact with user */}
+  <Box
+  onClick={() => setOpen(true)} 
+  sx={{
+    position: 'fixed',
+    bottom: 20,
+    right: 20,
+    backgroundColor: '#1976d2',
+    color: 'white',
+    px: 2.5,
+    py: 1,
+    borderRadius: '30px',
+    zIndex: 999,
+    cursor: 'pointer',
+    animation: `${pulse} 2s infinite`,
+    transition: 'transform 0.3s',
+    '&:hover': { transform: 'scale(1.05)' },
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    boxShadow: '0px 4px 12px rgba(0,0,0,0.2)',
+  }}
+>
+  <ChatBubbleOutlineIcon sx={{ fontSize: 22, mr: 1 }} />
+  <Typography sx={{ fontWeight: 'bold', fontSize: '0.9rem' }}>
+    تواصل مع البائع
+  </Typography>
+</Box>
+<Dialog open={open} fullWidth dir='rtl' onClose={() => setOpen(false)}>
+        <DialogTitle>تواصل مع البائع بكل سهوله</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="اكتب رسالتك هنا"
+            fullWidth
+            multiline
+            rows={4}
+            variant="outlined"
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpen(false)}>إلغاء</Button>
+          <Button  variant="contained" onClick={handleSend}>
+            إرسال
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* أزرار التفاعل + اسم الناشر */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>

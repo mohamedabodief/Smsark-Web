@@ -118,14 +118,14 @@ const DeveloperAdsPage = () => {
       ) : (
         <Box display="flex" flexDirection="column" gap={2}>
           {filteredAds.map((ad) => (
-             <HorizontalCard
-               key={`${ad.developer_name}-${ad.location}-${Math.random()}`}
+            <Link key={ad.id} style={{ textDecoration: 'none', color: 'inherit' }} to={`/details/developmentAds/${ad.id}`} >
+              <HorizontalCard
                 title={ad.developer_name}
                 price={`من ${ad.price_start_from} إلى ${ad.price_end_to}`}
-                adress={ad.location}
+                adress={`${ad.location?.governorate} - ${ad.location?.city}`}
                 type={ad.project_types}
-               
               />
+            </Link>
           ))}
         </Box>
       )}

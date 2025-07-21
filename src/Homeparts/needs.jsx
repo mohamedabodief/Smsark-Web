@@ -59,7 +59,6 @@ export default function Needs() {
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
-            // textAlign: 'center',
           }}
         >
           <Typography variant="h4" fontWeight="bold" textAlign="center" sx={{ p: 18 }}>
@@ -74,7 +73,6 @@ export default function Needs() {
           sx={{
             display: 'flex',
             flexDirection: 'column',
-            // textAlign: 'center',
             alignItems: 'center',
             justifyContent: 'center',
           }}
@@ -155,7 +153,7 @@ export default function Needs() {
             spacing={3}
             justifyContent="center"
             alignItems="center"
-            sx={{ maxWidth: 600 }}
+            sx={{ maxWidth: 900 }}
           >
             {cards.slice(2).map((item, i) => (
               <Grid item xs={12} sm={6} key={i}>

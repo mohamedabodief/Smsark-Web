@@ -26,6 +26,8 @@ const SellAds = () => {
       ad.city?.includes(search)
     );
   });
+console.log(sellAds);
+console.log("sellAds Sample:", sellAds[0]);
 
   return (
     
@@ -119,9 +121,9 @@ const SellAds = () => {
       ) : (
         <ul>
           {sellAds.map((ad) => (
-          
+           <Link to={`/details/clientAds/${ad.id}`}   style={{ textDecoration: 'none', color: 'inherit' }}>
               <HorizontalCard
-               key={ad.key}
+               
                 title={ad.title}
                 price={ad.price}
                 adress={ad.address}
@@ -131,7 +133,7 @@ const SellAds = () => {
                  city={ad.city}
                  governoment={ad.governoment}
               />
-              
+              </Link>
           ))}
         </ul>
       )}

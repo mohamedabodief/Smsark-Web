@@ -13,7 +13,8 @@ export default function Footer() {
         display: "flex",
         flexDirection: "column",
         width: "100%",
-        p: 2
+        p: 2,
+        mt: 2,
         }}>
       <Stack
         direction={{ xs: "column", md: "row" }}

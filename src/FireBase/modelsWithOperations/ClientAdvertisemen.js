@@ -132,7 +132,6 @@ class ClientAdvertisement {
     await this.update({ ads: true, adExpiryTime: this.adExpiryTime });
     setTimeout(() => this.removeAds().catch(console.error), ms);
   }
-
   // ✅ إيقاف الإعلان يدويًا أو تلقائيًا
   async removeAds() {
     if (!this.#id) throw new Error('الإعلان بدون ID لإيقافه');
@@ -442,8 +441,8 @@ class ClientAdvertisement {
       const file = limitedFiles[i];
       const imageRef = ref(
         storage,
-        `client_ads/${this.#id}/image_${i + 1}.jpg`
-      );
+       `property_images/${auth.currentUser.uid}/${Date.now()}_${file.name}`)
+      ;
       await uploadBytes(imageRef, file);
       const url = await getDownloadURL(imageRef);
       imageUrls.push(url);
