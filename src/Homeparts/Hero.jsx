@@ -12,7 +12,7 @@ export default function SimpleHeroSlider() {
       // const extraImage = {
       //   image: 'https://www.google.com/url?sa=i&url=https%3A%2F%2Felbayt.com%2Far%2Funit%2Fvilla-for-sale-in-karma-4-sheikh-zayed-2758&psig=AOvVaw0-5fwpyDl-kNt3yrj_wJV2&ust=1753054230055000&source=images&cd=vfe&opi=89978449&ved=0CBUQjRxqFwoTCIjaiIiKyo4DFQAAAAAdAAAAABAL',
       //   ads: true,
-      //   id: 'manual-img', 
+      //   id: 'manual-img', // أي قيمة مناسبة
       // };
 
       // const updatedData = [...data, extraImage];
@@ -20,15 +20,28 @@ export default function SimpleHeroSlider() {
       setAds(data);
     });
 
-    return () => unsubscribe();
-  }, []);
+  //   useEffect(() => {
+  // const unsubscribe = HomepageAdvertisement.subscribeActiveAds(async (data) => {
+  //   setAds(data);
+  // });
+
+  const interval = setInterval(() => {
+    setIndex((prev) => (prev - 1) % ads.length);
+  }, 5000); 
+
+  return () => {
+    unsubscribe();
+    clearInterval(interval);
+  };
+}, [ads.length]);
+
 
   const nextSlide = () => {
-    setIndex((prev) => (prev + 1) % ads.length);
+    setIndex((prev) => (prev - 1) % ads.length);
   };
 
   const prevSlide = () => {
-    setIndex((prev) => (prev - 1 + ads.length) % ads.length);
+    setIndex((prev) => (prev + 1 - ads.length) % ads.length);
   };
 
   return (

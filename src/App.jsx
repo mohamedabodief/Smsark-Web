@@ -31,8 +31,8 @@ import InboxChats from "./pages/InboxChats";
 import ChatBox from "./pages/privechat";
 // import DeveloperAdsPage from "./services/developmentAds";
 import Profile from "./componenents/profile";
-
-
+import AdPackages from "../packages/packagesDev&Fin";
+import AdPackagesClient from "../packages/packagesClient";
 
 
 
@@ -138,6 +138,8 @@ function App() {
           <Route path="inbox" element={<InboxChats/>}/>
           <Route path="/privateChat/:id" element={<ChatBox/>}/>
           <Route path="profile" element={<Profile />} />
+          <Route path="/packages" element={<AdPackages />} />
+          <Route path="/Client-packages" element={<AdPackagesClient />} />
           
            {/* <Route path="AddAdvertisement" element={<AddAdvertisement />}></Route>  */}
 

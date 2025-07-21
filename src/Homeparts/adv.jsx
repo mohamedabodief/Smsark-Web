@@ -24,7 +24,7 @@ export default function Advertise() {
   // }, []);
 
   // اختبار يدوي فقط
-  const user = { id: 'test-user', type: 'client' }; // client | developer | financer
+  const user = { id: 'test-user', type: 'financer' }; // client | developer | financer
   const userType = user.type;
 
   const options = [

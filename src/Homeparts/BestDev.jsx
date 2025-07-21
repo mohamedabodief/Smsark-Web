@@ -17,7 +17,7 @@ export default function BestDev() {
   const [offers, setOffers] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+    useEffect(() => {
     const addUniqueAds = async () => {
       const existingAds = await RealEstateDeveloperAdvertisement.getAll();
 
@@ -40,8 +40,23 @@ export default function BestDev() {
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    
+    const interval = setInterval(() => {
+      const cardWidth = 344;
+      if (sliderRef.current) {
+        sliderRef.current.scrollBy({
+          left: -cardWidth,
+          behavior: 'smooth',
+        });
+      }
+    }, 5000); 
+
+    return () => {
+      unsubscribe();
+      clearInterval(interval); 
+    };
   }, []);
+
 
 
   const scroll = (direction) => {
