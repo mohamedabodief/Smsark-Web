@@ -15,9 +15,10 @@ import {
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import Brightness4Icon from "@mui/icons-material/Brightness4";
 import FavoriteIcon from '@mui/icons-material/Favorite';
+import { useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import EmailIcon from '@mui/icons-material/Email';
 import NotificationsIcon from '@mui/icons-material/Notifications';
-import { useNavigate } from 'react-router-dom';
 import { useUnreadMessages } from '../context/unreadMessageContext';
 import NotificationList from '../pages/notificationList';
 import Notification from '../FireBase/MessageAndNotification/Notification';
@@ -30,9 +31,10 @@ export default function Nav({ toggleMode }) {
   const currentId = auth.currentUser?.uid;
   const { totalUnreadCount } = useUnreadMessages();
 
+  const userType = useSelector((state) => state.auth.type_of_user);
+
   useEffect(() => {
     if (currentId) {
-      // الاشتراك في عدد الإشعارات غير المقروءة
       const unsubscribe = Notification.subscribeUnreadCount(currentId, (count) => {
         setUnreadCount(count);
       });
@@ -40,6 +42,7 @@ export default function Nav({ toggleMode }) {
     }
   }, [currentId]);
 
+  // ⛳ دي كانت جوا دالة تانية وده غلط
   const handleClick = (event) => {
     setAnchorEl(event.currentTarget);
   };
@@ -51,6 +54,18 @@ export default function Nav({ toggleMode }) {
   const handleMessagesClick = () => {
     handleClose();
     navigate("/inbox");
+  };
+
+  const handleProfileClick = () => {
+    if (userType === 'client') {
+      navigate('/client-dashboard');
+    } else if (userType === 'organization') {
+      navigate('/organization-dashboard');
+    } else if (userType === 'admin') {
+      navigate('/admin-dashboard');
+    } else {
+      navigate('/profile');
+    }
   };
 
   const open = Boolean(anchorEl);
@@ -85,6 +100,9 @@ export default function Nav({ toggleMode }) {
           </Typography>
           <Typography variant="button" sx={{ cursor: "pointer" }} onClick={() => navigate('/about')}>
             عن الموقع
+          </Typography>
+          <Typography variant="button" sx={{ cursor: "pointer" }} onClick={() => navigate('/RealEstateDeveloperAnnouncement')}>
+            إضافة عقار
           </Typography>
           <Typography variant="button" sx={{ cursor: "pointer" }} onClick={() => navigate('/profile')}>
             الصفحة الشخصية
@@ -168,7 +186,7 @@ export default function Nav({ toggleMode }) {
             </IconButton>
           </Tooltip>
           <Tooltip title="ملفك الشخصي">
-            <IconButton size="small" sx={{ color: "#fff" }} onClick={() => navigate('#')}>
+            <IconButton size="small" sx={{ color: "#fff" }} onClick={handleProfileClick}>
               <AccountCircleIcon />
             </IconButton>
           </Tooltip>

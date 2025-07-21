@@ -90,16 +90,14 @@ const handleSend = async () => {
     console.log('Sending message to:', { receiver_id: clientAds.userId, reciverName: receiverName });
     await newMessage.send();
 
-    // إنشاء إشعار باستخدام كلاس Notification
+ 
     const notification = new Notification({
       receiver_id: clientAds.userId,
       title: `رسالة جديدة من ${auth.currentUser.email|| 'مستخدم'}`,
       body: message || 'لقد تلقيت رسالة جديدة!',
       type: 'message',
-     link: `/privateChat/${otherUser.userId}`
+     link: `/privateChat/${clientAds.userId}`
     });
-
-    // تخزين الإشعار في Firestore
     await notification.send();
 
     alert("تم إرسال الرسالة!");
@@ -110,7 +108,6 @@ const handleSend = async () => {
     alert("فشل في إرسال الرسالة!");
   }
 };
-
   const handleShare = async () => {
     if (navigator.share) {
       try {
@@ -151,7 +148,7 @@ const handleSend = async () => {
   const toggleShow = () => setShowFull((prev) => !prev);
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
+    <Container maxWidth="lg" sx={{ py: 4 }} dir="">
       {/* زر التواصل مع البائع */}
       <Box
         onClick={() => setOpen(true)}

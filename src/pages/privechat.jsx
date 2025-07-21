@@ -15,6 +15,7 @@ import {
 } from "firebase/firestore";
 import { useLocation, useNavigate } from "react-router-dom";
 import Notification from "../FireBase/MessageAndNotification/Notification";
+import Footer from "../componenents/Footer";
 function ChatBox() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -125,6 +126,7 @@ function ChatBox() {
   };
 
   return (
+    <>
     <Box sx={{ mt: "100px", mx: "auto", maxWidth: 600 }} dir="rtl">
       <Button onClick={() => navigate(-1)} sx={{ mb: 2 }}>
         🔙 عودة للمحادثات
@@ -184,7 +186,9 @@ function ChatBox() {
           إرسال
         </Button>
       </Box>
+     
     </Box>
+       </>
   );
 }
 

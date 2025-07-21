@@ -10,12 +10,14 @@ import {
   Container,
   Snackbar,
   Alert,
+  IconButton,
 } from "@mui/material";
-import { Phone, Email, LocationOn } from "@mui/icons-material";
+import { Phone, Email, LocationOn, Close } from "@mui/icons-material";
 import contactHeaderImage from "../assets/contact-header.png";
-import storeContactMessage from "../FireBase/authService/storeContactMessage";
-
+import Message from "../FireBase/MessageAndNotification/Message";
+import { auth } from "../FireBase/firebaseConfig";
 const ContactUs = () => {
+  const current=auth.currentUser.uid
   const theme = useTheme();
   const [formData, setFormData] = useState({
     name: "",
@@ -43,27 +45,38 @@ const ContactUs = () => {
     setIsSubmitting(true);
 
     try {
-      const result = await storeContactMessage(formData);
+      // إنشاء رسالة جديدة باستخدام كلاس Message
+      const messageData = {
+        sender_id: formData.email, 
+        receiver_id: current, 
+        reciverName: "الأدمن", 
+        content: `الاسم: ${formData.name}\nالبريد: ${formData.email}\nالهاتف: ${formData.phone}\nالموضوع: ${formData.subject}`,
+        message_type: "text",
+        is_read: false,
+      };
+
+      const message = new Message(messageData);
+      await message.send();
 
       setSubmitStatus({
         open: true,
-        success: result.success,
-        message: result.message || result.error,
+        success: true,
+        message: "تم إرسال رسالتك بنجاح! سنتواصل معك قريبًا.",
       });
 
-      if (result.success) {
-        setFormData({
-          name: "",
-          email: "",
-          phone: "",
-          subject: "",
-        });
-      }
-    } catch {
+      // إعادة تعيين النموذج
+      setFormData({
+        name: "",
+        email: "",
+        phone: "",
+        subject: "",
+      });
+    } catch (error) {
+      console.error("Error submitting contact form:", error);
       setSubmitStatus({
         open: true,
         success: false,
-        message: "حدث خطأ غير متوقع، يرجى المحاولة مرة أخرى",
+        message: "حدث خطأ غير متوقع، يرجى المحاولة مرة أخرى.",
       });
     } finally {
       setIsSubmitting(false);
@@ -125,9 +138,9 @@ const ContactUs = () => {
                 الموقع
               </Typography>
               <Typography variant="body2">
-                1628 Damanhour , Elbehaira
+                1628 Damanhour, Elbehaira
                 <br />
-                2001 iti branch . damanhour
+                2001 iti branch, damanhour
               </Typography>
             </Box>
           </Grid>
@@ -140,9 +153,9 @@ const ContactUs = () => {
                 اتصل بنا
               </Typography>
               <Typography variant="body2">
-                Foul Doris : +20 111 915 9182
+                Foul Doris: +20 111 915 9182
                 <br />
-                الإدارة : 045 263 5992
+                الإدارة: 045 263 5992
               </Typography>
             </Box>
           </Grid>
@@ -168,7 +181,7 @@ const ContactUs = () => {
         <Paper elevation={3} sx={{ borderRadius: 4, overflow: "hidden" }}>
           <Grid container>
             {/* Left side - map in colored box */}
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 4 }}>
               <Box
                 sx={{
                   backgroundColor: "#20063B",
@@ -201,14 +214,14 @@ const ContactUs = () => {
               </Box>
             </Grid>
 
-            <Grid>
+            <Grid size={{ xs: 12, md: 8 }}>
               <Box
                 sx={{
                   p: 4,
                   direction: "rtl",
-                  width: "50%",
+                  width: "75%",
                   position: "relative",
-                  left: "350px",
+                  left: "100px",
                 }}
               >
                 <Typography
@@ -292,8 +305,17 @@ const ContactUs = () => {
         anchorOrigin={{ vertical: "top", horizontal: "center" }}
       >
         <Alert
-          onClose={handleCloseSnackbar}
           severity={submitStatus.success ? "success" : "error"}
+          action={
+            <IconButton
+              size="small"
+              aria-label="close"
+              color="inherit"
+              onClick={handleCloseSnackbar}
+            >
+              <Close fontSize="small" />
+            </IconButton>
+          }
           sx={{ width: "100%" }}
         >
           {submitStatus.message}

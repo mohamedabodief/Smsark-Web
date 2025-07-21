@@ -121,7 +121,7 @@ const getReceiverName = async (userId) => {
    };
 /////////////////////////////////////////
   return (
-    <Container maxWidth="lg" sx={{ py: 4, position: 'relative' }}>
+    <Container maxWidth="lg" sx={{ py: 4, position: 'relative' }} dir="rtl">
       <Box
         sx={{
           position: 'fixed',
