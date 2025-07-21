@@ -50,15 +50,33 @@ export const registerUser = createAsyncThunk(
   }
 );
 
+function getInitialAuthState() {
+  const isLoggedIn = sessionStorage.getItem("isLoggedIn") === "true";
+  const userType = sessionStorage.getItem("userType");
+  const uid = sessionStorage.getItem("uid");
+  const type_of_organization = sessionStorage.getItem("type_of_organization") || null;
+  const adm_name = sessionStorage.getItem("adm_name") || null;
+  if (isLoggedIn && userType && uid) {
+    return {
+      uid,
+      type_of_user: userType,
+      type_of_organization,
+      adm_name,
+      status: "succeeded",
+      error: null,
+    };
+  }
+  return {
+    uid: null,
+    type_of_user: null,
+    type_of_organization: null,
+    adm_name: null,
+    status: "idle",
+    error: null,
+  };
+}
 
-const initialState = {
-  uid: null,
-  type_of_user: null,
-  type_of_organization: null,
-  adm_name: null,
-  status: "idle", // 'idle' | 'loading' | 'succeeded' | 'failed'
-  error: null,
-};
+const initialState = getInitialAuthState();
 
 const authSlice = createSlice({
   name: "auth",
@@ -71,6 +89,12 @@ const authSlice = createSlice({
       state.adm_name = null;
       state.status = "idle";
       state.error = null;
+      // Clear sessionStorage on logout
+      sessionStorage.removeItem("isLoggedIn");
+      sessionStorage.removeItem("userType");
+      sessionStorage.removeItem("uid");
+      sessionStorage.removeItem("type_of_organization");
+      sessionStorage.removeItem("adm_name");
     },
     setAuthUserData(state, action) {
       state.uid = action.payload.uid;
@@ -79,6 +103,20 @@ const authSlice = createSlice({
       state.adm_name = action.payload.adm_name || null;
       state.status = "succeeded";
       state.error = null;
+      // Set sessionStorage on manual set
+      sessionStorage.setItem("isLoggedIn", "true");
+      sessionStorage.setItem("userType", action.payload.type_of_user);
+      sessionStorage.setItem("uid", action.payload.uid);
+      if (action.payload.type_of_organization) {
+        sessionStorage.setItem("type_of_organization", action.payload.type_of_organization);
+      } else {
+        sessionStorage.removeItem("type_of_organization");
+      }
+      if (action.payload.adm_name) {
+        sessionStorage.setItem("adm_name", action.payload.adm_name);
+      } else {
+        sessionStorage.removeItem("adm_name");
+      }
     },
   },
 extraReducers: (builder) => {
@@ -95,6 +133,10 @@ extraReducers: (builder) => {
         state.type_of_user = action.payload.type_of_user;
         state.type_of_organization = action.payload.type_of_organization;
         state.adm_name = action.payload.adm_name; // Store admin name from payload
+        // Set sessionStorage on login success
+        sessionStorage.setItem("isLoggedIn", "true");
+        sessionStorage.setItem("userType", action.payload.type_of_user);
+        sessionStorage.setItem("uid", action.payload.uid);
         console.log("authSlice: loginUser fulfilled, state updated:", {
           uid: state.uid,
           type_of_user: state.type_of_user,
@@ -109,6 +151,10 @@ extraReducers: (builder) => {
         state.type_of_user = null;
         state.type_of_organization = null;
         state.adm_name = null; // Clear admin name on failed login
+        // Clear sessionStorage on login failure
+        sessionStorage.removeItem("isLoggedIn");
+        sessionStorage.removeItem("userType");
+        sessionStorage.removeItem("uid");
         console.error("authSlice: loginUser rejected, error:", action.payload);
       })
       // Handle pending state for registerUser

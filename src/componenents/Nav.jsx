@@ -15,7 +15,7 @@ import {
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import Brightness4Icon from "@mui/icons-material/Brightness4";
 import FavoriteIcon from '@mui/icons-material/Favorite';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import EmailIcon from '@mui/icons-material/Email';
 import NotificationsIcon from '@mui/icons-material/Notifications';
@@ -31,6 +31,7 @@ export default function Nav({ toggleMode }) {
   const currentId = auth.currentUser?.uid;
   const { totalUnreadCount } = useUnreadMessages();
 
+  const location = useLocation();
   const userType = useSelector((state) => state.auth.type_of_user);
 
   useEffect(() => {
@@ -58,15 +59,28 @@ export default function Nav({ toggleMode }) {
 
   const handleProfileClick = () => {
     if (userType === 'client') {
-      navigate('/client-dashboard');
+      if (location.pathname !== '/client-dashboard') {
+        navigate('/client-dashboard');
+      }
+      // else: already on dashboard, do nothing or show a message
     } else if (userType === 'organization') {
-      navigate('/organization-dashboard');
+      if (location.pathname !== '/organization-dashboard') {
+        navigate('/organization-dashboard');
+      }
     } else if (userType === 'admin') {
       navigate('/admin-dashboard');
     } else {
       navigate('/profile');
     }
   };
+
+  // const handleClick = (event) => {
+  //   setAnchorEl(event.currentTarget);
+  // };
+
+  // const handleClose = () => {
+  //   setAnchorEl(null);
+  // };
 
   const open = Boolean(anchorEl);
 
@@ -186,7 +200,7 @@ export default function Nav({ toggleMode }) {
             </IconButton>
           </Tooltip>
           <Tooltip title="ملفك الشخصي">
-            <IconButton size="small" sx={{ color: "#fff" }} onClick={handleProfileClick}>
+            <IconButton size="small"  onClick={handleProfileClick}>
               <AccountCircleIcon />
             </IconButton>
           </Tooltip>

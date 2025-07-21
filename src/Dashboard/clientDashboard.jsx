@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { createTheme, ThemeProvider, styled } from '@mui/material/styles';
 import {
@@ -793,8 +793,7 @@ function ProfilePage() {
     }, [actualUid, userProfileStatus, userProfile, dispatch]);
 
     // Effect to update local form data when Redux userProfile changes
- 
-    const initialized = React.useRef(false);
+    const initialized = useRef(false);
     useEffect(() => {
         if (userProfile && !initialized.current) {
             setFormData({
@@ -2574,14 +2573,14 @@ function OrdersPage() {
                                                             />
                                                         </Grid>
                                                         {request.status && (
-                                                            <Grid item>
-                                                                <Chip
-                                                                    label={request.status}
-                                                                    size="small"
-                                                                    color={getStatusColor(request.status)}
-                                                                    sx={{ mr: 1 }}
-                                                                />
-                                                            </Grid>
+                                                        <Grid item>
+                                                            <Chip
+                                                                label={request.status}
+                                                                size="small"
+                                                                color={getStatusColor(request.status)}
+                                                                sx={{ mr: 1 }}
+                                                            />
+                                                        </Grid>
                                                         )}
                                                     </Grid>
                                                 }
@@ -2796,7 +2795,7 @@ function SettingsPage() {
                         </Typography>
                         <Typography variant="body2">
                             <strong>نوع المستخدم:</strong> {userProfile?.type_of_user || 'غير محدد'}
-                        </Typography>
+                    </Typography>
                     </Box>
                 </Box>
 
@@ -3435,6 +3434,14 @@ export default function ClientDashboard(props) {
                                     >
                                         تسجيل الخروج
                                     </Button>
+                                    <IconButton
+                                        sx={{ ml: 1 }}
+                                        color="inherit"
+                                        onClick={() => navigate('/home')}
+                                        title="العودة للصفحة الرئيسية"
+                                    >
+                                        <HomeIcon />
+                                    </IconButton>
                                 </Toolbar>
                             </AppBarStyled>
 

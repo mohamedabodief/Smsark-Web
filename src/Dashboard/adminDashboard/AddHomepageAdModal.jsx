@@ -19,17 +19,24 @@ import {
 import CloseIcon from '@mui/icons-material/Close';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 
-export default function AddHomepageAdModal({ open, onClose, onAdd, setSnackbar }) {
+const EXPIRY_OPTIONS = [
+    { days: 7, label: '7 أيام - 200 جنيه', price: 200 },
+    { days: 14, label: '14 يوم - 250 جنيه', price: 250 },
+    { days: 21, label: '21 يوم - 300 جنيه', price: 300 },
+];
+
+export default function AddHomepageAdModal({ open, onClose, onAdd, setSnackbar, userType, userProfile }) {
     const [formData, setFormData] = useState({
         image: null,
         receipt_image: null,
-        userId: '',
-        reviewStatus: 'pending'
+        adExpiryOption: '',
     });
     const [imagePreview, setImagePreview] = useState(null);
     const [receiptPreview, setReceiptPreview] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+
+    const isAdmin = userType === 'admin';
 
     const handleImageChange = (event) => {
         const file = event.target.files[0];
@@ -51,12 +58,8 @@ export default function AddHomepageAdModal({ open, onClose, onAdd, setSnackbar }
         }
     };
 
-    const handleUserIdChange = (event) => {
-        setFormData(prev => ({ ...prev, userId: event.target.value }));
-    };
-
-    const handleReviewStatusChange = (event) => {
-        setFormData(prev => ({ ...prev, reviewStatus: event.target.value }));
+    const handleExpiryChange = (event) => {
+        setFormData(prev => ({ ...prev, adExpiryOption: event.target.value }));
     };
 
     const handleSubmit = async () => {
@@ -64,9 +67,12 @@ export default function AddHomepageAdModal({ open, onClose, onAdd, setSnackbar }
             setError('يرجى اختيار صورة للإعلان');
             return;
         }
-
-        if (!formData.userId) {
-            setError('يرجى إدخال معرف المستخدم');
+        if (!isAdmin && !formData.receipt_image) {
+            setError('يرجى اختيار إيصال الدفع (إجباري)');
+            return;
+        }
+        if (!isAdmin && !formData.adExpiryOption) {
+            setError('يرجى اختيار مدة الإعلان');
             return;
         }
 
@@ -74,20 +80,28 @@ export default function AddHomepageAdModal({ open, onClose, onAdd, setSnackbar }
         setError('');
 
         try {
+            let adExpiryTime = null;
+            let price = undefined;
+            if (!isAdmin) {
+                const selectedOption = EXPIRY_OPTIONS.find(opt => opt.days === formData.adExpiryOption);
+                adExpiryTime = Date.now() + (formData.adExpiryOption * 24 * 60 * 60 * 1000);
+                price = selectedOption ? selectedOption.price : undefined;
+            }
             const adData = {
-                userId: formData.userId,
+                userId: userProfile?.uid,
                 ads: false,
-                reviewStatus: formData.reviewStatus
+                reviewStatus: isAdmin ? 'approved' : 'pending',
+                adExpiryTime,
+                price,
             };
 
             await onAdd({
                 adData,
                 imageFile: formData.image,
-                receiptFile: formData.receipt_image
+                receiptFile: isAdmin ? null : formData.receipt_image
             });
 
-            // Reset form
-            setFormData({ image: null, receipt_image: null, userId: '', reviewStatus: 'pending' });
+            setFormData({ image: null, receipt_image: null, adExpiryOption: '' });
             setImagePreview(null);
             setReceiptPreview(null);
             onClose();
@@ -100,7 +114,7 @@ export default function AddHomepageAdModal({ open, onClose, onAdd, setSnackbar }
 
     const handleClose = () => {
         if (!loading) {
-            setFormData({ image: null, receipt_image: null, userId: '', reviewStatus: 'pending' });
+            setFormData({ image: null, receipt_image: null, adExpiryOption: '' });
             setImagePreview(null);
             setReceiptPreview(null);
             setError('');
@@ -109,8 +123,8 @@ export default function AddHomepageAdModal({ open, onClose, onAdd, setSnackbar }
     };
 
     return (
-        <Dialog 
-            open={open} 
+        <Dialog
+            open={open}
             onClose={handleClose}
             maxWidth="sm"
             fullWidth
@@ -129,32 +143,6 @@ export default function AddHomepageAdModal({ open, onClose, onAdd, setSnackbar }
                         {error}
                     </Alert>
                 )}
-
-                <Box sx={{ mb: 3 }}>
-                    <TextField
-                        fullWidth
-                        label="معرف المستخدم"
-                        value={formData.userId}
-                        onChange={handleUserIdChange}
-                        required
-                        sx={{ mb: 2 }}
-                    />
-                </Box>
-
-                <Box sx={{ mb: 3 }}>
-                    <FormControl fullWidth sx={{ mb: 2 }}>
-                        <InputLabel>حالة المراجعة</InputLabel>
-                        <Select
-                            value={formData.reviewStatus}
-                            onChange={handleReviewStatusChange}
-                            label="حالة المراجعة"
-                        >
-                            <MenuItem value="pending">قيد المراجعة</MenuItem>
-                            <MenuItem value="approved">مقبول</MenuItem>
-                            <MenuItem value="rejected">مرفوض</MenuItem>
-                        </Select>
-                    </FormControl>
-                </Box>
 
                 <Box sx={{ mb: 3 }}>
                     <Typography variant="subtitle1" gutterBottom>
@@ -191,40 +179,69 @@ export default function AddHomepageAdModal({ open, onClose, onAdd, setSnackbar }
                     )}
                 </Box>
 
-                <Box sx={{ mb: 3 }}>
-                    <Typography variant="subtitle1" gutterBottom>
-                        إيصال الدفع (اختياري)
-                    </Typography>
-                    <input
-                        accept="image/*"
-                        style={{ display: 'none' }}
-                        id="receipt-upload"
-                        type="file"
-                        onChange={handleReceiptChange}
-                        disabled={loading}
-                    />
-                    <label htmlFor="receipt-upload">
-                        <Button
-                            variant="outlined"
-                            component="span"
-                            startIcon={<CloudUploadIcon />}
+                {!isAdmin && (
+                    <Box sx={{ mb: 3 }}>
+                        <Typography variant="subtitle1" gutterBottom>
+                            إيصال الدفع *
+                        </Typography>
+                        <input
+                            accept="image/*"
+                            style={{ display: 'none' }}
+                            id="receipt-upload"
+                            type="file"
+                            onChange={handleReceiptChange}
                             disabled={loading}
-                            fullWidth
-                            sx={{ mb: 2 }}
-                        >
-                            اختيار إيصال الدفع
-                        </Button>
-                    </label>
-                    {receiptPreview && (
-                        <Box sx={{ textAlign: 'center', mb: 2 }}>
-                            <img
-                                src={receiptPreview}
-                                alt="Receipt Preview"
-                                style={{ maxWidth: '100%', maxHeight: 200, borderRadius: 8 }}
-                            />
-                        </Box>
-                    )}
-                </Box>
+                        />
+                        <label htmlFor="receipt-upload">
+                            <Button
+                                variant="outlined"
+                                component="span"
+                                startIcon={<CloudUploadIcon />}
+                                disabled={loading}
+                                fullWidth
+                                sx={{ mb: 2 }}
+                            >
+                                اختيار إيصال الدفع
+                            </Button>
+                        </label>
+                        {receiptPreview && (
+                            <Box sx={{ textAlign: 'center', mb: 2 }}>
+                                <img
+                                    src={receiptPreview}
+                                    alt="Receipt Preview"
+                                    style={{ maxWidth: '100%', maxHeight: 200, borderRadius: 8 }}
+                                />
+                            </Box>
+                        )}
+                    </Box>
+                )}
+
+                {/* Expiry options only for non-admins */}
+                {!isAdmin && (
+                    <Box sx={{ mb: 3 }}>
+                        <FormControl fullWidth required disabled={loading}>
+                            <InputLabel id="ad-expiry-label">مدة الإعلان *</InputLabel>
+                            <Select
+                                labelId="ad-expiry-label"
+                                id="ad-expiry-select"
+                                value={formData.adExpiryOption}
+                                label="مدة الإعلان *"
+                                onChange={handleExpiryChange}
+                            >
+                                {EXPIRY_OPTIONS.map(opt => (
+                                    <MenuItem key={opt.days} value={opt.days}>{opt.label}</MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                    </Box>
+                )}
+
+                {/* Only show review status info for non-admins */}
+                {!isAdmin && (
+                    <Typography variant="body2" color="text.secondary">
+                        * سيتم مراجعة الإعلان من قبل الإدارة قبل النشر. حالة الإعلان: قيد المراجعة (pending)
+                    </Typography>
+                )}
             </DialogContent>
 
             <DialogActions sx={{ p: 2 }}>
@@ -234,7 +251,7 @@ export default function AddHomepageAdModal({ open, onClose, onAdd, setSnackbar }
                 <Button
                     onClick={handleSubmit}
                     variant="contained"
-                    disabled={loading || !formData.image || !formData.userId}
+                    disabled={loading || !formData.image || (!isAdmin && !formData.receipt_image) || (!isAdmin && !formData.adExpiryOption)}
                     startIcon={loading ? <CircularProgress size={20} /> : null}
                 >
                     {loading ? 'جاري الإضافة...' : 'إضافة الإعلان'}

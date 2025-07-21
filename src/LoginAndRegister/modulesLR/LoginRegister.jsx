@@ -71,57 +71,24 @@ export default function LoginRegister() {
     // Only proceed if we are currently in the login view AND authentication succeeded
     // AND we haven't already redirected
     if (isLogin && authStatus === "succeeded" && authUid && !hasRedirected) {
-      console.log('🚀 Starting redirect process...');
-    setMessage({
-      text: "تم تسجيل الدخول بنجاح! يتم تحويلك...",
-      type: "success",
-    });
+      setMessage({
+        text: "تم تسجيل الدخول بنجاح! يتم تحويلك...",
+        type: "success",
+      });
       setHasRedirected(true);
       
       // Immediate redirect for testing
       console.log('🎯 Immediate redirect test...');
       try {
         if (authUserType === "admin") {
-          console.log("Immediately redirecting to admin dashboard...");
           navigate("/admin-dashboard", { replace: true });
-          console.log("✅ Immediate navigation to admin dashboard completed");
-        } else if (authUserType === "client" || authUserType === "organization") {
-          console.log("Immediately redirecting to home page...");
-          navigate("/home", { replace: true });
-          console.log("✅ Immediate navigation to home completed");
         } else {
-          console.warn("Unknown user type, immediately redirecting to home.");
+          // For client or organization, always go to home
           navigate("/home", { replace: true });
-          console.log("✅ Immediate navigation to home (fallback) completed");
         }
       } catch (error) {
-        console.error("❌ Immediate navigation error:", error);
+        console.error("❌ Navigation error:", error);
       }
-      
-      // Also keep the delayed redirect as backup
-      const redirectTimer = setTimeout(() => {
-        console.log('🎯 Delayed redirect based on user type:', authUserType);
-        
-        try {
-          if (authUserType === "admin") {
-            console.log("Delayed redirecting to admin dashboard...");
-            navigate("/admin-dashboard", { replace: true });
-            console.log("✅ Delayed navigation to admin dashboard completed");
-          } else if (authUserType === "client" || authUserType === "organization") {
-            console.log("Delayed redirecting to home page...");
-            navigate("/home", { replace: true });
-            console.log("✅ Delayed navigation to home completed");
-          } else {
-            console.warn("Unknown user type, delayed redirecting to home.");
-            navigate("/home", { replace: true });
-            console.log("✅ Delayed navigation to home (fallback) completed");
-          }
-        } catch (error) {
-          console.error("❌ Delayed navigation error:", error);
-        }
-  }, 1500);
-
-      return () => clearTimeout(redirectTimer);
     }
   }, [isLogin, authStatus, authUid, authUserType, navigate, hasRedirected]);
 
