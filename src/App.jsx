@@ -59,7 +59,7 @@ function App() {
   ///////////////////////////////
  useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
-      setCurrentUser(user); // تحديث currentUser
+      setCurrentUser(user); 
     });
     return () => unsubscribe();
   }, []);
@@ -217,6 +217,7 @@ function App() {
       backgroundColor: '#ffffff',
       borderRadius: '8px',
       padding: '16px',
+      fontSize:'20px',
       boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
       '& .MuiAlert-icon': {
         marginRight: '12px',
