@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Route, Routes, Navigate } from "react-router-dom";
+import { Route, Routes, useNavigate ,} from "react-router-dom";
 import DetailsForClient from "./pages/Details/detailsForClient";
 import DetailsForFinancingAds from "./pages/Details/detailsForFinaccingAds";
 import DetailsForDevelopment from "./pages/Details/detailsForDevelopment";
@@ -24,10 +24,13 @@ import ModernRealEstateForm from "./pages/ModernRealEstateForm";
 import InboxChats from "./pages/InboxChats";
 import ChatBox from "./pages/privechat";
 import Profile from "./componenents/profile";
-import AdPackages from "../packages/packagesDev&Fin";
-import AdPackagesClient from "../packages/packagesClient";
+import { Snackbar, Alert, Button } from '@mui/material';
+import Notification from "./FireBase/MessageAndNotification/Notification";
 import SearchPage from "./pages/SearchPage";
 import ContactUs from "./contactUs/ContactUs";
+import { Navigate } from 'react-router-dom';
+import AdPackages from "../packages/packagesDev&Fin";
+import AdPackagesClient from "../packages/packagesClient";
 import AdminDashboard from "./Dashboard/adminDashboard";
 import ClientDashboard from "./Dashboard/clientDashboard";
 import OrganizationDashboard from "./Dashboard/organization/organizationDashboard";
@@ -39,8 +42,15 @@ import RequireNotAuth from "./LoginAndRegister/RequireNotAuth";
 import { onMessage, messaging, auth } from "./FireBase/firebaseConfig";
 import { requestPermissionAndSaveToken } from "./FireBase/MessageAndNotification/fcmHelper";
 import { onAuthStateChanged } from "firebase/auth";
-
+import DetailsForFinincingAds from "./pages/Details/detailsForFinaccingAds";
+import CloseIcon from '@mui/icons-material/Close';
 function App() {
+  const [notifications, setNotifications] = useState([]);
+  const [openSnackbar, setOpenSnackbar] = useState(false);
+  const [currentNotification, setCurrentNotification] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null); // استخدام useState
+  const navigate = useNavigate();
+  ////////////////////////////////////////////////
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -68,6 +78,46 @@ function App() {
 
     return () => unsubscribe();
   }, []);
+  ///////////////////////////////
+ useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      setCurrentUser(user); 
+    });
+    return () => unsubscribe();
+  }, []);
+ useEffect(() => {
+    if (currentUser) {
+      const unsubscribe = Notification.subscribeByUser(currentUser.uid, (notifs) => {
+        const newNotifs = notifs.filter(n => !n.is_read);
+        if (newNotifs.length > notifications.length) {
+          const latestNotif = newNotifs[newNotifs.length - 1];
+          setCurrentNotification(latestNotif);
+          setOpenSnackbar(true);
+        }
+        setNotifications(newNotifs);
+      });
+
+      return () => unsubscribe();
+    }
+  }, [currentUser, notifications]);
+  const handleOpenChat = () => {
+    if (currentNotification?.link) {
+      const userId = currentNotification.link.split('/privateChat/')[1];
+      navigate(`/privateChat/${userId}`, {
+        state: { otherUser: { userId, userName: currentNotification.title.split('من ')[1] || 'مستخدم غير معروف' } }
+      });
+      handleCloseSnackbar();
+    }
+  };
+
+  const handleCloseSnackbar = () => {
+    setOpenSnackbar(false);
+    if (currentNotification) {
+      Notification.markAsRead(currentNotification.id);
+    }
+  };
+
+  //////////////////////////////
 
 
   if (loading) return null;
@@ -78,6 +128,7 @@ function App() {
     <SearchProvider>
       <Layout>
         <Routes>
+         
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/home" element={<Home />} />
           <Route path="/" element={<Navigate to="login" replace />} />
@@ -117,14 +168,17 @@ function App() {
           <Route path="/login" element={<LoginRegister />} />
           <Route path="/register" element={<LoginRegister />} />
           <Route path="/about" element={<AboutUs />} />
-          <Route path="/contact" element={<ContactUs />} />
+          
           <Route path="/favorite" element={<Favorite />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/search" element={<SearchPage />} />
-          <Route path="/inbox" element={<InboxChats />} />
-          <Route path="/privateChat/:id" element={<ChatBox />} />
+          
+         
 
           {/* Services */}
+          <Route path="/contact" element={<ContactUs />} />
+          <Route path="/inbox" element={<InboxChats />} />
+           <Route path="/privateChat/:id" element={<ChatBox />} />
           <Route path="/services/sell" element={<SellAds />} />
           <Route path="/services/rent" element={<RentAds />} />
           <Route path="/services/buy" element={<BuyAds />} />
@@ -194,6 +248,49 @@ function App() {
           <Route path="/details/developmentAds/:id" element={<DetailsForDevelopment />} />
         </Routes>
       </Layout>
+     
+<Snackbar
+  open={openSnackbar}
+  autoHideDuration={6000}
+ 
+  onClose={handleCloseSnackbar}
+  anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+>
+  <Alert
+    severity="info"
+    action={
+      <>
+        <Button color="inherit" size="small" onClick={handleOpenChat}>
+          فتح
+        </Button>
+        <Button color="inherit" size="small" onClick={handleCloseSnackbar}>
+          إغلاق
+        </Button>
+      </>
+    }
+    sx={{
+      width: '100%',
+      maxWidth: '400px',
+      textAlign: 'right',
+      backgroundColor: '#ffffff',
+      borderRadius: '8px',
+      padding: '16px',
+      fontSize:'20px',
+      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+      '& .MuiAlert-icon': {
+        marginRight: '12px',
+      },
+      '& .MuiAlert-message': {
+        padding: '8px 0',
+      },
+    }}
+  >
+    <strong>{currentNotification?.title}</strong>
+    <br />
+    {currentNotification?.body}
+  </Alert>
+</Snackbar>
+      {/* <AddMultipleAdsOnce/> */}
     </SearchProvider>
     </>
   );

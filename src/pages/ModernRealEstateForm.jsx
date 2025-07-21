@@ -295,6 +295,7 @@ const ModernRealEstateForm = () => {
       await ad.save(images);
       setShowSuccess(true);
       handleReset();
+        navigate(`/details/clientAds/${ad.id}`)
     } catch (error) {
       setSubmitError(error.message || 'حدث خطأ أثناء إضافة الإعلان. تأكد من أن الصور يتم رفعها إلى المسار الصحيح (property_images).');
       console.error('Error during submission:', error);
@@ -318,7 +319,7 @@ const ModernRealEstateForm = () => {
     const fetchCoordinates = async () => {
       if (!addressValue && !cityValue && !governorateValue) return;
       const fullAddress = `${addressValue || ''}, ${cityValue || ''}, ${governorateValue || ''}`;
-      const apiKey = 'YOUR_GOOGLE_MAPS_API_KEY'; // استبدل بمفتاحك
+      const apiKey = 'YOUR_GOOGLE_MAPS_API_KEY'; 
       const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(fullAddress)}&key=${apiKey}`;
       try {
         const res = await fetch(url);

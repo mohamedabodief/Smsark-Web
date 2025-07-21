@@ -1201,18 +1201,21 @@ function ProfilePage() {
     }, [actualUid, userProfileStatus, userProfile, dispatch]);
 
     // Effect to update local form data when Redux userProfile changes
-    useEffect(() => {
-        if (userProfile) {
-            console.log("AdminProfilePage: userProfile updated in Redux, setting formData:", userProfile);
-            setFormData({
-                ...userProfile,
-                email: auth.currentUser?.email || userProfile.email || "", // Get email from auth first, then fallback to profile
-            });
-        } else {
-            console.log("AdminProfilePage: userProfile is null or undefined, clearing formData.");
-            setFormData({});
-        }
-    }, [userProfile]);
+  const initialized = React.useRef(false);
+
+useEffect(() => {
+  if (userProfile && !initialized.current) {
+    setFormData({
+      ...userProfile,
+      email: auth.currentUser?.email || userProfile.email || "",
+    });
+    initialized.current = true;
+  } else if (!userProfile) {
+    setFormData({});
+    initialized.current = false;
+  }
+}, [userProfile]);
+
 
     // Handle changes to form fields
     const handleChange = (e) => {
