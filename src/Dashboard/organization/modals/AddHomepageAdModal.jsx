@@ -10,20 +10,34 @@ import {
     Typography,
     IconButton,
     Alert,
-    CircularProgress
+    CircularProgress,
+    FormControl,
+    InputLabel,
+    Select,
+    MenuItem
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 
-export default function AddHomepageAdModal({ open, onClose, onAdd, userProfile }) {
+const EXPIRY_OPTIONS = [
+  { days: 7, label: '7 أيام - 200 جنيه', price: 200 },
+  { days: 14, label: '14 يوم - 250 جنيه', price: 250 },
+  { days: 21, label: '21 يوم - 300 جنيه', price: 300 },
+];
+
+export default function AddHomepageAdModal({ open, onClose, onAdd, userProfile, userType }) {
     const [formData, setFormData] = useState({
         image: null,
-        receipt_image: null
+        receipt_image: null,
+        adExpiryOption: '',
     });
     const [imagePreview, setImagePreview] = useState(null);
     const [receiptPreview, setReceiptPreview] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+
+    // Always show receipt upload for organizations (not admin)
+    const isAdmin = userType === 'admin';
 
     const handleImageChange = (event) => {
         const file = event.target.files[0];
@@ -45,9 +59,22 @@ export default function AddHomepageAdModal({ open, onClose, onAdd, userProfile }
         }
     };
 
+    const handleExpiryChange = (event) => {
+        setFormData(prev => ({ ...prev, adExpiryOption: event.target.value }));
+    };
+
     const handleSubmit = async () => {
         if (!formData.image) {
             setError('يرجى اختيار صورة للإعلان');
+            return;
+        }
+        // In handleSubmit, require receipt for organizations
+        if (!isAdmin && !formData.receipt_image) {
+            setError('يرجى اختيار إيصال الدفع (إجباري)');
+            return;
+        }
+        if (!formData.adExpiryOption) {
+            setError('يرجى اختيار مدة الإعلان');
             return;
         }
 
@@ -55,20 +82,23 @@ export default function AddHomepageAdModal({ open, onClose, onAdd, userProfile }
         setError('');
 
         try {
+            const selectedOption = EXPIRY_OPTIONS.find(opt => opt.days === formData.adExpiryOption);
+            const adExpiryTime = Date.now() + (formData.adExpiryOption * 24 * 60 * 60 * 1000);
             const adData = {
                 userId: userProfile?.uid,
                 ads: false,
-                reviewStatus: 'pending'
+                reviewStatus: isAdmin ? 'approved' : 'pending',
+                adExpiryTime,
+                price: selectedOption ? selectedOption.price : undefined,
             };
 
             await onAdd({
                 adData,
                 imageFile: formData.image,
-                receiptFile: formData.receipt_image
+                receiptFile: isAdmin ? null : formData.receipt_image
             });
 
-            // Reset form
-            setFormData({ image: null, receipt_image: null });
+            setFormData({ image: null, receipt_image: null, adExpiryOption: '' });
             setImagePreview(null);
             setReceiptPreview(null);
             onClose();
@@ -81,7 +111,7 @@ export default function AddHomepageAdModal({ open, onClose, onAdd, userProfile }
 
     const handleClose = () => {
         if (!loading) {
-            setFormData({ image: null, receipt_image: null });
+            setFormData({ image: null, receipt_image: null, adExpiryOption: '' });
             setImagePreview(null);
             setReceiptPreview(null);
             setError('');
@@ -146,43 +176,62 @@ export default function AddHomepageAdModal({ open, onClose, onAdd, userProfile }
                     )}
                 </Box>
 
-                <Box sx={{ mb: 3 }}>
-                    <Typography variant="subtitle1" gutterBottom>
-                        إيصال الدفع (اختياري)
-                    </Typography>
-                    <input
-                        accept="image/*"
-                        style={{ display: 'none' }}
-                        id="receipt-upload"
-                        type="file"
-                        onChange={handleReceiptChange}
-                        disabled={loading}
-                    />
-                    <label htmlFor="receipt-upload">
-                        <Button
-                            variant="outlined"
-                            component="span"
-                            startIcon={<CloudUploadIcon />}
+                {!isAdmin && (
+                    <Box sx={{ mb: 3 }}>
+                        <Typography variant="subtitle1" gutterBottom>
+                            إيصال الدفع *
+                        </Typography>
+                        <input
+                            accept="image/*"
+                            style={{ display: 'none' }}
+                            id="receipt-upload"
+                            type="file"
+                            onChange={handleReceiptChange}
                             disabled={loading}
-                            fullWidth
-                            sx={{ mb: 2 }}
+                        />
+                        <label htmlFor="receipt-upload">
+                            <Button
+                                variant="outlined"
+                                component="span"
+                                startIcon={<CloudUploadIcon />}
+                                disabled={loading}
+                                fullWidth
+                                sx={{ mb: 2 }}
+                            >
+                                اختيار إيصال الدفع
+                            </Button>
+                        </label>
+                        {receiptPreview && (
+                            <Box sx={{ textAlign: 'center', mb: 2 }}>
+                                <img
+                                    src={receiptPreview}
+                                    alt="Receipt Preview"
+                                    style={{ maxWidth: '100%', maxHeight: 200, borderRadius: 8 }}
+                                />
+                            </Box>
+                        )}
+                    </Box>
+                )}
+
+                <Box sx={{ mb: 3 }}>
+                    <FormControl fullWidth required disabled={loading}>
+                        <InputLabel id="ad-expiry-label">مدة الإعلان *</InputLabel>
+                        <Select
+                            labelId="ad-expiry-label"
+                            id="ad-expiry-select"
+                            value={formData.adExpiryOption}
+                            label="مدة الإعلان *"
+                            onChange={handleExpiryChange}
                         >
-                            اختيار إيصال الدفع
-                        </Button>
-                    </label>
-                    {receiptPreview && (
-                        <Box sx={{ textAlign: 'center', mb: 2 }}>
-                            <img
-                                src={receiptPreview}
-                                alt="Receipt Preview"
-                                style={{ maxWidth: '100%', maxHeight: 200, borderRadius: 8 }}
-                            />
-                        </Box>
-                    )}
+                            {EXPIRY_OPTIONS.map(opt => (
+                                <MenuItem key={opt.days} value={opt.days}>{opt.label}</MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
                 </Box>
 
                 <Typography variant="body2" color="text.secondary">
-                    * سيتم مراجعة الإعلان من قبل الإدارة قبل النشر
+                    * سيتم مراجعة الإعلان من قبل الإدارة قبل النشر. حالة الإعلان: قيد المراجعة (pending)
                 </Typography>
             </DialogContent>
 
@@ -193,7 +242,7 @@ export default function AddHomepageAdModal({ open, onClose, onAdd, userProfile }
                 <Button
                     onClick={handleSubmit}
                     variant="contained"
-                    disabled={loading || !formData.image}
+                    disabled={loading || !formData.image || (!isAdmin && !formData.receipt_image) || !formData.adExpiryOption}
                     startIcon={loading ? <CircularProgress size={20} /> : null}
                 >
                     {loading ? 'جاري الإضافة...' : 'إضافة الإعلان'}

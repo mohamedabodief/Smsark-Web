@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { createTheme, ThemeProvider, styled } from '@mui/material/styles';
 import {
@@ -1957,7 +1957,8 @@ function PropertiesPage() {
     );
 }
 
-function Mainadvertisment() {
+function Mainadvertisment(props) {
+    const userProfile = useSelector((state) => state.user.profile);
     const dispatch = useDispatch();
     const homepageAds = useSelector((state) => state.homepageAds?.all || []);
     const homepageAdsLoading = useSelector((state) => state.homepageAds?.loading || false);
@@ -2113,24 +2114,24 @@ function Mainadvertisment() {
         setSnackbar({ ...snackbar, open: false });
     };
 
-    // Filter ads based on status and activation
-    const filteredAds = homepageAds.filter(ad => {
+    // Memoize filteredAds to avoid selector warning
+    const filteredAds = useMemo(() => homepageAds.filter(ad => {
         const statusMatch = statusFilter === 'all' || ad.reviewStatus === statusFilter;
         const activationMatch = activationFilter === 'all' || 
             (activationFilter === 'active' && ad.ads) || 
             (activationFilter === 'inactive' && !ad.ads);
         return statusMatch && activationMatch;
-    });
+    }), [homepageAds, statusFilter, activationFilter]);
 
-    // Get statistics
-    const stats = {
+    // Memoize stats to avoid selector warning
+    const stats = useMemo(() => ({
         total: homepageAds.length,
         pending: homepageAds.filter(ad => ad.reviewStatus === 'pending').length,
         approved: homepageAds.filter(ad => ad.reviewStatus === 'approved').length,
         rejected: homepageAds.filter(ad => ad.reviewStatus === 'rejected').length,
         active: homepageAds.filter(ad => ad.ads).length,
         inactive: homepageAds.filter(ad => !ad.ads).length,
-    };
+    }), [homepageAds]);
 
     return (
         <Box sx={{ p: 2, textAlign: 'right' }}>
@@ -2364,7 +2365,8 @@ function Mainadvertisment() {
                 open={isAddModalOpen}
                 onClose={() => setIsAddModalOpen(false)}
                 onAdd={handleAddAd}
-                userProfile={null} // Admin can add ads for any user
+                userProfile={userProfile}
+                userType={userProfile?.type_of_user}
             />
 
             {/* Edit Modal */}
