@@ -27,6 +27,14 @@ import Profile from "./componenents/profile";
 import SearchPage from "./pages/SearchPage";
 import ContactUs from "./contactUs/ContactUs";
 
+import AdminDashboard from "./Dashboard/adminDashboard";
+import ClientDashboard from "./Dashboard/clientDashboard";
+import OrganizationDashboard from "./Dashboard/organization/organizationDashboard";
+import PrivateRoute from "./PrivateRoute";
+import AuthSync from "./AuthSync";
+
+
+
 import { onMessage, messaging, auth } from "./FireBase/firebaseConfig";
 import { requestPermissionAndSaveToken } from "./FireBase/MessageAndNotification/fcmHelper";
 import { onAuthStateChanged } from "firebase/auth";
@@ -60,14 +68,51 @@ function App() {
     return () => unsubscribe();
   }, []);
 
+
   if (loading) return null;
 
   return (
+    <>
+    <AuthSync />
     <SearchProvider>
       <Layout>
         <Routes>
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/home" element={<Home />} />
+          <Route path="/" element={<Navigate to="login" replace />} />
+
+          {/* <Route path="/auth"> */}
+          {/* <Route path="login" element={<LoginRegister />} />
+          <Route path="register" element={<LoginRegister />} /> */}
+          {/* 
+          <Route path="/services/sell" element={<Sell />} />
+          <Route path="/services/rent" element={<Rent />} />
+          <Route path="/services/buy" element={<Buy />} />
+          <Route path="/services/finance" element={<Finance />} />
+
+          <Route path="/services/sell" element={<SellAds />} />
+          <Route path="/services/rent" element={<RentAds />} />
+          <Route path="/services/buy" element={<buyAds />} />
+          <Route path="/services/finance" element={<FinancingAdsPage />} />
+
+
+             */}
+          {/* <Route path="/auth"> */}
+          <Route path="login" element={<LoginRegister />} />
+          <Route path="register" element={<LoginRegister />} />
+          <Route path="/about" element={<AboutUs />} />
+          <Route path="/RealEstateDeveloperAnnouncement" element={<PropertyPage />} />
+
+          <Route element={<PrivateRoute />}>
+            {/* Admin Dashboard */}
+            <Route path="/admin-dashboard" element={<AdminDashboard />} />
+            {/* Client Dashboard */}
+            <Route path="/client-dashboard" element={<ClientDashboard />} />
+            {/* Organization Dashboard */}
+            <Route path="/organization-dashboard" element={<OrganizationDashboard />} />
+          </Route>
+
+          {/* <Route path="/services/sell" element={<SellAds />} />
           <Route path="/login" element={<LoginRegister />} />
           <Route path="/register" element={<LoginRegister />} />
           <Route path="/about" element={<AboutUs />} />
@@ -84,6 +129,25 @@ function App() {
           <Route path="/services/buy" element={<BuyAds />} />
           <Route path="/services/finance" element={<FinancingAdsPage />} />
           <Route path="/services/developmentAds" element={<DeveloperAdsPage />} />
+          <Route path="/AdddeveloperAds" element={<PropertyPage />} />
+
+          <Route path="/services/sell" element={<SellAds />} />
+          <Route path="/services/rent" element={<RentAds />} />
+          <Route path="/services/buy" element={<buyAds />} />
+          <Route path="/services/finance" element={<FinancingAdsPage />} />
+
+          <Route path="/services/developmentAds" element={<DeveloperAdsPage />} />
+
+
+          <Route path="/favorite" element={<Favorite />} />
+          <Route
+            path="/insert-finance-data"
+            element={<FinancingAdvExample />}
+          />
+          <Route
+            path="/insert-dev-data"
+            element={<RealEstateDevAdvExample />}
+          />
 
           {/* Forms & Insert */}
           <Route path="/add-financing-ad" element={<AddFinancingAdForm />} />
@@ -93,6 +157,23 @@ function App() {
           <Route path="/AddAdvertisement" element={<ModernRealEstateForm />} />
           <Route path="/AdddeveloperAds" element={<PropertyPage />} />
 
+          <Route path="details">
+            <Route
+              path="financingAds/:id"
+              element={<DetailsForFinincingAds />}
+            />
+            <Route path="clientAds/:id" element={<DetailsForClient />} />
+            <Route
+              path="developmentAds/:id"
+              element={<DetailsForDevelopment />}
+            />
+          </Route>
+          <Route path="search" element={<SearchPage />} />
+          <Route path="profile" element={<Profile />} /> 
+
+          {/* <Route path="AddAdvertisement" element={<AddAdvertisement />}></Route> 
+
+          {/* <Route path="AddAdvertisement" element={<ModernRealEstateForm/>}></Route>  */}
           {/* Real estate announcements */}
           <Route path="/RealEstateDeveloperAnnouncement" element={<PropertyPage />} />
 
@@ -106,6 +187,7 @@ function App() {
       </Layout>
       <Footer />
     </SearchProvider>
+    </>
   );
 }
 

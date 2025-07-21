@@ -16,6 +16,7 @@ import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import Brightness4Icon from "@mui/icons-material/Brightness4";
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import { useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import EmailIcon from '@mui/icons-material/Email';
 import { useUnreadMessages } from '../context/unreadMessageContext';
 import NotificationsIcon from '@mui/icons-material/Notifications'; 
@@ -25,6 +26,18 @@ export default function Nav({ toggleMode }) {
   const { totalUnreadCount } = useUnreadMessages();
   const [anchorEl, setAnchorEl] = useState(null);
   const navigate = useNavigate();
+  const userType = useSelector((state) => state.auth.type_of_user);
+
+  const handleProfileClick = () => {
+    if (userType === 'client') {
+      navigate('/client-dashboard');
+    } else if (userType === 'organization') {
+      navigate('/organization-dashboard');
+    } else if (userType === 'admin') {
+      navigate('/admin-dashboard');
+    } else {
+      navigate('/profile');
+    }
   const handleClick = (event) => {
     setAnchorEl(event.currentTarget);
   };
@@ -130,7 +143,7 @@ export default function Nav({ toggleMode }) {
        
 
           <Tooltip title="ملفك الشخصي">
-            <IconButton size="small" sx={{ color: "#fff" }} onClick={() => navigate('#')}>
+            <IconButton size="small" sx={{ color: "#fff" }} onClick={handleProfileClick}>
               <AccountCircleIcon />
             </IconButton>
           </Tooltip>
@@ -138,4 +151,4 @@ export default function Nav({ toggleMode }) {
       </Toolbar>
     </AppBar>
   );
-}
+}}

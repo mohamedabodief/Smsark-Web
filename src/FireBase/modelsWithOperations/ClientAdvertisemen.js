@@ -154,29 +154,41 @@ class ClientAdvertisement {
     };
     await this.update(updates);
 
-    const notif = new Notification({
-      receiver_id: this.userId,
-      title: 'تمت الموافقة على إعلانك',
-      body: `إعلانك "${this.title}" تمت الموافقة عليه.`,
-      type: 'system',
-      link: `/client/ads/${this.#id}`,
-    });
-    await notif.send();
-
-    const otherAdmins = (await User.getAllUsersByType('admin')).filter(
-      (a) => a.uid !== admin.uid
-    );
-    await Promise.all(
-      otherAdmins.map((admin2) =>
-        new Notification({
-          receiver_id: admin2.uid,
-          title: '📢 تمت الموافقة على إعلان',
-          body: `${admin.adm_name} وافق على الإعلان "${this.title}"`,
+    // Send notification to the advertisement owner only if userId exists
+    if (this.userId) {
+      try {
+        const notif = new Notification({
+          receiver_id: this.userId,
+          title: 'تمت الموافقة على إعلانك',
+          body: `إعلانك "${this.title}" تمت الموافقة عليه.`,
           type: 'system',
-          link: `/admin/client-ads/${this.#id}`,
-        }).send()
-      )
-    );
+          link: `/client/ads/${this.#id}`,
+        });
+        await notif.send();
+      } catch (error) {
+        console.warn('Failed to send notification to advertisement owner:', error);
+      }
+    }
+
+    // Send notifications to other admins
+    try {
+      const otherAdmins = (await User.getAllUsersByType('admin')).filter(
+        (a) => a.uid !== admin.uid
+      );
+      await Promise.all(
+        otherAdmins.map((admin2) =>
+          new Notification({
+            receiver_id: admin2.uid,
+            title: '📢 تمت الموافقة على إعلان',
+            body: `${admin.adm_name} وافق على الإعلان "${this.title}"`,
+            type: 'system',
+            link: `/admin/client-ads/${this.#id}`,
+          }).send()
+        )
+      );
+    } catch (error) {
+      console.warn('Failed to send notifications to other admins:', error);
+    }
   }
 
   // ✅ رفض الإعلان مع ملاحظة
@@ -193,29 +205,41 @@ class ClientAdvertisement {
     };
     await this.update(updates);
 
-    const notif = new Notification({
-      receiver_id: this.userId,
-      title: 'تم رفض إعلانك',
-      body: `تم رفض إعلانك "${this.title}". السبب: ${reason || 'غير مذكور'}`,
-      type: 'system',
-      link: `/client/ads/${this.#id}`,
-    });
-    await notif.send();
-
-    const otherAdmins = (await User.getAllUsersByType('admin')).filter(
-      (a) => a.uid !== admin.uid
-    );
-    await Promise.all(
-      otherAdmins.map((admin2) =>
-        new Notification({
-          receiver_id: admin2.uid,
-          title: '❌ تم رفض إعلان',
-          body: `${admin.adm_name} رفض الإعلان "${this.title}"\n📝 السبب: ${reason}`,
+    // Send notification to the advertisement owner only if userId exists
+    if (this.userId) {
+      try {
+        const notif = new Notification({
+          receiver_id: this.userId,
+          title: 'تم رفض إعلانك',
+          body: `تم رفض إعلانك "${this.title}". السبب: ${reason || 'غير مذكور'}`,
           type: 'system',
-          link: `/admin/client-ads/${this.#id}`,
-        }).send()
-      )
-    );
+          link: `/client/ads/${this.#id}`,
+        });
+        await notif.send();
+      } catch (error) {
+        console.warn('Failed to send notification to advertisement owner:', error);
+      }
+    }
+
+    // Send notifications to other admins
+    try {
+      const otherAdmins = (await User.getAllUsersByType('admin')).filter(
+        (a) => a.uid !== admin.uid
+      );
+      await Promise.all(
+        otherAdmins.map((admin2) =>
+          new Notification({
+            receiver_id: admin2.uid,
+            title: '❌ تم رفض إعلان',
+            body: `${admin.adm_name} رفض الإعلان "${this.title}"\n📝 السبب: ${reason}`,
+            type: 'system',
+            link: `/admin/client-ads/${this.#id}`,
+          }).send()
+        )
+      );
+    } catch (error) {
+      console.warn('Failed to send notifications to other admins:', error);
+    }
   }
 
   // ✅ إعادة الإعلان لحالة المراجعة
@@ -232,29 +256,69 @@ class ClientAdvertisement {
     };
     await this.update(updates);
 
-    const notif = new Notification({
-      receiver_id: this.userId,
-      title: 'إعلانك الآن تحت المراجعة',
-      body: `تمت إعادة إعلانك "${this.title}" لحالة المراجعة من قبل الأدمن.`,
-      type: 'system',
-      link: `/client/ads/${this.#id}`,
-    });
-    await notif.send();
-
-    const otherAdmins = (await User.getAllUsersByType('admin')).filter(
-      (a) => a.uid !== admin.uid
-    );
-    await Promise.all(
-      otherAdmins.map((admin2) =>
-        new Notification({
-          receiver_id: admin2.uid,
-          title: '🔁 إعادة إعلان إلى المراجعة',
-          body: `${admin.adm_name} أعاد الإعلان "${this.title}" إلى حالة المراجعة`,
+    // Send notification to the advertisement owner only if userId exists
+    if (this.userId) {
+      try {
+        const notif = new Notification({
+          receiver_id: this.userId,
+          title: 'إعلانك الآن تحت المراجعة',
+          body: `تمت إعادة إعلانك "${this.title}" لحالة المراجعة من قبل الأدمن.`,
           type: 'system',
-          link: `/admin/client-ads/${this.#id}`,
-        }).send()
-      )
-    );
+          link: `/client/ads/${this.#id}`,
+        });
+        await notif.send();
+      } catch (error) {
+        console.warn('Failed to send notification to advertisement owner:', error);
+      }
+    }
+
+    // Send notifications to other admins
+    try {
+      const otherAdmins = (await User.getAllUsersByType('admin')).filter(
+        (a) => a.uid !== admin.uid
+      );
+      await Promise.all(
+        otherAdmins.map((admin2) =>
+          new Notification({
+            receiver_id: admin2.uid,
+            title: '🔁 إعادة إعلان إلى المراجعة',
+            body: `${admin.adm_name} أعاد الإعلان "${this.title}" إلى حالة المراجعة`,
+            type: 'system',
+            link: `/admin/client-ads/${this.#id}`,
+          }).send()
+        )
+      );
+    } catch (error) {
+      console.warn('Failed to send notifications to other admins:', error);
+    }
+  }
+
+  // ✅ إعادة الإعلان لحالة المراجعة (من العميل)
+  async clientReturnToPending() {
+    const updates = {
+      reviewStatus: 'pending',
+      reviewed_by: null,
+      review_note: null,
+    };
+    await this.update(updates);
+
+    // Send notifications to admins
+    try {
+      const admins = await User.getAllUsersByType('admin');
+      await Promise.all(
+        admins.map((admin) =>
+          new Notification({
+            receiver_id: admin.uid,
+            title: '🔄 إعلان جديد تحتاج مراجعة',
+            body: `العميل ${this.user_name} أعاد إعلانه "${this.title}" إلى حالة المراجعة`,
+            type: 'system',
+            link: `/admin/client-ads/${this.#id}`,
+          }).send()
+        )
+      );
+    } catch (error) {
+      console.warn('Failed to send notifications to admins:', error);
+    }
   }
 
   // ✅ تحديث حالة العرض (status)
@@ -311,6 +375,21 @@ class ClientAdvertisement {
     return snapshot.docs.map(
       (docSnap) => new ClientAdvertisement(docSnap.data())
     );
+  }
+
+  // ✅ جلب إعلانات مستخدم معيّن
+  static async getByUserId(userId) {
+    const q = query(
+      collection(db, 'ClientAdvertisements'),
+      where('userId', '==', userId)
+    );
+    const snapshot = await getDocs(q);
+    const ads = [];
+    for (const docSnap of snapshot.docs) {
+      const ad = await ClientAdvertisement.#handleExpiry(docSnap.data());
+      if (ad) ads.push(ad);
+    }
+    return ads;
   }
 
   // ✅ الاشتراك اللحظي في الإعلانات حسب حالة المراجعة (pending, approved, rejected)
