@@ -29,6 +29,8 @@ import Notification from "./FireBase/MessageAndNotification/Notification";
 import SearchPage from "./pages/SearchPage";
 import ContactUs from "./contactUs/ContactUs";
 import { Navigate } from 'react-router-dom';
+import AdPackages from "../packages/packagesDev&Fin";
+import AdPackagesClient from "../packages/packagesClient";
 import AdminDashboard from "./Dashboard/adminDashboard";
 import ClientDashboard from "./Dashboard/clientDashboard";
 import OrganizationDashboard from "./Dashboard/organization/organizationDashboard";
@@ -222,7 +224,15 @@ function App() {
             />
           </Route>
           <Route path="search" element={<SearchPage />} />
-          <Route path="profile" element={<Profile />} /> 
+          <Route path="AddAdvertisement" element={<ModernRealEstateForm />}></Route>
+          <Route path="AddAdvertisement" element={<ModernRealEstateForm />}></Route>
+          <Route path="inbox" element={<InboxChats/>}/>
+          <Route path="/privateChat/:id" element={<ChatBox/>}/>
+          <Route path="profile" element={<Profile />} />
+          <Route path="/packages" element={<AdPackages />} />
+          <Route path="/Client-packages" element={<AdPackagesClient />} />
+          
+           {/* <Route path="AddAdvertisement" element={<AddAdvertisement />}></Route>  */}
 
           {/* <Route path="AddAdvertisement" element={<AddAdvertisement />}></Route> 
 
