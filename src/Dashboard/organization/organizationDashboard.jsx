@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { createTheme, ThemeProvider, styled } from '@mui/material/styles';
 import {
@@ -1559,8 +1559,8 @@ function ProfilePage() {
                                     onClick={handleSave}
                                     sx={{ px: 4, py: 1.5, fontSize: '1.1rem' }}
                                 >
-                                    حفظ التغييرات
-                                </Button>
+                                حفظ التغييرات
+                            </Button>
                             </Box>
                         </Box>
                     </Grid>
@@ -2177,11 +2177,33 @@ function PropertiesPage() {
     );
 }
 
-function Mainadvertisment() {
-    const dispatch = useDispatch();
+function Mainadvertisment(props) {
     const userProfile = useSelector((state) => state.user.profile);
-    const homepageAds = useSelector((state) => state.homepageAds?.byUser || []);
+    const dispatch = useDispatch();
+    const homepageAds = useSelector((state) => state.homepageAds?.all || []);
     const homepageAdsLoading = useSelector((state) => state.homepageAds?.loading || false);
+    // Only show ads created by this organization
+    const orgHomepageAds = useMemo(() => homepageAds.filter(ad => ad.userId === userProfile?.uid), [homepageAds, userProfile]);
+    // Add missing state for filters
+    const [statusFilter, setStatusFilter] = useState('all');
+    const [activationFilter, setActivationFilter] = useState('all');
+    // Memoize filteredAds for filtering UI
+    const filteredAds = useMemo(() => orgHomepageAds.filter(ad => {
+        const statusMatch = statusFilter === 'all' || ad.reviewStatus === statusFilter;
+        const activationMatch = activationFilter === 'all' || 
+            (activationFilter === 'active' && ad.ads) || 
+            (activationFilter === 'inactive' && !ad.ads);
+        return statusMatch && activationMatch;
+    }), [orgHomepageAds, statusFilter, activationFilter]);
+    // Memoize stats for this org
+    const stats = useMemo(() => ({
+        total: orgHomepageAds.length,
+        pending: orgHomepageAds.filter(ad => ad.reviewStatus === 'pending').length,
+        approved: orgHomepageAds.filter(ad => ad.reviewStatus === 'approved').length,
+        rejected: orgHomepageAds.filter(ad => ad.reviewStatus === 'rejected').length,
+        active: orgHomepageAds.filter(ad => ad.ads).length,
+        inactive: orgHomepageAds.filter(ad => !ad.ads).length,
+    }), [orgHomepageAds]);
 
     // State for modals and operations
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -2394,6 +2416,7 @@ function Mainadvertisment() {
                 onClose={() => setIsAddModalOpen(false)}
                 onAdd={handleAddAd}
                 userProfile={userProfile}
+                userType={userProfile?.type_of_user}
             />
 
             {/* Edit Modal */}
@@ -3337,6 +3360,14 @@ export default function OrganizationDashboard(props) {
                                     >
                                         {isLoggingOut ? 'جارِ تسجيل الخروج...' : 'تسجيل الخروج'} {/* Change text during logout */}
                                     </Button>
+                                    <IconButton
+                                        sx={{ ml: 1 }}
+                                        color="inherit"
+                                        onClick={() => navigate('/home')}
+                                        title="العودة للصفحة الرئيسية"
+                                    >
+                                        <HomeIcon />
+                                    </IconButton>
                                 </Toolbar>
                             </AppBarStyled>
 

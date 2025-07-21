@@ -8,6 +8,8 @@ import User from "./FireBase/modelsWithOperations/User";
 function AuthSync() {
   const dispatch = useDispatch();
 
+  // Remove sessionStorage restore logic here, since Redux is now initialized synchronously
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {

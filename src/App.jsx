@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Route, Routes, Navigate } from "react-router-dom";
 import DetailsForClient from "./pages/Details/detailsForClient";
-import DetailsForFinaccingAds from "./pages/Details/detailsForFinaccingAds";
+import DetailsForFinancingAds from "./pages/Details/detailsForFinaccingAds";
 import DetailsForDevelopment from "./pages/Details/detailsForDevelopment";
 import Layout from "./Layout/Layout";
 import Home from "./componenents/Home";
@@ -32,7 +32,7 @@ import ClientDashboard from "./Dashboard/clientDashboard";
 import OrganizationDashboard from "./Dashboard/organization/organizationDashboard";
 import PrivateRoute from "./PrivateRoute";
 import AuthSync from "./AuthSync";
-
+import RequireNotAuth from "./LoginAndRegister/RequireNotAuth";
 
 
 import { onMessage, messaging, auth } from "./FireBase/firebaseConfig";
@@ -98,8 +98,8 @@ function App() {
 
              */}
           {/* <Route path="/auth"> */}
-          <Route path="login" element={<LoginRegister />} />
-          <Route path="register" element={<LoginRegister />} />
+          <Route path="login" element={<RequireNotAuth><LoginRegister /></RequireNotAuth>} />
+          <Route path="register" element={<RequireNotAuth><LoginRegister /></RequireNotAuth>} />
           <Route path="/about" element={<AboutUs />} />
           <Route path="/RealEstateDeveloperAnnouncement" element={<PropertyPage />} />
 
@@ -160,7 +160,7 @@ function App() {
           <Route path="details">
             <Route
               path="financingAds/:id"
-              element={<DetailsForFinincingAds />}
+              element={<DetailsForFinancingAds />}
             />
             <Route path="clientAds/:id" element={<DetailsForClient />} />
             <Route
@@ -180,7 +180,7 @@ function App() {
           {/* Details */}
           <Route path="/detailsForDevelopment/:id" element={<DetailsForDevelopment />} />
           <Route path="/detailsForDevelopment" element={<Navigate to="/RealEstateDeveloperAnnouncement" replace />} />
-          <Route path="/details/financingAds/:id" element={<DetailsForFinaccingAds />} />
+          <Route path="/details/financingAds/:id" element={<DetailsForFinancingAds />} />
           <Route path="/details/clientAds/:id" element={<DetailsForClient />} />
           <Route path="/details/developmentAds/:id" element={<DetailsForDevelopment />} />
         </Routes>
