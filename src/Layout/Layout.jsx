@@ -2,9 +2,12 @@
 import React, { useState, useMemo } from "react";
 import { ThemeProvider, createTheme, CssBaseline, Box } from "@mui/material";
 import Nav from "../componenents/Nav";
+import Footer from "../componenents/Footer";
+import { useLocation } from "react-router-dom";
 import { UnreadMessagesProvider } from "../context/unreadMessageContext";
 export default function Layout({ children }) {
   const [mode, setMode] = useState("light");
+  const location = useLocation();
 
   const theme = useMemo(
     () =>
@@ -26,6 +29,13 @@ export default function Layout({ children }) {
     setMode((prev) => (prev === "light" ? "dark" : "light"));
   };
 
+  // Determine if current route is a dashboard
+  const isDashboard = [
+    "/admin-dashboard",
+    "/client-dashboard",
+    "/organization-dashboard"
+  ].some((path) => location.pathname.startsWith(path));
+
   return (
     <UnreadMessagesProvider>
     <ThemeProvider theme={theme}>
@@ -34,6 +44,8 @@ export default function Layout({ children }) {
       <Box component="main" sx={{ mt: { xs: 9, md: 10 }, px: 2 }}>
         {children}
       </Box>
+      {/* Only show Footer if not on a dashboard route */}
+      {!isDashboard && <Footer />}
     </ThemeProvider>
     </UnreadMessagesProvider>
   );
