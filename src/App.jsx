@@ -194,7 +194,6 @@ function App() {
           <Route path="/details/developmentAds/:id" element={<DetailsForDevelopment />} />
         </Routes>
       </Layout>
-      <Footer />
     </SearchProvider>
     </>
   );
