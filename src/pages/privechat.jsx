@@ -14,7 +14,7 @@ import {
   doc,
 } from "firebase/firestore";
 import { useLocation, useNavigate } from "react-router-dom";
-
+import Notification from "../FireBase/MessageAndNotification/Notification";
 function ChatBox() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -108,6 +108,16 @@ function ChatBox() {
         is_read: false,
         timestamp: serverTimestamp(),
       });
+      ///////////////
+      const notification = new Notification({
+      receiver_id: otherUser.userId,
+      title: `رسالة جديدة من ${ otherUser.userName|| 'مستخدم'}`,
+      body: newMessage || 'لقد تلقيت رسالة جديدة!',
+      type: 'message',
+      link: `/privateChat/${otherUser.userId}`
+    });
+    await notification.send();
+      //////////////
       setNewMessage("");
     } catch (err) {
       console.error("خطأ في إرسال الرسالة:", err);

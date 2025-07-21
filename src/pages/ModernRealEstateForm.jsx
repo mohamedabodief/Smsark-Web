@@ -295,6 +295,7 @@ const ModernRealEstateForm = () => {
       await ad.save(images);
       setShowSuccess(true);
       handleReset();
+        navigate(`/details/clientAds/${ad.id}`)
     } catch (error) {
       setSubmitError(error.message || 'حدث خطأ أثناء إضافة الإعلان. تأكد من أن الصور يتم رفعها إلى المسار الصحيح (property_images).');
       console.error('Error during submission:', error);

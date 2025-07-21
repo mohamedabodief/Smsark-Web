@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   AppBar,
   Toolbar,
@@ -15,16 +15,31 @@ import {
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import Brightness4Icon from "@mui/icons-material/Brightness4";
 import FavoriteIcon from '@mui/icons-material/Favorite';
-import { useNavigate } from 'react-router-dom';
 import EmailIcon from '@mui/icons-material/Email';
+import NotificationsIcon from '@mui/icons-material/Notifications';
+import { useNavigate } from 'react-router-dom';
 import { useUnreadMessages } from '../context/unreadMessageContext';
-import NotificationsIcon from '@mui/icons-material/Notifications'; 
-import NotificationBell from '../Homeparts/NotificationBell';
+import NotificationList from '../pages/notificationList';
+import Notification from '../FireBase/MessageAndNotification/Notification';
+import { auth } from '../FireBase/firebaseConfig';
 
 export default function Nav({ toggleMode }) {
-  const { totalUnreadCount } = useUnreadMessages();
+  const [unreadCount, setUnreadCount] = useState(0);
   const [anchorEl, setAnchorEl] = useState(null);
   const navigate = useNavigate();
+  const currentId = auth.currentUser?.uid;
+  const { totalUnreadCount } = useUnreadMessages();
+
+  useEffect(() => {
+    if (currentId) {
+      // الاشتراك في عدد الإشعارات غير المقروءة
+      const unsubscribe = Notification.subscribeUnreadCount(currentId, (count) => {
+        setUnreadCount(count);
+      });
+      return () => unsubscribe();
+    }
+  }, [currentId]);
+
   const handleClick = (event) => {
     setAnchorEl(event.currentTarget);
   };
@@ -33,12 +48,12 @@ export default function Nav({ toggleMode }) {
     setAnchorEl(null);
   };
 
-  const open = Boolean(anchorEl);
-
   const handleMessagesClick = () => {
     handleClose();
     navigate("/inbox");
   };
+
+  const open = Boolean(anchorEl);
 
   return (
     <AppBar
@@ -85,52 +100,93 @@ export default function Nav({ toggleMode }) {
               <FavoriteIcon />
             </Button>
           </Tooltip>
-<Tooltip title="الرسائل">
-  <IconButton
-    size="small"
-    sx={{ color: "white" }}
-    onClick={() => {
-      navigate("/inbox");
-    }}
-  >
-    <Badge
-      badgeContent={totalUnreadCount}
-      color="error"
-      sx={{
-        "& .MuiBadge-badge": {
-          top: "0px",
-          right: "0px", 
-          backgroundColor: "#d1d1d1ff",
-          color: "black",
-          fontWeight: "bold",
-          minWidth: "20px",
-          height: "20px",
-          borderRadius: "50%",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: "14px",
-          zIndex: "10000",
-        },
-      }}
-    >
-      <EmailIcon />
-    </Badge>
-  </IconButton>
-</Tooltip>
-
+          <Tooltip title="الرسائل">
+            <IconButton
+              size="small"
+              sx={{ color: "white" }}
+              onClick={handleMessagesClick}
+            >
+              <Badge
+                badgeContent={totalUnreadCount}
+                color="error"
+                sx={{
+                  "& .MuiBadge-badge": {
+                    top: "0px",
+                    right: "0px",
+                    backgroundColor: "#d1d1d1ff",
+                    color: "black",
+                    fontWeight: "bold",
+                    minWidth: "20px",
+                    height: "20px",
+                    borderRadius: "50%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: "14px",
+                    zIndex: "10000",
+                  },
+                }}
+              >
+                <EmailIcon />
+              </Badge>
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="الإشعارات">
+            <IconButton
+              size="small"
+              sx={{ color: "white" }}
+              onClick={handleClick}
+            >
+              <Badge
+                badgeContent={unreadCount}
+                color="error"
+                sx={{
+                  "& .MuiBadge-badge": {
+                    top: "0px",
+                    right: "0px",
+                    backgroundColor: "#d1d1d1ff",
+                    color: "black",
+                    fontWeight: "bold",
+                    minWidth: "20px",
+                    height: "20px",
+                    borderRadius: "50%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: "14px",
+                    zIndex: "10000",
+                  },
+                }}
+              >
+                <NotificationsIcon />
+              </Badge>
+            </IconButton>
+          </Tooltip>
           <Tooltip title="تبديل الثيم">
             <IconButton size="small" onClick={toggleMode}>
               <Brightness4Icon />
             </IconButton>
           </Tooltip>
-       
-
           <Tooltip title="ملفك الشخصي">
             <IconButton size="small" sx={{ color: "#fff" }} onClick={() => navigate('#')}>
               <AccountCircleIcon />
             </IconButton>
           </Tooltip>
+          <Popover
+            open={open}
+            anchorEl={anchorEl}
+            onClose={handleClose}
+            anchorOrigin={{
+              vertical: 'bottom',
+              horizontal: 'right',
+            }}
+            transformOrigin={{
+              vertical: 'top',
+              horizontal: 'right',
+            }}
+          >
+            <NotificationList userId={currentId} />
+          </Popover>
         </Stack>
       </Toolbar>
     </AppBar>

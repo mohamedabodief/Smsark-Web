@@ -1,5 +1,5 @@
-import React, { useEffect } from "react";
-import { Route, Routes } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { Route, Routes, useNavigate } from "react-router-dom";
 import DetailsForClient from "./pages/Details/detailsForClient";
 import DetailsForFinincingAds from "./pages/Details/detailsForFinaccingAds";
 import SearchPage from "./pages/SearchPage";
@@ -31,12 +31,17 @@ import InboxChats from "./pages/InboxChats";
 import ChatBox from "./pages/privechat";
 // import DeveloperAdsPage from "./services/developmentAds";
 import Profile from "./componenents/profile";
-
-
-
-
+import { Snackbar, Alert, Button } from '@mui/material';
+import Notification from "./FireBase/MessageAndNotification/Notification";
+import { auth } from "./FireBase/firebaseConfig";
 
 function App() {
+  const [notifications, setNotifications] = useState([]);
+  const [openSnackbar, setOpenSnackbar] = useState(false);
+  const [currentNotification, setCurrentNotification] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null); // استخدام useState
+  const navigate = useNavigate();
+  ////////////////////////////////////////////////
   useEffect(() => {
     // ✅ طلب الإذن وحفظ التوكن
     requestPermissionAndSaveToken();
@@ -51,6 +56,46 @@ function App() {
       }
     });
   }, []);
+  ///////////////////////////////
+ useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      setCurrentUser(user); // تحديث currentUser
+    });
+    return () => unsubscribe();
+  }, []);
+ useEffect(() => {
+    if (currentUser) {
+      const unsubscribe = Notification.subscribeByUser(currentUser.uid, (notifs) => {
+        const newNotifs = notifs.filter(n => !n.is_read);
+        if (newNotifs.length > notifications.length) {
+          const latestNotif = newNotifs[newNotifs.length - 1];
+          setCurrentNotification(latestNotif);
+          setOpenSnackbar(true);
+        }
+        setNotifications(newNotifs);
+      });
+
+      return () => unsubscribe();
+    }
+  }, [currentUser, notifications]);
+  const handleOpenChat = () => {
+    if (currentNotification?.link) {
+      const userId = currentNotification.link.split('/privateChat/')[1];
+      navigate(`/privateChat/${otherUser.userId}`, {
+        state: { otherUser: { userId, userName: currentNotification.title.split('من ')[1] || 'مستخدم غير معروف' } }
+      });
+      handleCloseSnackbar();
+    }
+  };
+
+  const handleCloseSnackbar = () => {
+    setOpenSnackbar(false);
+    if (currentNotification) {
+      Notification.markAsRead(currentNotification.id);
+    }
+  };
+
+  //////////////////////////////
   return (
     <>
       {/* https://nominatim.openstreetmap.org/ui/search.html */}
@@ -146,7 +191,46 @@ function App() {
         </Routes>
       </Layout>
       <Footer />
-
+<Snackbar
+  open={openSnackbar}
+  autoHideDuration={6000}
+ 
+  onClose={handleCloseSnackbar}
+  anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+>
+  <Alert
+    severity="info"
+    action={
+      <>
+        <Button color="inherit" size="small" onClick={handleOpenChat}>
+          فتح
+        </Button>
+        <Button color="inherit" size="small" onClick={handleCloseSnackbar}>
+          إغلاق
+        </Button>
+      </>
+    }
+    sx={{
+      width: '100%',
+      maxWidth: '400px',
+      textAlign: 'right',
+      backgroundColor: '#ffffff',
+      borderRadius: '8px',
+      padding: '16px',
+      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+      '& .MuiAlert-icon': {
+        marginRight: '12px',
+      },
+      '& .MuiAlert-message': {
+        padding: '8px 0',
+      },
+    }}
+  >
+    <strong>{currentNotification?.title}</strong>
+    <br />
+    {currentNotification?.body}
+  </Alert>
+</Snackbar>
       {/* <AddMultipleAdsOnce/> */}
     </>
   );
