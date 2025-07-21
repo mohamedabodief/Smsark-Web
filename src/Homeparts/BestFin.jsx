@@ -15,9 +15,9 @@ export default function BestFin() {
   const [offers, setOffers] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+    useEffect(() => {
     const addUniqueAds = async () => {
-      const existingAds = await FinancingAdvertisement.getAll(); // استرجاع البيانات الحالية
+      const existingAds = await FinancingAdvertisement.getAll();
 
       financingAdsData.forEach(async (data) => {
         const alreadyExists = existingAds.some(
@@ -38,8 +38,23 @@ export default function BestFin() {
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    
+    const interval = setInterval(() => {
+      const cardWidth = 344;
+      if (sliderRef.current) {
+        sliderRef.current.scrollBy({
+          left: -cardWidth,
+          behavior: 'smooth',
+        });
+      }
+    }, 5000); 
+
+    return () => {
+      unsubscribe();
+      clearInterval(interval); 
+    };
   }, []);
+
 
 
   const scroll = (direction) => {

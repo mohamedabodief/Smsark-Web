@@ -1,41 +1,45 @@
-import { AppBar, Box, Button, IconButton, Toolbar, Typography, useTheme } from '@mui/material'
-import React from 'react'
-import Brightness4Icon from '@mui/icons-material/Brightness4';
-function ThemePage({mode}) {
-  const theme = useTheme();
-  return (
-    //  <!-- 6. شريط التطبيق مع زر التبديل -->
-     <>
-      <AppBar position="static">
-        <Toolbar>
-          <Typography variant="h6" sx={{ flexGrow: 1 }}>
-            واجهة بسيطة
-          </Typography>
-          <IconButton 
-          onClick={
-            ()=>{
-       theme.palette.mode=='dark'?mode('light'):mode('dark')
+import React, { useState, useMemo } from 'react';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
+import ThemePage from './ThemePage';
 
+function App() {
+  const [mode, setMode] = useState('light');
+
+  const theme = useMemo(() =>
+    createTheme({
+      palette: {
+        mode: mode,
+        ...(mode === 'light'
+          ? {
+              // الألوان في الوضع الفاتح
+              background: {
+                default: '#ffffff',
+                paper: '#f0f8ff',
+              },
+              primary: {
+                main: '#1976d2',
+              },
             }
-          }
-          
-          >
-             {/* <Brightness4 /> */}
-             <Brightness4Icon/>
-          </IconButton>
-        </Toolbar>
-      </AppBar>
-      
-      {/* <!-- 7. محتوى التطبيق --> */}
-      <Box sx={{ p: 4 }}>
-        <Typography variant="body1" gutterBottom>
-          هذا مثال بسيط على التبديل بين الوضع الفاتح والداكن باستخدام MUI.
-        </Typography>
-        <Button variant="contained">زر</Button>
-      </Box>
-     </>
-  )
+          : {
+              // الألوان في الوضع الداكن
+              background: {
+                default: '#121212',
+                paper: '#1e1e1e',
+              },
+              primary: {
+                main: '#90caf9',
+              },
+            }),
+      },
+    }), [mode]);
+
+  return (
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <ThemePage mode={setMode} />
+    </ThemeProvider>
+  );
 }
 
-export default ThemePage
-
+export default App;
