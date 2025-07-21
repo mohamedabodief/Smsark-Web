@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from 'react';
+//scr/pages/Details/detailsForDevelopment.jsx
+
+import React, { useState, useEffect } from "react";
 import {
   Container,
   Box,
@@ -8,50 +10,124 @@ import {
   Breadcrumbs,
   Button,
   Avatar,
+  Chip,
+  Grid,
+  Card,
+  CardContent,
+  Divider,
+  IconButton,
+  Alert,
+  Paper,
   Dialog,
   DialogTitle,
   DialogContent,
   TextField,
-  DialogActions
-} from '@mui/material';
+  DialogActions,
+} from "@mui/material";
+
 import {
   WhatsApp as WhatsAppIcon,
   FavoriteBorder as FavoriteBorderIcon,
   BookmarkBorder as BookmarkBorderIcon,
   OutlinedFlag as OutlinedFlagIcon,
-  ShareOutlined as ShareOutlinedIcon
-} from '@mui/icons-material';
-import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
-import HomeIcon from '@mui/icons-material/Home';
-import { useParams, Link } from 'react-router-dom';
-import MapPicker from '../../LocationComponents/MapPicker';
-import RealEstateDeveloperAdvertisement from '../../FireBase/modelsWithOperations/RealEstateDeveloperAdvertisement';
-import PhoneIcon from '@mui/icons-material/Phone';
+  ShareOutlined as ShareOutlinedIcon,
+  Edit as EditIcon,
+  LocationOn as LocationOnIcon,
+  AttachMoney as AttachMoneyIcon,
+  Phone as PhoneIcon,
+  KingBed as KingBedIcon,
+  Bathtub as BathtubIcon,
+  SquareFoot as SquareFootIcon,
+  Business as BusinessIcon,
+  Home as HomeIcon,
+  Villa as VillaIcon,
+  BeachAccess as BeachAccessIcon,
+} from "@mui/icons-material";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import MapPicker from "../../LocationComponents/MapPicker";
+import RealEstateDeveloperAdvertisement from "../../FireBase/modelsWithOperations/RealEstateDeveloperAdvertisement";
+
+import { auth } from "../../FireBase/firebaseConfig";
+
+import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
 function DetailsForDevelopment() {
-    const [open, setOpen] = useState(false);
-  const [message, setMessage] = useState(""); 
+  const [open, setOpen] = useState(false);
+  const [message, setMessage] = useState("");
   const { id } = useParams();
+  const navigate = useNavigate();
   const [clientAds, setClientAds] = useState(null);
-  const [mainImage, setMainImage] = useState('');
-  const [city, setCity] = useState('');
-  const [governorate, setGovernorate] = useState('');
-  const [road, setRoad] = useState('');
+  const [mainImage, setMainImage] = useState("");
   const [showFull, setShowFull] = useState(false);
+  // const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const toggleShow = () => setShowFull((prev) => !prev);
 
   useEffect(() => {
     const fetchAd = async () => {
-      const ad = await RealEstateDeveloperAdvertisement.getById(id);
-      if (ad) {
-        setClientAds(ad);
-        if (Array.isArray(ad.image) && ad.image.length > 0) {
-          setMainImage(ad.image[0]);
+      try {
+        setError(null);
+        console.log("Fetching ad with ID:", id);
+        const ad = await RealEstateDeveloperAdvertisement.getById(id);
+        if (ad) {
+          console.log("Ad data:", ad);
+          console.log("Ad ID:", ad.id);
+          setClientAds({ ...ad, id: ad.id });
+          if (Array.isArray(ad.images) && ad.images.length > 0) {
+            console.log("Images found:", ad.images);
+            // التحقق من أن الصور صالحة - استبعاد القيم الفارغة والروابط غير الصحيحة
+            const validImages = ad.images.filter(
+              (img) =>
+                typeof img === "string" &&
+                img.trim() !== "" &&
+                img !== "null" &&
+                img !== "undefined" &&
+                (img.startsWith("http") || img.startsWith("https"))
+            );
+            if (validImages.length > 0) {
+              console.log("Valid images found:", validImages);
+              setMainImage(validImages[0]);
+            } else {
+              console.log("No valid images found - all images are invalid");
+              setMainImage("/no-image.svg");
+            }
+          } else {
+            console.log("No images array found in ad");
+            setMainImage("/no-image.svg");
+          }
+        } else {
+          setError("العقار غير موجود");
+          console.error("Ad not found for ID:", id);
         }
+      } catch (error) {
+        setError("حدث خطأ في تحميل بيانات العقار");
+        console.error("Error fetching ad:", error);
       }
     };
     if (id) fetchAd();
   }, [id]);
+
+  const handleEdit = () => {
+    // التحقق من وجود ID صالح
+    if (!clientAds?.id) {
+      console.error("No valid ID found for the advertisement");
+      console.error("Client ads data:", clientAds);
+      alert("لا يمكن تعديل هذا الإعلان - لا يوجد معرف صالح");
+      return;
+    }
+
+    console.log("Editing advertisement with ID:", clientAds.id);
+    console.log("Full client ads data:", clientAds);
+
+    // الانتقال لصفحة إضافة الإعلان مع البيانات الحالية
+    navigate("/RealEstateDeveloperAnnouncement", {
+      state: {
+        editMode: true,
+        adData: clientAds,
+        adId: clientAds.id,
+      },
+    });
+  };
 
   const pulse = keyframes`
     0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.4); }
@@ -59,68 +135,128 @@ function DetailsForDevelopment() {
     100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(37, 211, 102, 0); }
   `;
 
+  // التحقق من أن المستخدم هو صاحب الإعلان
+  const isOwner = auth.currentUser?.uid === clientAds?.userId;
+
+  // إضافة console.log للتحقق من البيانات
+  console.log("Current user ID:", auth.currentUser?.uid);
+  console.log("Ad user ID:", clientAds?.userId);
+  console.log("Is owner:", isOwner);
+
+  // دالة للحصول على أيقونة نوع العقار
+  // const getPropertyTypeIcon = (type) => {
+  //   switch (type) {
+  //     case "شقق للبيع":
+  //     case "شقق للإيجار":
+  //       return <HomeIcon />;
+  //     case "فلل للبيع":
+  //     case "فلل للإيجار":
+  //       return <VillaIcon />;
+  //     case "عقارات مصايف للبيع":
+  //     case "عقارات مصايف للإيجار":
+  //       return <BeachAccessIcon />;
+  //     default:
+  //       return <BusinessIcon />;
+  //   }
+  // };
+
+  if (error) {
+    return (
+      <Box
+        sx={{
+          height: "100vh",
+          width: "100vw",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "center",
+          gap: 2,
+        }}
+      >
+        <Typography variant="h5" color="error" gutterBottom>
+          {error}
+        </Typography>
+        <Button
+          variant="contained"
+          onClick={() => navigate("/RealEstateDeveloperAnnouncement")}
+          sx={{ backgroundColor: "#6E00FE" }}
+        >
+          العودة للصفحة الرئيسية
+        </Button>
+      </Box>
+    );
+  }
+
   if (!clientAds) {
     return (
-      <Box sx={{
-        height: '100vh',
-        width: '100vw',
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-      }}>
-        <CircularProgress sx={{ color: '#6E00FE' }} size={80} />
+      <Box
+        sx={{
+          height: "100vh",
+          width: "100vw",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "center",
+          gap: 2,
+        }}
+      >
+        <CircularProgress sx={{ color: "#6E00FE" }} size={80} />
+        <Typography variant="h6" color="text.secondary">
+          جاري تحميل بيانات العقار...
+        </Typography>
       </Box>
     );
   }
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 ,position:'relative'}}>
-    <Box
-                sx={{
-                    position: 'fixed',
-                    top: 10,
-                    left: 10,
-                    backgroundColor: '#1976d2',
-                    color: 'white',
-                    px: 2,
-                    py: 0.5,
-                    borderRadius: '8px',
-                    fontWeight: 'bold',
-                    zIndex: 10,
-                }}
-            >
-                🏗️ مطور عقارى {clientAds.project_types[0]} , {clientAds.project_types[1]}
-            </Box>
-    
+    <Container maxWidth="lg" sx={{ py: 4, position: "relative" }} dir="rtl">
+      <Box
+        sx={{
+          position: "fixed",
+          top: 10,
+          left: 10,
+          backgroundColor: "#1976d2",
+          color: "white",
+          px: 2,
+          py: 0.5,
+          borderRadius: "8px",
+          fontWeight: "bold",
+          zIndex: 10,
+        }}
+      >
+        🏗️ مطور عقارى {clientAds.project_types[0]} ,{" "}
+        {clientAds.project_types[1]}
+      </Box>
+
       {/**contact with user */}
-  <Box
-  onClick={() => setOpen(true)} 
-  sx={{
-    position: 'fixed',
-    bottom: 20,
-    right: 20,
-    backgroundColor: '#1976d2',
-    color: 'white',
-    px: 2.5,
-    py: 1,
-    borderRadius: '30px',
-    zIndex: 999,
-    cursor: 'pointer',
-    animation: `${pulse} 2s infinite`,
-    transition: 'transform 0.3s',
-    '&:hover': { transform: 'scale(1.05)' },
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    boxShadow: '0px 4px 12px rgba(0,0,0,0.2)',
-  }}
->
-  <ChatBubbleOutlineIcon sx={{ fontSize: 22, mr: 1 }} />
-  <Typography sx={{ fontWeight: 'bold', fontSize: '0.9rem' }}>
-    تواصل مع البائع
-  </Typography>
-</Box>
-<Dialog open={open} fullWidth dir='rtl' onClose={() => setOpen(false)}>
+      <Box
+        onClick={() => setOpen(true)}
+        sx={{
+          position: "fixed",
+          bottom: 20,
+          right: 20,
+          backgroundColor: "#1976d2",
+          color: "white",
+          px: 2.5,
+          py: 1,
+          borderRadius: "30px",
+          zIndex: 999,
+          cursor: "pointer",
+          animation: `${pulse} 2s infinite`,
+          transition: "transform 0.3s",
+          "&:hover": { transform: "scale(1.05)" },
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          boxShadow: "0px 4px 12px rgba(0,0,0,0.2)",
+        }}
+      >
+        <ChatBubbleOutlineIcon sx={{ fontSize: 22, mr: 1 }} />
+        <Typography sx={{ fontWeight: "bold", fontSize: "0.9rem" }}>
+          تواصل مع البائع
+        </Typography>
+      </Box>
+      <Dialog open={open} fullWidth dir="rtl" onClose={() => setOpen(false)}>
         <DialogTitle>تواصل مع البائع بكل سهوله</DialogTitle>
         <DialogContent>
           <TextField
@@ -137,155 +273,646 @@ function DetailsForDevelopment() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpen(false)}>إلغاء</Button>
-          <Button  variant="contained">
-            إرسال
-          </Button>
+          <Button variant="contained">إرسال</Button>
         </DialogActions>
       </Dialog>
 
-      {/* أزرار التفاعل + اسم الناشر */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-        <Box sx={{ mb: 5, display: 'flex', gap: 4 }}>
-          <Box sx={{ display: 'flex', gap: 1 ,color:'#807AA6'}}><Typography fontWeight="bold">مفضلة</Typography><FavoriteBorderIcon /></Box>
-          <Box sx={{ display: 'flex', gap: 1 ,color:'#807AA6'}}><Typography fontWeight="bold">إبلاغ</Typography><OutlinedFlagIcon /></Box>
-          <Box sx={{ display: 'flex', gap: 1 ,color:'#807AA6'}}><Typography fontWeight="bold">مشاركة</Typography><ShareOutlinedIcon /></Box>
+      {/* أزرار التفاعل */}
+      <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 4 }}>
+        <Box sx={{ display: "flex", gap: 2, flexDirection: "row-reverse" }}>
+          <Button
+            variant="outlined"
+            startIcon={<FavoriteBorderIcon />}
+            sx={{
+              borderRadius: "25px",
+              color: "#807AA6",
+              borderColor: "#807AA6",
+              flexDirection: "row-reverse",
+              gap: 1.5,
+              "& .MuiButton-startIcon": {
+                marginLeft: "12px",
+                marginRight: 0,
+              },
+            }}
+          >
+            مفضلة
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<OutlinedFlagIcon />}
+            sx={{
+              borderRadius: "25px",
+              color: "#807AA6",
+              borderColor: "#807AA6",
+              flexDirection: "row-reverse",
+              gap: 1.5,
+              "& .MuiButton-startIcon": {
+                marginLeft: "12px",
+                marginRight: 0,
+              },
+            }}
+          >
+            إبلاغ
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<ShareOutlinedIcon />}
+            sx={{
+              borderRadius: "25px",
+              color: "#807AA6",
+              borderColor: "#807AA6",
+              flexDirection: "row-reverse",
+              gap: 1.5,
+              "& .MuiButton-startIcon": {
+                marginLeft: "12px",
+                marginRight: 0,
+              },
+            }}
+          >
+            مشاركة
+          </Button>
         </Box>
-        
       </Box>
 
       {/* الصور الرئيسية والصغيرة */}
-      <Box sx={{
-        display: 'flex',
-        flexDirection: { xs: 'column', md: 'column', lg: 'row' },
-        gap: 2,
-      }}>
-        <Box sx={{ flex: 3, height: '500px' }}>
-          <img
-            src={mainImage || 'https://via.placeholder.com/800x500'}
-            alt="Main"
-            style={{ width: '100%', height: '100%', borderRadius: '8px', objectFit: 'cover' }}
-          />
-        </Box>
+      <Paper elevation={3} sx={{ mb: 4, borderRadius: 3, overflow: "hidden" }}>
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: { xs: "column", md: "column", lg: "row" },
+            gap: 2,
+          }}
+        >
+          <Box sx={{ flex: 3, height: "500px" }}>
+            <img
+              src={mainImage}
+              alt="صورة العقار الرئيسية"
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                borderRadius: "12px",
+                display: "block"
+              }}
+              onError={(e) => {
+                console.log("Image failed to load:", mainImage);
+                e.target.src = "/no-image.svg";
+              }}
+              onLoad={() => {
+                console.log("Image loaded successfully:", mainImage);
+              }}
+            />
+          </Box>
 
-        <Box sx={{
-          flex: 1,
-          display: 'flex',
-          flexDirection: { xs: 'row', md: 'row', lg: 'column' },
-          gap: 1,
-          mt: { xs: 2, md: 2, lg: 0 },
-          height: { lg: '100%' },
-        }}>
-          {clientAds?.images?.map((src, index) => (
+          {clientAds?.images &&
+          clientAds.images.filter(
+            (img) =>
+              typeof img === "string" &&
+              img.trim() !== "" &&
+              img !== "null" &&
+              img !== "undefined" &&
+              (img.startsWith("http") || img.startsWith("https"))
+          ).length > 1 ? (
             <Box
-              key={index}
-              onClick={() => setMainImage(src)}
               sx={{
-                height: { xs: 90, md: 100, lg: 120 },
-                cursor: 'pointer',
-                border: mainImage === src ? '2px solid #1976d2' : 'none',
-                borderRadius: '8px',
-                overflow: 'hidden',
+                flex: 1,
+                display: "flex",
+                flexDirection: { xs: "row", md: "row", lg: "column" },
+                gap: 1,
+                p: 2,
               }}
             >
-              <img
-                src={src}
-                alt={`img-${index}`}
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-              />
+              {clientAds.images
+                .filter(
+                  (img) =>
+                    typeof img === "string" &&
+                    img.trim() !== "" &&
+                    img !== "null" &&
+                    img !== "undefined" &&
+                    (img.startsWith("http") || img.startsWith("https"))
+                )
+                .slice(0, 4)
+                .map((src, index) => (
+                  <Box
+                    key={index}
+                    onClick={() => setMainImage(src)}
+                    sx={{
+                      height: { xs: 80, md: 90, lg: 100 },
+                      cursor: "pointer",
+                      border:
+                        mainImage === src
+                          ? "3px solid #1976d2"
+                          : "2px solid #e0e0e0",
+                      borderRadius: "8px",
+                      overflow: "hidden",
+                      transition: "all 0.3s",
+                      "&:hover": { transform: "scale(1.05)" },
+                    }}
+                  >
+                    <img
+                      src={src}
+                      alt={`صورة ${index + 1}`}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                      }}
+                      onError={(e) => {
+                        console.log("Thumbnail failed to load:", src);
+                        e.target.src = "/no-image-thumbnail.svg";
+                      }}
+                      onLoad={() => {
+                        console.log("Thumbnail loaded successfully:", src);
+                      }}
+                    />
+                  </Box>
+                ))}
             </Box>
-          ))}
+          ) : null}
         </Box>
-      </Box>
-   <Box sx={{height:'100%'}}>
-<Box sx={{display:'flex',justifyContent:'space-between',flexDirection:'row',}}>
-  <Box width={'30%'} sx={{marginRight:'auto',textAlign:'center',marginTop:'40px'}}>
-  <Box sx={{border:'1px solid #E7E5F4',borderRadius:'20px',}}>
-  
- 
- 
-<Box sx={{backgroundColor:'#F7F7F7',marginTop:'40px',marginBottom:'20px'}} width={'100%'} dir='rtl'>
-   <svg width="24" height="24"  viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" clipRule="evenodd" d="M3 5.5C3 4.67157 3.67157 4 4.5 4H19.5C20.3284 4 21 4.67157 21 5.5V14.5C21 15.3284 20.3284 16 19.5 16H4.5C3.67157 16 3 15.3284 3 14.5V5.5ZM4.5 5C4.22386 5 4 5.22386 4 5.5V14.5C4 14.7761 4.22386 15 4.5 15H19.5C19.7761 15 20 14.7761 20 14.5V5.5C20 5.22386 19.7761 5 19.5 5H4.5ZM6 7H6.5H8V8H7V9H6V7.5V7ZM17 8H16V7H17.5H18V7.5V9H17V8ZM9.5 10C9.5 8.61929 10.6193 7.5 12 7.5C13.3807 7.5 14.5 8.61929 14.5 10C14.5 11.3807 13.3807 12.5 12 12.5C10.6193 12.5 9.5 11.3807 9.5 10ZM12 8.5C11.1716 8.5 10.5 9.17157 10.5 10C10.5 10.8284 11.1716 11.5 12 11.5C12.8284 11.5 13.5 10.8284 13.5 10C13.5 9.17157 12.8284 8.5 12 8.5ZM6 12.5V11H7V12H8V13H6.5H6V12.5ZM18 11V12.5V13H17.5H16V12H17V11H18ZM3 17.5C3 17.2239 3.22386 17 3.5 17H20.5C20.7761 17 21 17.2239 21 17.5C21 17.7761 20.7761 18 20.5 18H3.5C3.22386 18 3 17.7761 3 17.5ZM3.5 19C3.22386 19 3 19.2239 3 19.5C3 19.7761 3.22386 20 3.5 20H20.5C20.7761 20 21 19.7761 21 19.5C21 19.2239 20.7761 19 20.5 19H3.5Z" fill="currentColor"></path></svg>
-  <Typography>طريقة الدفع</Typography>
-<Typography>نقدا أو تقسيط</Typography>
-</Box>
-<Box sx={{display:'flex',justifyContent:'space-between',gap:'8px',marginBottom:'20px'}} padding={"10px 10px"}>
-<Button sx={{backgroundColor:'#DF3631',width:'50%'}}>
-  <Typography sx={{color:'white',mx:'5px',fontSize:'18px',fontWeight:'bold'}}>اتصل</Typography>
-  <PhoneIcon sx={{color:'white'}}/>
-</Button>
-<Button sx={{backgroundColor:'#4DBD43',width:'50%'}}>
-  <Typography sx={{color:'white',mx:'5px',fontSize:'18px',fontWeight:'bold'}}>واتساب</Typography>
-  <WhatsAppIcon sx={{color:'white'}}/>
-</Button>
-</Box>
-  </Box>
-</Box>
+      </Paper>
 
-      {/* بيانات الإعلان */}
-      <Box dir="rtl" sx={{ mt: 6, width: '50%', textAlign: 'right', marginLeft: 'auto' ,boxShadow:'1px 1px 20px #c7c5c5',padding:'20px',borderRadius:'20px'}}>
-        <Typography variant="h4" fontWeight="bold">{clientAds.developer_name}</Typography>
+      {/* معلومات العقار والمطور */}
+      <Grid container spacing={4}>
+        {/* معلومات العقار - على اليمين */}
+        <Grid size={{ xs: 12, md: 8 }}>
+          <Paper elevation={3} sx={{ borderRadius: 3 }}>
+            <CardContent sx={{ p: 4 }}>
+              <Typography
+                variant="h4"
+                fontWeight="bold"
+                gutterBottom
+                sx={{ color: "#6E00FE", mb: 3 }}
+              >
+                {clientAds.project_types?.join(" - ") || "عقار للبيع"}
+              </Typography>
 
-        <Typography sx={{
-          mt: 3,
-          fontSize: '17px',
-          overflow: 'hidden',
-          display: '-webkit-box',
-          WebkitLineClamp: showFull ? 'none' : 3,
-          WebkitBoxOrient: 'vertical',
-        }}>
-          {clientAds.description || 'لا يوجد وصف'}
-        </Typography>
+              <Typography
+                sx={{
+                  fontSize: "18px",
+                  lineHeight: 1.8,
+                  overflow: "hidden",
+                  display: "-webkit-box",
+                  WebkitLineClamp: showFull ? "none" : 4,
+                  WebkitBoxOrient: "vertical",
+                  mb: 3,
+                  color: "#333",
+                }}
+              >
+                {clientAds.description || "لا يوجد وصف متاح"}
+              </Typography>
 
-        {clientAds.description?.length > 100 && (
-          <button
-            className='details-button'
-            onClick={toggleShow}
-            style={{
-              marginTop: '10px',
-              border: '1px solid #8C84CC',
-              color: '#8C84CC',
-              borderRadius: '8px',
-              backgroundColor: 'transparent',
-              padding: '10px 20px',
-              fontWeight: 'bold',
-              fontSize: '14px',
+              {clientAds.description && clientAds.description.length > 200 && (
+                <Button
+                  onClick={toggleShow}
+                  sx={{
+                    border: "2px solid #6E00FE",
+                    color: "#6E00FE",
+                    borderRadius: "25px",
+                    backgroundColor: "transparent",
+                    "&:hover": { backgroundColor: "#f0f0f0" },
+                    px: 3,
+                    mb: 3,
+                  }}
+                >
+                  {showFull ? "إخفاء التفاصيل" : "عرض المزيد"}
+                </Button>
+              )}
+
+              <Divider sx={{ my: 3 }} />
+
+              {/* تفاصيل العقار */}
+              <Grid container spacing={3}>
+                <Grid item xs={12} sm={6}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 2,
+                      mb: 2,
+                    }}
+                  >
+                    <LocationOnIcon color="primary" sx={{ fontSize: 28 }} />
+                    <Box>
+                      <Typography variant="body2" color="text.secondary">
+                        الموقع
+                      </Typography>
+                      <Typography variant="body1" fontWeight="bold">
+                        {clientAds.location?.governorate} -{" "}
+                        {clientAds.location?.city}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 2,
+                      mb: 2,
+                    }}
+                  >
+                    <AttachMoneyIcon color="primary" sx={{ fontSize: 28 }} />
+                    <Box>
+                      <Typography variant="body2" color="text.secondary">
+                        السعر
+                      </Typography>
+                      <Typography variant="body1" fontWeight="bold">
+                        {clientAds.price_start_from?.toLocaleString()} -{" "}
+                        {clientAds.price_end_to?.toLocaleString()} ج.م
+                      </Typography>
+                    </Box>
+                  </Box>
+                </Grid>
+
+                {clientAds.rooms && (
+                  <Grid item xs={12} sm={6}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 2,
+                        mb: 2,
+                      }}
+                    >
+                      <KingBedIcon color="primary" sx={{ fontSize: 28 }} />
+                      <Box>
+                        <Typography variant="body2" color="text.secondary">
+                          عدد الغرف
+                        </Typography>
+                        <Typography variant="body1" fontWeight="bold">
+                          {clientAds.rooms} غرفة
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Grid>
+                )}
+
+                {clientAds.bathrooms && (
+                  <Grid item xs={12} sm={6}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 2,
+                        mb: 2,
+                      }}
+                    >
+                      <BathtubIcon color="primary" sx={{ fontSize: 28 }} />
+                      <Box>
+                        <Typography variant="body2" color="text.secondary">
+                          عدد الحمامات
+                        </Typography>
+                        <Typography variant="body1" fontWeight="bold">
+                          {clientAds.bathrooms} حمام
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Grid>
+                )}
+
+                {clientAds.area && (
+                  <Grid item xs={12} sm={6}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 2,
+                        mb: 2,
+                      }}
+                    >
+                      <SquareFootIcon color="primary" sx={{ fontSize: 28 }} />
+                      <Box>
+                        <Typography variant="body2" color="text.secondary">
+                          المساحة
+                        </Typography>
+                        <Typography variant="body1" fontWeight="bold">
+                          {clientAds.area} م²
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Grid>
+                )}
+
+                {clientAds.floor && (
+                  <Grid item xs={12} sm={6}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 2,
+                        mb: 2,
+                      }}
+                    >
+                      <BusinessIcon color="primary" sx={{ fontSize: 28 }} />
+                      <Box>
+                        <Typography variant="body2" color="text.secondary">
+                          الطابق
+                        </Typography>
+                        <Typography variant="body1" fontWeight="bold">
+                          {clientAds.floor}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Grid>
+                )}
+
+                <Grid item xs={12} sm={6}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 2,
+                      mb: 2,
+                    }}
+                  >
+                    <PhoneIcon color="primary" sx={{ fontSize: 28 }} />
+                    <Box>
+                      <Typography variant="body2" color="text.secondary">
+                        رقم الهاتف
+                      </Typography>
+                      <Typography variant="body1" fontWeight="bold">
+                        {clientAds.phone}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 2,
+                      mb: 2,
+                    }}
+                  >
+                    <HomeIcon color="primary" sx={{ fontSize: 28 }} />
+                    <Box>
+                      <Typography variant="body2" color="text.secondary">
+                        الحالة
+                      </Typography>
+                      <Typography variant="body1" fontWeight="bold">
+                        {clientAds.status || "جاهز"}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 2,
+                      mb: 2,
+                    }}
+                  >
+                    <VillaIcon color="primary" sx={{ fontSize: 28 }} />
+                    <Box>
+                      <Typography variant="body2" color="text.secondary">
+                        مفروش
+                      </Typography>
+                      <Typography variant="body1" fontWeight="bold">
+                        {clientAds.furnished ? "نعم" : "لا"}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 2,
+                      mb: 2,
+                    }}
+                  >
+                    <BusinessIcon color="primary" sx={{ fontSize: 28 }} />
+                    <Box>
+                      <Typography variant="body2" color="text.secondary">
+                        قابل للتفاوض
+                      </Typography>
+                      <Typography variant="body1" fontWeight="bold">
+                        {clientAds.negotiable ? "نعم" : "لا"}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </Grid>
+
+                {clientAds.paymentMethod && (
+                  <Grid item xs={12} sm={6}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 2,
+                        mb: 2,
+                      }}
+                    >
+                      <AttachMoneyIcon color="primary" sx={{ fontSize: 28 }} />
+                      <Box>
+                        <Typography variant="body2" color="text.secondary">
+                          طريقة الدفع
+                        </Typography>
+                        <Typography variant="body1" fontWeight="bold">
+                          {clientAds.paymentMethod}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Grid>
+                )}
+
+                {clientAds.deliveryTerms && (
+                  <Grid item xs={12}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 2,
+                        mb: 2,
+                      }}
+                    >
+                      <HomeIcon color="primary" sx={{ fontSize: 28 }} />
+                      <Box>
+                        <Typography variant="body2" color="text.secondary">
+                          شروط التسليم
+                        </Typography>
+                        <Typography variant="body1" fontWeight="bold">
+                          {clientAds.deliveryTerms}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Grid>
+                )}
+              </Grid>
+
+              {/* مميزات العقار */}
+              {clientAds.features && clientAds.features.length > 0 && (
+                <>
+                  <Divider sx={{ my: 4 }} />
+                  <Typography
+                    variant="h6"
+                    gutterBottom
+                    sx={{ color: "#6E00FE", mb: 3 }}
+                  >
+                    مميزات العقار
+                  </Typography>
+                  <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+                    {clientAds.features.map((feature, index) => (
+                      <Chip
+                        key={index}
+                        label={feature}
+                        color="primary"
+                        variant="outlined"
+                        size="medium"
+                        sx={{ borderRadius: "20px", fontSize: "14px" }}
+                      />
+                    ))}
+                  </Box>
+                </>
+              )}
+            </CardContent>
+          </Paper>
+        </Grid>
+        {/* معلومات المطور - على اليسار */}
+        <Grid size={{ xs: 12, md: 4 }}>
+          <Paper
+            elevation={3}
+            sx={{
+              borderRadius: 3,
+              height: "auto",
+              position: "sticky",
+              top: 100,
             }}
           >
-            {showFull ? 'إخفاء التفاصيل' : 'عرض المزيد'}
-          </button>
+            <CardContent sx={{ p: 4 }}>
+              <Typography
+                variant="h5"
+                gutterBottom
+                sx={{ color: "#6E00FE", mb: 3 }}
+              >
+                معلومات المطور
+              </Typography>
+
+              <Box
+                sx={{ display: "flex", alignItems: "center", gap: 3, mb: 3 }}
+              >
+                <Avatar
+                  alt={clientAds.developer_name}
+                  src="/static/images/avatar/1.jpg"
+                  sx={{ width: 60, height: 60 }}
+                />
+                <Box>
+                  <Typography variant="h6" fontWeight="bold">
+                    {clientAds.developer_name}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    مطور عقاري معتمد
+                  </Typography>
+                </Box>
+              </Box>
+
+              <Divider sx={{ my: 3 }} />
+
+              {/* أزرار التواصل */}
+              <Box
+                sx={{ display: "flex", flexDirection: "column", gap: 2, mb: 3 }}
+              >
+                <Button
+                  variant="contained"
+                  startIcon={<PhoneIcon />}
+                  fullWidth
+                  sx={{
+                    backgroundColor: "#DF3631",
+                    "&:hover": { backgroundColor: "#c62828" },
+                    borderRadius: "25px",
+                    py: 1.5,
+                    fontSize: "16px",
+                    "& .MuiButton-startIcon": {
+                      marginLeft: "6px",
+                      marginRight: 0,
+                    },
+                    fontWeight: "bold",
+                  }}
+                >
+                  اتصل الآن
+                </Button>
+
+                <Button
+                  variant="contained"
+                  startIcon={<WhatsAppIcon />}
+                  fullWidth
+                  sx={{
+                    backgroundColor: "#4DBD43",
+                    "&:hover": { backgroundColor: "#388e3c" },
+                    "& .MuiButton-startIcon": {
+                      marginLeft: "6px",
+                      marginRight: 0,
+                    },
+                    borderRadius: "25px",
+                    py: 1.5,
+                    fontSize: "16px",
+                    fontWeight: "bold",
+                  }}
+                >
+                  واتساب
+                </Button>
+              </Box>
+
+              <Divider sx={{ my: 3 }} />
+
+              <Box sx={{ textAlign: "center" }}>
+                <Typography variant="body2" color="text.secondary" gutterBottom>
+                  نوع العقار
+                </Typography>
+                <Typography
+                  variant="body1"
+                  fontWeight="bold"
+                  sx={{ color: "#6E00FE" }}
+                >
+                  {clientAds.project_types?.join(" - ")}
+                </Typography>
+              </Box>
+            </CardContent>
+          </Paper>
+        </Grid>
+        {/* زر التعديل للمالك */}
+        {isOwner && (
+          <Box
+            sx={{
+              // position: 'fixed',
+              top: 100,
+              right: 20,
+              zIndex: 1000,
+            }}
+          >
+            <Button
+              variant="contained"
+              startIcon={<EditIcon />}
+              onClick={handleEdit}
+              sx={{
+                backgroundColor: "#6E00FE",
+                "&:hover": { backgroundColor: "#200D3A" },
+                borderRadius: "25px",
+                px: 3,
+                boxShadow: "0px 4px 12px rgba(0,0,0,0.2)",
+                flexDirection: "row-reverse",
+                gap: 1.5,
+                "& .MuiButton-startIcon": {
+                  marginLeft: "12px",
+                  marginRight: 0,
+                },
+              }}
+            >
+              تعديل الإعلان
+            </Button>
+          </Box>
         )}
-         <Typography variant="body1" mt={2}>{clientAds.location}</Typography>
-        <Typography variant="subtitle1" fontWeight="bold" mt={2}>
-        الجهة: {clientAds.developer_name}
-      </Typography>
-       <Typography variant="subtitle1" mt={2}>
-        السعر من: {clientAds.price_start_from} ج.م إلى: {clientAds.price_end_to} ج.م
-      </Typography>
-         <Typography variant="subtitle1" mt={2}>
-        الهاتف للتواصل: {clientAds.phone}
-      </Typography>
-
-      {/* نسب الفائدة */}
-     
-      
-      </Box>
-
-</Box>
-
-
-     </Box>  
-     <Box sx={{width:'50%',display:'flex',marginTop:'30px',marginLeft:'auto'}} dir='rtl'>
-         <Box sx={{backgroundColor:'#F7F7FC',display:'flex',gap:'30px',height:'20%',width:'100%',padding:'20px',borderRadius:'10px'}}>
-           <Avatar alt={`${clientAds.org_name}`} src="/static/images/avatar/1.jpg" />
-               <Typography sx={{ fontSize: '20px', }}>نشر بواسطة: {clientAds.developer_name}</Typography>
-               <Box>
-                   <Typography>يمكنك الاطلاع على مزيد من التفاصيل من خلال اللينك الاتى</Typography>
-               <Link to={`${clientAds.website_url}`} target='_blank'>{clientAds.website_url}</Link>
-               </Box>
-            
-         </Box>
-            
-             </Box> 
+      </Grid>
     </Container>
   );
 }

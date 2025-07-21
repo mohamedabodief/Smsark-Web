@@ -12,11 +12,11 @@ export default function Layout({ children }) {
         palette: {
           mode,
           primary: {
-            main: "#6E00FE",
+            main: "#6E00FE", 
           },
         },
         typography: {
-          fontFamily: 'Cairo, sans-serif',
+          fontFamily: 'Cairo, sans-serif', 
         },
       }),
     [mode]
@@ -31,9 +31,7 @@ export default function Layout({ children }) {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Nav toggleMode={toggleMode} />
-      <Box component="main" 
-      // sx={{ mt: 8, px: 2 }}
-      >
+      <Box component="main" sx={{ mt: { xs: 9, md: 10 }, px: 2 }}>
         {children}
       </Box>
     </ThemeProvider>

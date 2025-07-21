@@ -15,7 +15,8 @@ import {
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import Brightness4Icon from "@mui/icons-material/Brightness4";
 import FavoriteIcon from '@mui/icons-material/Favorite';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import EmailIcon from '@mui/icons-material/Email';
 import { useUnreadMessages } from '../context/unreadMessageContext';
 import NotificationsIcon from '@mui/icons-material/Notifications'; 
@@ -25,6 +26,26 @@ export default function Nav({ toggleMode }) {
   const { totalUnreadCount } = useUnreadMessages();
   const [anchorEl, setAnchorEl] = useState(null);
   const navigate = useNavigate();
+  const location = useLocation();
+  const userType = useSelector((state) => state.auth.type_of_user);
+
+  const handleProfileClick = () => {
+    if (userType === 'client') {
+      if (location.pathname !== '/client-dashboard') {
+        navigate('/client-dashboard');
+      }
+      // else: already on dashboard, do nothing or show a message
+    } else if (userType === 'organization') {
+      if (location.pathname !== '/organization-dashboard') {
+        navigate('/organization-dashboard');
+      }
+    } else if (userType === 'admin') {
+      navigate('/admin-dashboard');
+    } else {
+      navigate('/profile');
+    }
+  };
+
   const handleClick = (event) => {
     setAnchorEl(event.currentTarget);
   };
@@ -39,6 +60,11 @@ export default function Nav({ toggleMode }) {
     handleClose();
     navigate("/inbox");
   };
+
+  // Highlight the profile icon if client/org and not on dashboard
+  const shouldHighlightProfile =
+    (userType === 'client' && location.pathname !== '/client-dashboard') ||
+    (userType === 'organization' && location.pathname !== '/organization-dashboard');
 
   return (
     <AppBar
@@ -70,6 +96,9 @@ export default function Nav({ toggleMode }) {
           </Typography>
           <Typography variant="button" sx={{ cursor: "pointer" }} onClick={() => navigate('/about')}>
             عن الموقع
+          </Typography>
+          <Typography variant="button" sx={{ cursor: "pointer" }} onClick={() => navigate('/RealEstateDeveloperAnnouncement')}>
+            إضافة عقار
           </Typography>
           <Typography variant="button" sx={{ cursor: "pointer" }} onClick={() => navigate('/profile')}>
             الصفحة الشخصية
@@ -127,7 +156,7 @@ export default function Nav({ toggleMode }) {
        
 
           <Tooltip title="ملفك الشخصي">
-            <IconButton size="small" sx={{ color: "#fff" }} onClick={() => navigate('#')}>
+            <IconButton size="small" sx={{ color: shouldHighlightProfile ? 'yellow' : '#fff' }} onClick={handleProfileClick}>
               <AccountCircleIcon />
             </IconButton>
           </Tooltip>

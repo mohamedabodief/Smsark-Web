@@ -1,0 +1,45 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // السماح للمستخدمين المسجلين برفع صور العقارات
+    match /property_images/{fileName} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    
+    // السماح للمستخدمين المسجلين برفع صور إعلانات المطورين
+    match /developer_ads/{adId}/{fileName} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    
+    // السماح للمستخدمين المسجلين برفع صور العقارات في مجلدات المستخدمين
+    match /property_images/{userId}/{fileName} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // السماح للمستخدمين المسجلين برفع صور الملف الشخصي
+    match /profileImages/{userId}/{fileName} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // السماح للمستخدمين المسجلين برفع صور إعلانات العملاء
+    match /client_ads/{adId}/{fileName} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    
+    // السماح للمستخدمين المسجلين برفع صور إعلانات التمويل
+    match /financing_ads/{adId}/{fileName} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    
+    // القاعدة الافتراضية - رفض جميع الوصولات الأخرى
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+} 
