@@ -13,11 +13,12 @@ import {
   IconButton,
 } from "@mui/material";
 import { Phone, Email, LocationOn, Close } from "@mui/icons-material";
+import { collection, getDocs, query, where } from "firebase/firestore";
+import { db } from "../FireBase/firebaseConfig";
 import contactHeaderImage from "../assets/contact-header.png";
 import Message from "../FireBase/MessageAndNotification/Message";
-import { auth } from "../FireBase/firebaseConfig";
+
 const ContactUs = () => {
-  const current=auth.currentUser.uid
   const theme = useTheme();
   const [formData, setFormData] = useState({
     name: "",
@@ -45,26 +46,39 @@ const ContactUs = () => {
     setIsSubmitting(true);
 
     try {
-      // إنشاء رسالة جديدة باستخدام كلاس Message
-      const messageData = {
-        sender_id: formData.email, 
-        receiver_id: current, 
-        reciverName: "الأدمن", 
-        content: `الاسم: ${formData.name}\nالبريد: ${formData.email}\nالهاتف: ${formData.phone}\nالموضوع: ${formData.subject}`,
-        message_type: "text",
-        is_read: false,
-      };
+      const adminsQuery = query(
+        collection(db, "users"),
+        where("type_of_user", "==", "admin")
+      );
+      const adminsSnapshot = await getDocs(adminsQuery);
+      const admins = adminsSnapshot.docs.map((doc) => ({
+        uid: doc.id,
+        name: doc.data().adm_name || "الأدمن",
+      }));
 
-      const message = new Message(messageData);
-      await message.send();
+      if (admins.length === 0) {
+        throw new Error("مفيش أدمنز متاحين.");
+      }
+      const messageContent = `الاسم: ${formData.name}\nالبريد: ${formData.email}\nالهاتف: ${formData.phone}\nالموضوع: ${formData.subject}`;
+      for (const admin of admins) {
+        const messageData = {
+          sender_id: formData.email, 
+          receiver_id: admin.uid,
+          reciverName: "amdin semsark", 
+          content: messageContent,
+          message_type: "text",
+          is_read: false,
+        };
+
+        const message = new Message(messageData);
+        await message.send();
+      }
 
       setSubmitStatus({
         open: true,
         success: true,
-        message: "تم إرسال رسالتك بنجاح! سنتواصل معك قريبًا.",
+        message: "تم إرسال رسالتك بنجاح! هنتواصل معاكِ قريبًا.",
       });
-
-      // إعادة تعيين النموذج
       setFormData({
         name: "",
         email: "",
@@ -76,7 +90,7 @@ const ContactUs = () => {
       setSubmitStatus({
         open: true,
         success: false,
-        message: "حدث خطأ غير متوقع، يرجى المحاولة مرة أخرى.",
+        message: "حدث خطأ، حاولي مرة تانية.",
       });
     } finally {
       setIsSubmitting(false);

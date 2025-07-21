@@ -319,7 +319,7 @@ const ModernRealEstateForm = () => {
     const fetchCoordinates = async () => {
       if (!addressValue && !cityValue && !governorateValue) return;
       const fullAddress = `${addressValue || ''}, ${cityValue || ''}, ${governorateValue || ''}`;
-      const apiKey = 'YOUR_GOOGLE_MAPS_API_KEY'; // استبدل بمفتاحك
+      const apiKey = 'YOUR_GOOGLE_MAPS_API_KEY'; 
       const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(fullAddress)}&key=${apiKey}`;
       try {
         const res = await fetch(url);

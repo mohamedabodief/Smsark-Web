@@ -48,7 +48,7 @@ function DetailsForClient() {
     if (userDoc.exists()) {
       const userData = userDoc.data();
       console.log(`Receiver data for ${userId}:`, userData);
-      return userData.cli_name || "Unknown User"; // تغيير من name إلى cli_name
+      return userData.cli_name || "Unknown User"; 
     }
     console.log(`No user document found for ${userId}`);
     return "Unknown User";
