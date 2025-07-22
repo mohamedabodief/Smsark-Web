@@ -5,6 +5,7 @@ import DetailsForFinancingAds from "./pages/Details/detailsForFinaccingAds";
 import DetailsForDevelopment from "./pages/Details/detailsForDevelopment";
 import Layout from "./Layout/Layout";
 import Home from "./componenents/Home";
+import ChatAiPage from "./Homeparts/ChatAiPage";
 import Footer from "./componenents/Footer";
 import Favorite from "./componenents/Favorite";
 import FinancingAdvExample from "./Homeparts/FinancingAdvExample";
@@ -98,7 +99,9 @@ function App() {
 
       return () => unsubscribe();
     }
-  }, [currentUser, notifications]);
+  }, [currentUser,
+    //  notifications
+    ]);
   const handleOpenChat = () => {
     if (currentNotification?.link) {
       const userId = currentNotification.link.split('/privateChat/')[1];
@@ -145,6 +148,10 @@ function App() {
             <Route path="/services/rent" element={<RentAds />} />
             <Route path="/services/buy" element={<BuyAds />} />
             <Route path="/services/finance" element={<FinancingAdsPage />} />
+
+          <Route path="/chat" element={<ChatAiPage />} />
+
+      {/* <AddMultipleAdsOnce/> */}
             <Route path="/services/developmentAds" element={<DeveloperAdsPage />} />
             {/* صفحات الإعلانات العقارية */}
             <Route path="/RealEstateDeveloperAnnouncement" element={<PropertyPage />} />
@@ -178,7 +185,7 @@ function App() {
               <Route path="developmentAds/:id" element={<DetailsForDevelopment />} />
             </Route>
           </Routes>
-          <Footer />
+          {/* <Footer /> */}
         </Layout>
       </SearchProvider>
       <Snackbar
