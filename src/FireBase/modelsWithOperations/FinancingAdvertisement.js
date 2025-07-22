@@ -33,8 +33,8 @@ class FinancingAdvertisement {
     this.financing_model = data.financing_model;
     this.images = data.images || [];
     this.phone = data.phone;
-    this.start_limit = data.start_limit;
-    this.end_limit = data.end_limit;
+    this.start_limit = Number(data.start_limit);
+    this.end_limit = Number(data.end_limit);
     this.org_name = data.org_name;
     this.type_of_user = data.type_of_user;
     this.userId = data.userId;
@@ -96,12 +96,12 @@ class FinancingAdvertisement {
     if (!this.#id) throw new Error('الإعلان بدون ID صالح للتحديث');
     const docRef = doc(db, 'FinancingAdvertisements', this.#id);
 
-    if (newImageFiles?.length > 0) {
+    if (newImageFiles && Array.isArray(newImageFiles) && newImageFiles.length > 0) {
       await this.#deleteAllImages();
       const newUrls = await this.#uploadImages(newImageFiles);
       updates.images = newUrls;
       this.images = newUrls;
-    }
+    } // إذا لم يتم تمرير صور جديدة، لا تغير الصور القديمة
 
     if (newReceiptFile) {
       const receiptUrl = await this.#uploadReceipt(newReceiptFile);

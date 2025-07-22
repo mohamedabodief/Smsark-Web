@@ -200,7 +200,7 @@ export default function Nav({ toggleMode }) {
             </IconButton>
           </Tooltip>
           <Tooltip title="ملفك الشخصي">
-            <IconButton size="small"  onClick={handleProfileClick}>
+            <IconButton size="small" onClick={handleProfileClick}>
               <AccountCircleIcon />
             </IconButton>
           </Tooltip>
