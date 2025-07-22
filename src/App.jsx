@@ -36,7 +36,7 @@ import ClientDashboard from "./Dashboard/clientDashboard";
 import OrganizationDashboard from "./Dashboard/organization/organizationDashboard";
 import PrivateRoute from "./PrivateRoute";
 import AuthSync from "./AuthSync";
-import RequireNotAuth from "./LoginAndRegister/RequireNotAuth";
+// import RequireNotAuth from "./LoginAndRegister/RequireNotAuth";
 
 
 import { onMessage, messaging, auth } from "./FireBase/firebaseConfig";
@@ -99,7 +99,7 @@ function App() {
 
       return () => unsubscribe();
     }
-  }, [currentUser, notifications]);
+  }, [currentUser]);
   const handleOpenChat = () => {
     if (currentNotification?.link) {
       const userId = currentNotification.link.split('/privateChat/')[1];
@@ -150,8 +150,8 @@ function App() {
 
              */}
           {/* <Route path="/auth"> */}
-          <Route path="login" element={<RequireNotAuth><LoginRegister /></RequireNotAuth>} />
-          <Route path="register" element={<RequireNotAuth><LoginRegister /></RequireNotAuth>} />
+          <Route path="login" element={<LoginRegister />} />
+          <Route path="register" element={<LoginRegister />} />
           <Route path="/about" element={<AboutUs />} />
           <Route path="/RealEstateDeveloperAnnouncement" element={<PropertyPage />} />
 

@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { useState, useEffect, useMemo } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
+import { useSelector, useDispatch ,shallowEqual } from 'react-redux';
 import { createTheme, ThemeProvider, styled } from '@mui/material/styles';
 import {
     Typography, Box, Paper, Tabs, Tab, CssBaseline, AppBar, Toolbar, IconButton, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Divider, Avatar, Button, Collapse, Grid, Dialog, DialogTitle, DialogContent, DialogActions, TextField, ListItemAvatar, Tooltip,
@@ -101,16 +101,16 @@ import { signOut } from "firebase/auth";
 import { fetchDeveloperAdsByUser } from "../../feature/ads/developerAdsSlice";
 import { fetchFinancingAdsByUser } from "../../feature/ads/financingAdsSlice";
 import { 
-    fetchAllHomepageAds, 
+    // fetchAllHomepageAds, 
     fetchHomepageAdsByUser, 
     createHomepageAd, 
     updateHomepageAd, 
     deleteHomepageAd,
-    approveHomepageAd,
-    rejectHomepageAd,
-    returnHomepageAdToPending,
-    activateHomepageAd,
-    deactivateHomepageAd
+    // approveHomepageAd,
+    // rejectHomepageAd,
+    // returnHomepageAdToPending,
+    // activateHomepageAd,
+    // deactivateHomepageAd
 } from "../../feature/ads/homepageAdsSlice";
 // Define shared data (could be moved to a constants file)
 const governorates = [
@@ -2180,30 +2180,37 @@ function PropertiesPage() {
 function Mainadvertisment(props) {
     const userProfile = useSelector((state) => state.user.profile);
     const dispatch = useDispatch();
-    const homepageAds = useSelector((state) => state.homepageAds?.all || []);
+
+    // IMPORTANT CHANGE: Select 'byUser' state for organization-specific ads
+    const homepageAds = useSelector((state) => state.homepageAds?.byUser || [], shallowEqual);
     const homepageAdsLoading = useSelector((state) => state.homepageAds?.loading || false);
-    // Only show ads created by this organization
-    const orgHomepageAds = useMemo(() => homepageAds.filter(ad => ad.userId === userProfile?.uid), [homepageAds, userProfile]);
-    // Add missing state for filters
+
+    // No need for orgHomepageAds memoization here, as the 'byUser' slice already filters
+    // const orgHomepageAds = useMemo(() => homepageAds.filter(ad => ad.userId === userProfile?.uid), [homepageAds, userProfile]);
+
+    // State for filters (kept as they apply to the 'byUser' list)
     const [statusFilter, setStatusFilter] = useState('all');
     const [activationFilter, setActivationFilter] = useState('all');
-    // Memoize filteredAds for filtering UI
-    const filteredAds = useMemo(() => orgHomepageAds.filter(ad => {
+
+    // Memoize filteredAds based on the 'byUser' slice and local filters
+    const filteredAds = useMemo(() => homepageAds.filter(ad => {
         const statusMatch = statusFilter === 'all' || ad.reviewStatus === statusFilter;
-        const activationMatch = activationFilter === 'all' || 
-            (activationFilter === 'active' && ad.ads) || 
+        const activationMatch = activationFilter === 'all' ||
+            (activationFilter === 'active' && ad.ads) ||
             (activationFilter === 'inactive' && !ad.ads);
         return statusMatch && activationMatch;
-    }), [orgHomepageAds, statusFilter, activationFilter]);
-    // Memoize stats for this org
+    }), [homepageAds, statusFilter, activationFilter]); // Depend on homepageAds (which is now byUser)
+
+    // Memoize stats for this org's ads
     const stats = useMemo(() => ({
-        total: orgHomepageAds.length,
-        pending: orgHomepageAds.filter(ad => ad.reviewStatus === 'pending').length,
-        approved: orgHomepageAds.filter(ad => ad.reviewStatus === 'approved').length,
-        rejected: orgHomepageAds.filter(ad => ad.reviewStatus === 'rejected').length,
-        active: orgHomepageAds.filter(ad => ad.ads).length,
-        inactive: orgHomepageAds.filter(ad => !ad.ads).length,
-    }), [orgHomepageAds]);
+        total: homepageAds.length, // Use homepageAds (byUser) for stats
+        pending: homepageAds.filter(ad => ad.reviewStatus === 'pending').length,
+        approved: homepageAds.filter(ad => ad.reviewStatus === 'approved').length,
+        rejected: homepageAds.filter(ad => ad.reviewStatus === 'rejected').length,
+        active: homepageAds.filter(ad => ad.ads).length,
+        inactive: homepageAds.filter(ad => !ad.ads).length,
+    }), [homepageAds]); // Depend on homepageAds (which is now byUser)
+
 
     // State for modals and operations
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -2214,17 +2221,22 @@ function Mainadvertisment(props) {
     const [snackbarMessage, setSnackbarMessage] = useState("");
     const [snackbarSeverity, setSnackbarSeverity] = useState("success");
 
-    // Fetch homepage ads when component mounts
+    // Fetch homepage ads by user when component mounts or userProfile.uid changes
     useEffect(() => {
         if (userProfile?.uid) {
+            console.log("Mainadvertisment - Dispatching fetchHomepageAdsByUser for UID:", userProfile.uid);
             dispatch(fetchHomepageAdsByUser(userProfile.uid));
+        } else {
+            console.log("Mainadvertisment - userProfile.uid not available, skipping fetchHomepageAdsByUser.");
         }
-    }, [dispatch, userProfile?.uid]);
+    }, [dispatch, userProfile?.uid]); // Re-fetch if userProfile.uid changes
 
     // Handle add ad
     const handleAddAd = async (adData) => {
         try {
-            await dispatch(createHomepageAd(adData)).unwrap();
+            // Ensure userId is added to adData before dispatching
+            const dataWithUserId = { ...adData, userId: userProfile?.uid };
+            await dispatch(createHomepageAd({ adData: dataWithUserId, imageFile: adData.imageFile, receiptFile: adData.receiptFile })).unwrap();
             setSnackbarMessage("تم إضافة الإعلان بنجاح!");
             setSnackbarSeverity("success");
             setSnackbarOpen(true);
@@ -2232,6 +2244,7 @@ function Mainadvertisment(props) {
             setSnackbarMessage("فشل إضافة الإعلان: " + (error.message || "خطأ غير معروف"));
             setSnackbarSeverity("error");
             setSnackbarOpen(true);
+            console.error("Error adding ad:", error);
         }
     };
 
@@ -2246,6 +2259,7 @@ function Mainadvertisment(props) {
             setSnackbarMessage("فشل تحديث الإعلان: " + (error.message || "خطأ غير معروف"));
             setSnackbarSeverity("error");
             setSnackbarOpen(true);
+            console.error("Error updating ad:", error);
         }
     };
 
@@ -2260,6 +2274,7 @@ function Mainadvertisment(props) {
             setSnackbarMessage("فشل حذف الإعلان: " + (error.message || "خطأ غير معروف"));
             setSnackbarSeverity("error");
             setSnackbarOpen(true);
+            console.error("Error deleting ad:", error);
         }
     };
 
@@ -2283,22 +2298,78 @@ function Mainadvertisment(props) {
         }
     };
 
-    // Format date
+    // Format date - now prioritizes 'createdAt' and has better fallback
     const formatDate = (timestamp) => {
         if (!timestamp) return 'غير محدد';
-        return new Date(timestamp).toLocaleDateString('ar-EG');
+        const date = new Date(timestamp);
+        if (isNaN(date.getTime())) {
+            return 'تاريخ غير صالح'; // Fallback for truly invalid dates
+        }
+        return date.toLocaleDateString('ar-EG');
+    };
+
+    const handleSnackbarClose = (event, reason) => {
+        if (reason === 'clickaway') {
+            return;
+        }
+        setSnackbarOpen(false);
     };
 
     return (
-        <Box>
-            <Typography variant="h4" sx={{ display: 'flex', flexDirection: 'row-reverse' }} gutterBottom>إعلانات القسم الرئيسي</Typography>
-            <Paper sx={{ p: 2, borderRadius: 2, minHeight: 400, textAlign: 'right' }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexDirection: 'row-reverse' }}>
-                    <Typography variant="h6" sx={{ fontWeight: 'bold', fontSize: 18 }} color="text.secondary">قائمة الإعلانات</Typography>
+        <Box sx={{ p: 2, textAlign: 'right' }}>
+            <Typography variant="h4" sx={{ display: 'flex', flexDirection: 'row-reverse', mb: 3 }} gutterBottom>
+                إعلانات القسم الرئيسي
+            </Typography>
+
+            <Paper sx={{ p: 3, borderRadius: 2, minHeight: 400, textAlign: 'right' }}>
+                {/* Statistics */}
+                <Box sx={{ mb: 3, display: 'flex', gap: 2, flexWrap: 'wrap', justifyContent: 'center' }}>
+                    <Chip label={`الكل: ${stats.total}`} color="primary" />
+                    <Chip label={`قيد المراجعة: ${stats.pending}`} color="warning" />
+                    <Chip label={`مقبول: ${stats.approved}`} color="success" />
+                    <Chip label={`مرفوض: ${stats.rejected}`} color="error" />
+                    <Chip label={`مفعل: ${stats.active}`} color="info" />
+                    <Chip label={`غير مفعل: ${stats.inactive}`} color="default" />
+                </Box>
+
+                {/* Filters */}
+                <Box sx={{ mb: 3, display: 'flex', gap: 2, flexDirection: 'row-reverse' }}>
+                    <FormControl size="small" sx={{ minWidth: 150 }}>
+                        <InputLabel>حالة المراجعة</InputLabel>
+                        <Select
+                            value={statusFilter}
+                            onChange={(e) => setStatusFilter(e.target.value)}
+                            label="حالة المراجعة"
+                        >
+                            <MenuItem value="all">الكل</MenuItem>
+                            <MenuItem value="pending">قيد المراجعة</MenuItem>
+                            <MenuItem value="approved">مقبول</MenuItem>
+                            <MenuItem value="rejected">مرفوض</MenuItem>
+                        </Select>
+                    </FormControl>
+
+                    <FormControl size="small" sx={{ minWidth: 150 }}>
+                        <InputLabel>حالة التفعيل</InputLabel>
+                        <Select
+                            value={activationFilter}
+                            onChange={(e) => setActivationFilter(e.target.value)}
+                            label="حالة التفعيل"
+                        >
+                            <MenuItem value="all">الكل</MenuItem>
+                            <MenuItem value="active">مفعل</MenuItem>
+                            <MenuItem value="inactive">غير مفعل</MenuItem>
+                        </Select>
+                    </FormControl>
+                </Box>
+
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexDirection: 'row-reverse' }}>
+                    <Typography variant="h6" sx={{ fontWeight: 'bold', fontSize: 18 }} color="text.secondary">
+                        إعلانات الصفحة الرئيسية ({filteredAds.length})
+                    </Typography>
                     <Tooltip title="إضافة إعلان جديد">
-                        <Button 
-                            sx={{ fontWeight: 'bold', fontSize: 16 }} 
-                            variant="contained" 
+                        <Button
+                            sx={{ fontWeight: 'bold', fontSize: 16 }}
+                            variant="contained"
                             startIcon={<AddIcon sx={{ ml: 1 }} />}
                             onClick={() => setIsAddModalOpen(true)}
                         >
@@ -2312,101 +2383,101 @@ function Mainadvertisment(props) {
                         <CircularProgress />
                         <Typography sx={{ ml: 2 }}>جاري تحميل الإعلانات...</Typography>
                     </Box>
-                ) : homepageAds.length === 0 ? (
+                ) : filteredAds.length === 0 ? (
                     <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 200, flexDirection: 'column' }}>
                         <Typography variant="h6" color="text.secondary" sx={{ mb: 2 }}>
                             لا توجد إعلانات
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
-                            ابدأ بإضافة إعلان جديد للصفحة الرئيسية
+                            ابدا بإضافة إعلان جديد للصفحة الرئيسية
                         </Typography>
                     </Box>
                 ) : (
                     <List>
-                        {homepageAds.map((ad) => (
-                        <ListItem
-                            key={ad.id}
-                            sx={{
-                                mb: 2,
-                                p: 2,
-                                border: '1px solid',
-                                borderColor: 'divider',
-                                borderRadius: 2,
-                                backgroundColor: 'background.paper'
-                            }}
-                        >
-                            <Box sx={{ display: 'flex', width: '100%', alignItems: 'center', gap: 2 }}>
-                                {/* Ad Image */}
-                                <Box sx={{ minWidth: 80, height: 80, borderRadius: 1, overflow: 'hidden' }}>
-                                    <img
-                                        src={ad.image || './home.jpg'}
-                                        alt="Ad"
-                                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                    />
-                                </Box>
-
-                                {/* Ad Info */}
-                                <Box sx={{ flexGrow: 1 }}>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                                        <Chip
-                                            label={getStatusLabel(ad.reviewStatus)}
-                                            color={getStatusColor(ad.reviewStatus)}
-                                            size="small"
-                                        />
-                                        <Chip
-                                            label={ad.ads ? 'مفعل' : 'غير مفعل'}
-                                            color={ad.ads ? 'success' : 'default'}
-                                            size="small"
+                        {filteredAds.map((ad) => (
+                            <ListItem
+                                key={ad.id}
+                                sx={{
+                                    mb: 2,
+                                    p: 2,
+                                    border: '1px solid',
+                                    borderColor: 'divider',
+                                    borderRadius: 2,
+                                    backgroundColor: 'background.paper'
+                                }}
+                            >
+                                <Box sx={{ display: 'flex', width: '100%', alignItems: 'center', gap: 2 }}>
+                                    {/* Ad Image */}
+                                    <Box sx={{ minWidth: 80, height: 80, borderRadius: 1, overflow: 'hidden' }}>
+                                        <img
+                                            src={ad.image || './home.jpg'}
+                                            alt="Ad"
+                                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                         />
                                     </Box>
-                                    
-                                    <Typography variant="body2" color="text.secondary">
-                                        تاريخ الإنشاء: {formatDate(ad.id ? new Date(parseInt(ad.id.substring(0, 8), 16) * 1000) : null)}
-                                    </Typography>
-                                    
-                                    {ad.adExpiryTime && (
-                                        <Typography variant="body2" color="text.secondary">
-                                            ينتهي في: {formatDate(ad.adExpiryTime)}
-                                        </Typography>
-                                    )}
-                                    
-                                    {ad.review_note && (
-                                        <Typography variant="body2" color="error">
-                                            ملاحظة: {ad.review_note}
-                                        </Typography>
-                                    )}
-                                </Box>
 
-                                {/* Actions */}
-                                <Box sx={{ display: 'flex', gap: 1, flexDirection: 'row-reverse' }}>
-                                    <Tooltip title="تعديل">
-                                        <IconButton 
-                                            onClick={() => {
-                                                setSelectedAd(ad);
-                                                setIsEditModalOpen(true);
-                                            }}
-                                            sx={{ color: 'primary.main' }}
-                                        >
-                                            <EditIcon />
-                                        </IconButton>
-                                    </Tooltip>
-                                    
-                                    <Tooltip title="حذف">
-                                        <IconButton 
-                                            onClick={() => {
-                                                setSelectedAd(ad);
-                                                setIsDeleteModalOpen(true);
-                                            }}
-                                            sx={{ color: 'error.main' }}
-                                        >
-                                            <DeleteIcon />
-                                        </IconButton>
-                                    </Tooltip>
+                                    {/* Ad Info */}
+                                    <Box sx={{ flexGrow: 1 }}>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                                            <Chip
+                                                label={getStatusLabel(ad.reviewStatus)}
+                                                color={getStatusColor(ad.reviewStatus)}
+                                                size="small"
+                                            />
+                                            <Chip
+                                                label={ad.ads ? 'مفعل' : 'غير مفعل'}
+                                                color={ad.ads ? 'success' : 'default'}
+                                                size="small"
+                                            />
+                                        </Box>
+
+                                        <Typography variant="body2" color="text.secondary">
+                                            تاريخ الإنشاء: {ad.createdAt ? formatDate(ad.createdAt) : 'غير محدد'}
+                                        </Typography>
+
+                                        {ad.adExpiryTime && (
+                                            <Typography variant="body2" color="text.secondary">
+                                                ينتهي في: {formatDate(ad.adExpiryTime)}
+                                            </Typography>
+                                        )}
+
+                                        {ad.review_note && (
+                                            <Typography variant="body2" color="error">
+                                                ملاحظة: {ad.review_note}
+                                            </Typography>
+                                        )}
+                                    </Box>
+
+                                    {/* Actions (simplified for organization view) */}
+                                    <Box sx={{ display: 'flex', gap: 1, flexDirection: 'row-reverse' }}>
+                                        <Tooltip title="تعديل">
+                                            <IconButton
+                                                onClick={() => {
+                                                    setSelectedAd(ad);
+                                                    setIsEditModalOpen(true);
+                                                }}
+                                                sx={{ color: 'primary.main' }}
+                                            >
+                                                <EditIcon />
+                                            </IconButton>
+                                        </Tooltip>
+
+                                        <Tooltip title="حذف">
+                                            <IconButton
+                                                onClick={() => {
+                                                    setSelectedAd(ad);
+                                                    setIsDeleteModalOpen(true);
+                                                }}
+                                                sx={{ color: 'error.main' }}
+                                            >
+                                                <DeleteIcon />
+                                            </IconButton>
+                                        </Tooltip>
+                                    </Box>
                                 </Box>
-                            </Box>
-                        </ListItem>
-                    ))}
-                </List>
+                            </ListItem>
+                        ))}
+                    </List>
                 )}
             </Paper>
 
@@ -2453,10 +2524,10 @@ function Mainadvertisment(props) {
             <Snackbar
                 open={snackbarOpen}
                 autoHideDuration={6000}
-                onClose={() => setSnackbarOpen(false)}
+                onClose={handleSnackbarClose}
                 anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
             >
-                <Alert onClose={() => setSnackbarOpen(false)} severity={snackbarSeverity} sx={{ width: '100%' }}>
+                <Alert onClose={handleSnackbarClose} severity={snackbarSeverity} sx={{ width: '100%' }}>
                     {snackbarMessage}
                 </Alert>
             </Snackbar>

@@ -29,26 +29,9 @@ export default async function registerWithEmailAndPassword(email, password) {
     );
     const uid = userCredential.user.uid;
 
-    // ✅ إنشاء كائن مستخدم جديد داخل Firestore لو ما كانش موجود
-    const newUser = new User({
-      uid,
-      type_of_user: "client", // 👈 عدّل حسب نوع المستخدم
-      phone: null,
-      cli_name: null,
-      // أضف باقي الحقول حسب الحاجة
-    });
-
-    await newUser.saveToFirestore();
-
-    // ✅ توليد FCM Token
+    // ✅ توليد FCM Token (optional, can be moved to after profile completion if needed)
     const fcmToken = await requestForToken();
-
-    // ✅ حفظ التوكن
-    if (fcmToken) {
-      await newUser.saveFcmToken(fcmToken);
-    } else {
-      console.warn("⚠️ لم يتم توليد FCM Token أثناء التسجيل.");
-    }
+    // (Optional) Save FCM token somewhere if needed, but do not create Firestore user here
 
     return {
       success: true,
