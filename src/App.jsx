@@ -6,6 +6,7 @@ import SearchPage from "./pages/SearchPage";
 import DetailsForDevelopment from "./pages/Details/detailsForDevelopment";
 import Layout from "./Layout/Layout";
 import Home from "./componenents/Home";
+import ChatAiPage from "./Homeparts/ChatAiPage";
 import Footer from "./componenents/Footer";
 // import Sell from "./services/sell";
 import Favorite from "./componenents/Favorite";
@@ -89,7 +90,7 @@ function App() {
           <Route path="/services/rent" element={<RentAds />} />
           <Route path="/services/buy" element={<buyAds />} />
           <Route path="/services/finance" element={<FinancingAdsPage />} />
-
+          
           <Route path="/services/developmentAds" element={<DeveloperAdsPage />} />
 
           <Route path="/services/sell" element={<SellAds />} />
@@ -140,6 +141,7 @@ function App() {
           <Route path="profile" element={<Profile />} />
           <Route path="/packages" element={<AdPackages />} />
           <Route path="/Client-packages" element={<AdPackagesClient />} />
+          <Route path="/chat" element={<ChatAiPage />} />
           
            {/* <Route path="AddAdvertisement" element={<AddAdvertisement />}></Route>  */}
 
