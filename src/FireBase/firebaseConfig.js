@@ -37,7 +37,6 @@ import { getAuth } from 'firebase/auth';
 import { getFirestore, Timestamp } from 'firebase/firestore';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 import { getStorage } from 'firebase/storage';
-
 // ✅ config
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -48,6 +47,8 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
+// console.log('🔥 Firebase API Key:', import.meta.env.VITE_FIREBASE_API_KEY);
+
 // ✅ initialize app
 export const app = initializeApp(firebaseConfig);
 
@@ -58,3 +59,4 @@ export const timestamp = Timestamp;
 export const messaging = getMessaging(app);
 export const storage = getStorage(app);
 export { getToken, onMessage };
+

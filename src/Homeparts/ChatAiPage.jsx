@@ -88,7 +88,9 @@ const ChatAiPage = () => {
   };
 
   return (
-    <Box display="flex" flexDirection="row-reverse" height="100dvh" sx={{ direction: "rtl", overflow: "hidden", pt:8 }}>
+    <Box display="flex" flexDirection="row-reverse" height="88dvh" sx={{ direction: "rtl", overflow: "hidden",
+    //  pt:8 
+     }}>
       
       {/* Sidebar */}
       <Box

@@ -46,6 +46,7 @@ import {
 import { styled } from '@mui/material/styles';
 import MapDisplay from '../LocationComponents/MapDisplay';
 import MapPicker from '../LocationComponents/MapPicker';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 // Custom styled components
 const StyledCard = styled(Card)(({ theme }) => ({
@@ -195,7 +196,10 @@ const ModernRealEstateForm = () => {
   const [submitError, setSubmitError] = useState('');
   const [coordinates, setCoordinates] = useState(null);
   const [enableMapPick, setEnableMapPick] = useState(false);
-
+  const navigate = useNavigate();
+  const location = useLocation();
+  const editData = location.state?.adData || null;
+  const isEditMode = location.state?.editMode || false;
   const {
     control,
     handleSubmit,
@@ -206,30 +210,38 @@ const ModernRealEstateForm = () => {
   } = useForm({
     resolver: yupResolver(validationSchema),
     defaultValues: {
-      title: '',
-      propertyType: '',
-      price: '',
-      area: '',
-      buildingDate: '',
-      address: '',
-      city: '',
-      governorate: '',
-      phone: '',
-      username: '',
-      adType: '',
-      adStatus: '',
-      description: '',
-      adsActivation: false,
-      activationDays: 7,
+      title: editData?.title || '',
+      propertyType: editData?.type || '',
+      price: editData?.price || '',
+      area: editData?.area || '',
+      buildingDate: editData?.date_of_building || '',
+      address: editData?.address || '',
+      city: editData?.city || '',
+      governorate: editData?.governorate || '',
+      phone: editData?.phone || '',
+      username: editData?.user_name || '',
+      adType: editData?.ad_type || '',
+      adStatus: editData?.ad_status || '',
+      description: editData?.description || '',
+      adsActivation: editData?.ads || false,
+      activationDays: editData?.adExpiryTime ? Math.round((editData.adExpiryTime - Date.now()) / (24 * 60 * 60 * 1000)) : 7,
     }
   });
+
+  // عند التعديل، عرّض الصور القديمة للمعاينة
+  useEffect(() => {
+    if (isEditMode && editData && Array.isArray(editData.images)) {
+      setImages([]); // الصور الجديدة فقط
+      setImageError('');
+    }
+  }, [isEditMode, editData]);
 
   const adsActivation = watch('adsActivation');
   const handleImageUpload = (event) => {
     const files = Array.from(event.target.files);
 
     // Validate number of images
-    if (images.length + files.length > 4) {
+    if (!isEditMode && (images.length + files.length > 4)) {
       setImageError('يمكنك إضافة 4 صور كحد أقصى');
       return;
     }
@@ -254,7 +266,7 @@ const ModernRealEstateForm = () => {
 
   const onSubmit = async (data) => {
     setSubmitError('');
-    if (images.length === 0) {
+    if (!isEditMode && images.length === 0) {
       setImageError('الصور مطلوبة، أضف 4 صور على الأكثر');
       return;
     }
@@ -264,36 +276,74 @@ const ModernRealEstateForm = () => {
     }
 
     try {
+      if (isEditMode && (!editData.id || editData.id === undefined || editData.id === null)) {
+        setSubmitError('لا يمكن تعديل إعلان بدون معرف (ID).');
+        return;
+      }
       console.log('Current User:', auth.currentUser); // سجل للتحقق من المستخدم
-      const adData = {
-        title: data.title,
-        type: data.propertyType,
-        price: data.price,
-        area: data.area,
-        date_of_building: data.buildingDate,
-        location: {
-          lat: coordinates?.lat || 0,
-          lng: coordinates?.lng || 0,
-        },
-        address: data.address,
-        city: data.city,
-        governorate: data.governorate,
-        phone: data.phone,
-        user_name: data.username,
-        userId: auth.currentUser.uid,
-        ad_type: data.adType,
-        ad_status: data.adStatus,
-        type_of_user: 'client',
-        ads: data.adsActivation,
-        adExpiryTime: data.adsActivation
-          ? Date.now() + data.activationDays * 24 * 60 * 60 * 1000
-          : null,
-        description: data.description,
-      };
-      const ad = new ClientAdvertisement(adData);
-      await ad.save(images);
-      setShowSuccess(true);
-      handleReset();
+      if (isEditMode && editData) {
+        // تحديث إعلان موجود
+        const ad = new ClientAdvertisement({ ...editData, id: editData.id });
+        // الصور القديمة (روابط فقط)
+        const oldImages = Array.isArray(editData.images) ? editData.images : [];
+        // الصور الجديدة (ملفات فقط)
+        const newImageFiles = images;
+        let finalImageUrls = oldImages;
+        let filesToUpload = null;
+        if (newImageFiles.length > 0) {
+          filesToUpload = newImageFiles;
+          // سيتم رفع الصور الجديدة ودمجها في update
+        }
+        // مرر الصور القديمة في updates.images، ومرر newImageFiles فقط إذا كانت موجودة
+        await ad.update({
+          ...editData,
+          ...data,
+          type: data.propertyType,
+          user_name: data.username,
+          ad_type: data.adType,
+          ad_status: data.adStatus,
+          images: oldImages,
+        }, filesToUpload);
+        setShowSuccess(true);
+        handleReset();
+        setTimeout(() => {
+          navigate(`/detailsForClient/${ad.id}`);
+        }, 1500);
+      } else {
+        // إضافة إعلان جديد
+        const adData = {
+          title: data.title,
+          type: data.propertyType,
+          price: data.price,
+          area: data.area,
+          date_of_building: data.buildingDate,
+          location: {
+            lat: coordinates?.lat || 0,
+            lng: coordinates?.lng || 0,
+          },
+          address: data.address,
+          city: data.city,
+          governorate: data.governorate,
+          phone: data.phone,
+          user_name: data.username,
+          userId: auth.currentUser.uid,
+          ad_type: data.adType,
+          ad_status: data.adStatus,
+          type_of_user: 'client',
+          ads: data.adsActivation,
+          adExpiryTime: data.adsActivation
+            ? Date.now() + data.activationDays * 24 * 60 * 60 * 1000
+            : null,
+          description: data.description,
+        };
+        const ad = new ClientAdvertisement(adData);
+        await ad.save(images);
+        setShowSuccess(true);
+        handleReset();
+        setTimeout(() => {
+          navigate(`/detailsForClient/${ad.id}`);
+        }, 1500);
+      }
     } catch (error) {
       setSubmitError(error.message || 'حدث خطأ أثناء إضافة الإعلان. تأكد من أن الصور يتم رفعها إلى المسار الصحيح (property_images).');
       console.error('Error during submission:', error);
@@ -317,7 +367,7 @@ const ModernRealEstateForm = () => {
     const fetchCoordinates = async () => {
       if (!addressValue && !cityValue && !governorateValue) return;
       const fullAddress = `${addressValue || ''}, ${cityValue || ''}, ${governorateValue || ''}`;
-      const apiKey = 'YOUR_GOOGLE_MAPS_API_KEY'; // استبدل بمفتاحك
+      const apiKey = 'YOUR_GOOGLE_MAPS_API_KEY'; 
       const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(fullAddress)}&key=${apiKey}`;
       try {
         const res = await fetch(url);
@@ -352,7 +402,7 @@ const ModernRealEstateForm = () => {
           component="h1"
           sx={{
             mb: 1,
-            mt:'100px',
+            mt: '100px',
             fontWeight: 700,
             color: '#6E00FE',
             textAlign: 'center',
