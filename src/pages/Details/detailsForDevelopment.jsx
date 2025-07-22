@@ -143,22 +143,7 @@ function DetailsForDevelopment() {
   console.log("Ad user ID:", clientAds?.userId);
   console.log("Is owner:", isOwner);
 
-  // دالة للحصول على أيقونة نوع العقار
-  // const getPropertyTypeIcon = (type) => {
-  //   switch (type) {
-  //     case "شقق للبيع":
-  //     case "شقق للإيجار":
-  //       return <HomeIcon />;
-  //     case "فلل للبيع":
-  //     case "فلل للإيجار":
-  //       return <VillaIcon />;
-  //     case "عقارات مصايف للبيع":
-  //     case "عقارات مصايف للإيجار":
-  //       return <BeachAccessIcon />;
-  //     default:
-  //       return <BusinessIcon />;
-  //   }
-  // };
+
 
   if (error) {
     return (
@@ -343,14 +328,14 @@ function DetailsForDevelopment() {
             gap: 2,
           }}
         >
-          <Box sx={{ flex: 3, height: "500px" }}>
+          <Box sx={{ flex: 3, height: "500px", display: "flex", alignItems: "center", justifyContent: "center", background: "#f7f7f7" }}>
             <img
               src={mainImage}
               alt="صورة العقار الرئيسية"
               style={{
-                width: "100%",
-                height: "100%",
-                objectFit: "cover",
+                maxWidth: "100%",
+                maxHeight: "100%",
+                objectFit: "contain",
                 borderRadius: "12px",
                 display: "block"
               }}
@@ -365,14 +350,14 @@ function DetailsForDevelopment() {
           </Box>
 
           {clientAds?.images &&
-          clientAds.images.filter(
-            (img) =>
-              typeof img === "string" &&
-              img.trim() !== "" &&
-              img !== "null" &&
-              img !== "undefined" &&
-              (img.startsWith("http") || img.startsWith("https"))
-          ).length > 1 ? (
+            clientAds.images.filter(
+              (img) =>
+                typeof img === "string" &&
+                img.trim() !== "" &&
+                img !== "null" &&
+                img !== "undefined" &&
+                (img.startsWith("http") || img.startsWith("https"))
+            ).length > 1 ? (
             <Box
               sx={{
                 flex: 1,
@@ -434,6 +419,8 @@ function DetailsForDevelopment() {
 
       {/* معلومات العقار والمطور */}
       <Grid container spacing={4}>
+
+
         {/* معلومات العقار - على اليمين */}
         <Grid size={{ xs: 12, md: 8 }}>
           <Paper elevation={3} sx={{ borderRadius: 3 }}>
@@ -778,6 +765,7 @@ function DetailsForDevelopment() {
             </CardContent>
           </Paper>
         </Grid>
+
         {/* معلومات المطور - على اليسار */}
         <Grid size={{ xs: 12, md: 4 }}>
           <Paper
@@ -865,7 +853,7 @@ function DetailsForDevelopment() {
 
               <Divider sx={{ my: 3 }} />
 
-              <Box sx={{ textAlign: "center" }}>
+              {/* <Box sx={{ textAlign: "center" }}>
                 <Typography variant="body2" color="text.secondary" gutterBottom>
                   نوع العقار
                 </Typography>
@@ -876,44 +864,60 @@ function DetailsForDevelopment() {
                 >
                   {clientAds.project_types?.join(" - ")}
                 </Typography>
-              </Box>
+              </Box> */}
             </CardContent>
           </Paper>
         </Grid>
-        {/* زر التعديل للمالك */}
-        {isOwner && (
-          <Box
+
+
+
+
+      </Grid>
+
+
+
+      {/* زر التعديل للمالك */}
+      {isOwner && (
+        <Box
+          sx={{
+            // position: 'fixed',
+            top: 100,
+            right: 20,
+            zIndex: 1000,
+          }}
+        >
+          <Button
+            variant="contained"
+            startIcon={<EditIcon />}
+            onClick={handleEdit}
             sx={{
-              // position: 'fixed',
-              top: 100,
-              right: 20,
-              zIndex: 1000,
+              backgroundColor: "#6E00FE",
+              "&:hover": { backgroundColor: "#200D3A" },
+              borderRadius: "25px",
+              px: 3,
+              boxShadow: "0px 4px 12px rgba(0,0,0,0.2)",
+              flexDirection: "row-reverse",
+              gap: 1.5,
+              "& .MuiButton-startIcon": {
+                marginLeft: "12px",
+                marginRight: 0,
+              },
             }}
           >
-            <Button
-              variant="contained"
-              startIcon={<EditIcon />}
-              onClick={handleEdit}
-              sx={{
-                backgroundColor: "#6E00FE",
-                "&:hover": { backgroundColor: "#200D3A" },
-                borderRadius: "25px",
-                px: 3,
-                boxShadow: "0px 4px 12px rgba(0,0,0,0.2)",
-                flexDirection: "row-reverse",
-                gap: 1.5,
-                "& .MuiButton-startIcon": {
-                  marginLeft: "12px",
-                  marginRight: 0,
-                },
-              }}
-            >
-              تعديل الإعلان
-            </Button>
-          </Box>
-        )}
-      </Grid>
+            تعديل الإعلان
+          </Button>
+        </Box>
+      )}
+
+
+
+
+
+
     </Container>
+
+
+
   );
 }
 

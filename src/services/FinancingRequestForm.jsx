@@ -4,12 +4,33 @@ import {
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import FinancingRequest from '../FireBase/modelsWithOperations/FinancingRequest';
+import FinancingAdvertisement from '../FireBase/modelsWithOperations/FinancingAdvertisement';
+import React from 'react';
 
 export default function FinancingRequestForm() {
   const navigate = useNavigate();
   const location = useLocation();
   const advertisementId = location.state?.advertisementId;
   const [monthlyInstallment, setMonthlyInstallment] = useState('');
+  const [isDisabled, setIsDisabled] = useState(false);
+  const [requestId, setRequestId] = useState(null);
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  const [minAmount, setMinAmount] = useState(500000);
+  const [maxAmount, setMaxAmount] = useState(1000000);
+
+  // جلب حدود مبلغ التمويل من الإعلان المرتبط
+  React.useEffect(() => {
+    async function fetchLimits() {
+      if (advertisementId) {
+        const ad = await FinancingAdvertisement.getById(advertisementId);
+        if (ad) {
+          setMinAmount(ad.start_limit);
+          setMaxAmount(ad.end_limit);
+        }
+      }
+    }
+    fetchLimits();
+  }, [advertisementId]);
 
   const [form, setForm] = useState({
     user_id: 'user-id',
@@ -43,34 +64,63 @@ export default function FinancingRequestForm() {
   };
 
   const handleSubmit = async () => {
+    // تحقق من مبلغ التمويل قبل الإرسال بناءً على حدود الإعلان
+    if (Number(form.financing_amount) < minAmount || Number(form.financing_amount) > maxAmount) {
+      alert(`مبلغ التمويل يجب أن يكون بين ${minAmount} و ${maxAmount} جنيه مصري.`);
+      return;
+    }
     try {
-      const request = new FinancingRequest(form);
-      await request.save();
-
-      alert("تم إرسال طلب التمويل بنجاح");
-
-      const savedRequests = JSON.parse(localStorage.getItem('financingRequests')) || [];
-      savedRequests.push(form);
-      localStorage.setItem('financingRequests', JSON.stringify(savedRequests));
-
-      setForm({
-        user_id: 'user-id',
-        advertisement_id: advertisementId || '',
-        monthly_income: '',
-        job_title: '',
-        employer: '',
-        age: '',
-        marital_status: '',
-        dependents: '',
-        financing_amount: '',
-        repayment_years: '',
-      });
-
-      navigate('/profile');
+      if (!requestId) {
+        const request = new FinancingRequest(form);
+        const id = await request.save();
+        setRequestId(id);
+        setIsDisabled(true);
+        // لا تظهر رسالة النجاح هنا، فقط بعد الإرسال النهائي
+      } else {
+        // تعديل طلب موجود
+        const request = new FinancingRequest({ ...form, id: requestId });
+        await request.update({ ...form });
+        setIsDisabled(true);
+        // لا تظهر رسالة النجاح هنا، فقط بعد الإرسال النهائي
+      }
     } catch (err) {
       alert("حدث خطأ أثناء الإرسال");
       console.error(err);
     }
+  };
+
+  // زر الإرسال النهائي (يظهر رسالة النجاح ويعيد التوجيه)
+  const handleFinalSubmit = async () => {
+    try {
+      if (!requestId) {
+        const request = new FinancingRequest(form);
+        const id = await request.save();
+        setRequestId(id);
+      } else {
+        const request = new FinancingRequest({ ...form, id: requestId });
+        await request.update({ ...form });
+      }
+      setShowSuccessMessage(true);
+      setTimeout(() => {
+        navigate('/profile');
+      }, 1500);
+    } catch (err) {
+      alert("حدث خطأ أثناء الإرسال");
+      console.error(err);
+    }
+  };
+
+  const handleEdit = () => {
+    setIsDisabled(false);
+  };
+
+  const handleCancel = () => {
+    setIsDisabled(true);
+    setShowSuccessMessage(false);
+    setTimeout(() => {
+      navigate('/details/financingAds');
+    }, 1500);
+
   };
 
   return (
@@ -106,6 +156,7 @@ export default function FinancingRequestForm() {
               onChange={handleChange}
               required
               inputProps={{ dir: 'rtl' }}
+              disabled={isDisabled}
             />
           </Box>
         ))}
@@ -121,6 +172,7 @@ export default function FinancingRequestForm() {
             value={form.marital_status}
             onChange={handleChange}
             required
+            disabled={isDisabled}
           >
             <MenuItem value="single">أعزب</MenuItem>
             <MenuItem value="married">متزوج</MenuItem>
@@ -141,16 +193,50 @@ export default function FinancingRequestForm() {
           </Box>
         )}
 
-        <Box textAlign="center" mt={2}>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={handleSubmit}
-            sx={{ px: 5, py: 1.5, fontWeight: 'bold', borderRadius: 3 }}
-          >
-            إرسال الطلب
-          </Button>
+        <Box textAlign="center" mt={2} display="flex" gap={2} justifyContent="center">
+          {isDisabled ? (
+            <>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={handleFinalSubmit}
+                sx={{ px: 4, py: 1.5, fontWeight: 'bold', borderRadius: 3 }}
+              >
+                إرسال الطلب
+              </Button>
+              <Button
+                variant="outlined"
+                color="primary"
+                onClick={handleCancel}
+                sx={{ px: 4, py: 1.5, fontWeight: 'bold', borderRadius: 3 }}
+              >
+                إلغاء الطلب
+              </Button>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={handleEdit}
+                sx={{ px: 4, py: 1.5, fontWeight: 'bold', borderRadius: 3 }}
+              >
+                تعديل
+              </Button>
+            </>
+          ) : (
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={handleSubmit}
+              sx={{ px: 4, py: 1.5, fontWeight: 'bold', borderRadius: 3 }}
+            >
+              إرسال الطلب
+            </Button>
+          )}
         </Box>
+        {showSuccessMessage && (
+          <Typography color="success.main" textAlign="center" mt={2} fontWeight="bold">
+            تم إرسال أو تعديل الطلب بنجاح!
+          </Typography>
+        )}
       </Box>
     </Box>
   );

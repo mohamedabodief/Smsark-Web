@@ -735,7 +735,7 @@ const PropertyForm = ({
               صور العقار (حد أقصى 4 صور)
             </Typography>
             <input
-              accept="image/jpeg,image/png"
+              accept="image/jpeg,image/"
               type="file"
               multiple
               onChange={handleImageChange}
@@ -976,14 +976,14 @@ const PropertyForm = ({
             </Grid>
           )}
 
-          <Grid size={{ xs: 12, md: 6, lg: 6 }}>
+          <Grid size={{ xs: 12, md: 6, lg: 4 }}>
             <StyledButton
               type="submit"
               variant="contained"
               size="large"
               fullWidth
               disabled={loading || uploading}
-              sx={{ mt: 2, py: 2, fontSize: "1.3rem" }}
+              sx={{ mt: 2, py: 2, fontSize: "1.3rem", display: 'flex', justifyContent: 'center', alignItems: 'center', borderRadius: '15px' }}
             >
               {uploading ? (
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
