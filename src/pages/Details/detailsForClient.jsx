@@ -32,7 +32,7 @@ import ClientAdvertisement from '../../FireBase/modelsWithOperations/ClientAdver
 import PhoneIcon from '@mui/icons-material/Phone';
 import { db, auth } from '../../FireBase/firebaseConfig';
 import { doc, getDoc } from 'firebase/firestore';
-
+import Notification from '../../FireBase/MessageAndNotification/Notification';
 function DetailsForClient() {
   const currentUser = auth.currentUser?.uid;
   const { id } = useParams();
@@ -74,32 +74,42 @@ function DetailsForClient() {
   }, [id]);
 
   // إرسال الرسالة
-  const handleSend = async () => {
-    if (!message.trim() || !currentUser || !clientAds?.userId) return;
+const handleSend = async () => {
+  if (!message.trim() || !currentUser || !clientAds?.userId) return;
 
-    try {
-      const receiverName = await getReceiverName(clientAds.userId);
-      const newMessage = new Message({
-        sender_id: currentUser,
-        receiver_id: clientAds.userId,
-        content: message,
-        reciverName: receiverName, // استخدام الاسم الحقيقي
-        timestamp: new Date(),
-        is_read: false,
-        message_type: 'text',
-      });
+  try {
+    const receiverName = await getReceiverName(clientAds.userId);
+    const newMessage = new Message({
+      sender_id: currentUser,
+      receiver_id: clientAds.userId,
+      content: message,
+      reciverName: receiverName,
+      timestamp: new Date(),
+      is_read: false,
+      message_type: 'text',
+    });
 
-      console.log('Sending message to:', { receiver_id: clientAds.userId, reciverName: receiverName });
-      await newMessage.send();
-      alert("تم إرسال الرسالة!");
-      setMessage("");
-      setOpen(false);
-    } catch (error) {
-      console.error("حدث خطأ أثناء الإرسال:", error);
-      alert("فشل في إرسال الرسالة!");
-    }
-  };
+    console.log('Sending message to:', { receiver_id: clientAds.userId, reciverName: receiverName });
+    await newMessage.send();
 
+ 
+    const notification = new Notification({
+      receiver_id: clientAds.userId,
+      title: `رسالة جديدة من ${auth.currentUser.email|| 'مستخدم'}`,
+      body: message || 'لقد تلقيت رسالة جديدة!',
+      type: 'message',
+     link: `/privateChat/${clientAds.userId}`
+    });
+    await notification.send();
+
+    alert("تم إرسال الرسالة!");
+    setMessage("");
+    setOpen(false);
+  } catch (error) {
+    console.error("حدث خطأ أثناء الإرسال:", error);
+    alert("فشل في إرسال الرسالة!");
+  }
+};
   const handleShare = async () => {
     if (navigator.share) {
       try {

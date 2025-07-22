@@ -20,9 +20,17 @@ export default function Advertise() {
       }
     };
 
+  //   fetchUserType();
+  // }, []);
+
+  // اختبار يدوي فقط
+//   const user = { id: 'test-user', type: 'financer' }; // client | developer | financer
+//   const userType = user.type;
+
     fetchUserType();
   }, []);
 
+  
   const options = [
     {
       icon: <SearchRounded fontSize="large" sx={{ color: '#1976d2' }} />,

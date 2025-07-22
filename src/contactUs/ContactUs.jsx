@@ -10,10 +10,13 @@ import {
   Container,
   Snackbar,
   Alert,
+  IconButton,
 } from "@mui/material";
-import { Phone, Email, LocationOn } from "@mui/icons-material";
+import { Phone, Email, LocationOn, Close } from "@mui/icons-material";
+import { collection, getDocs, query, where } from "firebase/firestore";
+import { db } from "../FireBase/firebaseConfig";
 import contactHeaderImage from "../assets/contact-header.png";
-import storeContactMessage from "../FireBase/authService/storeContactMessage";
+import Message from "../FireBase/MessageAndNotification/Message";
 
 const ContactUs = () => {
   const theme = useTheme();
@@ -43,27 +46,51 @@ const ContactUs = () => {
     setIsSubmitting(true);
 
     try {
-      const result = await storeContactMessage(formData);
+      const adminsQuery = query(
+        collection(db, "users"),
+        where("type_of_user", "==", "admin")
+      );
+      const adminsSnapshot = await getDocs(adminsQuery);
+      const admins = adminsSnapshot.docs.map((doc) => ({
+        uid: doc.id,
+        name: doc.data().adm_name || "الأدمن",
+      }));
+
+      if (admins.length === 0) {
+        throw new Error("مفيش أدمنز متاحين.");
+      }
+      const messageContent = `الاسم: ${formData.name}\nالبريد: ${formData.email}\nالهاتف: ${formData.phone}\nالموضوع: ${formData.subject}`;
+      for (const admin of admins) {
+        const messageData = {
+          sender_id: formData.email, 
+          receiver_id: admin.uid,
+          reciverName: "amdin semsark", 
+          content: messageContent,
+          message_type: "text",
+          is_read: false,
+        };
+
+        const message = new Message(messageData);
+        await message.send();
+      }
 
       setSubmitStatus({
         open: true,
-        success: result.success,
-        message: result.message || result.error,
+        success: true,
+        message: "تم إرسال رسالتك بنجاح! هنتواصل معاكِ قريبًا.",
       });
-
-      if (result.success) {
-        setFormData({
-          name: "",
-          email: "",
-          phone: "",
-          subject: "",
-        });
-      }
-    } catch {
+      setFormData({
+        name: "",
+        email: "",
+        phone: "",
+        subject: "",
+      });
+    } catch (error) {
+      console.error("Error submitting contact form:", error);
       setSubmitStatus({
         open: true,
         success: false,
-        message: "حدث خطأ غير متوقع، يرجى المحاولة مرة أخرى",
+        message: "حدث خطأ، حاولي مرة تانية.",
       });
     } finally {
       setIsSubmitting(false);
@@ -125,9 +152,9 @@ const ContactUs = () => {
                 الموقع
               </Typography>
               <Typography variant="body2">
-                1628 Damanhour , Elbehaira
+                1628 Damanhour, Elbehaira
                 <br />
-                2001 iti branch . damanhour
+                2001 iti branch, damanhour
               </Typography>
             </Box>
           </Grid>
@@ -140,9 +167,9 @@ const ContactUs = () => {
                 اتصل بنا
               </Typography>
               <Typography variant="body2">
-                Foul Doris : +20 111 915 9182
+                Foul Doris: +20 111 915 9182
                 <br />
-                الإدارة : 045 263 5992
+                الإدارة: 045 263 5992
               </Typography>
             </Box>
           </Grid>
@@ -200,7 +227,7 @@ const ContactUs = () => {
                 </Box>
               </Box>
             </Grid>
-            
+
             <Grid size={{ xs: 12, md: 8 }}>
               <Box
                 sx={{
@@ -292,8 +319,17 @@ const ContactUs = () => {
         anchorOrigin={{ vertical: "top", horizontal: "center" }}
       >
         <Alert
-          onClose={handleCloseSnackbar}
           severity={submitStatus.success ? "success" : "error"}
+          action={
+            <IconButton
+              size="small"
+              aria-label="close"
+              color="inherit"
+              onClick={handleCloseSnackbar}
+            >
+              <Close fontSize="small" />
+            </IconButton>
+          }
           sx={{ width: "100%" }}
         >
           {submitStatus.message}

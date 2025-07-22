@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { Route, Routes, Navigate } from "react-router-dom";
+import { Route, Routes, useNavigate, } from "react-router-dom";
 import DetailsForClient from "./pages/Details/detailsForClient";
-import DetailsForFinaccingAds from "./pages/Details/detailsForFinaccingAds";
+import DetailsForFinancingAds from "./pages/Details/detailsForFinaccingAds";
 import DetailsForDevelopment from "./pages/Details/detailsForDevelopment";
 import Layout from "./Layout/Layout";
 import Home from "./componenents/Home";
@@ -24,22 +24,32 @@ import ModernRealEstateForm from "./pages/ModernRealEstateForm";
 import InboxChats from "./pages/InboxChats";
 import ChatBox from "./pages/privechat";
 import Profile from "./componenents/profile";
+import { Snackbar, Alert, Button } from '@mui/material';
+import Notification from "./FireBase/MessageAndNotification/Notification";
 import SearchPage from "./pages/SearchPage";
 import ContactUs from "./contactUs/ContactUs";
-
+import { Navigate } from 'react-router-dom';
+import AdPackages from "../packages/packagesDev&Fin";
+import AdPackagesClient from "../packages/packagesClient";
 import AdminDashboard from "./Dashboard/adminDashboard";
 import ClientDashboard from "./Dashboard/clientDashboard";
 import OrganizationDashboard from "./Dashboard/organization/organizationDashboard";
 import PrivateRoute from "./PrivateRoute";
 import AuthSync from "./AuthSync";
-
+import RequireNotAuth from "./LoginAndRegister/RequireNotAuth";
 
 
 import { onMessage, messaging, auth } from "./FireBase/firebaseConfig";
 import { requestPermissionAndSaveToken } from "./FireBase/MessageAndNotification/fcmHelper";
 import { onAuthStateChanged } from "firebase/auth";
-
+import CloseIcon from '@mui/icons-material/Close';
 function App() {
+  const [notifications, setNotifications] = useState([]);
+  const [openSnackbar, setOpenSnackbar] = useState(false);
+  const [currentNotification, setCurrentNotification] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null); // استخدام useState
+  const navigate = useNavigate();
+  ////////////////////////////////////////////////
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -67,6 +77,46 @@ function App() {
 
     return () => unsubscribe();
   }, []);
+  ///////////////////////////////
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      setCurrentUser(user);
+    });
+    return () => unsubscribe();
+  }, []);
+  useEffect(() => {
+    if (currentUser) {
+      const unsubscribe = Notification.subscribeByUser(currentUser.uid, (notifs) => {
+        const newNotifs = notifs.filter(n => !n.is_read);
+        if (newNotifs.length > notifications.length) {
+          const latestNotif = newNotifs[newNotifs.length - 1];
+          setCurrentNotification(latestNotif);
+          setOpenSnackbar(true);
+        }
+        setNotifications(newNotifs);
+      });
+
+      return () => unsubscribe();
+    }
+  }, [currentUser, notifications]);
+  const handleOpenChat = () => {
+    if (currentNotification?.link) {
+      const userId = currentNotification.link.split('/privateChat/')[1];
+      navigate(`/privateChat/${userId}`, {
+        state: { otherUser: { userId, userName: currentNotification.title.split('من ')[1] || 'مستخدم غير معروف' } }
+      });
+      handleCloseSnackbar();
+    }
+  };
+
+  const handleCloseSnackbar = () => {
+    setOpenSnackbar(false);
+    if (currentNotification) {
+      Notification.markAsRead(currentNotification.id);
+    }
+  };
+
+  //////////////////////////////
 
 
   if (loading) return null;
@@ -79,42 +129,10 @@ function App() {
           <Routes>
             <Route path="/" element={<Navigate to="/login" replace />} />
             <Route path="/home" element={<Home />} />
-            <Route path="/" element={<Navigate to="login" replace />} />
-
-            {/* <Route path="/auth"> */}
-            {/* <Route path="login" element={<LoginRegister />} />
-          <Route path="register" element={<LoginRegister />} /> */}
-            {/* 
-          <Route path="/services/sell" element={<Sell />} />
-          <Route path="/services/rent" element={<Rent />} />
-          <Route path="/services/buy" element={<Buy />} />
-          <Route path="/services/finance" element={<Finance />} />
-
-          <Route path="/services/sell" element={<SellAds />} />
-          <Route path="/services/rent" element={<RentAds />} />
-          <Route path="/services/buy" element={<buyAds />} />
-          <Route path="/services/finance" element={<FinancingAdsPage />} />
-
-
-             */}
-            {/* <Route path="/auth"> */}
-            <Route path="login" element={<LoginRegister />} />
-            <Route path="register" element={<LoginRegister />} />
-            <Route path="/about" element={<AboutUs />} />
-            <Route path="/RealEstateDeveloperAnnouncement" element={<PropertyPage />} />
-
-            <Route element={<PrivateRoute />}>
-              {/* Admin Dashboard */}
-              <Route path="/admin-dashboard" element={<AdminDashboard />} />
-              {/* Client Dashboard */}
-              <Route path="/client-dashboard" element={<ClientDashboard />} />
-              {/* Organization Dashboard */}
-              <Route path="/organization-dashboard" element={<OrganizationDashboard />} />
-            </Route>
-
-            <Route path="/services/sell" element={<SellAds />} />
-            <Route path="/login" element={<LoginRegister />} />
-            <Route path="/register" element={<LoginRegister />} />
+            {/* صفحات الدخول والتسجيل */}
+            <Route path="login" element={<RequireNotAuth><LoginRegister /></RequireNotAuth>} />
+            <Route path="register" element={<RequireNotAuth><LoginRegister /></RequireNotAuth>} />
+            {/* صفحات عامة */}
             <Route path="/about" element={<AboutUs />} />
             <Route path="/contact" element={<ContactUs />} />
             <Route path="/favorite" element={<Favorite />} />
@@ -122,72 +140,87 @@ function App() {
             <Route path="/search" element={<SearchPage />} />
             <Route path="/inbox" element={<InboxChats />} />
             <Route path="/privateChat/:id" element={<ChatBox />} />
-
-            {/* Services */}
+            {/* خدمات الإعلانات */}
             <Route path="/services/sell" element={<SellAds />} />
             <Route path="/services/rent" element={<RentAds />} />
             <Route path="/services/buy" element={<BuyAds />} />
             <Route path="/services/finance" element={<FinancingAdsPage />} />
             <Route path="/services/developmentAds" element={<DeveloperAdsPage />} />
+            {/* صفحات الإعلانات العقارية */}
+            <Route path="/RealEstateDeveloperAnnouncement" element={<PropertyPage />} />
             <Route path="/AdddeveloperAds" element={<PropertyPage />} />
-
-            <Route path="/services/sell" element={<SellAds />} />
-            <Route path="/services/rent" element={<RentAds />} />
-            <Route path="/services/buy" element={<buyAds />} />
-            <Route path="/services/finance" element={<FinancingAdsPage />} />
-
-            <Route path="/services/developmentAds" element={<DeveloperAdsPage />} />
-
-
-            <Route path="/favorite" element={<Favorite />} />
-            <Route
-              path="/insert-finance-data"
-              element={<FinancingAdvExample />}
-            />
-            <Route
-              path="/insert-dev-data"
-              element={<RealEstateDevAdvExample />}
-            />
-
-            {/* Forms & Insert */}
+            {/* صفحات الباقات */}
+            <Route path="/packages" element={<AdPackages />} />
+            <Route path="/Client-packages" element={<AdPackagesClient />} />
+            {/* صفحات الإدخال والنماذج */}
             <Route path="/add-financing-ad" element={<AddFinancingAdForm />} />
             <Route path="/insert-finance-data" element={<FinancingAdvExample />} />
             <Route path="/insert-dev-data" element={<RealEstateDevAdvExample />} />
             <Route path="/financing-request" element={<FinancingRequestForm />} />
             <Route path="/AddAdvertisement" element={<ModernRealEstateForm />} />
-            <Route path="/AdddeveloperAds" element={<PropertyPage />} />
-
-            <Route path="details">
-              <Route
-                path="financingAds/:id"
-                element={<DetailsForFinaccingAds />}
-              />
-              <Route path="clientAds/:id" element={<DetailsForClient />} />
-              <Route
-                path="developmentAds/:id"
-                element={<DetailsForDevelopment />}
-              />
+            {/* صفحات الداشبورد */}
+            <Route element={<PrivateRoute />}>
+              <Route path="/admin-dashboard" element={<AdminDashboard />} />
+              <Route path="/client-dashboard" element={<ClientDashboard />} />
+              <Route path="/organization-dashboard" element={<OrganizationDashboard />} />
             </Route>
-            <Route path="search" element={<SearchPage />} />
-            <Route path="profile" element={<Profile />} />
-
-            {/* <Route path="AddAdvertisement" element={<AddAdvertisement />}></Route>  */}
-
-            <Route path="AddAdvertisement" element={<ModernRealEstateForm />}></Route>
-            {/* Real estate announcements */}
-            <Route path="/RealEstateDeveloperAnnouncement" element={<PropertyPage />} />
-
-            {/* {/* Details */}
+            {/* صفحات التفاصيل */}
             <Route path="/detailsForDevelopment/:id" element={<DetailsForDevelopment />} />
             <Route path="/detailsForDevelopment" element={<Navigate to="/RealEstateDeveloperAnnouncement" replace />} />
-            <Route path="/details/financingAds/:id" element={<DetailsForFinaccingAds />} />
+            <Route path="/details/financingAds/:id" element={<DetailsForFinancingAds />} />
             <Route path="/details/clientAds/:id" element={<DetailsForClient />} />
             <Route path="/details/developmentAds/:id" element={<DetailsForDevelopment />} />
             <Route path="/detailsForClient/:id" element={<DetailsForClient />} />
+            {/* صفحات التفاصيل القديمة (للتوافق) */}
+            <Route path="details">
+              <Route path="financingAds/:id" element={<DetailsForFinancingAds />} />
+              <Route path="clientAds/:id" element={<DetailsForClient />} />
+              <Route path="developmentAds/:id" element={<DetailsForDevelopment />} />
+            </Route>
           </Routes>
+          <Footer />
         </Layout>
-        <Footer />
       </SearchProvider>
+      <Snackbar
+        open={openSnackbar}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert
+          severity="info"
+          action={
+            <>
+              <Button color="inherit" size="small" onClick={handleOpenChat}>
+                فتح
+              </Button>
+              <Button color="inherit" size="small" onClick={handleCloseSnackbar}>
+                إغلاق
+              </Button>
+            </>
+          }
+          sx={{
+            width: '100%',
+            maxWidth: '400px',
+            textAlign: 'right',
+            backgroundColor: '#ffffff',
+            borderRadius: '8px',
+            padding: '16px',
+            fontSize: '20px',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+            '& .MuiAlert-icon': {
+              marginRight: '12px',
+            },
+            '& .MuiAlert-message': {
+              padding: '8px 0',
+            },
+          }}
+        >
+          <strong>{currentNotification?.title}</strong>
+          <br />
+          {currentNotification?.body}
+        </Alert>
+      </Snackbar>
     </>
   );
 }

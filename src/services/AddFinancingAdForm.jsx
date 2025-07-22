@@ -10,7 +10,7 @@ import { storage, auth } from '../FireBase/firebaseConfig';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 export default function AddFinancingAdForm() {
-  const navigate = useNavigate();
+  const navigate = useNavigate(); 
   const location = useLocation();
   const editData = location.state?.adData || null;
   const isEditMode = location.state?.editMode || false;
@@ -194,7 +194,7 @@ export default function AddFinancingAdForm() {
         const currentUser = auth.currentUser;
         if (!currentUser) throw new Error("يجب تسجيل الدخول أولاً.");
         ad = new FinancingAdvertisement({
-          ...form,
+        ...form,
           userId: currentUser.uid,
         });
         await ad.save(images);
@@ -377,8 +377,8 @@ export default function AddFinancingAdForm() {
                   >
                     <DeleteIcon color="error" />
                   </IconButton>
-                </Box>
-              ))}
+          </Box>
+        ))}
               {previewUrls.length === 0 && !loading && (
                 <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100px", height: "100px", border: "2px dashed #ccc", borderRadius: "8px", color: "text.secondary", backgroundColor: "#f5f5f5" }}>
                   <Typography variant="caption" textAlign="center">لا توجد صور</Typography>
@@ -387,15 +387,15 @@ export default function AddFinancingAdForm() {
             </Box>
           </Grid>
           <Grid item xs={12} sx={{ textAlign: 'center', mt: 2 }}>
-            <Button
+          <Button
               type="submit"
-              variant="contained"
-              size="large"
+            variant="contained"
+            size="large"
               sx={{ px: 5, py: 1.5, fontWeight: 'bold', borderRadius: 3, minWidth: 200 }}
               disabled={loading}
-            >
+          >
               {loading ? <CircularProgress size={24} color="inherit" /> : isEditMode ? "حفظ التعديلات" : "حفظ الإعلان"}
-            </Button>
+          </Button>
           </Grid>
 
         </Grid>
