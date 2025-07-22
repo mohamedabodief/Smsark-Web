@@ -1,3 +1,5 @@
+
+
 import { Timestamp } from 'firebase/firestore';
 
 /**
@@ -17,6 +19,7 @@ class FinancingRequestData {
     dependents,
     financing_amount,
     repayment_years,
+    phone_number, // ✅ مضاف: رقم الهاتف
     status,
     reviewStatus,
     submitted_at,
@@ -32,8 +35,9 @@ class FinancingRequestData {
     this.dependents = dependents;
     this.financing_amount = financing_amount;
     this.repayment_years = repayment_years;
+    this.phone_number = phone_number || ''; // ✅ رقم الهاتف، افتراضيًا فارغ
     this.status = status || 'pending';
-    this.reviewStatus = reviewStatus || 'pending'; // ✅ حالة المراجعة (مضاف حديثًا)
+    this.reviewStatus = reviewStatus || 'pending'; // ✅ حالة المراجعة
     this.submitted_at = submitted_at || Timestamp.now();
   }
 }

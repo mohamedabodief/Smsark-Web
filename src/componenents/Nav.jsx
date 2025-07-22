@@ -38,6 +38,7 @@ export default function Nav({ toggleMode }) {
     } else {
       navigate('/profile');
     }
+  };
   const handleClick = (event) => {
     setAnchorEl(event.currentTarget);
   };
@@ -151,4 +152,4 @@ export default function Nav({ toggleMode }) {
       </Toolbar>
     </AppBar>
   );
-}}
+}

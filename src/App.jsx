@@ -73,18 +73,18 @@ function App() {
 
   return (
     <>
-    <AuthSync />
-    <SearchProvider>
-      <Layout>
-        <Routes>
-          <Route path="/" element={<Navigate to="/login" replace />} />
-          <Route path="/home" element={<Home />} />
-          <Route path="/" element={<Navigate to="login" replace />} />
+      <AuthSync />
+      <SearchProvider>
+        <Layout>
+          <Routes>
+            <Route path="/" element={<Navigate to="/login" replace />} />
+            <Route path="/home" element={<Home />} />
+            <Route path="/" element={<Navigate to="login" replace />} />
 
-          {/* <Route path="/auth"> */}
-          {/* <Route path="login" element={<LoginRegister />} />
+            {/* <Route path="/auth"> */}
+            {/* <Route path="login" element={<LoginRegister />} />
           <Route path="register" element={<LoginRegister />} /> */}
-          {/* 
+            {/* 
           <Route path="/services/sell" element={<Sell />} />
           <Route path="/services/rent" element={<Rent />} />
           <Route path="/services/buy" element={<Buy />} />
@@ -97,96 +97,97 @@ function App() {
 
 
              */}
-          {/* <Route path="/auth"> */}
-          <Route path="login" element={<LoginRegister />} />
-          <Route path="register" element={<LoginRegister />} />
-          <Route path="/about" element={<AboutUs />} />
-          <Route path="/RealEstateDeveloperAnnouncement" element={<PropertyPage />} />
+            {/* <Route path="/auth"> */}
+            <Route path="login" element={<LoginRegister />} />
+            <Route path="register" element={<LoginRegister />} />
+            <Route path="/about" element={<AboutUs />} />
+            <Route path="/RealEstateDeveloperAnnouncement" element={<PropertyPage />} />
 
-          <Route element={<PrivateRoute />}>
-            {/* Admin Dashboard */}
-            <Route path="/admin-dashboard" element={<AdminDashboard />} />
-            {/* Client Dashboard */}
-            <Route path="/client-dashboard" element={<ClientDashboard />} />
-            {/* Organization Dashboard */}
-            <Route path="/organization-dashboard" element={<OrganizationDashboard />} />
-          </Route>
+            <Route element={<PrivateRoute />}>
+              {/* Admin Dashboard */}
+              <Route path="/admin-dashboard" element={<AdminDashboard />} />
+              {/* Client Dashboard */}
+              <Route path="/client-dashboard" element={<ClientDashboard />} />
+              {/* Organization Dashboard */}
+              <Route path="/organization-dashboard" element={<OrganizationDashboard />} />
+            </Route>
 
-          {/* <Route path="/services/sell" element={<SellAds />} />
-          <Route path="/login" element={<LoginRegister />} />
-          <Route path="/register" element={<LoginRegister />} />
-          <Route path="/about" element={<AboutUs />} />
-          <Route path="/contact" element={<ContactUs />} />
-          <Route path="/favorite" element={<Favorite />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/search" element={<SearchPage />} />
-          <Route path="/inbox" element={<InboxChats />} />
-          <Route path="/privateChat/:id" element={<ChatBox />} />
+            <Route path="/services/sell" element={<SellAds />} />
+            <Route path="/login" element={<LoginRegister />} />
+            <Route path="/register" element={<LoginRegister />} />
+            <Route path="/about" element={<AboutUs />} />
+            <Route path="/contact" element={<ContactUs />} />
+            <Route path="/favorite" element={<Favorite />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/search" element={<SearchPage />} />
+            <Route path="/inbox" element={<InboxChats />} />
+            <Route path="/privateChat/:id" element={<ChatBox />} />
 
-          {/* Services */}
-          <Route path="/services/sell" element={<SellAds />} />
-          <Route path="/services/rent" element={<RentAds />} />
-          <Route path="/services/buy" element={<BuyAds />} />
-          <Route path="/services/finance" element={<FinancingAdsPage />} />
-          <Route path="/services/developmentAds" element={<DeveloperAdsPage />} />
-          <Route path="/AdddeveloperAds" element={<PropertyPage />} />
+            {/* Services */}
+            <Route path="/services/sell" element={<SellAds />} />
+            <Route path="/services/rent" element={<RentAds />} />
+            <Route path="/services/buy" element={<BuyAds />} />
+            <Route path="/services/finance" element={<FinancingAdsPage />} />
+            <Route path="/services/developmentAds" element={<DeveloperAdsPage />} />
+            <Route path="/AdddeveloperAds" element={<PropertyPage />} />
 
-          <Route path="/services/sell" element={<SellAds />} />
-          <Route path="/services/rent" element={<RentAds />} />
-          <Route path="/services/buy" element={<buyAds />} />
-          <Route path="/services/finance" element={<FinancingAdsPage />} />
+            <Route path="/services/sell" element={<SellAds />} />
+            <Route path="/services/rent" element={<RentAds />} />
+            <Route path="/services/buy" element={<buyAds />} />
+            <Route path="/services/finance" element={<FinancingAdsPage />} />
 
-          <Route path="/services/developmentAds" element={<DeveloperAdsPage />} />
+            <Route path="/services/developmentAds" element={<DeveloperAdsPage />} />
 
 
-          <Route path="/favorite" element={<Favorite />} />
-          <Route
-            path="/insert-finance-data"
-            element={<FinancingAdvExample />}
-          />
-          <Route
-            path="/insert-dev-data"
-            element={<RealEstateDevAdvExample />}
-          />
-
-          {/* Forms & Insert */}
-          <Route path="/add-financing-ad" element={<AddFinancingAdForm />} />
-          <Route path="/insert-finance-data" element={<FinancingAdvExample />} />
-          <Route path="/insert-dev-data" element={<RealEstateDevAdvExample />} />
-          <Route path="/financing-request" element={<FinancingRequestForm />} />
-          <Route path="/AddAdvertisement" element={<ModernRealEstateForm />} />
-          <Route path="/AdddeveloperAds" element={<PropertyPage />} />
-
-          <Route path="details">
+            <Route path="/favorite" element={<Favorite />} />
             <Route
-              path="financingAds/:id"
-              element={<DetailsForFinincingAds />}
+              path="/insert-finance-data"
+              element={<FinancingAdvExample />}
             />
-            <Route path="clientAds/:id" element={<DetailsForClient />} />
             <Route
-              path="developmentAds/:id"
-              element={<DetailsForDevelopment />}
+              path="/insert-dev-data"
+              element={<RealEstateDevAdvExample />}
             />
-          </Route>
-          <Route path="search" element={<SearchPage />} />
-          <Route path="profile" element={<Profile />} /> 
 
-          {/* <Route path="AddAdvertisement" element={<AddAdvertisement />}></Route> 
+            {/* Forms & Insert */}
+            <Route path="/add-financing-ad" element={<AddFinancingAdForm />} />
+            <Route path="/insert-finance-data" element={<FinancingAdvExample />} />
+            <Route path="/insert-dev-data" element={<RealEstateDevAdvExample />} />
+            <Route path="/financing-request" element={<FinancingRequestForm />} />
+            <Route path="/AddAdvertisement" element={<ModernRealEstateForm />} />
+            <Route path="/AdddeveloperAds" element={<PropertyPage />} />
 
-          {/* <Route path="AddAdvertisement" element={<ModernRealEstateForm/>}></Route>  */}
-          {/* Real estate announcements */}
-          <Route path="/RealEstateDeveloperAnnouncement" element={<PropertyPage />} />
+            <Route path="details">
+              <Route
+                path="financingAds/:id"
+                element={<DetailsForFinaccingAds />}
+              />
+              <Route path="clientAds/:id" element={<DetailsForClient />} />
+              <Route
+                path="developmentAds/:id"
+                element={<DetailsForDevelopment />}
+              />
+            </Route>
+            <Route path="search" element={<SearchPage />} />
+            <Route path="profile" element={<Profile />} />
 
-          {/* Details */}
-          <Route path="/detailsForDevelopment/:id" element={<DetailsForDevelopment />} />
-          <Route path="/detailsForDevelopment" element={<Navigate to="/RealEstateDeveloperAnnouncement" replace />} />
-          <Route path="/details/financingAds/:id" element={<DetailsForFinaccingAds />} />
-          <Route path="/details/clientAds/:id" element={<DetailsForClient />} />
-          <Route path="/details/developmentAds/:id" element={<DetailsForDevelopment />} />
-        </Routes>
-      </Layout>
-      <Footer />
-    </SearchProvider>
+            {/* <Route path="AddAdvertisement" element={<AddAdvertisement />}></Route>  */}
+
+            <Route path="AddAdvertisement" element={<ModernRealEstateForm />}></Route>
+            {/* Real estate announcements */}
+            <Route path="/RealEstateDeveloperAnnouncement" element={<PropertyPage />} />
+
+            {/* {/* Details */}
+            <Route path="/detailsForDevelopment/:id" element={<DetailsForDevelopment />} />
+            <Route path="/detailsForDevelopment" element={<Navigate to="/RealEstateDeveloperAnnouncement" replace />} />
+            <Route path="/details/financingAds/:id" element={<DetailsForFinaccingAds />} />
+            <Route path="/details/clientAds/:id" element={<DetailsForClient />} />
+            <Route path="/details/developmentAds/:id" element={<DetailsForDevelopment />} />
+            <Route path="/detailsForClient/:id" element={<DetailsForClient />} />
+          </Routes>
+        </Layout>
+        <Footer />
+      </SearchProvider>
     </>
   );
 }
