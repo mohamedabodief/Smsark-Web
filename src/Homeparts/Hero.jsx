@@ -25,6 +25,7 @@ export default function SimpleHeroSlider() {
     return () => clearInterval(interval);
   }, [ads.length]);
 
+  
   // Navigation functions
   const nextSlide = () => {
     setIndex((prev) => (prev + 1) % ads.length);
