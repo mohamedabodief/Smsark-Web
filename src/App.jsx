@@ -38,6 +38,8 @@ import OrganizationDashboard from "./Dashboard/organization/organizationDashboar
 import PrivateRoute from "./PrivateRoute";
 import AuthSync from "./AuthSync";
 // import RequireNotAuth from "./LoginAndRegister/RequireNotAuth";
+import { Fab, Box } from '@mui/material';
+import { FaRobot } from 'react-icons/fa';
 
 
 import { onMessage, messaging, auth } from "./FireBase/firebaseConfig";
@@ -54,7 +56,9 @@ function App() {
   ////////////////////////////////////////////////
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-
+  const goToChat = () => {
+    navigate('/chat');
+  };
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       console.log("Auth state changed:", user ? user.uid : "No user");
@@ -79,7 +83,6 @@ function App() {
 
     return () => unsubscribe();
   }, []);
-  ///////////////////////////////
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
       setCurrentUser(user);
@@ -129,62 +132,70 @@ function App() {
       <SearchProvider>
         <Layout>
           <Routes>
-            <Route path="/" element={<Navigate to="/login" replace />} />
-            <Route path="/home" element={<Home />} />
-            {/* صفحات الدخول والتسجيل */}
-            <Route path="login" element={<LoginRegister />} />
-            <Route path="register" element={<LoginRegister />} />
-            <Route path="/registration-success" element={<RegistrationSuccess />} />
-            {/* صفحات عامة */}
-            <Route path="/about" element={<AboutUs />} />
-            <Route path="/contact" element={<ContactUs />} />
-            <Route path="/favorite" element={<Favorite />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/search" element={<SearchPage />} />
-            <Route path="/inbox" element={<InboxChats />} />
-            <Route path="/privateChat/:id" element={<ChatBox />} />
-            {/* خدمات الإعلانات */}
-            <Route path="/services/sell" element={<SellAds />} />
-            <Route path="/services/rent" element={<RentAds />} />
-            <Route path="/services/buy" element={<BuyAds />} />
-            <Route path="/services/finance" element={<FinancingAdsPage />} />
 
-            <Route path="/chat" element={<ChatAiPage />} />
+  <Route path="/" element={<Navigate to="/login" replace />} />
+  <Route path="/login" element={<LoginRegister />} />
+  <Route path="/register" element={<LoginRegister />} />
+  <Route path="/registration-success" element={<RegistrationSuccess />} />
+  <Route path="/about" element={<AboutUs />} />
+  <Route path="/contact" element={<ContactUs />} />
 
-            {/* <AddMultipleAdsOnce/> */}
-            <Route path="/services/developmentAds" element={<DeveloperAdsPage />} />
-            {/* صفحات الإعلانات العقارية */}
-            <Route path="/RealEstateDeveloperAnnouncement" element={<PropertyPage />} />
-            <Route path="/AdddeveloperAds" element={<PropertyPage />} />
-            {/* صفحات الباقات */}
-            <Route path="/packages" element={<AdPackages />} />
-            <Route path="/Client-packages" element={<AdPackagesClient />} />
-            {/* صفحات الإدخال والنماذج */}
-            <Route path="/add-financing-ad" element={<AddFinancingAdForm />} />
-            <Route path="/insert-finance-data" element={<FinancingAdvExample />} />
-            <Route path="/insert-dev-data" element={<RealEstateDevAdvExample />} />
-            <Route path="/financing-request" element={<FinancingRequestForm />} />
-            <Route path="/AddAdvertisement" element={<ModernRealEstateForm />} />
-            {/* صفحات الداشبورد */}
-            <Route element={<PrivateRoute />}>
-              <Route path="/admin-dashboard" element={<AdminDashboard />} />
-              <Route path="/client-dashboard" element={<ClientDashboard />} />
-              <Route path="/organization-dashboard" element={<OrganizationDashboard />} />
-            </Route>
-            {/* صفحات التفاصيل */}
-            <Route path="/detailsForDevelopment/:id" element={<DetailsForDevelopment />} />
-            <Route path="/detailsForDevelopment" element={<Navigate to="/RealEstateDeveloperAnnouncement" replace />} />
-            <Route path="/details/financingAds/:id" element={<DetailsForFinancingAds />} />
-            <Route path="/details/clientAds/:id" element={<DetailsForClient />} />
-            <Route path="/details/developmentAds/:id" element={<DetailsForDevelopment />} />
-            <Route path="/detailsForClient/:id" element={<DetailsForClient />} />
-            {/* صفحات التفاصيل القديمة (للتوافق) */}
-            <Route path="details">
-              <Route path="financingAds/:id" element={<DetailsForFinancingAds />} />
-              <Route path="clientAds/:id" element={<DetailsForClient />} />
-              <Route path="developmentAds/:id" element={<DetailsForDevelopment />} />
-            </Route>
-          </Routes>
+  <Route element={<PrivateRoute />}>
+    <Route path="/home" element={<Home />} />
+    <Route path="/favorite" element={<Favorite />} />
+    <Route path="/profile" element={<Profile />} />
+    <Route path="/search" element={<SearchPage />} />
+    <Route path="/inbox" element={<InboxChats />} />
+    <Route path="/privateChat/:id" element={<ChatBox />} />
+    <Route path="/chat" element={<ChatAiPage />} />
+    <Route path="/services/sell" element={<SellAds />} />
+    <Route path="/services/rent" element={<RentAds />} />
+    <Route path="/services/buy" element={<BuyAds />} />
+    <Route path="/services/finance" element={<FinancingAdsPage />} />
+    <Route path="/services/developmentAds" element={<DeveloperAdsPage />} />
+    <Route path="/RealEstateDeveloperAnnouncement" element={<PropertyPage />} />
+    <Route path="/AdddeveloperAds" element={<PropertyPage />} />
+    <Route path="/packages" element={<AdPackages />} />
+    <Route path="/Client-packages" element={<AdPackagesClient />} />
+    <Route path="/add-financing-ad" element={<AddFinancingAdForm />} />
+    <Route path="/insert-finance-data" element={<FinancingAdvExample />} />
+    <Route path="/insert-dev-data" element={<RealEstateDevAdvExample />} />
+    <Route path="/financing-request" element={<FinancingRequestForm />} />
+    <Route path="/AddAdvertisement" element={<ModernRealEstateForm />} />
+    <Route path="/admin-dashboard" element={<AdminDashboard />} />
+    <Route path="/client-dashboard" element={<ClientDashboard />} />
+    <Route path="/organization-dashboard" element={<OrganizationDashboard />} />
+    <Route path="/detailsForDevelopment/:id" element={<DetailsForDevelopment />} />
+    <Route path="/detailsForDevelopment" element={<Navigate to="/RealEstateDeveloperAnnouncement" replace />} />
+    <Route path="/details/financingAds/:id" element={<DetailsForFinancingAds />} />
+    <Route path="/details/clientAds/:id" element={<DetailsForClient />} />
+    <Route path="/details/developmentAds/:id" element={<DetailsForDevelopment />} />
+    <Route path="/detailsForClient/:id" element={<DetailsForClient />} />
+    <Route path="details/financingAds/:id" element={<DetailsForFinancingAds />} />
+    <Route path="details/clientAds/:id" element={<DetailsForClient />} />
+    <Route path="details/developmentAds/:id" element={<DetailsForDevelopment />} />
+  </Route>
+</Routes>
+
+          <Box
+        position="fixed"
+        bottom={20}
+        right={20}
+        zIndex={1000}
+      >
+        <Fab
+          onClick={goToChat}
+          sx={{
+            backgroundColor: '#6a0dad',
+            color: 'white',
+            '&:hover': {
+              backgroundColor: '#5b0ab3',
+            },
+          }}
+        >
+          <FaRobot size={32} />
+        </Fab>
+      </Box>
           {/* <Footer /> */}
         </Layout>
       </SearchProvider>

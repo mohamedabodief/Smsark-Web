@@ -45,11 +45,16 @@ export default function FinancingRequestForm() {
     repayment_years: '',
   });
 
-  const updateInstallment = (updatedForm) => {
-    const tempRequest = new FinancingRequest(updatedForm);
-    const result = tempRequest.calculateMonthlyInstallment();
+  const updateInstallment = async (updatedForm) => {
+  const tempRequest = new FinancingRequest(updatedForm);
+  try {
+    const result = await tempRequest.calculateMonthlyInstallment();
     setMonthlyInstallment(result);
-  };
+  } catch (err) {
+    console.error('خطأ في حساب القسط الشهري:', err);
+    setMonthlyInstallment('');
+  }
+};
 
   const handleChange = (e) => {
     const updatedForm = { ...form, [e.target.name]: e.target.value };

@@ -38,8 +38,8 @@ export default function Needs() {
       sx={{
         backgroundColor: '#200D3A',
         color: 'white',
-        px: { xs: 2, md: 2 },
-        py: 10,
+        px: { xs: 2, md: 2,  },
+        py: 5,
         width: "100%",
         direction: 'rtl',
       }}
@@ -49,6 +49,7 @@ export default function Needs() {
         alignItems="stretch"
         sx={{
           gap: { xs: 4, sm: 6, md: 10 },
+          pr: { xs: '60px' } 
         }}
       >
         <Grid
@@ -61,7 +62,7 @@ export default function Needs() {
             alignItems: 'center',
           }}
         >
-          <Typography variant="h4" fontWeight="bold" textAlign="center" sx={{ p: 18 }}>
+          <Typography variant="h4" fontWeight="bold" textAlign="center" sx={{ p: 18, pr: { xs: '200px' }  }} >
             ماذا تريد؟
           </Typography>
         </Grid>
