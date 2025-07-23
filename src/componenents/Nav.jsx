@@ -199,8 +199,8 @@ export default function Nav({ toggleMode }) {
               <Brightness4Icon />
             </IconButton>
           </Tooltip>
-          <Tooltip title="ملفك الشخصي">
-            <IconButton size="small"  onClick={handleProfileClick}>
+          <Tooltip title="ملفك الشخصي" placement='left'>
+            <IconButton size="small" onClick={handleProfileClick}>
               <AccountCircleIcon />
             </IconButton>
           </Tooltip>

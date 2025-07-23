@@ -7,41 +7,32 @@ export default function SimpleHeroSlider() {
   const [ads, setAds] = useState([]);
   const [index, setIndex] = useState(0);
 
+  // Subscribe to active ads
   useEffect(() => {
-    const unsubscribe = HomepageAdvertisement.subscribeActiveAds(async (data) => {
-      // const extraImage = {
-      //   image: 'https://www.google.com/url?sa=i&url=https%3A%2F%2Felbayt.com%2Far%2Funit%2Fvilla-for-sale-in-karma-4-sheikh-zayed-2758&psig=AOvVaw0-5fwpyDl-kNt3yrj_wJV2&ust=1753054230055000&source=images&cd=vfe&opi=89978449&ved=0CBUQjRxqFwoTCIjaiIiKyo4DFQAAAAAdAAAAABAL',
-      //   ads: true,
-      //   id: 'manual-img', // أي قيمة مناسبة
-      // };
-
-      // const updatedData = [...data, extraImage];
-      // setAds(updatedData);
+    const unsubscribe = HomepageAdvertisement.subscribeActiveAds((data) => {
       setAds(data);
+      setIndex(0); // Reset index if ads change
     });
+    return () => unsubscribe();
+  }, []);
 
-  //   useEffect(() => {
-  // const unsubscribe = HomepageAdvertisement.subscribeActiveAds(async (data) => {
-  //   setAds(data);
-  // });
+  // Auto-advance slider
+  useEffect(() => {
+    if (ads.length === 0) return;
+    const interval = setInterval(() => {
+      setIndex((prev) => (prev + 1) % ads.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [ads.length]);
 
-  const interval = setInterval(() => {
-    setIndex((prev) => (prev - 1) % ads.length);
-  }, 5000); 
-
-  return () => {
-    unsubscribe();
-    clearInterval(interval);
-  };
-}, [ads.length]);
-
-
+  
+  // Navigation functions
   const nextSlide = () => {
-    setIndex((prev) => (prev - 1) % ads.length);
+    setIndex((prev) => (prev + 1) % ads.length);
   };
 
   const prevSlide = () => {
-    setIndex((prev) => (prev + 1 - ads.length) % ads.length);
+    setIndex((prev) => (prev - 1 + ads.length) % ads.length);
   };
 
   return (
@@ -56,10 +47,10 @@ export default function SimpleHeroSlider() {
         padding: 0,
       }}
     >
-      {ads.length > 0 && (
+      {ads.length > 0 && ads[index] && (
         <Box
           component="img"
-          src={ads[index].image}
+          src={ads[index] && ads[index].image ? ads[index].image : '/no-image.svg'}
           alt="slider image"
           sx={{
             width: '100%',
@@ -80,6 +71,7 @@ export default function SimpleHeroSlider() {
           backgroundColor: 'rgba(0,0,0,0.4)',
           '&:hover': { backgroundColor: 'rgba(0,0,0,0.6)' },
         }}
+        disabled={ads.length === 0}
       >
         <ArrowBackIos />
       </IconButton>
@@ -95,6 +87,7 @@ export default function SimpleHeroSlider() {
           backgroundColor: 'rgba(0,0,0,0.4)',
           '&:hover': { backgroundColor: 'rgba(0,0,0,0.6)' },
         }}
+        disabled={ads.length === 0}
       >
         <ArrowForwardIos />
       </IconButton>

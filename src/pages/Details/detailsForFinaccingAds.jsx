@@ -5,340 +5,421 @@ import {
   Typography,
   keyframes,
   CircularProgress,
-  Breadcrumbs,
   Button,
   Avatar,
   Dialog,
   DialogTitle,
   DialogContent,
   TextField,
-  DialogActions
+  DialogActions,
+  Paper,
+  CardContent,
+  Grid,
+  Divider,
+  Alert
 } from '@mui/material';
 import {
   WhatsApp as WhatsAppIcon,
   FavoriteBorder as FavoriteBorderIcon,
   BookmarkBorder as BookmarkBorderIcon,
   OutlinedFlag as OutlinedFlagIcon,
-  ShareOutlined as ShareOutlinedIcon
+  ShareOutlined as ShareOutlinedIcon,
+  Edit as EditIcon,
+  Phone as PhoneIcon
 } from '@mui/icons-material';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
-import HomeIcon from '@mui/icons-material/Home';
-import { useParams, Link } from 'react-router-dom';
-import MapPicker from '../../LocationComponents/MapPicker';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import FinancingAdvertisement from '../../FireBase/modelsWithOperations/FinancingAdvertisement';
-import PhoneIcon from '@mui/icons-material/Phone';
-import { useNavigate } from 'react-router-dom';
-import Message from '../../FireBase/MessageAndNotification/Message';
 import { auth } from '../../FireBase/firebaseConfig';
-function DetailsForFinincingAds() {
-  
-    const [open, setOpen] = useState(false);
-    const [message, setMessage] = useState(""); 
+
+function DetailsForFinaccingAds() {
+  const [open, setOpen] = useState(false);
+  const [message, setMessage] = useState("");
   const { id } = useParams();
   const [clientAds, setClientAds] = useState(null);
   const [mainImage, setMainImage] = useState('');
-  const [city, setCity] = useState('');
-  const [governorate, setGovernorate] = useState('');
-  const [road, setRoad] = useState('');
   const [showFull, setShowFull] = useState(false);
+  const [error, setError] = useState(null);
   const navigate = useNavigate();
-  const toggleShow = () => setShowFull((prev) => !prev);
+  const currentUser = auth.currentUser?.uid;
 
   useEffect(() => {
     const fetchAd = async () => {
-      const ad = await FinancingAdvertisement.getById(id);
-      if (ad) {
-        setClientAds(ad);
-        if (Array.isArray(ad.images) && ad.images.length > 0) {
-          setMainImage(ad.images[0]);
+      try {
+        setError(null);
+        const ad = await FinancingAdvertisement.getById(id);
+        if (ad) {
+          setClientAds(ad);
+          if (Array.isArray(ad.images) && ad.images.length > 0) {
+            setMainImage(ad.images[0]);
+          }
+        } else {
+          setError("الإعلان غير موجود");
         }
+      } catch (err) {
+        setError("حدث خطأ في تحميل بيانات الإعلان");
       }
     };
     if (id) fetchAd();
   }, [id]);
 
-  const pulse = keyframes`
-    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.4); }
-    70% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(37, 211, 102, 0); }
-    100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(37, 211, 102, 0); }
-  `;
+  const isOwner = auth.currentUser?.uid && clientAds?.userId && auth.currentUser.uid === clientAds.userId;
+  // Debug
+  console.log('auth.currentUser?.uid:', auth.currentUser?.uid);
+  console.log('clientAds?.userId:', clientAds?.userId);
+  console.log('isOwner:', isOwner);
+  const toggleShow = () => setShowFull((prev) => !prev);
+
+  if (error) {
+    return (
+      <Box sx={{ height: '100vh', width: '100vw', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', gap: 2 }}>
+        <Typography variant="h5" color="error" gutterBottom>{error}</Typography>
+        <Button variant="contained" onClick={() => navigate('/services/finance')} sx={{ backgroundColor: "#6E00FE" }}>العودة للصفحة الرئيسية</Button>
+      </Box>
+    );
+  }
 
   if (!clientAds) {
     return (
-      <Box sx={{
-        height: '100vh',
-        width: '100vw',
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-      }}>
+      <Box sx={{ height: '100vh', width: '100vw', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
         <CircularProgress sx={{ color: '#6E00FE' }} size={80} />
       </Box>
     );
   }
-////////////////////////////////////messages
-const currentUser = auth.currentUser?.uid;
-const getReceiverName = async (userId) => {
-  try {
-    const userDoc = await getDoc(doc(db, "users", userId));
-    if (userDoc.exists()) {
-      const userData = userDoc.data();
-      console.log(`Receiver data for ${userId}:`, userData);
-      return userData.org_name || "Unknown User"; 
-    }
-    console.log(`No user document found for ${userId}`);
-    return "Unknown User";
-  } catch (err) {
-    console.error(`Error fetching receiver name for ${userId}:`, err);
-    return "Unknown User";
-  }
-};
-////////////
-  const handleSend = async () => {
-     if (!message.trim() || !currentUser || !clientAds?.userId) return;
- 
-     try {
-       const receiverName = await getReceiverName(clientAds.userId);
-       const newMessage = new Message({
-         sender_id: currentUser,
-         receiver_id: clientAds.userId,
-         content: message,
-         reciverName: receiverName, 
-         timestamp: new Date(),
-         is_read: false,
-         message_type: 'text',
-       });
- 
-       console.log('Sending message to:', { receiver_id: clientAds.userId, reciverName: receiverName });
-       await newMessage.send();
-       alert("تم إرسال الرسالة!");
-       setMessage("");
-       setOpen(false);
-     } catch (error) {
-       console.error("حدث خطأ أثناء الإرسال:", error);
-       alert("فشل في إرسال الرسالة!");
-     }
-   };
-/////////////////////////////////////////
+
+  // --- عرض صورة الإعلان الرئيسية وصور المعاينة ---
+  const validImages = Array.isArray(clientAds?.images) ? clientAds.images.filter(img => typeof img === 'string' && (img.startsWith('http') || img.startsWith('https'))) : [];
+  const mainImg = mainImage || validImages[0] || '/no-image.svg';
+
   return (
-    <Container maxWidth="lg" sx={{ py: 4, position: 'relative' }} dir="rtl">
-      <Box
-        sx={{
-          position: 'fixed',
-          top: 10,
-          left: 10,
-          backgroundColor: '#1976d2',
-          color: 'white',
-          px: 2,
-          py: 0.5,
-          borderRadius: '8px',
-          fontWeight: 'bold',
-          zIndex: 10,
-        }}
-      >
-        💰 تمويل عقاري {clientAds.financing_model}
-      </Box>
-         {/**contact with user */}
-  <Box
-  onClick={() => setOpen(true)} 
-  sx={{
-    position: 'fixed',
-    bottom: 20,
-    right: 20,
-    backgroundColor: '#1976d2',
-    color: 'white',
-    px: 2.5,
-    py: 1,
-    borderRadius: '30px',
-    zIndex: 999,
-    cursor: 'pointer',
-    animation: `${pulse} 2s infinite`,
-    transition: 'transform 0.3s',
-    '&:hover': { transform: 'scale(1.05)' },
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    boxShadow: '0px 4px 12px rgba(0,0,0,0.2)',
-  }}
->
-  <ChatBubbleOutlineIcon sx={{ fontSize: 22, mr: 1 }} />
-  <Typography sx={{ fontWeight: 'bold', fontSize: '0.9rem' }}>
-    تواصل مع البائع
-  </Typography>
-</Box>
-<Dialog open={open} fullWidth dir='rtl' onClose={() => setOpen(false)}>
-        <DialogTitle>تواصل مع البائع بكل سهوله</DialogTitle>
-        <DialogContent>
-          <TextField
-            autoFocus
-            margin="dense"
-            label="اكتب رسالتك هنا"
-            fullWidth
-            multiline
-            rows={4}
+    <Container maxWidth="lg" dir="rtl">
+      {/* أزرار التفاعل */}
+      <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 4 }}>
+        <Box sx={{ display: "flex", gap: 2, flexDirection: "row-reverse" }}>
+          <Button
             variant="outlined"
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpen(false)}>إلغاء</Button>
-          <Button  variant="contained" onClick={handleSend}>
-            إرسال
+            startIcon={<FavoriteBorderIcon />}
+            sx={{
+              borderRadius: "25px",
+              color: "#807AA6",
+              borderColor: "#807AA6",
+              flexDirection: "row-reverse",
+              gap: 1.5,
+              "& .MuiButton-startIcon": {
+                marginLeft: "12px",
+                marginRight: 0,
+              },
+            }}
+          >
+            مفضلة
           </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* أزرار التفاعل + اسم الناشر */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-        <Box sx={{ mb: 5, display: 'flex', gap: 4 }}>
-          <Box sx={{ display: 'flex', gap: 1, color: '#807AA6' }}><Typography fontWeight="bold">مفضلة</Typography><FavoriteBorderIcon /></Box>
-          <Box sx={{ display: 'flex', gap: 1 }}><Typography fontWeight="bold">حفظ</Typography><BookmarkBorderIcon /></Box>
-          <Box sx={{ display: 'flex', gap: 1 }}><Typography fontWeight="bold">إبلاغ</Typography><OutlinedFlagIcon /></Box>
-          <Box sx={{ display: 'flex', gap: 1 }}><Typography fontWeight="bold">مشاركة</Typography><ShareOutlinedIcon /></Box>
-        </Box>
-
-      </Box>
-
-      {/* الصور الرئيسية والصغيرة */}
-      <Box sx={{
-        display: 'flex',
-        flexDirection: { xs: 'column', md: 'column', lg: 'row' },
-        gap: 2,
-      }}>
-        <Box sx={{ flex: 3, height: '500px' }}>
-          <img
-            src={mainImage || 'https://via.placeholder.com/800x500'}
-            alt="Main"
-            style={{ width: '100%', height: '100%', borderRadius: '8px', objectFit: 'cover' }}
-          />
-        </Box>
-
-        <Box sx={{
-          flex: 1,
-          display: 'flex',
-          flexDirection: { xs: 'row', md: 'row', lg: 'column' },
-          gap: 1,
-          mt: { xs: 2, md: 2, lg: 0 },
-          height: { lg: '100%' },
-        }}>
-          {clientAds?.images?.map((src, index) => (
-            <Box
-              key={index}
-              onClick={() => setMainImage(src)}
-              sx={{
-                height: { xs: 90, md: 100, lg: 120 },
-                cursor: 'pointer',
-                border: mainImage === src ? '2px solid #1976d2' : 'none',
-                borderRadius: '8px',
-                overflow: 'hidden',
-              }}
-            >
-              <img
-                src={src}
-                alt={`img-${index}`}
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-              />
-            </Box>
-          ))}
+          <Button
+            variant="outlined"
+            startIcon={<OutlinedFlagIcon />}
+            sx={{
+              borderRadius: "25px",
+              color: "#807AA6",
+              borderColor: "#807AA6",
+              flexDirection: "row-reverse",
+              gap: 1.5,
+              "& .MuiButton-startIcon": {
+                marginLeft: "12px",
+                marginRight: 0,
+              },
+            }}
+          >
+            إبلاغ
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<ShareOutlinedIcon />}
+            sx={{
+              borderRadius: "25px",
+              color: "#807AA6",
+              borderColor: "#807AA6",
+              flexDirection: "row-reverse",
+              gap: 1.5,
+              "& .MuiButton-startIcon": {
+                marginLeft: "12px",
+                marginRight: 0,
+              },
+            }}
+          >
+            مشاركة
+          </Button>
         </Box>
       </Box>
-      <Box sx={{ height: '100%' }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', flexDirection: 'row', }}>
-          <Box width={'30%'} sx={{ marginRight: 'auto', textAlign: 'center', marginTop: '40px' }}>
-            <Box sx={{ border: '1px solid #E7E5F4', borderRadius: '20px', }}>
+
+
+      <Paper elevation={3} sx={{ mb: 4, borderRadius: 3, overflow: "hidden" }}>
+        <CardContent>
+          <Grid spacing={4}>
 
 
 
-              <Box sx={{ backgroundColor: '#F7F7F7', marginTop: '40px', marginBottom: '20px' }} width={'100%'} dir='rtl'>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" clipRule="evenodd" d="M3 5.5C3 4.67157 3.67157 4 4.5 4H19.5C20.3284 4 21 4.67157 21 5.5V14.5C21 15.3284 20.3284 16 19.5 16H4.5C3.67157 16 3 15.3284 3 14.5V5.5ZM4.5 5C4.22386 5 4 5.22386 4 5.5V14.5C4 14.7761 4.22386 15 4.5 15H19.5C19.7761 15 20 14.7761 20 14.5V5.5C20 5.22386 19.7761 5 19.5 5H4.5ZM6 7H6.5H8V8H7V9H6V7.5V7ZM17 8H16V7H17.5H18V7.5V9H17V8ZM9.5 10C9.5 8.61929 10.6193 7.5 12 7.5C13.3807 7.5 14.5 8.61929 14.5 10C14.5 11.3807 13.3807 12.5 12 12.5C10.6193 12.5 9.5 11.3807 9.5 10ZM12 8.5C11.1716 8.5 10.5 9.17157 10.5 10C10.5 10.8284 11.1716 11.5 12 11.5C12.8284 11.5 13.5 10.8284 13.5 10C13.5 9.17157 12.8284 8.5 12 8.5ZM6 12.5V11H7V12H8V13H6.5H6V12.5ZM18 11V12.5V13H17.5H16V12H17V11H18ZM3 17.5C3 17.2239 3.22386 17 3.5 17H20.5C20.7761 17 21 17.2239 21 17.5C21 17.7761 20.7761 18 20.5 18H3.5C3.22386 18 3 17.7761 3 17.5ZM3.5 19C3.22386 19 3 19.2239 3 19.5C3 19.7761 3.22386 20 3.5 20H20.5C20.7761 20 21 19.7761 21 19.5C21 19.2239 20.7761 19 20.5 19H3.5Z" fill="currentColor"></path></svg>
-                <Typography>طريقة الدفع</Typography>
-                <Typography>نقدا أو تقسيط</Typography>
-              </Box>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: '8px', marginBottom: '20px' }} padding={"10px 10px"}>
-                <Button sx={{ backgroundColor: '#DF3631', width: '50%' }}>
-                  <Typography sx={{ color: 'white', mx: '5px', fontSize: '18px', fontWeight: 'bold' }}>اتصل</Typography>
-                  <PhoneIcon sx={{ color: 'white' }} />
-                </Button>
-                <Button sx={{ backgroundColor: '#4DBD43', width: '50%' }}>
-                  <Typography sx={{ color: 'white', mx: '5px', fontSize: '18px', fontWeight: 'bold' }}>واتساب</Typography>
-                  <WhatsAppIcon sx={{ color: 'white' }} />
-                </Button>
-              </Box>
-            </Box>
-          </Box>
-
-          {/* بيانات الإعلان */}
-          <Box dir="rtl" sx={{ mt: 6, width: '50%', textAlign: 'right', marginLeft: 'auto', boxShadow: '1px 1px 20px #c7c5c5', padding: '20px', borderRadius: '20px' }}>
-            <Typography variant="h4" fontWeight="bold">{clientAds.title}</Typography>
-
-            <Typography sx={{
-              mt: 3,
-              fontSize: '17px',
-              overflow: 'hidden',
-              display: '-webkit-box',
-              WebkitLineClamp: showFull ? 'none' : 3,
-              WebkitBoxOrient: 'vertical',
+            {/* صورة الإعلان */}
+            <Box sx={{
+              display: 'flex',
+              flexDirection: { xs: 'column', md: 'column', lg: 'row' },
+              gap: 2,
+              mb: 4,
             }}>
-              {clientAds.description || 'لا يوجد وصف'}
-            </Typography>
-
-            {clientAds.description?.length > 100 && (
-              <button
-                className='details-button'
-                onClick={toggleShow}
-                style={{
-                  marginTop: '10px',
-                  border: '1px solid #8C84CC',
-                  color: '#8C84CC',
-                  borderRadius: '8px',
-                  backgroundColor: 'transparent',
-                  padding: '10px 20px',
-                  fontWeight: 'bold',
-                  fontSize: '14px',
-                }}
-              >
-                {showFull ? 'إخفاء التفاصيل' : 'عرض المزيد'}
-              </button>
-            )}
-            <Typography variant="subtitle1" fontWeight="bold" mt={2}>
-              الجهة: {clientAds.org_name}
-            </Typography>
-            <Typography variant="subtitle1" mt={2}>
-              السعر من: {clientAds.start_limit} ج.م إلى: {clientAds.end_limit} ج.م
-            </Typography>
-            <Typography variant="subtitle1" mt={2}>
-              الهاتف للتواصل: {clientAds.phone}
-            </Typography>
-
-            {/* نسب الفائدة */}
-            <Box mt={2}>
-              <Typography fontWeight="bold">نسب الفائدة حسب مدة السداد:</Typography>
-              <ul style={{ paddingInlineStart: '20px' }}>
-                <li>حتى 5 سنوات: {clientAds.interest_rate_upto_5}%</li>
-                <li>حتى 10 سنوات: {clientAds.interest_rate_upto_10}%</li>
-                <li>أكثر من 10 سنوات: {clientAds.interest_rate_above_10}%</li>
-              </ul>
+              <Box sx={{ flex: 3, height: '500px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f7f7f7', borderRadius: 3 }}>
+                <img
+                  src={mainImage || 'https://via.placeholder.com/800x500'}
+                  alt="Main"
+                  style={{ width: '100%', height: '100%', borderRadius: '8px', objectFit: 'cover' }}
+                />
+              </Box>
+              <Box sx={{
+                flex: 1,
+                display: 'flex',
+                flexDirection: { xs: 'row', md: 'row', lg: 'column' },
+                gap: 1,
+                mt: { xs: 2, md: 2, lg: 0 },
+                height: { lg: '100%' },
+                justifyContent: 'center',
+              }}>
+                {clientAds?.images?.map((src, index) => (
+                  <Box
+                    key={index}
+                    onClick={() => setMainImage(src)}
+                    sx={{
+                      height: { xs: 90, md: 100, lg: 120 },
+                      width: { xs: 90, md: 100, lg: 120 },
+                      cursor: 'pointer',
+                      border: mainImage === src ? '2px solid #1976d2' : '1px solid #e0e0e0',
+                      borderRadius: '8px',
+                      overflow: 'hidden',
+                      transition: 'all 0.3s',
+                      '&:hover': { transform: 'scale(1.05)' },
+                    }}
+                  >
+                    <img
+                      src={src}
+                      alt={`img-${index}`}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                  </Box>
+                ))}
+              </Box>
             </Box>
 
-          </Box>
 
+
+
+
+
+
+
+
+            <Grid container spacing={4}>
+
+              {/* بيانات الإعلان */}
+              <Grid size={{ xs: 12, md: 8 }}>
+                <Typography variant="h4" fontWeight="bold" gutterBottom sx={{ color: "#6E00FE", mb: 3 }}>{clientAds.title}</Typography>
+                <Typography sx={{ fontSize: '18px', lineHeight: 1.8, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: showFull ? 'none' : 4, WebkitBoxOrient: 'vertical', mb: 3, color: '#333' }}>{clientAds.description || 'لا يوجد وصف متاح'}</Typography>
+                {clientAds.description && clientAds.description.length > 200 && (
+                  <Button onClick={toggleShow} sx={{ border: '2px solid #6E00FE', color: '#6E00FE', borderRadius: '25px', backgroundColor: 'transparent', '&:hover': { backgroundColor: '#f0f0f0' }, px: 3, mb: 3 }}>{showFull ? 'إخفاء التفاصيل' : 'عرض المزيد'}</Button>
+                )}
+                <Divider sx={{ my: 3 }} />
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={6}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                      <Typography variant="body2" color="text.secondary">الجهة</Typography>
+                      <Typography variant="body1" fontWeight="bold">{clientAds.org_name}</Typography>
+                    </Box>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                      <PhoneIcon color="primary" sx={{ fontSize: 22 }} />
+                      <Typography variant="body2" color="text.secondary">رقم الهاتف</Typography>
+                      <Typography variant="body1" fontWeight="bold">{clientAds.phone}</Typography>
+                    </Box>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                      <Typography variant="body2" color="text.secondary">السعر من</Typography>
+                      <Typography variant="body1" fontWeight="bold">{clientAds.start_limit} ج.م</Typography>
+                    </Box>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                      <Typography variant="body2" color="text.secondary">السعر إلى</Typography>
+                      <Typography variant="body1" fontWeight="bold">{clientAds.end_limit} ج.م</Typography>
+                    </Box>
+                  </Grid>
+                  {clientAds.adPackage && (
+                    <Grid item xs={12} sm={6}>
+                      <Typography variant="body2" color="text.secondary">الباقة المختارة</Typography>
+                      <Typography variant="body1" fontWeight="bold" color="primary">
+                        {String(clientAds.adPackage) === "1" ? 'باقة الأساس' : String(clientAds.adPackage) === "2" ? 'باقة النخبة' : String(clientAds.adPackage) === "3" ? 'باقة التميز' : clientAds.adPackage}
+                      </Typography>
+                    </Grid>
+                  )}
+                  <Grid item xs={12} sm={12}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                      <Typography variant="body2" color="text.secondary">نسب الفائدة:</Typography>
+                      <Typography variant="body1" fontWeight="bold">حتى 5 سنوات: {clientAds.interest_rate_upto_5}% | حتى 10 سنوات: {clientAds.interest_rate_upto_10}% | أكثر من 10 سنوات: {clientAds.interest_rate_above_10}%</Typography>
+                    </Box>
+                  </Grid>
+                </Grid>
+                <Divider sx={{ my: 3 }} />
+                <Box sx={{ width: '50%', display: 'flex', marginTop: '30px', marginLeft: 'auto' }} dir='rtl'>
+                  <Box sx={{ backgroundColor: '#F7F7FC', display: 'flex', gap: '30px', height: '20%', width: '100%', padding: '20px', borderRadius: '10px' }}>
+                    <Avatar alt={`${clientAds.org_name}`} src="/static/images/avatar/1.jpg" />
+                    <Typography sx={{ fontSize: '20px', }}>نشر بواسطة: {clientAds.org_name}</Typography>
+                  </Box>
+                </Box>
+
+              </Grid>
+              {/* معلومات الممول - على اليسار */}
+              <Grid size={{ xs: 12, md: 4 }}>
+                <Paper
+                  elevation={3}
+                  sx={{
+                    borderRadius: 3,
+                    height: "auto",
+                    position: "sticky",
+                    top: 100,
+                  }}
+                >
+                  <CardContent sx={{ p: 4 }}>
+                    <Typography
+                      variant="h5"
+                      gutterBottom
+                      sx={{ color: "#6E00FE", mb: 3 }}
+                    >
+                      معلومات الممول
+                    </Typography>
+
+                    <Box
+                      sx={{ display: "flex", alignItems: "center", gap: 3, mb: 3 }}
+                    >
+                      <Avatar
+                        alt={clientAds.org_name}
+                        src="/static/images/avatar/1.jpg"
+                        sx={{ width: 60, height: 60 }}
+                      />
+                      <Box>
+                        <Typography variant="h6" fontWeight="bold">
+                          {clientAds.org_name}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          ممول عقاري معتمد
+                        </Typography>
+
+                      </Box>
+                    </Box>
+
+                    <Divider sx={{ my: 3 }} />
+
+                    {/* أزرار التواصل */}
+                    <Box
+                      sx={{ display: "flex", flexDirection: "column", gap: 2, mb: 3 }}
+                    >
+                      <Button
+                        variant="contained"
+                        startIcon={<PhoneIcon />}
+                        fullWidth
+                        sx={{
+                          backgroundColor: "#DF3631",
+                          "&:hover": { backgroundColor: "#c62828" },
+                          borderRadius: "25px",
+                          py: 1.5,
+                          fontSize: "16px",
+                          "& .MuiButton-startIcon": {
+                            marginLeft: "6px",
+                            marginRight: 0,
+                          },
+                          fontWeight: "bold",
+                        }}
+                      >
+                        اتصل الآن
+                      </Button>
+
+                      <Button
+                        variant="contained"
+                        startIcon={<WhatsAppIcon />}
+                        fullWidth
+                        sx={{
+                          backgroundColor: "#4DBD43",
+                          "&:hover": { backgroundColor: "#388e3c" },
+                          "& .MuiButton-startIcon": {
+                            marginLeft: "6px",
+                            marginRight: 0,
+                          },
+                          borderRadius: "25px",
+                          py: 1.5,
+                          fontSize: "16px",
+                          fontWeight: "bold",
+                        }}
+                      >
+                        واتساب
+                      </Button>
+                    </Box>
+
+                    <Divider sx={{ my: 3 }} />
+
+                    {/* <Box sx={{ textAlign: "center" }}>
+                <Typography variant="body2" color="text.secondary" gutterBottom>
+                  نوع العقار
+                </Typography>
+                <Typography
+                  variant="body1"
+                  fontWeight="bold"
+                  sx={{ color: "#6E00FE" }}
+                >
+                  {clientAds.financing_model?.join(" - ")}
+                </Typography>
+              </Box> */}
+                  </CardContent>
+                </Paper>
+              </Grid>
+            </Grid>
+          </Grid>
+        </CardContent>
+      </Paper>
+      {/* أزرار التفاعل */}
+      {isOwner && (
+        <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-start' }}>
+          <Button
+            variant="contained"
+            startIcon={<EditIcon />}
+            onClick={() => navigate('/add-financing-ad', { state: { editMode: true, adData: clientAds } })}
+            sx={{
+              backgroundColor: "#6E00FE",
+              "&:hover": { backgroundColor: "#200D3A" },
+              boxShadow: "0px 4px 12px rgba(0,0,0,0.2)",
+              flexDirection: "row-reverse",
+              gap: 1.5,
+              "& .MuiButton-startIcon": {
+                marginLeft: "12px",
+                marginRight: 0,
+              },
+              borderRadius: '15px',
+              fontWeight: 'bold',
+              py: 1.5,
+              mr: 2,
+              mb: 0.5,
+              width: '20%',
+              justifyContent: 'center'
+
+            }}
+          >
+            تعديل الإعلان
+          </Button>
         </Box>
-
-
-      </Box>
-      <Box sx={{ width: '50%', display: 'flex', marginTop: '30px', marginLeft: 'auto' }} dir='rtl'>
-        <Box sx={{ backgroundColor: '#F7F7FC', display: 'flex', gap: '30px', height: '20%', width: '100%', padding: '20px', borderRadius: '10px' }}>
-          <Avatar alt={`${clientAds.org_name}`} src="/static/images/avatar/1.jpg" />
-          <Typography sx={{ fontSize: '20px', }}>نشر بواسطة: {clientAds.org_name}</Typography>
-        </Box>
-
-      </Box>
+      )}
+      {/* زر انشاء طلب تمويل */}
       <Button
         variant="contained"
         color="primary"
-        sx={{ mt: 3 }}
-        onClick={() => navigate('/financing-request', { state: { advertisementId: id } })}
+        sx={{
+          borderRadius: '15px', fontWeight: 'bold', px: 5, py: 1.5, mr: 2, mb: 2, width: '20%', justifyContent: 'center', backgroundColor: "#6E00FE",
+          "&:hover": { backgroundColor: "#200D3A" },
+        }}
+        onClick={() => navigate('/financing-request', { state: { advertisementId: id, adData: clientAds } })}
       >
         انشاء طلب تمويل
       </Button>
@@ -346,4 +427,4 @@ const getReceiverName = async (userId) => {
   );
 }
 
-export default DetailsForFinincingAds;
+export default DetailsForFinaccingAds;

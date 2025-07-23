@@ -53,12 +53,11 @@ const ContactUs = () => {
     }
   };
 
-  // جلب الرسايل السابقة لما الكومبوننت يتحمل
   useEffect(() => {
     if (auth.currentUser) {
       fetchPreviousMessages(auth.currentUser.uid);
     } else if (formData.email) {
-      fetchPreviousMessages(formData.email); // لو المستخدم مش مسجل دخوله، استخدم الإيميل كـ sender_id
+      fetchPreviousMessages(formData.email); 
     }
   }, [formData.email]);
 
@@ -90,7 +89,6 @@ const ContactUs = () => {
         throw new Error("مفيش أدمنز متاحين.");
       }
 
-      // تحديد اسم ومعرف المرسل
       let senderName = formData.name;
       let senderId = formData.email;
       if (auth.currentUser) {
@@ -99,8 +97,6 @@ const ContactUs = () => {
       }
 
       const messageContent = `الاسم: ${formData.name}\nالبريد: ${formData.email}\nالهاتف: ${formData.phone}\nالموضوع: ${formData.subject}`;
-
-      // إرسال الرسالة لكل الأدمنز
       for (const admin of admins) {
         const messageData = {
           sender_id: senderId,
@@ -110,13 +106,12 @@ const ContactUs = () => {
           content: messageContent,
           message_type: "text",
           is_read: false,
-          timestamp: new Date(), // إضافة طابع زمني
+          timestamp: new Date(),
         };
 
         const message = new Message(messageData);
         await message.send();
 
-        // إرسال إشعار لكل أدمن
         const notif = new Notification({
           receiver_id: admin.uid,
           title: "رسالة جديدة من تواصل معنا",
@@ -363,29 +358,6 @@ const ContactUs = () => {
             </Grid>
           </Grid>
         </Paper>
-
-        {/* عرض الرسايل السابقة */}
-        {previousMessages.length > 0 && (
-          <Box sx={{ mt: 4, px: 3 }}>
-            <Typography variant="h5" fontWeight="bold" gutterBottom>
-              الرسايل السابقة
-            </Typography>
-            {previousMessages.map((msg) => (
-              <Paper key={msg.id} sx={{ p: 2, mb: 2, direction: "rtl" }}>
-                <Typography variant="body1">
-                  <strong>الموضوع:</strong> {msg.content.split("\nالموضوع: ")[1]}
-                </Typography>
-                <Typography variant="body2">
-                  <strong>إلى:</strong> {msg.reciverName}
-                </Typography>
-                <Typography variant="body2">
-                  <strong>التاريخ:</strong>{" "}
-                  {new Date(msg.timestamp?.seconds * 1000).toLocaleString("ar-EG")}
-                </Typography>
-              </Paper>
-            ))}
-          </Box>
-        )}
       </Container>
 
       <Snackbar

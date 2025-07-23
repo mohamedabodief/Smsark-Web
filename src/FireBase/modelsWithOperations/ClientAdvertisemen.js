@@ -51,6 +51,7 @@ class ClientAdvertisement {
     this.reviewStatus = data.reviewStatus || 'pending'; // 👈 المراجعة (pending | approved | rejected)
     this.status = data.status || 'تحت العرض'; // 👈 حالة الإعلان من منظور التفاوض (تحت العرض | تحت التفاوض | منتهي)
     this.receipt_image = data.receipt_image || null; // 👈 إيصال الدفع
+    this.adPackage = data.adPackage !== undefined ? data.adPackage : null;
   }
 
   get id() {
@@ -510,6 +511,7 @@ class ClientAdvertisement {
       reviewStatus: this.reviewStatus,
       status: this.status,
       receipt_image: this.receipt_image,
+      ...(this.adPackage !== undefined && this.adPackage !== null ? { adPackage: this.adPackage } : {}),
     };
   }
 }

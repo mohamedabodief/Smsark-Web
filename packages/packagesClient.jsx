@@ -34,13 +34,12 @@ const packages = [
     },
 ];
 
-const AdPackagesClient = () => {
-    const [selectedPackageId, setSelectedPackageId] = useState(null);
+const AdPackagesClient = ({ selectedPackageId, setSelectedPackageId }) => {
     const [receiptImages, setReceiptImages] = useState({});
     const theme = useTheme();
 
     const handleSelectPackage = (pkgId) => {
-        setSelectedPackageId(pkgId);
+        if (setSelectedPackageId) setSelectedPackageId(pkgId);
         console.log('📦 تم اختيار الباقة:', pkgId);
     };
 
