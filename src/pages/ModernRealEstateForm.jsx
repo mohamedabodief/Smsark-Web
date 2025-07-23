@@ -47,6 +47,7 @@ import { styled } from '@mui/material/styles';
 import MapDisplay from '../LocationComponents/MapDisplay';
 import MapPicker from '../LocationComponents/MapPicker';
 import { useNavigate, useLocation } from 'react-router-dom';
+import AdPackagesClient from '../../packages/packagesClient';
 
 // Custom styled components
 const StyledCard = styled(Card)(({ theme }) => ({
@@ -196,6 +197,7 @@ const ModernRealEstateForm = () => {
   const [submitError, setSubmitError] = useState('');
   const [coordinates, setCoordinates] = useState(null);
   const [enableMapPick, setEnableMapPick] = useState(false);
+  const [selectedPackage, setSelectedPackage] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
   const editData = location.state?.adData || null;
@@ -233,6 +235,13 @@ const ModernRealEstateForm = () => {
     if (isEditMode && editData && Array.isArray(editData.images)) {
       setImages([]); // الصور الجديدة فقط
       setImageError('');
+    }
+  }, [isEditMode, editData]);
+
+  // عند التعديل، مرر adPackage من editData إلى selectedPackage
+  useEffect(() => {
+    if (isEditMode && editData && editData.adPackage) {
+      setSelectedPackage(editData.adPackage);
     }
   }, [isEditMode, editData]);
 
@@ -303,6 +312,7 @@ const ModernRealEstateForm = () => {
           ad_type: data.adType,
           ad_status: data.adStatus,
           images: oldImages,
+          adPackage: selectedPackage,
         }, filesToUpload);
         setShowSuccess(true);
         handleReset();
@@ -335,6 +345,7 @@ const ModernRealEstateForm = () => {
             ? Date.now() + data.activationDays * 24 * 60 * 60 * 1000
             : null,
           description: data.description,
+          adPackage: selectedPackage,
         };
         const ad = new ClientAdvertisement(adData);
         await ad.save(images);
@@ -367,7 +378,7 @@ const ModernRealEstateForm = () => {
     const fetchCoordinates = async () => {
       if (!addressValue && !cityValue && !governorateValue) return;
       const fullAddress = `${addressValue || ''}, ${cityValue || ''}, ${governorateValue || ''}`;
-      const apiKey = 'YOUR_GOOGLE_MAPS_API_KEY'; 
+      const apiKey = 'YOUR_GOOGLE_MAPS_API_KEY';
       const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(fullAddress)}&key=${apiKey}`;
       try {
         const res = await fetch(url);
@@ -955,6 +966,9 @@ const ModernRealEstateForm = () => {
               </Container>
             </CardContent>
           </StyledCard>
+
+          {/* إضافة مكون الباقات */}
+          <AdPackagesClient selectedPackageId={selectedPackage} setSelectedPackageId={setSelectedPackage} />
 
           {/* خريطة عرض الموقع */}
           {coordinates && (

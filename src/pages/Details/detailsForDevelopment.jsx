@@ -647,6 +647,14 @@ function DetailsForDevelopment() {
                     </Box>
                   </Box>
                 </Grid>
+                {clientAds.adPackage && (
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" color="text.secondary">الباقة المختارة</Typography>
+                    <Typography variant="body1" fontWeight="bold" color="primary">
+                      {String(clientAds.adPackage) === "1" ? 'باقة الأساس' : String(clientAds.adPackage) === "2" ? 'باقة النخبة' : String(clientAds.adPackage) === "3" ? 'باقة التميز' : clientAds.adPackage}
+                    </Typography>
+                  </Grid>
+                )}
 
                 <Grid item xs={12} sm={6}>
                   <Box

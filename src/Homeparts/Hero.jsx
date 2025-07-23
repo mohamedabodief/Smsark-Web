@@ -25,6 +25,7 @@ export default function SimpleHeroSlider() {
     return () => clearInterval(interval);
   }, [ads.length]);
 
+  
   // Navigation functions
   const nextSlide = () => {
     setIndex((prev) => (prev + 1) % ads.length);
@@ -49,7 +50,7 @@ export default function SimpleHeroSlider() {
       {ads.length > 0 && ads[index] && (
         <Box
           component="img"
-          src={ads[index].image}
+          src={ads[index] && ads[index].image ? ads[index].image : '/no-image.svg'}
           alt="slider image"
           sx={{
             width: '100%',
