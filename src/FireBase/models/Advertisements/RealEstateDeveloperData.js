@@ -21,6 +21,7 @@ class RealEstateDeveloperData {
     deliveryTerms, // شروط التسليم
     features, // مصفوفة مميزات
     area, // المساحة بالمتر
+    adPackage,
 
     // حقول المراجعة
     reviewStatus, // "pending" | "approved" | "rejected"
@@ -54,6 +55,7 @@ class RealEstateDeveloperData {
     this.deliveryTerms = deliveryTerms || null;
     this.features = Array.isArray(features) ? features : [];
     this.area = typeof area === "number" ? area : null;
+    this.adPackage = adPackage !== undefined ? adPackage : null;
 
     // حالة المراجعة
     this.reviewStatus = reviewStatus || "pending";

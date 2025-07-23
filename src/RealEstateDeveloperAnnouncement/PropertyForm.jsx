@@ -35,6 +35,7 @@ import { setFormData, resetForm } from "./propertySlice";
 import { governorates, propertyFeatures } from "./constants";
 import { storage, auth } from "../FireBase/firebaseConfig";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import AdPackages from '../../packages/packagesDevAndFin';
 
 const StyledButton = styled(Button)({
   backgroundColor: "#6E00FE",
@@ -70,6 +71,7 @@ const PropertyForm = ({
   const [previewUrls, setPreviewUrls] = useState([]);
   const [uploading, setUploading] = useState(false); // حالة محلية للتحقق من الرفع
   const [uploadError, setUploadError] = useState(null); // حالة محلية للأخطاء في الرفع
+  const [selectedPackage, setSelectedPackage] = useState(initialData?.adPackage || null);
 
   // التحقق من حالة تسجيل الدخول عند تحميل المكون
   React.useEffect(() => {
@@ -135,6 +137,13 @@ const PropertyForm = ({
       });
     };
   }, [previewUrls]);
+
+  // أضف مكون الباقات أسفل الفورم
+  React.useEffect(() => {
+    if (isEditMode && initialData && initialData.adPackage) {
+      setSelectedPackage(initialData.adPackage);
+    }
+  }, [isEditMode, initialData]);
 
   // دالة للتعامل مع تغيير الصور
   const handleImageChange = (e) => {
@@ -380,6 +389,7 @@ const PropertyForm = ({
           floor: Number(formData.floor) || null,
           furnished: formData.furnished === "نعم",
           negotiable: formData.negotiable === "نعم",
+          adPackage: selectedPackage,
           images: imageUrls, // تمرير روابط الصور بدلاً من الملفات
         });
 
@@ -975,6 +985,9 @@ const PropertyForm = ({
               </Alert>
             </Grid>
           )}
+
+          {/* أضف مكون الباقات أسفل الفورم */}
+          <AdPackages selectedPackageId={selectedPackage} setSelectedPackageId={setSelectedPackage} />
 
           <Grid size={{ xs: 12, md: 6, lg: 4 }}>
             <StyledButton

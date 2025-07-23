@@ -20,20 +20,20 @@ export default function SimpleHeroSlider() {
       setAds(data);
     });
 
-  //   useEffect(() => {
-  // const unsubscribe = HomepageAdvertisement.subscribeActiveAds(async (data) => {
-  //   setAds(data);
-  // });
+    //   useEffect(() => {
+    // const unsubscribe = HomepageAdvertisement.subscribeActiveAds(async (data) => {
+    //   setAds(data);
+    // });
 
-  const interval = setInterval(() => {
-    setIndex((prev) => (prev - 1) % ads.length);
-  }, 5000); 
+    const interval = setInterval(() => {
+      setIndex((prev) => (prev - 1) % ads.length);
+    }, 5000);
 
-  return () => {
-    unsubscribe();
-    clearInterval(interval);
-  };
-}, [ads.length]);
+    return () => {
+      unsubscribe();
+      clearInterval(interval);
+    };
+  }, [ads.length]);
 
 
   const nextSlide = () => {
@@ -59,7 +59,7 @@ export default function SimpleHeroSlider() {
       {ads.length > 0 && (
         <Box
           component="img"
-          src={ads[index].image}
+          src={ads[index] && ads[index].image ? ads[index].image : '/no-image.svg'}
           alt="slider image"
           sx={{
             width: '100%',

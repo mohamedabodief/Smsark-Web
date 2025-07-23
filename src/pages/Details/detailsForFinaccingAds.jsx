@@ -249,6 +249,14 @@ function DetailsForFinaccingAds() {
                       <Typography variant="body1" fontWeight="bold">{clientAds.end_limit} ج.م</Typography>
                     </Box>
                   </Grid>
+                  {clientAds.adPackage && (
+                    <Grid item xs={12} sm={6}>
+                      <Typography variant="body2" color="text.secondary">الباقة المختارة</Typography>
+                      <Typography variant="body1" fontWeight="bold" color="primary">
+                        {String(clientAds.adPackage) === "1" ? 'باقة الأساس' : String(clientAds.adPackage) === "2" ? 'باقة النخبة' : String(clientAds.adPackage) === "3" ? 'باقة التميز' : clientAds.adPackage}
+                      </Typography>
+                    </Grid>
+                  )}
                   <Grid item xs={12} sm={12}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
                       <Typography variant="body2" color="text.secondary">نسب الفائدة:</Typography>
@@ -258,12 +266,12 @@ function DetailsForFinaccingAds() {
                 </Grid>
                 <Divider sx={{ my: 3 }} />
                 <Box sx={{ width: '50%', display: 'flex', marginTop: '30px', marginLeft: 'auto' }} dir='rtl'>
-        <Box sx={{ backgroundColor: '#F7F7FC', display: 'flex', gap: '30px', height: '20%', width: '100%', padding: '20px', borderRadius: '10px' }}>
-          <Avatar alt={`${clientAds.org_name}`} src="/static/images/avatar/1.jpg" />
-          <Typography sx={{ fontSize: '20px', }}>نشر بواسطة: {clientAds.org_name}</Typography>
-        </Box>
-      </Box>
-    
+                  <Box sx={{ backgroundColor: '#F7F7FC', display: 'flex', gap: '30px', height: '20%', width: '100%', padding: '20px', borderRadius: '10px' }}>
+                    <Avatar alt={`${clientAds.org_name}`} src="/static/images/avatar/1.jpg" />
+                    <Typography sx={{ fontSize: '20px', }}>نشر بواسطة: {clientAds.org_name}</Typography>
+                  </Box>
+                </Box>
+
               </Grid>
               {/* معلومات الممول - على اليسار */}
               <Grid size={{ xs: 12, md: 4 }}>
@@ -372,47 +380,49 @@ function DetailsForFinaccingAds() {
           </Grid>
         </CardContent>
       </Paper>
-                 {/* أزرار التفاعل */}
-                 {isOwner && (
-                  <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-start' }}>
-                    <Button
-                      variant="contained"
-                      startIcon={<EditIcon />}
-                      onClick={() => navigate('/add-financing-ad', { state: { editMode: true, adData: clientAds } })}
-                      sx={{
-                        backgroundColor: "#6E00FE",
-                        "&:hover": { backgroundColor: "#200D3A" },
-                        boxShadow: "0px 4px 12px rgba(0,0,0,0.2)",
-                        flexDirection: "row-reverse",
-                        gap: 1.5,
-                        "& .MuiButton-startIcon": {
-                          marginLeft: "12px",
-                          marginRight: 0,
-                        },
-                         borderRadius: '15px',
-                          fontWeight: 'bold',
-                           py: 1.5 , 
-                           mr: 2 ,
-                           mb: 0.5  , 
-                           width: '20%' ,
-                            justifyContent: 'center' 
+      {/* أزرار التفاعل */}
+      {isOwner && (
+        <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-start' }}>
+          <Button
+            variant="contained"
+            startIcon={<EditIcon />}
+            onClick={() => navigate('/add-financing-ad', { state: { editMode: true, adData: clientAds } })}
+            sx={{
+              backgroundColor: "#6E00FE",
+              "&:hover": { backgroundColor: "#200D3A" },
+              boxShadow: "0px 4px 12px rgba(0,0,0,0.2)",
+              flexDirection: "row-reverse",
+              gap: 1.5,
+              "& .MuiButton-startIcon": {
+                marginLeft: "12px",
+                marginRight: 0,
+              },
+              borderRadius: '15px',
+              fontWeight: 'bold',
+              py: 1.5,
+              mr: 2,
+              mb: 0.5,
+              width: '20%',
+              justifyContent: 'center'
 
-                      }}
-                    >
-                      تعديل الإعلان
-                    </Button>
-                  </Box>
-                )}
-                {/* زر انشاء طلب تمويل */}
-                <Button
-                  variant="contained"
-                  color="primary"
-                  sx={{ borderRadius: '15px', fontWeight: 'bold', px: 5, py: 1.5 , mr: 2 , mb: 2  , width: '20%' , justifyContent: 'center' , backgroundColor: "#6E00FE",
-                    "&:hover": { backgroundColor: "#200D3A" }, }}
-                  onClick={() => navigate('/financing-request', { state: { advertisementId: id, adData: clientAds } })}
-                >
-                  انشاء طلب تمويل
-                </Button>
+            }}
+          >
+            تعديل الإعلان
+          </Button>
+        </Box>
+      )}
+      {/* زر انشاء طلب تمويل */}
+      <Button
+        variant="contained"
+        color="primary"
+        sx={{
+          borderRadius: '15px', fontWeight: 'bold', px: 5, py: 1.5, mr: 2, mb: 2, width: '20%', justifyContent: 'center', backgroundColor: "#6E00FE",
+          "&:hover": { backgroundColor: "#200D3A" },
+        }}
+        onClick={() => navigate('/financing-request', { state: { advertisementId: id, adData: clientAds } })}
+      >
+        انشاء طلب تمويل
+      </Button>
     </Container>
   );
 }

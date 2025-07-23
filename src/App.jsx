@@ -30,7 +30,7 @@ import Notification from "./FireBase/MessageAndNotification/Notification";
 import SearchPage from "./pages/SearchPage";
 import ContactUs from "./contactUs/ContactUs";
 import { Navigate } from 'react-router-dom';
-import AdPackages from "../packages/packagesDev&Fin";
+import AdPackages from "../packages/packagesDevAndFin";
 import AdPackagesClient from "../packages/packagesClient";
 import AdminDashboard from "./Dashboard/adminDashboard";
 import ClientDashboard from "./Dashboard/clientDashboard";
@@ -101,7 +101,7 @@ function App() {
     }
   }, [currentUser,
     //  notifications
-    ]);
+  ]);
   const handleOpenChat = () => {
     if (currentNotification?.link) {
       const userId = currentNotification.link.split('/privateChat/')[1];
@@ -149,9 +149,9 @@ function App() {
             <Route path="/services/buy" element={<BuyAds />} />
             <Route path="/services/finance" element={<FinancingAdsPage />} />
 
-          <Route path="/chat" element={<ChatAiPage />} />
+            <Route path="/chat" element={<ChatAiPage />} />
 
-      {/* <AddMultipleAdsOnce/> */}
+            {/* <AddMultipleAdsOnce/> */}
             <Route path="/services/developmentAds" element={<DeveloperAdsPage />} />
             {/* صفحات الإعلانات العقارية */}
             <Route path="/RealEstateDeveloperAnnouncement" element={<PropertyPage />} />
