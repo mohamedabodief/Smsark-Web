@@ -14,7 +14,6 @@ export default function Footer() {
         flexDirection: "column",
         width: "100%",
         p: 2,
-        mt: 2,
         // position:'fixed',
         // bottom:'0'
         }}>

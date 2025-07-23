@@ -17,7 +17,7 @@ const ChatAiPage = () => {
   const [input, setInput] = useState("");
 
   const model = "gpt-4o-mini";
-  const API_TOKEN = "Bearer YOUR_API_KEY"; // تأكدي من وضع التوكن الصحيح هنا
+  const API_TOKEN = import.meta.env.VITE_AI_API_TOKEN;
 
   const addNewChat = () => {
     const newChat = {
@@ -67,7 +67,7 @@ const ChatAiPage = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: API_TOKEN,
+          Authorization: `Bearer ${API_TOKEN}`,
         },
         body: JSON.stringify({
           model,
@@ -88,7 +88,7 @@ const ChatAiPage = () => {
   };
 
   return (
-    <Box display="flex" flexDirection="row-reverse" height="88dvh" sx={{ direction: "rtl", overflow: "hidden",
+    <Box display="flex" flexDirection="row-reverse" height="90dvh" sx={{ direction: "rtl", overflow: "hidden",
     //  pt:8 
      }}>
       

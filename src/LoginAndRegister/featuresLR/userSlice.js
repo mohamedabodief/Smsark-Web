@@ -50,6 +50,7 @@ export const fetchUserProfile = createAsyncThunk(
           governorate: userData.governorate,
           address: userData.address,
           cli_name: userData.cli_name,
+          fcm_token: userData.fcm_token,
           gender: userData.gender,
           age: userData.age,
           org_name: userData.org_name,
