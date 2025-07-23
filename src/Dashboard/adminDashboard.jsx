@@ -1203,18 +1203,18 @@ function ProfilePage() {
     // Effect to update local form data when Redux userProfile changes
   const initialized = React.useRef(false);
 
-useEffect(() => {
+    useEffect(() => {
   if (userProfile && !initialized.current) {
-    setFormData({
-      ...userProfile,
+            setFormData({
+                ...userProfile,
       email: auth.currentUser?.email || userProfile.email || "",
-    });
+            });
     initialized.current = true;
   } else if (!userProfile) {
-    setFormData({});
+            setFormData({});
     initialized.current = false;
-  }
-}, [userProfile]);
+        }
+    }, [userProfile]);
 
 
     // Handle changes to form fields
@@ -1456,14 +1456,14 @@ useEffect(() => {
                             />
                             {/* Password field with reset button */}
                             <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-end' }}>
-                                <TextField
-                                    label="كلمة المرور"
-                                    fullWidth
-                                    margin="normal"
-                                    type="password"
-                                    placeholder="******"
-                                    InputProps={{ style: { direction: 'ltr' } }}
-                                    disabled
+                            <TextField
+                                label="كلمة المرور"
+                                fullWidth
+                                margin="normal"
+                                type="password"
+                                placeholder="******"
+                                InputProps={{ style: { direction: 'ltr' } }}
+                                disabled
                                     sx={{ flexGrow: 1 }}
                                 />
                                 <Button
@@ -2238,9 +2238,9 @@ function Mainadvertisment(props) {
                         </Typography>
                     </Box>
                 ) : (
-                    <List>
+                <List>
                         {filteredAds.map((ad) => (
-                            <ListItem
+                        <ListItem
                                 key={ad.id}
                                 sx={{
                                     mb: 2,
@@ -2294,7 +2294,7 @@ function Mainadvertisment(props) {
                                     </Box>
 
                                     {/* Admin Actions */}
-                                    <Box sx={{ display: 'flex', gap: 1, flexDirection: 'row-reverse' }}>
+                                <Box sx={{ display: 'flex', gap: 1, flexDirection: 'row-reverse' }}>
                                         {/* Approve/Reject buttons for pending ads */}
                                         {ad.reviewStatus === 'pending' && (
                                             <>
@@ -2355,7 +2355,7 @@ function Mainadvertisment(props) {
                                         )}
 
                                         {/* Edit button */}
-                                        <Tooltip title="تعديل">
+                                    <Tooltip title="تعديل">
                                             <IconButton
                                                 onClick={() => {
                                                     setSelectedAd(ad);
@@ -2364,11 +2364,11 @@ function Mainadvertisment(props) {
                                                 sx={{ color: 'primary.main' }}
                                             >
                                                 <EditIcon />
-                                            </IconButton>
-                                        </Tooltip>
+                                        </IconButton>
+                                    </Tooltip>
 
                                         {/* Delete button */}
-                                        <Tooltip title="حذف">
+                                    <Tooltip title="حذف">
                                             <IconButton
                                                 onClick={() => {
                                                     setSelectedAd(ad);
@@ -2377,9 +2377,9 @@ function Mainadvertisment(props) {
                                                 sx={{ color: 'error.main' }}
                                             >
                                                 <DeleteIcon />
-                                            </IconButton>
-                                        </Tooltip>
-                                    </Box>
+                                        </IconButton>
+                                    </Tooltip>
+                                </Box>
                                 </Box>
                             </ListItem>
                         ))}
@@ -3288,16 +3288,16 @@ function ClientAdvertismentPage() {
                         {ad.reviewStatus === 'pending' && (
                             <>
                                 <Tooltip title="الموافقة على الإعلان">
-                                    <IconButton
+                        <IconButton
                                         aria-label="approve"
-                                        size="small"
+                            size="small"
                                         onClick={() => handleApproveClick(ad)}
                                         color="success"
-                                        disabled={loading === 'pending'}
-                                    >
+                            disabled={loading === 'pending'}
+                        >
                                         <CheckCircleOutlineIcon fontSize="small" />
-                                    </IconButton>
-                                </Tooltip>
+                        </IconButton>
+                    </Tooltip>
                                 <Tooltip title="رفض الإعلان">
                                     <IconButton
                                         aria-label="reject"
@@ -3358,37 +3358,37 @@ function ClientAdvertismentPage() {
                         )}
 
                         {/* Status Toggle */}
-                        <Tooltip
-                            title={
+                    <Tooltip
+                        title={
                                 ad.status === 'تحت العرض'
-                                    ? "إنهاء العرض"
+                                ? "إنهاء العرض"
                                     : ad.status === 'منتهي'
-                                        ? "إعادة العرض"
+                                    ? "إعادة العرض"
                                         : "تغيير الحالة"
-                            }
-                        >
-                            <IconButton
-                                aria-label="toggle status"
-                                size="small"
+                        }
+                    >
+                        <IconButton
+                            aria-label="toggle status"
+                            size="small"
                                 onClick={() => handleToggleAdStatus(ad)}
-                                color={
+                            color={
                                     ad.status === 'تحت العرض'
-                                        ? 'warning'
+                                    ? 'warning'
                                         : ad.status === 'منتهي'
-                                            ? 'success'
+                                        ? 'success'
                                             : 'info'
-                                }
-                                disabled={loading === 'pending'}
-                            >
+                            }
+                            disabled={loading === 'pending'}
+                        >
                                 {ad.status === 'تحت العرض' ? (
-                                    <BlockIcon fontSize="small" />
+                                <BlockIcon fontSize="small" />
                                 ) : ad.status === 'منتهي' ? (
-                                    <CheckCircleOutlineIcon fontSize="small" />
-                                ) : (
+                                <CheckCircleOutlineIcon fontSize="small" />
+                            ) : (
                                     <AutorenewIcon fontSize="small" />
-                                )}
-                            </IconButton>
-                        </Tooltip>
+                            )}
+                        </IconButton>
+                    </Tooltip>
 
                         {/* Edit */}
                         <Tooltip title="تعديل الإعلان">
@@ -3403,18 +3403,18 @@ function ClientAdvertismentPage() {
                         </Tooltip>
 
                         {/* Delete */}
-                        <Tooltip title="حذف الإعلان">
-                            <IconButton
-                                aria-label="delete"
-                                size="small"
+                    <Tooltip title="حذف الإعلان">
+                        <IconButton
+                            aria-label="delete"
+                            size="small"
                                 onClick={() => handleDeleteClick(ad)}
-                                color="error"
-                                disabled={loading === 'pending'}
-                            >
-                                <DeleteIcon fontSize="small" />
-                            </IconButton>
-                        </Tooltip>
-                    </Box>
+                            color="error"
+                            disabled={loading === 'pending'}
+                        >
+                            <DeleteIcon fontSize="small" />
+                        </IconButton>
+                    </Tooltip>
+                </Box>
                 );
             },
         },
@@ -3450,8 +3450,8 @@ function ClientAdvertismentPage() {
             >
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                     <Typography variant="h6" color="text.secondary">
-                        قائمة الإعلانات الحالية
-                    </Typography>
+                    قائمة الإعلانات الحالية
+                </Typography>
                     
                     {/* Filter Controls */}
                     <Box sx={{ display: 'flex', gap: 2 }}>

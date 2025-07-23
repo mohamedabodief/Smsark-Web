@@ -2393,9 +2393,9 @@ function Mainadvertisment(props) {
                         </Typography>
                     </Box>
                 ) : (
-                    <List>
+                <List>
                         {filteredAds.map((ad) => (
-                            <ListItem
+                        <ListItem
                                 key={ad.id}
                                 sx={{
                                     mb: 2,
@@ -2449,8 +2449,8 @@ function Mainadvertisment(props) {
                                     </Box>
 
                                     {/* Actions (simplified for organization view) */}
-                                    <Box sx={{ display: 'flex', gap: 1, flexDirection: 'row-reverse' }}>
-                                        <Tooltip title="تعديل">
+                                <Box sx={{ display: 'flex', gap: 1, flexDirection: 'row-reverse' }}>
+                                    <Tooltip title="تعديل">
                                             <IconButton
                                                 onClick={() => {
                                                     setSelectedAd(ad);
@@ -2459,10 +2459,10 @@ function Mainadvertisment(props) {
                                                 sx={{ color: 'primary.main' }}
                                             >
                                                 <EditIcon />
-                                            </IconButton>
-                                        </Tooltip>
+                                        </IconButton>
+                                    </Tooltip>
 
-                                        <Tooltip title="حذف">
+                                    <Tooltip title="حذف">
                                             <IconButton
                                                 onClick={() => {
                                                     setSelectedAd(ad);
@@ -2471,9 +2471,9 @@ function Mainadvertisment(props) {
                                                 sx={{ color: 'error.main' }}
                                             >
                                                 <DeleteIcon />
-                                            </IconButton>
-                                        </Tooltip>
-                                    </Box>
+                                        </IconButton>
+                                    </Tooltip>
+                                </Box>
                                 </Box>
                             </ListItem>
                         ))}

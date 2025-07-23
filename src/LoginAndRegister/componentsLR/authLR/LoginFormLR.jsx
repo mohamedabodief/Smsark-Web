@@ -1,5 +1,5 @@
 //src/LoginAndRegister/componentsLR/authLR/LoginFormLR.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { TextField, Button, CircularProgress, Alert, Box } from "@mui/material";
 import { Email, Lock } from "@mui/icons-material";
 import { useDispatch } from "react-redux";
@@ -11,6 +11,12 @@ export default function LoginFormLR({ onLoginSuccess, onSwitchToRegister }) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const dispatch = useDispatch();
+
+  // Ensure fields are cleared on mount
+  useEffect(() => {
+    setEmail("");
+    setPassword("");
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
