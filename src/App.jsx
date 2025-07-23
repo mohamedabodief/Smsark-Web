@@ -46,6 +46,7 @@ import { onMessage, messaging, auth } from "./FireBase/firebaseConfig";
 import { requestPermissionAndSaveToken } from "./FireBase/MessageAndNotification/fcmHelper";
 import { onAuthStateChanged } from "firebase/auth";
 import CloseIcon from '@mui/icons-material/Close';
+import RegistrationSuccess from "./LoginAndRegister/componentsLR/RegistrationSuccess";
 function App() {
   const [notifications, setNotifications] = useState([]);
   const [openSnackbar, setOpenSnackbar] = useState(false);
@@ -136,6 +137,7 @@ function App() {
             {/* صفحات الدخول والتسجيل */}
             <Route path="login" element={<LoginRegister />} />
             <Route path="register" element={<LoginRegister />} />
+            <Route path="/registration-success" element={<RegistrationSuccess />} />
             {/* صفحات عامة */}
             <Route path="/about" element={<AboutUs />} />
             <Route path="/contact" element={<ContactUs />} />
