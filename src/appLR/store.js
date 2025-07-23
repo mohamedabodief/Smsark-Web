@@ -18,6 +18,7 @@ import clientAdvertisementsReducer from "../reduxToolkit/slice/ClientAdvertismen
 import paidAdsReducer from "../reduxToolkit/slice/paidAdsSlice";
 import adminUsersReducer from "../reduxToolkit/slice/adminUsersSlice";
 import financialRequestsReducer from '../reduxToolkit/slice/financialRequestSlice';
+import homepageAdsReducer from "../feature/ads/homepageAdsSlice";
 export const store = configureStore({
   reducer: {
     auth: authReducer,
@@ -38,6 +39,7 @@ export const store = configureStore({
     paidAds: paidAdsReducer,
     adminUsers: adminUsersReducer,
     financialRequests: financialRequestsReducer,
+    homepageAds: homepageAdsReducer,
   },
     middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

@@ -7,10 +7,14 @@ export default function SimpleHeroSlider() {
   const [ads, setAds] = useState([]);
   const [index, setIndex] = useState(0);
 
+  // Subscribe to active ads
   useEffect(() => {
     const unsubscribe = HomepageAdvertisement.subscribeActiveAds(async (data) => {
       setAds(data);
+      setIndex(0); // Reset index if ads change
     });
+    return () => unsubscribe();
+  }, []);
 
     const interval = setInterval(() => {
       setIndex((prev) => (prev + 1) % ads.length);
@@ -20,8 +24,17 @@ export default function SimpleHeroSlider() {
       unsubscribe();
       clearInterval(interval);
     };
+  // Auto-advance slider
+  useEffect(() => {
+    if (ads.length === 0) return;
+    const interval = setInterval(() => {
+      setIndex((prev) => (prev + 1) % ads.length);
+    }, 5000);
+    return () => clearInterval(interval);
   }, [ads.length]);
 
+  
+  // Navigation functions
   const nextSlide = () => {
     setIndex((prev) => (prev + 1) % ads.length);
   };
@@ -44,10 +57,11 @@ export default function SimpleHeroSlider() {
         padding: 0,
       }}
     >
-      {ads[index]?.image && (
+      {/* {ads[index]?.image && ( */}
+      {ads.length > 0 && ads[index] && (
         <Box
           component="img"
-          src={ads[index].image}
+          src={ads[index] && ads[index].image ? ads[index].image : '/no-image.svg'}
           alt="slider image"
           sx={{
             width: '100%',
@@ -68,6 +82,7 @@ export default function SimpleHeroSlider() {
           backgroundColor: 'rgba(0,0,0,0.4)',
           '&:hover': { backgroundColor: 'rgba(0,0,0,0.6)' },
         }}
+        disabled={ads.length === 0}
       >
         <ArrowBackIos />
       </IconButton>
@@ -83,6 +98,7 @@ export default function SimpleHeroSlider() {
           backgroundColor: 'rgba(0,0,0,0.4)',
           '&:hover': { backgroundColor: 'rgba(0,0,0,0.6)' },
         }}
+        disabled={ads.length === 0}
       >
         <ArrowForwardIos />
       </IconButton>

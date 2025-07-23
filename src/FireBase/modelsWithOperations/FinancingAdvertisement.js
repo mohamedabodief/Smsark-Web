@@ -48,6 +48,7 @@ class FinancingAdvertisement {
     this.reviewed_by = data.reviewed_by || null;
     this.review_note = data.review_note || null;
     this.status = data.status || 'تحت العرض';
+    this.adPackage = data.adPackage !== undefined ? data.adPackage : null;
   }
 
   // ✅ إرجاع المعرف الداخلي للإعلان
@@ -346,6 +347,7 @@ class FinancingAdvertisement {
       reviewed_by: this.reviewed_by,
       review_note: this.review_note,
       status: this.status,
+      ...(this.adPackage !== undefined && this.adPackage !== null ? { adPackage: this.adPackage } : {}),
     };
   }
 }

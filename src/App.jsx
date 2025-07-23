@@ -30,14 +30,14 @@ import Notification from "./FireBase/MessageAndNotification/Notification";
 import SearchPage from "./pages/SearchPage";
 import ContactUs from "./contactUs/ContactUs";
 import { Navigate } from 'react-router-dom';
-import AdPackages from "../packages/packagesDev&Fin";
+import AdPackages from "../packages/packagesDevAndFin";
 import AdPackagesClient from "../packages/packagesClient";
 import AdminDashboard from "./Dashboard/adminDashboard";
 import ClientDashboard from "./Dashboard/clientDashboard";
 import OrganizationDashboard from "./Dashboard/organization/organizationDashboard";
 import PrivateRoute from "./PrivateRoute";
 import AuthSync from "./AuthSync";
-import RequireNotAuth from "./LoginAndRegister/RequireNotAuth";
+// import RequireNotAuth from "./LoginAndRegister/RequireNotAuth";
 
 
 import { onMessage, messaging, auth } from "./FireBase/firebaseConfig";
@@ -99,9 +99,7 @@ function App() {
 
       return () => unsubscribe();
     }
-  }, [currentUser,
-    //  notifications
-    ]);
+  }, [currentUser]);
   const handleOpenChat = () => {
     if (currentNotification?.link) {
       const userId = currentNotification.link.split('/privateChat/')[1];
@@ -133,8 +131,8 @@ function App() {
             <Route path="/" element={<Navigate to="/login" replace />} />
             <Route path="/home" element={<Home />} />
             {/* صفحات الدخول والتسجيل */}
-            <Route path="login" element={<RequireNotAuth><LoginRegister /></RequireNotAuth>} />
-            <Route path="register" element={<RequireNotAuth><LoginRegister /></RequireNotAuth>} />
+            <Route path="login" element={<LoginRegister />} />
+            <Route path="register" element={<LoginRegister />} />
             {/* صفحات عامة */}
             <Route path="/about" element={<AboutUs />} />
             <Route path="/contact" element={<ContactUs />} />
@@ -149,9 +147,9 @@ function App() {
             <Route path="/services/buy" element={<BuyAds />} />
             <Route path="/services/finance" element={<FinancingAdsPage />} />
 
-          <Route path="/chat" element={<ChatAiPage />} />
+            <Route path="/chat" element={<ChatAiPage />} />
 
-      {/* <AddMultipleAdsOnce/> */}
+            {/* <AddMultipleAdsOnce/> */}
             <Route path="/services/developmentAds" element={<DeveloperAdsPage />} />
             {/* صفحات الإعلانات العقارية */}
             <Route path="/RealEstateDeveloperAnnouncement" element={<PropertyPage />} />

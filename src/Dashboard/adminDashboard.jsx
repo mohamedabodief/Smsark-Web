@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { useState, useEffect, useMemo } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
+import { useSelector, useDispatch ,shallowEqual } from 'react-redux';
 import { createTheme, ThemeProvider, styled } from '@mui/material/styles';
 import {
     Typography, Box, Paper, Tabs, Tab, CssBaseline, AppBar, Toolbar, IconButton, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Divider, Avatar, Button, Collapse, Grid, Dialog, DialogTitle, DialogContent, DialogActions, TextField, ListItemAvatar, Tooltip,
@@ -1963,8 +1963,16 @@ function PropertiesPage() {
 function Mainadvertisment(props) {
     const userProfile = useSelector((state) => state.user.profile);
     const dispatch = useDispatch();
-    const homepageAds = useSelector((state) => state.homepageAds?.all || []);
+
+    const homepageAds = useSelector((state) => state.homepageAds?.all || [], shallowEqual);
     const homepageAdsLoading = useSelector((state) => state.homepageAds?.loading || false);
+
+    // Debugging logs for Redux state
+    useEffect(() => {
+        console.log("Mainadvertisment - homepageAds state:", homepageAds);
+        console.log("Mainadvertisment - homepageAdsLoading state:", homepageAdsLoading);
+    }, [homepageAds, homepageAdsLoading]);
+
 
     // State for modals and operations
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -1972,17 +1980,18 @@ function Mainadvertisment(props) {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [selectedAd, setSelectedAd] = useState(null);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
-    
+
     // State for filtering
     const [statusFilter, setStatusFilter] = useState('all');
     const [activationFilter, setActivationFilter] = useState('all');
-    
+
     // State for activation menu
     const [activationMenuAnchor, setActivationMenuAnchor] = useState(null);
     const [selectedAdForActivation, setSelectedAdForActivation] = useState(null);
 
     // Fetch all homepage ads when component mounts
     useEffect(() => {
+        console.log("Mainadvertisment - Dispatching fetchAllHomepageAds...");
         dispatch(fetchAllHomepageAds());
     }, [dispatch]);
 
@@ -1993,6 +2002,7 @@ function Mainadvertisment(props) {
             setSnackbar({ open: true, message: "تم إضافة الإعلان بنجاح!", severity: "success" });
         } catch (error) {
             setSnackbar({ open: true, message: "فشل إضافة الإعلان: " + (error.message || "خطأ غير معروف"), severity: "error" });
+            console.error("Error adding ad:", error);
         }
     };
 
@@ -2003,6 +2013,7 @@ function Mainadvertisment(props) {
             setSnackbar({ open: true, message: "تم تحديث الإعلان بنجاح!", severity: "success" });
         } catch (error) {
             setSnackbar({ open: true, message: "فشل تحديث الإعلان: " + (error.message || "خطأ غير معروف"), severity: "error" });
+            console.error("Error updating ad:", error);
         }
     };
 
@@ -2013,6 +2024,7 @@ function Mainadvertisment(props) {
             setSnackbar({ open: true, message: "تم حذف الإعلان بنجاح!", severity: "success" });
         } catch (error) {
             setSnackbar({ open: true, message: "فشل حذف الإعلان: " + (error.message || "خطأ غير معروف"), severity: "error" });
+            console.error("Error deleting ad:", error);
         }
     };
 
@@ -2023,6 +2035,7 @@ function Mainadvertisment(props) {
             setSnackbar({ open: true, message: "تمت الموافقة على الإعلان!", severity: "success" });
         } catch (error) {
             setSnackbar({ open: true, message: "فشل الموافقة على الإعلان: " + (error.message || "خطأ غير معروف"), severity: "error" });
+            console.error("Error approving ad:", error);
         }
     };
 
@@ -2033,6 +2046,7 @@ function Mainadvertisment(props) {
             setSnackbar({ open: true, message: "تم رفض الإعلان!", severity: "warning" });
         } catch (error) {
             setSnackbar({ open: true, message: "فشل رفض الإعلان: " + (error.message || "خطأ غير معروف"), severity: "error" });
+            console.error("Error rejecting ad:", error);
         }
     };
 
@@ -2043,6 +2057,7 @@ function Mainadvertisment(props) {
             setSnackbar({ open: true, message: "تم تفعيل الإعلان لمدة " + days + " يوم!", severity: "success" });
         } catch (error) {
             setSnackbar({ open: true, message: "فشل تفعيل الإعلان: " + (error.message || "خطأ غير معروف"), severity: "error" });
+            console.error("Error activating ad:", error);
         }
     };
 
@@ -2053,6 +2068,7 @@ function Mainadvertisment(props) {
             setSnackbar({ open: true, message: "تم إلغاء تفعيل الإعلان!", severity: "info" });
         } catch (error) {
             setSnackbar({ open: true, message: "فشل إلغاء تفعيل الإعلان: " + (error.message || "خطأ غير معروف"), severity: "error" });
+            console.error("Error deactivating ad:", error);
         }
     };
 
@@ -2063,6 +2079,7 @@ function Mainadvertisment(props) {
             setSnackbar({ open: true, message: "تم إرجاع الإعلان لحالة المراجعة!", severity: "info" });
         } catch (error) {
             setSnackbar({ open: true, message: "فشل إرجاع الإعلان: " + (error.message || "خطأ غير معروف"), severity: "error" });
+            console.error("Error returning ad to pending:", error);
         }
     };
 
@@ -2107,7 +2124,9 @@ function Mainadvertisment(props) {
     // Format date
     const formatDate = (timestamp) => {
         if (!timestamp) return 'غير محدد';
-        return new Date(timestamp).toLocaleDateString('ar-EG');
+        // Ensure timestamp is a number before creating a Date object
+        const date = typeof timestamp === 'number' ? new Date(timestamp) : new Date(timestamp);
+        return date.toLocaleDateString('ar-EG');
     };
 
     const handleSnackbarClose = (event, reason) => {
@@ -2118,13 +2137,18 @@ function Mainadvertisment(props) {
     };
 
     // Memoize filteredAds to avoid selector warning
-    const filteredAds = useMemo(() => homepageAds.filter(ad => {
-        const statusMatch = statusFilter === 'all' || ad.reviewStatus === statusFilter;
-        const activationMatch = activationFilter === 'all' || 
-            (activationFilter === 'active' && ad.ads) || 
-            (activationFilter === 'inactive' && !ad.ads);
-        return statusMatch && activationMatch;
-    }), [homepageAds, statusFilter, activationFilter]);
+    const filteredAds = useMemo(() => {
+        console.log("Mainadvertisment - Filtering ads. Current homepageAds:", homepageAds);
+        const filtered = homepageAds.filter(ad => {
+            const statusMatch = statusFilter === 'all' || ad.reviewStatus === statusFilter;
+            const activationMatch = activationFilter === 'all' ||
+                (activationFilter === 'active' && ad.ads) ||
+                (activationFilter === 'inactive' && !ad.ads);
+            return statusMatch && activationMatch;
+        });
+        console.log("Mainadvertisment - Filtered ads result:", filtered);
+        return filtered;
+    }, [homepageAds, statusFilter, activationFilter]);
 
     // Memoize stats to avoid selector warning
     const stats = useMemo(() => ({
@@ -2168,7 +2192,7 @@ function Mainadvertisment(props) {
                             <MenuItem value="rejected">مرفوض</MenuItem>
                         </Select>
                     </FormControl>
-                    
+
                     <FormControl size="small" sx={{ minWidth: 150 }}>
                         <InputLabel>حالة التفعيل</InputLabel>
                         <Select
@@ -2188,9 +2212,9 @@ function Mainadvertisment(props) {
                         إعلانات الصفحة الرئيسية ({filteredAds.length})
                     </Typography>
                     <Tooltip title="إضافة إعلان جديد">
-                        <Button 
-                            sx={{ fontWeight: 'bold', fontSize: 16 }} 
-                            variant="contained" 
+                        <Button
+                            sx={{ fontWeight: 'bold', fontSize: 16 }}
+                            variant="contained"
                             startIcon={<AddIcon sx={{ ml: 1 }} />}
                             onClick={() => setIsAddModalOpen(true)}
                         >
@@ -2210,7 +2234,7 @@ function Mainadvertisment(props) {
                             لا توجد إعلانات
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
-                            ابدأ بإضافة إعلان جديد للصفحة الرئيسية
+                            ابدا بإضافة إعلان جديد للصفحة الرئيسية
                         </Typography>
                     </Box>
                 ) : (
@@ -2251,17 +2275,17 @@ function Mainadvertisment(props) {
                                                 size="small"
                                             />
                                         </Box>
-                                        
+
                                         <Typography variant="body2" color="text.secondary">
                                             تاريخ الإنشاء: {formatDate(ad.id ? new Date(parseInt(ad.id.substring(0, 8), 16) * 1000) : null)}
                                         </Typography>
-                                        
+
                                         {ad.adExpiryTime && (
                                             <Typography variant="body2" color="text.secondary">
                                                 ينتهي في: {formatDate(ad.adExpiryTime)}
                                             </Typography>
                                         )}
-                                        
+
                                         {ad.review_note && (
                                             <Typography variant="body2" color="error">
                                                 ملاحظة: {ad.review_note}
@@ -2275,7 +2299,7 @@ function Mainadvertisment(props) {
                                         {ad.reviewStatus === 'pending' && (
                                             <>
                                                 <Tooltip title="موافقة">
-                                                    <IconButton 
+                                                    <IconButton
                                                         onClick={() => handleApproveAd(ad.id)}
                                                         sx={{ color: 'success.main' }}
                                                     >
@@ -2283,7 +2307,7 @@ function Mainadvertisment(props) {
                                                     </IconButton>
                                                 </Tooltip>
                                                 <Tooltip title="رفض">
-                                                    <IconButton 
+                                                    <IconButton
                                                         onClick={() => handleRejectAd(ad.id, 'تم الرفض من قبل الإدارة')}
                                                         sx={{ color: 'error.main' }}
                                                     >
@@ -2298,7 +2322,7 @@ function Mainadvertisment(props) {
                                             <>
                                                 {!ad.ads ? (
                                                     <Tooltip title="تفعيل">
-                                                        <IconButton 
+                                                        <IconButton
                                                             onClick={(e) => handleActivationMenuOpen(e, ad)}
                                                             sx={{ color: 'success.main' }}
                                                         >
@@ -2307,7 +2331,7 @@ function Mainadvertisment(props) {
                                                     </Tooltip>
                                                 ) : (
                                                     <Tooltip title="إلغاء التفعيل">
-                                                        <IconButton 
+                                                        <IconButton
                                                             onClick={() => handleDeactivateAd(ad.id)}
                                                             sx={{ color: 'warning.main' }}
                                                         >
@@ -2321,7 +2345,7 @@ function Mainadvertisment(props) {
                                         {/* Return to pending button for rejected ads */}
                                         {ad.reviewStatus === 'rejected' && (
                                             <Tooltip title="إرجاع للمراجعة">
-                                                <IconButton 
+                                                <IconButton
                                                     onClick={() => handleReturnToPending(ad.id)}
                                                     sx={{ color: 'info.main' }}
                                                 >
@@ -2332,7 +2356,7 @@ function Mainadvertisment(props) {
 
                                         {/* Edit button */}
                                         <Tooltip title="تعديل">
-                                            <IconButton 
+                                            <IconButton
                                                 onClick={() => {
                                                     setSelectedAd(ad);
                                                     setIsEditModalOpen(true);
@@ -2342,10 +2366,10 @@ function Mainadvertisment(props) {
                                                 <EditIcon />
                                             </IconButton>
                                         </Tooltip>
-                                        
+
                                         {/* Delete button */}
                                         <Tooltip title="حذف">
-                                            <IconButton 
+                                            <IconButton
                                                 onClick={() => {
                                                     setSelectedAd(ad);
                                                     setIsDeleteModalOpen(true);

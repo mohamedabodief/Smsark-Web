@@ -74,42 +74,42 @@ function DetailsForClient() {
   }, [id]);
 
   // إرسال الرسالة
-const handleSend = async () => {
-  if (!message.trim() || !currentUser || !clientAds?.userId) return;
+  const handleSend = async () => {
+    if (!message.trim() || !currentUser || !clientAds?.userId) return;
 
-  try {
-    const receiverName = await getReceiverName(clientAds.userId);
-    const newMessage = new Message({
-      sender_id: currentUser,
-      receiver_id: clientAds.userId,
-      content: message,
-      reciverName: receiverName,
-      timestamp: new Date(),
-      is_read: false,
-      message_type: 'text',
-    });
+    try {
+      const receiverName = await getReceiverName(clientAds.userId);
+      const newMessage = new Message({
+        sender_id: currentUser,
+        receiver_id: clientAds.userId,
+        content: message,
+        reciverName: receiverName,
+        timestamp: new Date(),
+        is_read: false,
+        message_type: 'text',
+      });
 
-    console.log('Sending message to:', { receiver_id: clientAds.userId, reciverName: receiverName });
-    await newMessage.send();
+      console.log('Sending message to:', { receiver_id: clientAds.userId, reciverName: receiverName });
+      await newMessage.send();
 
- 
-    const notification = new Notification({
-      receiver_id: clientAds.userId,
-      title: `رسالة جديدة من ${auth.currentUser.email|| 'مستخدم'}`,
-      body: message || 'لقد تلقيت رسالة جديدة!',
-      type: 'message',
-     link: `/privateChat/${clientAds.userId}`
-    });
-    await notification.send();
 
-    alert("تم إرسال الرسالة!");
-    setMessage("");
-    setOpen(false);
-  } catch (error) {
-    console.error("حدث خطأ أثناء الإرسال:", error);
-    alert("فشل في إرسال الرسالة!");
-  }
-};
+      const notification = new Notification({
+        receiver_id: clientAds.userId,
+        title: `رسالة جديدة من ${auth.currentUser.email || 'مستخدم'}`,
+        body: message || 'لقد تلقيت رسالة جديدة!',
+        type: 'message',
+        link: `/privateChat/${clientAds.userId}`
+      });
+      await notification.send();
+
+      alert("تم إرسال الرسالة!");
+      setMessage("");
+      setOpen(false);
+    } catch (error) {
+      console.error("حدث خطأ أثناء الإرسال:", error);
+      alert("فشل في إرسال الرسالة!");
+    }
+  };
   const handleShare = async () => {
     if (navigator.share) {
       try {
@@ -278,6 +278,11 @@ const handleSend = async () => {
         {/* تفاصيل الإعلان */}
         <Box width={{ xs: '100%', md: '70%' }} sx={{ textAlign: 'right', mt: 2 }}>
           <Typography variant="h4" fontWeight="bold" sx={{ color: '#6E00FE', mb: 3 }}>{clientAds.title}</Typography>
+          {clientAds.adPackage && (
+            <Typography sx={{ fontWeight: 'bold', color: '#1976d2', mb: 2, fontSize: '18px' }}>
+              الباقة المختارة: {clientAds.adPackage === 1 ? 'باقة الأساس' : clientAds.adPackage === 2 ? 'باقة النخبة' : clientAds.adPackage === 3 ? 'باقة التميز' : clientAds.adPackage}
+            </Typography>
+          )}
           <Typography sx={{ fontSize: '18px', lineHeight: 1.8, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: showFull ? 'none' : 4, WebkitBoxOrient: 'vertical', mb: 3, color: '#333' }}>{clientAds.description || 'لا يوجد وصف'}</Typography>
           {clientAds.description?.length > 100 && (
             <Button
@@ -321,6 +326,14 @@ const handleSend = async () => {
               <Typography variant="body2" color="text.secondary">حالة الإعلان</Typography>
               <Typography variant="body1" fontWeight="bold">{clientAds.ad_status}</Typography>
             </Grid>
+            {clientAds.adPackage && (
+              <Grid item xs={12} sm={6}>
+                <Typography variant="body2" color="text.secondary">الباقة المختارة</Typography>
+                <Typography variant="body1" fontWeight="bold" color="primary">
+                  {clientAds.adPackage === 1 ? 'باقة الأساس' : clientAds.adPackage === 2 ? 'باقة النخبة' : clientAds.adPackage === 3 ? 'باقة التميز' : clientAds.adPackage}
+                </Typography>
+              </Grid>
+            )}
           </Grid>
 
         </Box>
@@ -430,9 +443,9 @@ const handleSend = async () => {
 
         {isOwner && (
           <Button
-          variant="contained"
-          color="primary"
-          sx={{ borderRadius: '15px', fontWeight: 'bold', px: 5, py: 1.5 , mr: 2 , mt: 2 , mb: 1  , width: '20%' , justifyContent: 'center' }}
+            variant="contained"
+            color="primary"
+            sx={{ borderRadius: '15px', fontWeight: 'bold', px: 5, py: 1.5, mr: 2, mt: 2, mb: 1, width: '20%', justifyContent: 'center' }}
             onClick={() => navigate('/AddAdvertisement', { state: { editMode: true, adData: { ...clientAds, id: clientAds.id } } })}
           >
             تعديل الإعلان
@@ -440,14 +453,14 @@ const handleSend = async () => {
         )}
       </Box>
       {/* زر إضافة إعلان جديد */}
-        <Button
-          variant="contained"
-          color="primary"
-          sx={{ borderRadius: '15px', fontWeight: 'bold', px: 5, py: 1.5 , mr: 2 , mt: 1 , mb: 2  , width: '20%' , justifyContent: 'center' }}
-          onClick={() => navigate('/AddAdvertisement')}
-        >
-          اضف اعلانك الان
-        </Button>
+      <Button
+        variant="contained"
+        color="primary"
+        sx={{ borderRadius: '15px', fontWeight: 'bold', px: 5, py: 1.5, mr: 2, mt: 1, mb: 2, width: '20%', justifyContent: 'center' }}
+        onClick={() => navigate('/AddAdvertisement')}
+      >
+        اضف اعلانك الان
+      </Button>
     </Container>
   );
 }
