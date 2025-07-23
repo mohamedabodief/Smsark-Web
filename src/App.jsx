@@ -38,6 +38,8 @@ import OrganizationDashboard from "./Dashboard/organization/organizationDashboar
 import PrivateRoute from "./PrivateRoute";
 import AuthSync from "./AuthSync";
 // import RequireNotAuth from "./LoginAndRegister/RequireNotAuth";
+import { Fab, Box } from '@mui/material';
+import { FaRobot } from 'react-icons/fa';
 
 
 import { onMessage, messaging, auth } from "./FireBase/firebaseConfig";
@@ -53,7 +55,9 @@ function App() {
   ////////////////////////////////////////////////
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-
+  const goToChat = () => {
+    navigate('/chat');
+  };
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       console.log("Auth state changed:", user ? user.uid : "No user");
@@ -78,7 +82,6 @@ function App() {
 
     return () => unsubscribe();
   }, []);
-  ///////////////////////////////
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
       setCurrentUser(user);
@@ -183,6 +186,25 @@ function App() {
               <Route path="developmentAds/:id" element={<DetailsForDevelopment />} />
             </Route>
           </Routes>
+          <Box
+        position="fixed"
+        bottom={20}
+        right={20}
+        zIndex={1000}
+      >
+        <Fab
+          onClick={goToChat}
+          sx={{
+            backgroundColor: '#6a0dad',
+            color: 'white',
+            '&:hover': {
+              backgroundColor: '#5b0ab3',
+            },
+          }}
+        >
+          <FaRobot size={32} />
+        </Fab>
+      </Box>
           {/* <Footer /> */}
         </Layout>
       </SearchProvider>

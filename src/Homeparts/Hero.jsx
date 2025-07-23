@@ -16,14 +16,6 @@ export default function SimpleHeroSlider() {
     return () => unsubscribe();
   }, []);
 
-    const interval = setInterval(() => {
-      setIndex((prev) => (prev + 1) % ads.length);
-    }, 5000);
-
-    return () => {
-      unsubscribe();
-      clearInterval(interval);
-    };
   // Auto-advance slider
   useEffect(() => {
     if (ads.length === 0) return;
@@ -33,7 +25,6 @@ export default function SimpleHeroSlider() {
     return () => clearInterval(interval);
   }, [ads.length]);
 
-  
   // Navigation functions
   const nextSlide = () => {
     setIndex((prev) => (prev + 1) % ads.length);
@@ -49,15 +40,12 @@ export default function SimpleHeroSlider() {
         position: 'relative',
         width: '100%',
         height: '30%',
-        // maxWidth: '100%',
-        // maxHeight: '30%',
         overflow: 'hidden',
         direction: 'rtl',
         margin: 0,
         padding: 0,
       }}
     >
-      {/* {ads[index]?.image && ( */}
       {ads.length > 0 && ads[index] && (
         <Box
           component="img"
