@@ -33,7 +33,9 @@ export default function Layout({ children }) {
   const isDashboard = [
     "/admin-dashboard",
     "/client-dashboard",
-    "/organization-dashboard"
+    "/organization-dashboard",
+    "/inbox",
+    "/chat"
   ].some((path) => location.pathname.startsWith(path));
 
   return (
@@ -41,7 +43,7 @@ export default function Layout({ children }) {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Nav toggleMode={toggleMode} />
-      <Box component="main" sx={{ mt: { xs: 9, md: 10 }, px: 2 }}>
+      <Box component="main" sx={{ mt: { xs: 5, md: 8 } }}>
         {children}
       </Box>
       {/* Only show Footer if not on a dashboard route */}
