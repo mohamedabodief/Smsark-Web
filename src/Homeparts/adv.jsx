@@ -20,17 +20,17 @@ export default function Advertise() {
       }
     };
 
-  //   fetchUserType();
-  // }, []);
+    //   fetchUserType();
+    // }, []);
 
-  // اختبار يدوي فقط
-//   const user = { id: 'test-user', type: 'financer' }; // client | developer | financer
-//   const userType = user.type;
+    // اختبار يدوي فقط
+    //   const user = { id: 'test-user', type: 'financer' }; // client | developer | financer
+    //   const userType = user.type;
 
     fetchUserType();
   }, []);
 
-  
+
   const options = [
     {
       icon: <SearchRounded fontSize="large" sx={{ color: '#1976d2' }} />,
@@ -64,8 +64,10 @@ export default function Advertise() {
     if (userType === 'admin') {
       navigate(item.route);
     } else if (userType === 'organization') {
-      if (item.type === 'developer' || item.type === 'financer') {
-        navigate(item.route);
+      if (item.type === 'developer') {
+        navigate('/AdddeveloperAds');
+      } else if (item.type === 'financer') {
+        navigate('/add-financing-ad');
       } else {
         alert('غير مسموح للمُنظمات بإضافة إعلانات العملاء');
       }
@@ -76,12 +78,13 @@ export default function Advertise() {
     }
   };
 
+
   return (
     <Box sx={{ py: 10, px: { xs: 2, md: 10 }, direction: 'rtl' }}>
       <Grid container spacing={4} justifyContent="center">
         <Grid item xs={12} textAlign="center">
           <Typography variant="h5" fontWeight="bold" mt={10} mb={4}>
-            أعلن عن عقارك 
+            أعلن عن عقارك
           </Typography>
         </Grid>
 
