@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { Route, Routes, useNavigate ,} from "react-router-dom";
 import DetailsForClient from "./pages/Details/detailsForClient";
 import DetailsForFinancingAds from "./pages/Details/detailsForFinaccingAds";
@@ -99,7 +99,7 @@ function App() {
 
       return () => unsubscribe();
     }
-  }, [currentUser, notifications]);
+  }, [currentUser]);
   const handleOpenChat = () => {
     if (currentNotification?.link) {
       const userId = currentNotification.link.split('/privateChat/')[1];
@@ -129,9 +129,8 @@ function App() {
       <Layout>
         <Routes>
          
-          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="/" element={<Home />} />
           <Route path="/home" element={<Home />} />
-          <Route path="/" element={<Navigate to="login" replace />} />
 
           {/* <Route path="/auth"> */}
           {/* <Route path="login" element={<LoginRegister />} />

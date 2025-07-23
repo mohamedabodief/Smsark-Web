@@ -326,13 +326,17 @@ const ModernRealEstateForm = () => {
         const data = await res.json();
         if (data.status === 'OK' && data.results.length > 0) {
           const { lat, lng } = data.results[0].geometry.location;
-          setCoordinates({ lat, lng });
+          // Only update if coordinates actually changed
+          if (!coordinates || coordinates.lat !== lat || coordinates.lng !== lng) {
+            setCoordinates({ lat, lng });
+          }
         }
       } catch (err) {
         console.error('Failed to fetch coordinates:', err);
       }
     };
     if (!enableMapPick) fetchCoordinates();
+    // eslint-disable-next-line
   }, [addressValue, cityValue, governorateValue, enableMapPick]);
 
   return (

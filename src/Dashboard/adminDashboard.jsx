@@ -2460,6 +2460,11 @@ function PaidAdvertismentPage() {
 
     const { developerAds, funderAds, loading, error } = useSelector((state) => state.paidAds);
 
+    // Memoize filtered funderAds to avoid selector warning
+    const filteredFunderAds = useMemo(
+        () => funderAds.filter(ad => ad.id !== null && ad.id !== undefined),
+        [funderAds]
+    );
 
     // Effect to subscribe to Developer Ads in real-time
     useEffect(() => {
@@ -2825,7 +2830,7 @@ function PaidAdvertismentPage() {
                         <Alert severity="error" sx={{ width: '100%' }}>{error.funder}</Alert>
                     ) : (
                         <DataGrid
-                            rows={funderAds.filter(ad => ad.id !== null && ad.id !== undefined)}
+                            rows={filteredFunderAds}
                             columns={funderColumns}
                             pageSizeOptions={[5, 10, 20]}
                             initialState={{

@@ -68,7 +68,7 @@ class HomepageAdvertisement {
           title: '📢 إعلان واجهة جديد بانتظار المراجعة',
           body: `تم إضافة إعلان جديد لواجهة الموقع.`,
           type: 'system',
-          link: `/admin/homepage-ads/${this.#id}`,
+          link: `/admin-dashboard`,
         }).send()
       )
     );
@@ -125,11 +125,10 @@ class HomepageAdvertisement {
         title: '✅ تمت الموافقة على إعلانك الواجهة',
         body: 'سيتم عرض إعلانك على الصفحة الرئيسية.',
         type: 'system',
-        link: `/client/homepage-ads/${this.#id}`,
+        link: `admin-dashboard`,
       }).send();
     }
   }
-
   // ❌ رفض الإعلان
   async reject(reason = '') {
     const admin = await User.getByUid(auth.currentUser.uid);
