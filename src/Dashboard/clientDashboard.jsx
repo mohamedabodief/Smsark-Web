@@ -2056,11 +2056,11 @@ function ClientAdvertismentPage() {
                 const ad = params.row;
                 return (
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Chip
+                <Chip
                             label={getStatusLabel(ad.reviewStatus)}
                             color={getStatusColor(ad.reviewStatus)}
-                            size="small"
-                        />
+                    size="small"
+                />
                         <Chip
                             label={ad.status}
                             color={getAdStatusColor(ad.status)}

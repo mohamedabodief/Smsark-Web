@@ -121,6 +121,7 @@ import {
 import AddHomepageAdModal from './adminDashboard/AddHomepageAdModal';
 import EditHomepageAdModal from './adminDashboard/EditHomepageAdModal';
 import Notification from '../FireBase/MessageAndNotification/Notification';
+import ClientAdvertisement from '../FireBase/modelsWithOperations/ClientAdvertisemen';
 
 // Create RTL cache for Emotion
 const cacheRtl = createCache({
@@ -1206,15 +1207,15 @@ function ProfilePage() {
     const initialized = React.useRef(false);
 
     useEffect(() => {
-        if (userProfile && !initialized.current) {
+  if (userProfile && !initialized.current) {
             setFormData({
                 ...userProfile,
-                email: auth.currentUser?.email || userProfile.email || "",
+      email: auth.currentUser?.email || userProfile.email || "",
             });
-            initialized.current = true;
-        } else if (!userProfile) {
+    initialized.current = true;
+  } else if (!userProfile) {
             setFormData({});
-            initialized.current = false;
+    initialized.current = false;
         }
     }, [userProfile]);
 
@@ -1458,14 +1459,14 @@ function ProfilePage() {
                             />
                             {/* Password field with reset button */}
                             <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-end' }}>
-                                <TextField
-                                    label="كلمة المرور"
-                                    fullWidth
-                                    margin="normal"
-                                    type="password"
-                                    placeholder="******"
-                                    InputProps={{ style: { direction: 'ltr' } }}
-                                    disabled
+                            <TextField
+                                label="كلمة المرور"
+                                fullWidth
+                                margin="normal"
+                                type="password"
+                                placeholder="******"
+                                InputProps={{ style: { direction: 'ltr' } }}
+                                disabled
                                     sx={{ flexGrow: 1 }}
                                 />
                                 <Button
@@ -2000,7 +2001,10 @@ function Mainadvertisment(props) {
     // Handle add ad
     const handleAddAd = async (adData) => {
         try {
-            await dispatch(createHomepageAd(adData)).unwrap();
+            // أضف userId من المستخدم الحالي
+            const userId = auth.currentUser?.uid;
+            const dataWithUserId = { ...adData, userId };
+            await dispatch(createHomepageAd({ adData: dataWithUserId, imageFile: adData.imageFile, receiptFile: adData.receiptFile })).unwrap();
             setSnackbar({ open: true, message: "تم إضافة الإعلان بنجاح!", severity: "success" });
         } catch (error) {
             setSnackbar({ open: true, message: "فشل إضافة الإعلان: " + (error.message || "خطأ غير معروف"), severity: "error" });
@@ -2034,200 +2038,295 @@ function Mainadvertisment(props) {
     //////////////////////////////
 
     // Handle approve ad
-    const handleApproveAd = async (adId) => {
-      console.log("بدأ تنفيذ handleApproveAd", adId);
-      const adRef = doc(db, 'clientAversment', adId);
-      const adSnap = await getDoc(adRef);
-      if (!adSnap.exists()) {
-          throw new Error("الإعلان غير موجود");
-      }
-      const adData = adSnap.data();
-      const userId = adData.userId;
-      if (!userId) {
-        console.error("لا يوجد userId لهذا الإعلان:", adId, adData);
-        return;
-      }
-      try {
-          await dispatch(approveHomepageAd(adId)).unwrap();
-          setSnackbar({ open: true, message: "تمت الموافقة على الإعلان!", severity: "success" });
-          ///////////////////////////////////////////////////////////notification to user
-          try {
-            const notification = new Notification({
-                receiver_id: userId,
-                title: "تمت الموافقة على إعلانك",
-                body: "إعلانك جاهز الآن للعرض على الصفحة الرئيسية!",
-                type: "success",
-                link: `/detailsForClient/${adId}`,
-            });
-            await notification.send();
-            console.log("تم حفظ الإشعار في فايربيز بنجاح:", notification);
-          } catch (err) {
-            console.error("Notification error (approve):", err);
-          }
-          //////////////////////////////////////////////////////////////////////////////
-      } catch (error) {
-          setSnackbar({ open: true, message: "فشل الموافقة على الإعلان: " + (error.message || "خطأ غير معروف"), severity: "error" });
-          console.error("Error approving ad:", error);
-      }
-    };
+ const handleApproveAd = async (adId, db, dispatch, setSnackbar) => {
+  console.log("[DEBUG] تم الضغط على زر الموافقة", adId);
+  try {
+    const adRef = doc(db, 'ClientAdvertisements', adId);
+    const adSnap = await getDoc(adRef);
+    if (!adSnap.exists()) {
+      console.error("[DEBUG] الإعلان غير موجود:", adId);
+      setSnackbar({
+        open: true,
+        message: "الإعلان غير موجود!",
+        severity: "error",
+      });
+      return;
+    }
+  const adData = adSnap.data();
+    console.log("[DEBUG] بيانات الإعلان:", adData);
+    const userId = adData.userId;
+    if (!userId) {
+      console.error("[DEBUG] لا يوجد userId لهذا الإعلان:", adId, adData);
+      setSnackbar({
+        open: true,
+        message: "لا يمكن إرسال الإشعار: المستخدم غير محدد!",
+        severity: "error",
+      });
+      return;
+    }
+    const userRef = doc(db, 'users', userId);
+    const userSnap = await getDoc(userRef);
+    if (!userSnap.exists()) {
+      console.error("[DEBUG] المستخدم غير موجود في users:", userId);
+      setSnackbar({
+        open: true,
+        message: "لا يمكن إرسال الإشعار: المستخدم غير موجود!",
+        severity: "error",
+      });
+      return;
+    }
+    const adTitle = adData.title || `إعلان ${adId}`;
+    console.log("[DEBUG] عنوان الإعلان:", adTitle);
+    const auth = getAuth();
+    const adminName = auth.currentUser?.displayName || "الأدمن";
+    const ad = new ClientAdvertisement(adData);
+    await ad.approveAd();
+    console.log("[DEBUG] تمت الموافقة على الإعلان:", adId);
+    setSnackbar({
+      open: true,
+      message: "تمت الموافقة على الإعلان وحفظ الإشعار!",
+      severity: "success",
+    });
+  } catch (error) {
+    console.error("[DEBUG] خطأ أثناء معالجة الموافقة:", error);
+    setSnackbar({
+      open: true,
+      message: "فشل الموافقة على الإعلان: " + (error.message || "خطأ غير معروف"),
+      severity: "error",
+    });
+  }
+};
 
-    // Handle reject ad
-    const handleRejectAd = async (adId, reason) => {
-      console.log("بدأ تنفيذ handleRejectAd", adId, reason);
-      const adRef = doc(db, 'clientAversment', adId);
-      const adSnap = await getDoc(adRef);
-      if (!adSnap.exists()) {
-          throw new Error("الإعلان غير موجود");
-      }
-      const adData = adSnap.data();
-      const userId = adData.userId;
-      if (!userId) {
-        console.error("لا يوجد userId لهذا الإعلان:", adId, adData);
-        return;
-      }
-      try {
-          await dispatch(rejectHomepageAd({ id: adId, reason })).unwrap();
-          setSnackbar({ open: true, message: "تم رفض الإعلان!", severity: "warning" });
-          ////////////////////////////////////////////////////////////////////////////////
-          try {
-            const notification = new Notification({
-                receiver_id: userId,
-                title: "تم رفض إعلانك",
-                body: `تم رفض إعلانك بسبب: ${reason}`,
-                type: "warning",
-                link: `/`,
-            });
-            await notification.send();
-            console.log("تم حفظ الإشعار في فايربيز بنجاح:", notification);
-          } catch (err) {
-            console.error("Notification error (reject):", err);
-          }
-          ///////////////////////////////////////////////////////////////////////////////
-      } catch (error) {
-          setSnackbar({ open: true, message: "فشل رفض الإعلان: " + (error.message || "خطأ غير معروف"), severity: "error" });
-          console.error("Error rejecting ad:", error);
-      }
-    };
+   // Handle reject ad
+const handleRejectAd = async (adId, reason, db, setSnackbar) => {
+  console.log("[DEBUG] تم الضغط على زر رفض الإعلان", adId, reason);
+  
+  try {
+    // استرجاع الإعلان من ClientAdvertisements
+    const adRef = doc(db, 'ClientAdvertisements', adId);
+    const adSnap = await getDoc(adRef);
+    
+    if (!adSnap.exists()) {
+      console.error("[DEBUG] الإعلان غير موجود في ClientAdvertisements:", adId);
+      setSnackbar({
+        open: true,
+        message: "الإعلان غير موجود!",
+        severity: "error",
+      });
+      return;
+    }
 
-    // Handle activate ad
-    const handleActivateAd = async (adId, days = 30) => {
-      console.log("بدأ تنفيذ handleActivateAd", adId, days);
-      const adRef = doc(db, 'clientAversment', adId);
-      const adSnap = await getDoc(adRef);
-      if (!adSnap.exists()) {
-          throw new Error("الإعلان غير موجود");
-      }
-      const adData = adSnap.data();
-      const userId = adData.userId;
-      if (!userId) {
-        console.error("لا يوجد userId لهذا الإعلان:", adId, adData);
-        return;
-      }
-      try {
-          await dispatch(activateHomepageAd({ id: adId, days })).unwrap();
-          setSnackbar({ open: true, message: "تم تفعيل الإعلان لمدة " + days + " يوم!", severity: "success" });
-          ////////////////////////////////////////
-          try {
-            const notification = new Notification({
-                receiver_id: userId,
-                title: "تم تفعيل إعلانك",
-                body: `إعلانك الآن نشط وسيظهر لمدة ${days} يوم!`,
-                type: "success",
-                link: `/detailsForClient/${adId}`,
-            });
-            await notification.send();
-            console.log("تم حفظ الإشعار في فايربيز بنجاح:", notification);
-          } catch (err) {
-            console.error("Notification error (activate):", err);
-          }
-          ////////////////////////////////////////
-      } catch (error) {
-          setSnackbar({ open: true, message: "فشل تفعيل الإعلان: " + (error.message || "خطأ غير معروف"), severity: "error" });
-          console.error("Error activating ad:", error);
-      }
-    };
+    const adData = adSnap.data();
+    const userId = adData.userId;
+    console.log("[DEBUG] userId الخاص بالإعلان:", userId);
+    
+    if (!userId) {
+      console.error("[DEBUG] لا يوجد userId لهذا الإعلان:", adId, adData);
+      setSnackbar({
+        open: true,
+        message: "لا يمكن إرسال الإشعار: المستخدم غير محدد!",
+        severity: "error",
+      });
+      return;
+    }
 
-    // Handle deactivate ad
-    const handleDeactivateAd = async (adId) => {
-      console.log("بدأ تنفيذ handleDeactivateAd", adId);
-      const adRef = doc(db, 'clientAversment', adId);
-      const adSnap = await getDoc(adRef);
-      if (!adSnap.exists()) {
-          throw new Error("الإعلان غير موجود");
-      }
-      const adData = adSnap.data();
-      const userId = adData.userId;
-      if (!userId) {
-        console.error("لا يوجد userId لهذا الإعلان:", adId, adData);
-        return;
-      }
-      try {
-          await dispatch(deactivateHomepageAd(adId)).unwrap();
-          setSnackbar({ open: true, message: "تم إلغاء تفعيل الإعلان!", severity: "info" });
-          //////////////////////////////////////////////////////////////////////////////////////
-          try {
-            const notification = new Notification({
-                receiver_id: userId,
-                title: "تم إلغاء تفعيل إعلانك",
-                body: "إعلانك لم يعد نشطًا على الصفحة الرئيسية.",
-                type: "info",
-                link: `/`,
-            });
-            await notification.send();
-            console.log("تم حفظ الإشعار في فايربيز بنجاح:", notification);
-          } catch (err) {
-            console.error("Notification error (deactivate):", err);
-          }
-          ///////////////////////////////////////////////////////////////////////////////////////
-      } catch (error) {
-          setSnackbar({ open: true, message: "فشل إلغاء تفعيل الإعلان: " + (error.message || "خطأ غير معروف"), severity: "error" });
-          console.error("Error deactivating ad:", error);
-      }
-    };
+    // رفض الإعلان باستخدام الكلاس
+    const ad = new ClientAdvertisement(adData);
+    await ad.rejectAd(reason);
+    
+    setSnackbar({
+      open: true,
+      message: "تم رفض الإعلان وحفظ الإشعار!",
+      severity: "warning",
+    });
+    
+    console.log("[DEBUG] تم رفض الإعلان بنجاح:", adId);
+  } catch (error) {
+    console.error("[DEBUG] خطأ أثناء رفض الإعلان:", error);
+    setSnackbar({
+      open: true,
+      message: "فشل رفض الإعلان: " + (error.message || "خطأ غير معروف"),
+      severity: "error",
+    });
+  }
+};
 
-    // Handle return to pending
-    const handleReturnToPending = async (adId) => {
-      console.log("بدأ تنفيذ handleReturnToPending", adId);
-      const adRef = doc(db, 'clientAversment', adId);
-      const adSnap = await getDoc(adRef);
-      if (!adSnap.exists()) {
-          throw new Error("الإعلان غير موجود");
-      }
-      const adData = adSnap.data();
-      const userId = adData.userId;
-      if (!userId) {
-        console.error("لا يوجد userId لهذا الإعلان:", adId, adData);
-        return;
-      }
-      try {
-          await dispatch(returnHomepageAdToPending(adId)).unwrap();
-          setSnackbar({ open: true, message: "تم إرجاع الإعلان لحالة المراجعة!", severity: "info" });
-          ///////////////////////////////////////////////////////////////////////
-          try {
-            const notification = new Notification({
-                receiver_id: userId,
-                title: "إعلانك في حالة المراجعة",
-                body: "تم إرجاع إعلانك إلى حالة المراجعة لإعادة التقييم.",
-                type: "info",
-                link: `/`,
-            });
-            await notification.send();
-            console.log("تم حفظ الإشعار في فايربيز بنجاح:", notification);
-          } catch (err) {
-            console.error("Notification error (return to pending):", err);
-          }
-          /////////////////////////////////////////////////////////////////////
-      } catch (error) {
-          setSnackbar({ open: true, message: "فشل إرجاع الإعلان: " + (error.message || "خطأ غير معروف"), severity: "error" });
-          console.error("Error returning ad to pending:", error);
-      }
-    };
+// Handle activate ad
+const handleActivateAd = async (adId, days = 30, db, setSnackbar) => {
+  console.log("[DEBUG] تم الضغط على زر تفعيل الإعلان", adId, days);
+  
+  try {
+    // استرجاع الإعلان من ClientAdvertisements
+    const adRef = doc(db, 'ClientAdvertisements', adId);
+    const adSnap = await getDoc(adRef);
+    
+    if (!adSnap.exists()) {
+      console.error("[DEBUG] الإعلان غير موجود في ClientAdvertisements:", adId);
+      setSnackbar({
+        open: true,
+        message: "الإعلان غير موجود!",
+        severity: "error",
+      });
+      return;
+    }
 
-    // Handle activation menu
-    const handleActivationMenuOpen = (event, ad) => {
-        setActivationMenuAnchor(event.currentTarget);
-        setSelectedAdForActivation(ad);
-    };
+    const adData = adSnap.data();
+    const userId = adData.userId;
+    console.log("[DEBUG] userId الخاص بالإعلان:", userId);
+    
+    if (!userId) {
+      console.error("[DEBUG] لا يوجد userId لهذا الإعلان:", adId, adData);
+      setSnackbar({
+        open: true,
+        message: "لا يمكن إرسال الإشعار: المستخدم غير محدد!",
+        severity: "error",
+      });
+      return;
+    }
+
+    // تفعيل الإعلان باستخدام الكلاس
+    const ad = new ClientAdvertisement(adData);
+    await ad.adsActivation(days);
+    
+    // إرسال إشعار التفعيل
+    const notification = new Notification({
+      receiver_id: userId,
+      title: "تم تفعيل إعلانك",
+      body: `إعلانك "${adData.title || 'إعلان بدون عنوان'}" الآن نشط وسيظهر لمدة ${days} يوم!`,
+      type: "success",
+      link: `/detailsForClient/${adId}`,
+    });
+    await notification.send();
+    console.log("[DEBUG] تم حفظ إشعار التفعيل في فايربيز بنجاح:", notification);
+    
+    setSnackbar({
+      open: true,
+      message: `تم تفعيل الإعلان لمدة ${days} يوم!`,
+      severity: "success",
+    });
+  } catch (error) {
+    console.error("[DEBUG] خطأ أثناء تفعيل الإعلان:", error);
+    setSnackbar({
+      open: true,
+      message: "فشل تفعيل الإعلان: " + (error.message || "خطأ غير معروف"),
+      severity: "error",
+    });
+  }
+};
+
+// Handle deactivate ad
+const handleDeactivateAd = async (adId, db, setSnackbar) => {
+  console.log("[DEBUG] تم الضغط على زر إلغاء تفعيل الإعلان", adId);
+  
+  try {
+    // استرجاع الإعلان من ClientAdvertisements
+    const adRef = doc(db, 'ClientAdvertisements', adId);
+    const adSnap = await getDoc(adRef);
+    
+    if (!adSnap.exists()) {
+      console.error("[DEBUG] الإعلان غير موجود في ClientAdvertisements:", adId);
+      setSnackbar({
+        open: true,
+        message: "الإعلان غير موجود!",
+        severity: "error",
+      });
+      return;
+    }
+
+    const adData = adSnap.data();
+    const userId = adData.userId;
+    console.log("[DEBUG] userId الخاص بالإعلان:", userId);
+    
+    if (!userId) {
+      console.error("[DEBUG] لا يوجد userId لهذا الإعلان:", adId, adData);
+      setSnackbar({
+        open: true,
+        message: "لا يمكن إرسال الإشعار: المستخدم غير محدد!",
+        severity: "error",
+      });
+      return;
+    }
+
+    // إلغاء تفعيل الإعلان باستخدام الكلاس
+    const ad = new ClientAdvertisement(adData);
+    await ad.removeAds();
+    
+    // إرسال إشعار إلغاء التفعيل
+    const notification = new Notification({
+      receiver_id: userId,
+      title: "تم إلغاء تفعيل إعلانك",
+      body: `إعلانك "${adData.title || 'إعلان بدون عنوان'}" لم يعد نشطًا على الصفحة الرئيسية.`,
+      type: "info",
+      link: `/`,
+    });
+    await notification.send();
+    console.log("[DEBUG] تم حفظ إشعار إلغاء التفعيل في فايربيز بنجاح:", notification);
+    
+    setSnackbar({
+      open: true,
+      message: "تم إلغاء تفعيل الإعلان!",
+      severity: "info",
+    });
+  } catch (error) {
+    console.error("[DEBUG] خطأ أثناء إلغاء تفعيل الإعلان:", error);
+    setSnackbar({
+      open: true,
+      message: "فشل إلغاء تفعيل الإعلان: " + (error.message || "خطأ غير معروف"),
+      severity: "error",
+    });
+  }
+};
+
+// Handle return to pending
+const handleReturnToPending = async (adId, db, setSnackbar) => {
+  console.log("[DEBUG] تم الضغط على زر إرجاع الإعلان للمراجعة", adId);
+  
+  try {
+    // استرجاع الإعلان من ClientAdvertisements
+    const adRef = doc(db, 'ClientAdvertisements', adId);
+    const adSnap = await getDoc(adRef);
+    if (!adSnap.exists()) {
+      console.error("[DEBUG] الإعلان غير موجود في ClientAdvertisements:", adId);
+      setSnackbar({
+        open: true,
+        message: "الإعلان غير موجود!",
+        severity: "error",
+      });
+      return;
+    }
+    const adData = adSnap.data();
+    const userId = adData.userId;
+    console.log("[DEBUG] userId الخاص بالإعلان:", userId);  
+    if (!userId) {
+      console.error("[DEBUG] لا يوجد userId لهذا الإعلان:", adId, adData);
+      setSnackbar({
+        open: true,
+        message: "لا يمكن إرسال الإشعار: المستخدم غير محدد!",
+        severity: "error",
+      });
+      return;
+    }
+
+    // إرجاع الإعلان لحالة المراجعة باستخدام الكلاس
+    const ad = new ClientAdvertisement(adData);
+    await ad.returnToPending();
+    
+    setSnackbar({
+      open: true,
+      message: "تم إرجاع الإعلان لحالة المراجعة!",
+      severity: "info",
+    });
+    
+    console.log("[DEBUG] تم إرجاع الإعلان للمراجعة بنجاح:", adId);
+  } catch (error) {
+    console.error("[DEBUG] خطأ أثناء إرجاع الإعلان للمراجعة:", error);
+    setSnackbar({
+      open: true,
+      message: "فشل إرجاع الإعلان: " + (error.message || "خطأ غير معروف"),
+      severity: "error",
+    });
+  }
+};
 
     const handleActivationMenuClose = () => {
         setActivationMenuAnchor(null);
@@ -2378,9 +2477,9 @@ function Mainadvertisment(props) {
                         </Typography>
                     </Box>
                 ) : (
-                    <List>
+                <List>
                         {filteredAds.map((ad) => (
-                            <ListItem
+                        <ListItem
                                 key={ad.id}
                                 sx={{
                                     mb: 2,
@@ -2434,7 +2533,7 @@ function Mainadvertisment(props) {
                                     </Box>
 
                                     {/* Admin Actions */}
-                                    <Box sx={{ display: 'flex', gap: 1, flexDirection: 'row-reverse' }}>
+                                <Box sx={{ display: 'flex', gap: 1, flexDirection: 'row-reverse' }}>
                                         {/* Approve/Reject buttons for pending ads */}
                                         {ad.reviewStatus === 'pending' && (
                                             <>
@@ -2495,7 +2594,7 @@ function Mainadvertisment(props) {
                                         )}
 
                                         {/* Edit button */}
-                                        <Tooltip title="تعديل">
+                                    <Tooltip title="تعديل">
                                             <IconButton
                                                 onClick={() => {
                                                     setSelectedAd(ad);
@@ -2504,11 +2603,11 @@ function Mainadvertisment(props) {
                                                 sx={{ color: 'primary.main' }}
                                             >
                                                 <EditIcon />
-                                            </IconButton>
-                                        </Tooltip>
+                                        </IconButton>
+                                    </Tooltip>
 
                                         {/* Delete button */}
-                                        <Tooltip title="حذف">
+                                    <Tooltip title="حذف">
                                             <IconButton
                                                 onClick={() => {
                                                     setSelectedAd(ad);
@@ -2517,9 +2616,9 @@ function Mainadvertisment(props) {
                                                 sx={{ color: 'error.main' }}
                                             >
                                                 <DeleteIcon />
-                                            </IconButton>
-                                        </Tooltip>
-                                    </Box>
+                                        </IconButton>
+                                    </Tooltip>
+                                </Box>
                                 </Box>
                             </ListItem>
                         ))}
@@ -3433,16 +3532,16 @@ function ClientAdvertismentPage() {
                         {ad.reviewStatus === 'pending' && (
                             <>
                                 <Tooltip title="الموافقة على الإعلان">
-                                    <IconButton
+                        <IconButton
                                         aria-label="approve"
-                                        size="small"
+                            size="small"
                                         onClick={() => handleApproveClick(ad)}
                                         color="success"
-                                        disabled={loading === 'pending'}
-                                    >
+                            disabled={loading === 'pending'}
+                        >
                                         <CheckCircleOutlineIcon fontSize="small" />
-                                    </IconButton>
-                                </Tooltip>
+                        </IconButton>
+                    </Tooltip>
                                 <Tooltip title="رفض الإعلان">
                                     <IconButton
                                         aria-label="reject"
@@ -3503,37 +3602,37 @@ function ClientAdvertismentPage() {
                         )}
 
                         {/* Status Toggle */}
-                        <Tooltip
-                            title={
+                    <Tooltip
+                        title={
                                 ad.status === 'تحت العرض'
-                                    ? "إنهاء العرض"
+                                ? "إنهاء العرض"
                                     : ad.status === 'منتهي'
-                                        ? "إعادة العرض"
+                                    ? "إعادة العرض"
                                         : "تغيير الحالة"
-                            }
-                        >
-                            <IconButton
-                                aria-label="toggle status"
-                                size="small"
+                        }
+                    >
+                        <IconButton
+                            aria-label="toggle status"
+                            size="small"
                                 onClick={() => handleToggleAdStatus(ad)}
-                                color={
+                            color={
                                     ad.status === 'تحت العرض'
-                                        ? 'warning'
+                                    ? 'warning'
                                         : ad.status === 'منتهي'
-                                            ? 'success'
+                                        ? 'success'
                                             : 'info'
-                                }
-                                disabled={loading === 'pending'}
-                            >
+                            }
+                            disabled={loading === 'pending'}
+                        >
                                 {ad.status === 'تحت العرض' ? (
-                                    <BlockIcon fontSize="small" />
+                                <BlockIcon fontSize="small" />
                                 ) : ad.status === 'منتهي' ? (
-                                    <CheckCircleOutlineIcon fontSize="small" />
-                                ) : (
+                                <CheckCircleOutlineIcon fontSize="small" />
+                            ) : (
                                     <AutorenewIcon fontSize="small" />
-                                )}
-                            </IconButton>
-                        </Tooltip>
+                            )}
+                        </IconButton>
+                    </Tooltip>
 
                         {/* Edit */}
                         <Tooltip title="تعديل الإعلان">
@@ -3548,18 +3647,18 @@ function ClientAdvertismentPage() {
                         </Tooltip>
 
                         {/* Delete */}
-                        <Tooltip title="حذف الإعلان">
-                            <IconButton
-                                aria-label="delete"
-                                size="small"
+                    <Tooltip title="حذف الإعلان">
+                        <IconButton
+                            aria-label="delete"
+                            size="small"
                                 onClick={() => handleDeleteClick(ad)}
-                                color="error"
-                                disabled={loading === 'pending'}
-                            >
-                                <DeleteIcon fontSize="small" />
-                            </IconButton>
-                        </Tooltip>
-                    </Box>
+                            color="error"
+                            disabled={loading === 'pending'}
+                        >
+                            <DeleteIcon fontSize="small" />
+                        </IconButton>
+                    </Tooltip>
+                </Box>
                 );
             },
         },
@@ -3595,9 +3694,9 @@ function ClientAdvertismentPage() {
             >
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                     <Typography variant="h6" color="text.secondary">
-                        قائمة الإعلانات الحالية
-                    </Typography>
-
+                    قائمة الإعلانات الحالية
+                </Typography>
+                    
                     {/* Filter Controls */}
                     <Box sx={{ display: 'flex', gap: 2 }}>
                         <FormControl size="small" sx={{ minWidth: 150 }}>

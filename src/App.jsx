@@ -24,8 +24,8 @@ import ModernRealEstateForm from "./pages/ModernRealEstateForm";
 import InboxChats from "./pages/InboxChats";
 import ChatBox from "./pages/privechat";
 import Profile from "./componenents/profile";
-import { Snackbar, Alert, Button } from '@mui/material';
-import Notification from "./FireBase/MessageAndNotification/Notification";
+import { Snackbar, Alert, Button, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
+import NotificationService from "./FireBase/MessageAndNotification/Notification";
 import SearchPage from "./pages/SearchPage";
 import ContactUs from "./contactUs/ContactUs";
 import { Navigate } from 'react-router-dom';
@@ -43,17 +43,37 @@ import { onMessage, messaging, auth } from "./FireBase/firebaseConfig";
 import { requestPermissionAndSaveToken } from "./FireBase/MessageAndNotification/fcmHelper";
 import { onAuthStateChanged } from "firebase/auth";
 import CloseIcon from '@mui/icons-material/Close';
+import RegistrationSuccess from "./LoginAndRegister/componentsLR/RegistrationSuccess";
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 function App() {
   const [notifications, setNotifications] = useState([]);
   const [openSnackbar, setOpenSnackbar] = useState(false);
   const [currentNotification, setCurrentNotification] = useState(null);
   const [currentUser, setCurrentUser] = useState(null); // استخدام useState
   const navigate = useNavigate();
+  const [soundEnabled, setSoundEnabled] = useState(false);
+  const [openPermissionDialog, setOpenPermissionDialog] = useState(false);
+
   ////////////////////////////////////////////////
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-
+  ////////////////////////////////////////////////////
+  const notificationSound = new Audio('/sounds/not.mp3');
+  ///////////////////////////////////////////////////
   useEffect(() => {
+    ///////////////////////////////
+    const checkNotificationPermission = () => {
+      if ("Notification" in window && Notification.permission !== "granted") {
+  setOpenPermissionDialog(true);
+} else if (Notification.permission === "granted") {
+  setSoundEnabled(true);
+}
+      }
+    
+
+    checkNotificationPermission();
+    ////////////////////////////////
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       console.log("Auth state changed:", user ? user.uid : "No user");
       setUser(user);
@@ -72,6 +92,11 @@ function App() {
         Notification.permission === "granted"
       ) {
         new Notification(title, { body });
+        if (soundEnabled) {
+          notificationSound.play().catch((error) => {
+            console.error("خطأ في تشغيل صوت الإشعار:", error);
+          });
+        }
       }
     });
 
@@ -86,19 +111,43 @@ function App() {
   }, []);
   useEffect(() => {
     if (currentUser) {
-      const unsubscribe = Notification.subscribeByUser(currentUser.uid, (notifs) => {
+      const unsubscribe = NotificationService.subscribeByUser(currentUser.uid, (notifs) => {
         const newNotifs = notifs.filter(n => !n.is_read);
         if (newNotifs.length > notifications.length) {
           const latestNotif = newNotifs[newNotifs.length - 1];
           setCurrentNotification(latestNotif);
           setOpenSnackbar(true);
+          if (soundEnabled) {
+            notificationSound.play().catch((error) => {
+              console.error("خطأ في تشغيل صوت الإشعار:", error);
+            });
+          }
         }
         setNotifications(newNotifs);
       });
 
       return () => unsubscribe();
     }
-  }, [currentUser]);
+  }, [currentUser,]);
+  ///////////
+  const handleEnableNotifications = async () => {
+    if ("Notification" in window && Notification.permission !== "granted") {
+      const permission = await Notification.requestPermission();
+      if (permission === "granted") {
+        setSoundEnabled(true);
+        toast.dismiss(); 
+        notificationSound.play().catch((error) => {
+          console.error("خطأ في تشغيل صوت الإشعار:", error);
+        });
+      }
+    } else {
+      setSoundEnabled(true);
+      toast.dismiss(); 
+      notificationSound.play().catch((error) => {
+        console.error("خطأ في تشغيل صوت الإشعار:", error);
+      });
+    }
+  };//////////////
   const handleOpenChat = () => {
     if (currentNotification?.link) {
       const userId = currentNotification.link.split('/privateChat/')[1];
@@ -111,11 +160,13 @@ function App() {
 
   const handleCloseSnackbar = () => {
     setOpenSnackbar(false);
-    if (currentNotification) {
-      Notification.markAsRead(currentNotification.id);
-    }
   };
-
+const handleMarkAsRead = async () => {
+  setOpenSnackbar(false);
+    if (currentNotification) {
+      NotificationService.markAsRead(currentNotification.id);
+    }
+};
   //////////////////////////////
 
 
@@ -124,6 +175,7 @@ function App() {
   return (
     <>
     <AuthSync />
+    <ToastContainer/>
       <Layout>
         <Routes>
           <Route path="/" element={<Home />} />
@@ -133,6 +185,7 @@ function App() {
             {/* صفحات الدخول والتسجيل */}
             <Route path="login" element={<LoginRegister />} />
             <Route path="register" element={<LoginRegister />} />
+            <Route path="/registration-success" element={<RegistrationSuccess />} />
             {/* صفحات عامة */}
             <Route path="/about" element={<AboutUs />} />
             <Route path="/contact" element={<ContactUs />} />
@@ -186,19 +239,23 @@ function App() {
           {/* <Footer /> */}
         </Layout>
       <Snackbar
+      autoHideDuration={10000}
         open={openSnackbar}
-        autoHideDuration={6000}
         onClose={handleCloseSnackbar}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+       
       >
         <Alert
           severity="info"
           action={
             <>
-              <Button color="inherit" size="small" onClick={handleOpenChat}>
+              <Button color="inherit" size="small" sx={{fontWeight:'bold',fontSize:'18px'}} onClick={handleOpenChat}>
                 فتح
               </Button>
-              <Button color="inherit" size="small" onClick={handleCloseSnackbar}>
+                 <Button color="inherit" size="small" sx={{fontWeight:'bold',fontSize:'18px'}} onClick={handleMarkAsRead}>
+          تحديد كمقروء
+        </Button>
+              <Button color="inherit" size="small" sx={{fontWeight:'bold',fontSize:'18px'}} onClick={handleCloseSnackbar}>
                 إغلاق
               </Button>
             </>
@@ -225,6 +282,32 @@ function App() {
           {currentNotification?.body}
         </Alert>
       </Snackbar>
+  <Dialog open={openPermissionDialog} onClose={() => setOpenPermissionDialog(false)}>
+  <DialogTitle>🔔 تفعيل إشعارات الصوت</DialogTitle>
+  <DialogContent>
+    هل ترغب في تفعيل الإشعارات حتى يتم إعلامك بالتحديثات؟
+  </DialogContent>
+  <DialogActions>
+    <Button onClick={() => setOpenPermissionDialog(false)} color="error">
+      لا، شكرًا
+    </Button>
+    <Button
+      onClick={async () => {
+        const permission = await Notification.requestPermission();
+        if (permission === "granted") {
+          setSoundEnabled(true);
+          setOpenPermissionDialog(false);
+          notificationSound.play().catch(err => console.error("فشل في تشغيل الصوت:", err));
+        }
+      }}
+      color="primary"
+      autoFocus
+    >
+      نعم، فعّل الإشعارات
+    </Button>
+  </DialogActions>
+</Dialog>
+
     </>
   );
 }

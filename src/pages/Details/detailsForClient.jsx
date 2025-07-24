@@ -426,10 +426,12 @@ function DetailsForClient() {
               border: '1px solid #e0e0e0',
             }}
           >
-            <MapPicker
-              lat={clientAds.latitude}
-              lng={clientAds.longitude}
-            />
+          <MapPicker
+  lat={clientAds.latitude}
+  lng={clientAds.longitude}
+  onLocationSelect={(location) => {
+  }}
+/>
           </Box>
 
 
