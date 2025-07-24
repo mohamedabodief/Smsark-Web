@@ -21,7 +21,6 @@ import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import {
   WhatsApp as WhatsAppIcon,
   FavoriteBorder as FavoriteBorderIcon,
-  BookmarkBorder as BookmarkBorderIcon,
   OutlinedFlag as OutlinedFlagIcon,
   ShareOutlined as ShareOutlinedIcon
 } from '@mui/icons-material';
@@ -33,6 +32,7 @@ import PhoneIcon from '@mui/icons-material/Phone';
 import { db, auth } from '../../FireBase/firebaseConfig';
 import { doc, getDoc } from 'firebase/firestore';
 import Notification from '../../FireBase/MessageAndNotification/Notification';
+
 function DetailsForClient() {
   const currentUser = auth.currentUser?.uid;
   const { id } = useParams();
@@ -40,30 +40,30 @@ function DetailsForClient() {
   const [mainImage, setMainImage] = useState('');
   const [showFull, setShowFull] = useState(false);
   const [open, setOpen] = useState(false);
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState('');
   const navigate = useNavigate();
 
-  // دالة لجلب اسم المستلم من مجموعة users
   const getReceiverName = async (userId) => {
     try {
-      const userDoc = await getDoc(doc(db, "users", userId));
+      const userDoc = await getDoc(doc(db, 'users', userId));
       if (userDoc.exists()) {
         const userData = userDoc.data();
-        console.log(`Receiver data for ${userId}:`, userData);
-        return userData.cli_name || "Unknown User"; // تغيير من name إلى cli_name
+        console.log(`[DEBUG] Receiver data for ${userId}:`, userData);
+        return userData.cli_name || 'Unknown User';
       }
-      console.log(`No user document found for ${userId}`);
-      return "Unknown User";
+      console.log(`[DEBUG] No user document found for ${userId}`);
+      return 'Unknown User';
     } catch (err) {
-      console.error(`Error fetching receiver name for ${userId}:`, err);
-      return "Unknown User";
+      console.error(`[DEBUG] Error fetching receiver name for ${userId}:`, err);
+      return 'Unknown User';
     }
   };
-  // جلب بيانات الإعلان
+
   useEffect(() => {
     const fetchAd = async () => {
       const ad = await ClientAdvertisement.getById(id);
       if (ad) {
+        console.log('[DEBUG] clientAds:', ad);
         setClientAds(ad);
         if (Array.isArray(ad.images) && ad.images.length > 0) {
           setMainImage(ad.images[0]);
@@ -73,7 +73,6 @@ function DetailsForClient() {
     if (id) fetchAd();
   }, [id]);
 
-  // إرسال الرسالة
   const handleSend = async () => {
     if (!message.trim() || !currentUser || !clientAds?.userId) return;
 
@@ -89,9 +88,8 @@ function DetailsForClient() {
         message_type: 'text',
       });
 
-      console.log('Sending message to:', { receiver_id: clientAds.userId, reciverName: receiverName });
+      console.log('[DEBUG] Sending message to:', { receiver_id: clientAds.userId, reciverName: receiverName });
       await newMessage.send();
-
 
       const notification = new Notification({
         receiver_id: clientAds.userId,
@@ -102,25 +100,26 @@ function DetailsForClient() {
       });
       await notification.send();
 
-      alert("تم إرسال الرسالة!");
-      setMessage("");
+      alert('تم إرسال الرسالة!');
+      setMessage('');
       setOpen(false);
     } catch (error) {
-      console.error("حدث خطأ أثناء الإرسال:", error);
-      alert("فشل في إرسال الرسالة!");
+      console.error('[DEBUG] خطأ أثناء الإرسال:', error);
+      alert('فشل في إرسال الرسالة!');
     }
   };
+
   const handleShare = async () => {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `${clientAds.title}`,
-          text: `${clientAds.description}`,
+          title: clientAds?.title || 'إعلان عقاري',
+          text: clientAds?.description || 'تحقق من هذا الإعلان العقاري!',
           url: window.location.href,
         });
-        console.log('تمت المشاركة بنجاح');
+        console.log('[DEBUG] تمت المشاركة بنجاح');
       } catch (error) {
-        console.error('حدث خطأ أثناء المشاركة:', error);
+        console.error('[DEBUG] حدث خطأ أثناء المشاركة:', error);
       }
     } else {
       alert('المتصفح لا يدعم خاصية المشاركة.');
@@ -153,7 +152,6 @@ function DetailsForClient() {
 
   return (
     <Container maxWidth="lg" dir="rtl">
-      {/* زر التواصل مع البائع */}
       <Box
         onClick={() => setOpen(true)}
         sx={{
@@ -182,7 +180,7 @@ function DetailsForClient() {
         </Typography>
       </Box>
       <Dialog open={open} fullWidth dir='rtl' onClose={() => setOpen(false)}>
-        <DialogTitle>تواصل مع البائع بكل سهوله</DialogTitle>
+        <DialogTitle>تواصل مع البائع بكل سهولة</DialogTitle>
         <DialogContent>
           <TextField
             autoFocus
@@ -204,8 +202,7 @@ function DetailsForClient() {
         </DialogActions>
       </Dialog>
 
-      {/* أزرار التفاعل + اسم الناشر */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: '100px', flexDirection: "row-reverse" }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: '100px', flexDirection: 'row-reverse' }}>
         <Box sx={{ mb: 5, display: 'flex', gap: 4 }}>
           <Box sx={{ display: 'flex', gap: 1, color: '#807AA6' }}>
             <Button><Typography fontWeight="bold">حفظ</Typography><FavoriteBorderIcon /></Button>
@@ -217,10 +214,8 @@ function DetailsForClient() {
             <Button onClick={handleShare}><Typography fontWeight="bold">مشاركة</Typography><ShareOutlinedIcon /></Button>
           </Box>
         </Box>
-
       </Box>
 
-      {/* الصور الرئيسية والصغيرة */}
       <Box sx={{
         display: 'flex',
         flexDirection: { xs: 'column', md: 'column', lg: 'row' },
@@ -268,14 +263,7 @@ function DetailsForClient() {
         </Box>
       </Box>
 
-
-
-
-
-      {/* بيانات الإعلان */}
       <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 4, alignItems: 'flex-start', mb: 4 }}>
-
-        {/* تفاصيل الإعلان */}
         <Box width={{ xs: '100%', md: '70%' }} sx={{ textAlign: 'right', mt: 2 }}>
           <Typography variant="h4" fontWeight="bold" sx={{ color: '#6E00FE', mb: 3 }}>{clientAds.title}</Typography>
           {clientAds.adPackage && (
@@ -283,7 +271,9 @@ function DetailsForClient() {
               الباقة المختارة: {clientAds.adPackage === 1 ? 'باقة الأساس' : clientAds.adPackage === 2 ? 'باقة النخبة' : clientAds.adPackage === 3 ? 'باقة التميز' : clientAds.adPackage}
             </Typography>
           )}
-          <Typography sx={{ fontSize: '18px', lineHeight: 1.8, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: showFull ? 'none' : 4, WebkitBoxOrient: 'vertical', mb: 3, color: '#333' }}>{clientAds.description || 'لا يوجد وصف'}</Typography>
+          <Typography sx={{ fontSize: '18px', lineHeight: 1.8, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: showFull ? 'none' : 4, WebkitBoxOrient: 'vertical', mb: 3, color: '#333' }}>
+            {clientAds.description || 'لا يوجد وصف'}
+          </Typography>
           {clientAds.description?.length > 100 && (
             <Button
               onClick={toggleShow}
@@ -296,35 +286,35 @@ function DetailsForClient() {
           <Grid container spacing={2}>
             <Grid item xs={12} sm={6}>
               <Typography variant="body2" color="text.secondary">المحافظة</Typography>
-              <Typography variant="body1" fontWeight="bold">{clientAds.governorate}</Typography>
+              <Typography variant="body1" fontWeight="bold">{clientAds.governorate || 'غير محدد'}</Typography>
             </Grid>
             <Grid item xs={12} sm={6}>
               <Typography variant="body2" color="text.secondary">المدينة</Typography>
-              <Typography variant="body1" fontWeight="bold">{clientAds.city}</Typography>
+              <Typography variant="body1" fontWeight="bold">{clientAds.city || 'غير محدد'}</Typography>
             </Grid>
             <Grid item xs={12} sm={6}>
               <Typography variant="body2" color="text.secondary">العنوان</Typography>
-              <Typography variant="body1" fontWeight="bold">{clientAds.address}</Typography>
+              <Typography variant="body1" fontWeight="bold">{clientAds.address || 'غير محدد'}</Typography>
             </Grid>
             <Grid item xs={12} sm={6}>
               <Typography variant="body2" color="text.secondary">المساحة</Typography>
-              <Typography variant="body1" fontWeight="bold">{clientAds.area} م²</Typography>
+              <Typography variant="body1" fontWeight="bold">{clientAds.area ? `${clientAds.area} م²` : 'غير محدد'}</Typography>
             </Grid>
             <Grid item xs={12} sm={6}>
               <Typography variant="body2" color="text.secondary">السعر</Typography>
-              <Typography variant="body1" fontWeight="bold">{clientAds.price} ج.م</Typography>
+              <Typography variant="body1" fontWeight="bold">{clientAds.price ? `${clientAds.price} ج.م` : 'غير محدد'}</Typography>
             </Grid>
             <Grid item xs={12} sm={6}>
               <Typography variant="body2" color="text.secondary">تاريخ البناء</Typography>
-              <Typography variant="body1" fontWeight="bold">{clientAds.date_of_building}</Typography>
+              <Typography variant="body1" fontWeight="bold">{clientAds.date_of_building || 'غير محدد'}</Typography>
             </Grid>
             <Grid item xs={12} sm={6}>
               <Typography variant="body2" color="text.secondary">نوع الإعلان</Typography>
-              <Typography variant="body1" fontWeight="bold">{clientAds.ad_type}</Typography>
+              <Typography variant="body1" fontWeight="bold">{clientAds.ad_type || 'غير محدد'}</Typography>
             </Grid>
             <Grid item xs={12} sm={6}>
               <Typography variant="body2" color="text.secondary">حالة الإعلان</Typography>
-              <Typography variant="body1" fontWeight="bold">{clientAds.ad_status}</Typography>
+              <Typography variant="body1" fontWeight="bold">{clientAds.ad_status || 'غير محدد'}</Typography>
             </Grid>
             {clientAds.adPackage && (
               <Grid item xs={12} sm={6}>
@@ -335,17 +325,15 @@ function DetailsForClient() {
               </Grid>
             )}
           </Grid>
-
         </Box>
 
-        {/* معلومات الناشر */}
         <Box width={{ xs: '100%', md: '30%' }} sx={{ textAlign: 'center', mt: 2 }}>
           <Box sx={{ border: '1px solid #E7E5F4', borderRadius: '20px', backgroundColor: '#F7F7F7', p: 3 }}>
-            <Avatar alt={`${clientAds.user_name}`} src="/static/images/avatar/1.jpg" sx={{ width: 60, height: 60, mx: 'auto', mb: 2 }} />
-            <Typography sx={{ fontSize: '20px', fontWeight: 'bold' }}>نشر بواسطة: {clientAds.user_name}</Typography>
+            <Avatar alt={clientAds.user_name} src="/static/images/avatar/1.jpg" sx={{ width: 60, height: 60, mx: 'auto', mb: 2 }} />
+            <Typography sx={{ fontSize: '20px', fontWeight: 'bold' }}>نشر بواسطة: {clientAds.user_name || 'غير محدد'}</Typography>
             <Divider sx={{ my: 2 }} />
             <Typography variant="body2" color="text.secondary">رقم الهاتف</Typography>
-            <Typography variant="body1" fontWeight="bold" sx={{ mb: 2 }}>{clientAds.phone}</Typography>
+            <Typography variant="body1" fontWeight="bold" sx={{ mb: 2 }}>{clientAds.phone || 'غير محدد'}</Typography>
             <Button
               variant="contained"
               startIcon={<PhoneIcon />}
@@ -385,13 +373,10 @@ function DetailsForClient() {
             </Button>
           </Box>
         </Box>
-
       </Box>
 
       <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 4, alignItems: 'flex-start', mb: 4 }}>
-
         <Box width={{ xs: '100%', md: '60%' }} sx={{ textAlign: 'right', mt: 2 }}>
-
           <Typography sx={{ fontWeight: 'bold', width: '50%' }} variant="h5" dir='rtl'>
             العنوان
           </Typography>
@@ -408,11 +393,10 @@ function DetailsForClient() {
             {clientAds.address && <Typography fontWeight="bold">{clientAds.address}</Typography>}
           </Breadcrumbs>
           <Box sx={{ backgroundColor: '#F7F7FC', display: 'flex', gap: '30px', height: '20%', width: '100%', padding: '20px', borderRadius: '10px' }}>
-            <Avatar alt={`${clientAds.user_name}`} src="/static/images/avatar/1.jpg" />
-            <Typography sx={{ fontSize: '20px' }}>نشر بواسطة: {clientAds.user_name}</Typography>
+            <Avatar alt={clientAds.user_name} src="/static/images/avatar/1.jpg" />
+            <Typography sx={{ fontSize: '20px' }}>نشر بواسطة: {clientAds.user_name || 'غير محدد'}</Typography>
           </Box>
         </Box>
-
 
         <Box width={{ xs: '100%', md: '40%' }} sx={{ textAlign: 'right', mt: 2 }}>
           <Box
@@ -429,18 +413,15 @@ function DetailsForClient() {
             <MapPicker
               lat={clientAds.latitude}
               lng={clientAds.longitude}
+              onLocationSelect={(location) => {
+                console.log('[DEBUG] Location selected in DetailsForClient:', location);
+              }}
             />
           </Box>
-
-
         </Box>
-
-
       </Box>
-      {/* زر التعديل للمالك */}
 
       <Box sx={{ textAlign: 'right', mt: 4 }}>
-
         {isOwner && (
           <Button
             variant="contained"
@@ -451,16 +432,15 @@ function DetailsForClient() {
             تعديل الإعلان
           </Button>
         )}
+        <Button
+          variant="contained"
+          color="primary"
+          sx={{ borderRadius: '15px', fontWeight: 'bold', px: 5, py: 1.5, mr: 2, mt: 1, mb: 2, width: '20%', justifyContent: 'center' }}
+          onClick={() => navigate('/AddAdvertisement')}
+        >
+          إضافة إعلان جديد
+        </Button>
       </Box>
-      {/* زر إضافة إعلان جديد */}
-      <Button
-        variant="contained"
-        color="primary"
-        sx={{ borderRadius: '15px', fontWeight: 'bold', px: 5, py: 1.5, mr: 2, mt: 1, mb: 2, width: '20%', justifyContent: 'center' }}
-        onClick={() => navigate('/AddAdvertisement')}
-      >
-        اضف اعلانك الان
-      </Button>
     </Container>
   );
 }

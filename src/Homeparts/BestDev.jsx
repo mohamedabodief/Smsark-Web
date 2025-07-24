@@ -110,8 +110,8 @@ export default function BestDev() {
                       {item.price_start_from?.toLocaleString()} - {item.price_end_to?.toLocaleString()} ج.م
                     </Typography>
                     <Typography variant="subtitle1">{item.developer_name}</Typography>
-                    <Typography variant="body2" color="text.secondary">{item.location}</Typography>
-                    <Typography variant="body2" mt={1}>{item.description}</Typography>
+                    <Typography variant="body2" color="text.secondary">{typeof item.location === 'object' ? (item.location.full || JSON.stringify(item.location)) : item.location}</Typography>
+                    <Typography variant="body2" mt={1}>{typeof item.description === 'object' ? JSON.stringify(item.description) : item.description}</Typography>
                   </CardContent>
                 </Card>
 

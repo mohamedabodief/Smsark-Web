@@ -1,35 +1,51 @@
-import React, { useState, useEffect } from 'react';
-import useReverseGeocoding from './useReverseGeocoding'
-import MapDisplay from './MapDisplay'
+import React, { useState, useEffect, useRef } from 'react';
+import MapDisplay from './MapDisplay';
 import { Box } from '@mui/material';
-export default function MapPicker({ lat, lng, onAddressChange }) {
+
+export default function MapPicker({ lat, lng, onLocationSelect }) {
   const [location, setLocation] = useState(null);
-  const address = useReverseGeocoding(location);
+  const prevLocation = useRef(null);
 
   useEffect(() => {
+    console.log('[DEBUG] MapPicker props:', { lat, lng, onLocationSelect });
     if (lat && lng) {
+      console.log('[DEBUG] تعيين الإحداثيات من الـ props:', { lat, lng });
       setLocation({ lat, lng });
     } else {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
-          setLocation({
+          const newLocation = {
             lat: pos.coords.latitude,
             lng: pos.coords.longitude,
-          });
+          };
+          console.log('[DEBUG] موقع المستخدم من geolocation:', newLocation);
+          setLocation(newLocation);
         },
         (err) => {
-          console.warn('Fallback location:', err);
-          setLocation({ lat: 30.0444, lng: 31.2357 });
+          console.warn('[DEBUG] Fallback location:', err);
+          const fallbackLocation = { lat: 30.0444, lng: 31.2357 };
+          setLocation(fallbackLocation);
         }
       );
     }
   }, [lat, lng]);
 
   useEffect(() => {
-    if (address && onAddressChange) {
-      onAddressChange({ ...address, ...location });
+    if (
+      location &&
+      (!prevLocation.current ||
+        prevLocation.current.lat !== location.lat ||
+        prevLocation.current.lng !== location.lng)
+    ) {
+      console.log('[DEBUG] تمرير الإحداثيات إلى onLocationSelect:', location);
+      if (typeof onLocationSelect === 'function') {
+        onLocationSelect(location);
+      } else {
+        console.error('[DEBUG] onLocationSelect ليست دالة:', onLocationSelect);
+      }
+      prevLocation.current = location;
     }
-  }, [address, location]);
+  }, [location, onLocationSelect]);
 
   return (
     <Box sx={{ width: '100%', height: '100%' }}>
@@ -41,4 +57,3 @@ export default function MapPicker({ lat, lng, onAddressChange }) {
     </Box>
   );
 }
-

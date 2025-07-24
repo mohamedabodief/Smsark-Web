@@ -23,7 +23,7 @@ import { useUnreadMessages } from '../context/unreadMessageContext';
 import NotificationList from '../pages/notificationList';
 import Notification from '../FireBase/MessageAndNotification/Notification';
 import { auth } from '../FireBase/firebaseConfig';
-
+import SearchIcon from '@mui/icons-material/Search';
 export default function Nav({ toggleMode }) {
   const [unreadCount, setUnreadCount] = useState(0);
   const [anchorEl, setAnchorEl] = useState(null);
@@ -73,7 +73,9 @@ export default function Nav({ toggleMode }) {
       navigate('/profile');
     }
   };
-
+const toSerachpage=()=>{
+  navigate('/search')
+}
   // const handleClick = (event) => {
   //   setAnchorEl(event.currentTarget);
   // };
@@ -120,6 +122,9 @@ export default function Nav({ toggleMode }) {
           </Typography>
           <Typography variant="button" sx={{ cursor: "pointer" }} onClick={() => navigate('/profile')}>
             الصفحة الشخصية
+          </Typography>
+            <Typography variant="button" sx={{ cursor: "pointer" }} onClick={() => navigate('/search')}>
+            ابحث عن عقارك
           </Typography>
           <Typography variant="button" sx={{ cursor: "pointer" }} onClick={() => navigate('/contact')}>
             تواصل معنا
