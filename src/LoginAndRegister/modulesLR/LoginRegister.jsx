@@ -145,7 +145,7 @@ export default function LoginRegister() {
       text: "تم التسجيل بنجاح! يتم تحويلك...",
       type: "success",
     });
-    navigate("/login", { replace: true });
+    navigate("/registration-success", { replace: true });
   };
 
   return (

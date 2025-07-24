@@ -33,6 +33,12 @@ import PhoneIcon from '@mui/icons-material/Phone';
 import { db, auth } from '../../FireBase/firebaseConfig';
 import { doc, getDoc } from 'firebase/firestore';
 import Notification from '../../FireBase/MessageAndNotification/Notification';
+// أضف هذا الكائن الثابت في أعلى الملف بعد الاستيرادات
+const PACKAGE_INFO = {
+  1: { name: 'باقة الأساس', price: 'مجانا', duration: 7 },
+  2: { name: 'باقة النخبة', price: 50, duration: 14 },
+  3: { name: 'باقة التميز', price: 100, duration: 21 },
+};
 function DetailsForClient() {
   const currentUser = auth.currentUser?.uid;
   const { id } = useParams();
@@ -265,6 +271,30 @@ function DetailsForClient() {
               />
             </Box>
           ))}
+          {/* عرض صورة الريسيت إذا كانت موجودة */}
+          {/* {clientAds?.receipt_image && (
+            <Box
+              sx={{
+                height: { xs: 90, md: 100, lg: 120 },
+                width: { xs: 90, md: 100, lg: 120 },
+                cursor: 'pointer',
+                border: '2px dashed #4caf50',
+                borderRadius: '8px',
+                overflow: 'hidden',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: '#f1fff1',
+                mt: 2
+              }}
+            >
+              <img
+                src={clientAds.receipt_image}
+                alt="إيصال الدفع"
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
+            </Box>
+          )} */}
         </Box>
       </Box>
 
@@ -278,11 +308,34 @@ function DetailsForClient() {
         {/* تفاصيل الإعلان */}
         <Box width={{ xs: '100%', md: '70%' }} sx={{ textAlign: 'right', mt: 2 }}>
           <Typography variant="h4" fontWeight="bold" sx={{ color: '#6E00FE', mb: 3 }}>{clientAds.title}</Typography>
-          {clientAds.adPackage && (
+          {(clientAds.adPackageName || PACKAGE_INFO[String(clientAds.adPackage)]?.name) && (
             <Typography sx={{ fontWeight: 'bold', color: '#1976d2', mb: 2, fontSize: '18px' }}>
-              الباقة المختارة: {clientAds.adPackage === 1 ? 'باقة الأساس' : clientAds.adPackage === 2 ? 'باقة النخبة' : clientAds.adPackage === 3 ? 'باقة التميز' : clientAds.adPackage}
+              الباقة المختارة: {clientAds.adPackageName || PACKAGE_INFO[String(clientAds.adPackage)]?.name}
             </Typography>
           )}
+          {/* {clientAds.receipt_image && (
+            <Box
+              sx={{
+                height: { xs: 90, md: 100, lg: 120 },
+                width: { xs: 90, md: 100, lg: 120 },
+                cursor: 'pointer',
+                border: '2px dashed #4caf50',
+                borderRadius: '8px',
+                overflow: 'hidden',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: '#f1fff1',
+                mt: 2
+              }}
+            >
+              <img
+                src={clientAds.receipt_image}
+                alt="إيصال الدفع"
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
+            </Box>
+          )} */}
           <Typography sx={{ fontSize: '18px', lineHeight: 1.8, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: showFull ? 'none' : 4, WebkitBoxOrient: 'vertical', mb: 3, color: '#333' }}>{clientAds.description || 'لا يوجد وصف'}</Typography>
           {clientAds.description?.length > 100 && (
             <Button
@@ -343,6 +396,7 @@ function DetailsForClient() {
           <Box sx={{ border: '1px solid #E7E5F4', borderRadius: '20px', backgroundColor: '#F7F7F7', p: 3 }}>
             <Avatar alt={`${clientAds.user_name}`} src="/static/images/avatar/1.jpg" sx={{ width: 60, height: 60, mx: 'auto', mb: 2 }} />
             <Typography sx={{ fontSize: '20px', fontWeight: 'bold' }}>نشر بواسطة: {clientAds.user_name}</Typography>
+
             <Divider sx={{ my: 2 }} />
             <Typography variant="body2" color="text.secondary">رقم الهاتف</Typography>
             <Typography variant="body1" fontWeight="bold" sx={{ mb: 2 }}>{clientAds.phone}</Typography>
@@ -437,6 +491,25 @@ function DetailsForClient() {
 
 
       </Box>
+      {/* {clientAds.receipt_image && (
+        <Box
+          sx={{
+            mt: 2,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'right'
+          }}
+        >
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+            إيصال الدفع
+          </Typography>
+          <img
+            src={clientAds.receipt_image}
+            alt="إيصال الدفع"
+            style={{ maxWidth: 180, borderRadius: 8, border: '2px dashed #4caf50' }}
+          />
+        </Box>
+      )} */}
       {/* زر التعديل للمالك */}
 
       <Box sx={{ textAlign: 'right', mt: 4 }}>

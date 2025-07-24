@@ -23,6 +23,13 @@ import { db, auth } from '../firebaseConfig';
 import Notification from '../MessageAndNotification/Notification';
 import User from './User';
 
+// أضف هذا الكائن الثابت بعد الاستيرادات
+const PACKAGE_INFO = {
+  1: { name: 'باقة الأساس', price: 100, duration: 7 },
+  2: { name: 'باقة النخبة', price: 150, duration: 14 },
+  3: { name: 'باقة التميز', price: 200, duration: 21 },
+};
+
 class FinancingAdvertisement {
   #id = null;
 
@@ -30,7 +37,6 @@ class FinancingAdvertisement {
     this.#id = data.id || null;
     this.title = data.title;
     this.description = data.description;
-    this.financing_model = data.financing_model;
     this.images = data.images || [];
     this.phone = data.phone;
     this.start_limit = Number(data.start_limit);
@@ -59,7 +65,20 @@ class FinancingAdvertisement {
   // ✅ إنشاء إعلان جديد + رفع الصور + إيصال الدفع + إشعار الأدمن
   async save(imageFiles = [], receiptFile = null) {
     const colRef = collection(db, 'FinancingAdvertisements');
-    const docRef = await addDoc(colRef, this.#getAdData());
+    // تجهيز معلومات الباقة
+    let adPackageName = null, adPackagePrice = null, adPackageDuration = null;
+    const pkgKey = String(this.adPackage);
+    if (pkgKey && PACKAGE_INFO[pkgKey]) {
+      adPackageName = PACKAGE_INFO[pkgKey].name;
+      adPackagePrice = PACKAGE_INFO[pkgKey].price;
+      adPackageDuration = PACKAGE_INFO[pkgKey].duration;
+    }
+    const docRef = await addDoc(colRef, {
+      ...this.#getAdData(),
+      adPackageName,
+      adPackagePrice,
+      adPackageDuration,
+    });
     this.#id = docRef.id;
     await updateDoc(docRef, { id: this.#id });
 
@@ -96,6 +115,19 @@ class FinancingAdvertisement {
   async update(updates = {}, newImageFiles = null, newReceiptFile = null) {
     if (!this.#id) throw new Error('الإعلان بدون ID صالح للتحديث');
     const docRef = doc(db, 'FinancingAdvertisements', this.#id);
+    // تحديث معلومات الباقة إذا تم تغييرها
+    if (typeof updates.adPackage !== 'undefined' && updates.adPackage !== null) {
+      const pkgKey = String(updates.adPackage);
+      if (PACKAGE_INFO[pkgKey]) {
+        updates.adPackageName = PACKAGE_INFO[pkgKey].name;
+        updates.adPackagePrice = PACKAGE_INFO[pkgKey].price;
+        updates.adPackageDuration = PACKAGE_INFO[pkgKey].duration;
+      } else {
+        updates.adPackageName = null;
+        updates.adPackagePrice = null;
+        updates.adPackageDuration = null;
+      }
+    }
 
     if (newImageFiles && Array.isArray(newImageFiles) && newImageFiles.length > 0) {
       await this.#deleteAllImages();
@@ -300,6 +332,7 @@ class FinancingAdvertisement {
   // 📤 رفع إيصال الدفع
   async #uploadReceipt(file) {
     const storage = getStorage();
+    // رفع الريسيت في نفس مجلد صور الإعلان (adId)
     const refPath = ref(storage, `financing_ads/${this.#id}/receipt.jpg`);
     await uploadBytes(refPath, file);
     return await getDownloadURL(refPath);
@@ -326,10 +359,17 @@ class FinancingAdvertisement {
 
   // 📋 تجهيز كائن البيانات الكامل لتخزينه في Firestore
   #getAdData() {
+    // تجهيز معلومات الباقة
+    let adPackageName = null, adPackagePrice = null, adPackageDuration = null;
+    const pkgKey = String(this.adPackage);
+    if (pkgKey && PACKAGE_INFO[pkgKey]) {
+      adPackageName = PACKAGE_INFO[pkgKey].name;
+      adPackagePrice = PACKAGE_INFO[pkgKey].price;
+      adPackageDuration = PACKAGE_INFO[pkgKey].duration;
+    }
     return {
       title: this.title,
       description: this.description,
-      financing_model: this.financing_model,
       images: this.images,
       phone: this.phone,
       start_limit: this.start_limit,
@@ -348,6 +388,9 @@ class FinancingAdvertisement {
       review_note: this.review_note,
       status: this.status,
       ...(this.adPackage !== undefined && this.adPackage !== null ? { adPackage: this.adPackage } : {}),
+      adPackageName,
+      adPackagePrice,
+      adPackageDuration,
     };
   }
 }

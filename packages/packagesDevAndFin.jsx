@@ -31,16 +31,15 @@ const packages = [
         id: 3,
         name: 'باقة التميز',
         price: 200,
-        duration: 14,
-        features: ['عرض الإعلان لمدة 14 يومًا', 'تنبيه Push يصل لكل المستخدمين'],
+        duration: 21,
+        features: ['عرض الإعلان لمدة 21 يومًا'],
     },
 ];
 
-const AdPackages = () => {
-    const [selectedPackageId, setSelectedPackageId] = useState(null);
+const AdPackages = ({ selectedPackageId, setSelectedPackageId, onReceiptImageChange }) => {
     const [receiptImages, setReceiptImages] = useState({});
     const theme = useTheme();
-    
+
     const handleSelectPackage = (pkgId) => {
         setSelectedPackageId(pkgId);
         console.log('📦 تم اختيار الباقة:', pkgId);
@@ -52,6 +51,7 @@ const AdPackages = () => {
             ...prev,
             [pkgId]: file,
         }));
+        if (onReceiptImageChange) onReceiptImageChange(file);
         console.log('📤 تم رفع الريسيت للباقة:', pkgId, file);
     };
 

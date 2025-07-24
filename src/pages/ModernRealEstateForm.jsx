@@ -198,6 +198,7 @@ const ModernRealEstateForm = () => {
   const [coordinates, setCoordinates] = useState(null);
   const [enableMapPick, setEnableMapPick] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState(null);
+  const [receiptImage, setReceiptImage] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
   const editData = location.state?.adData || null;
@@ -284,6 +285,10 @@ const ModernRealEstateForm = () => {
       return;
     }
 
+    // لوجات التشخيص
+    console.log('Selected package:', selectedPackage);
+    console.log('Receipt image before save:', receiptImage);
+
     try {
       if (isEditMode && (!editData.id || editData.id === undefined || editData.id === null)) {
         setSubmitError('لا يمكن تعديل إعلان بدون معرف (ID).');
@@ -312,7 +317,7 @@ const ModernRealEstateForm = () => {
           ad_type: data.adType,
           ad_status: data.adStatus,
           images: oldImages,
-          adPackage: selectedPackage,
+          adPackage: selectedPackage ? Number(selectedPackage) : null,
         }, filesToUpload);
         setShowSuccess(true);
         handleReset();
@@ -345,10 +350,12 @@ const ModernRealEstateForm = () => {
             ? Date.now() + data.activationDays * 24 * 60 * 60 * 1000
             : null,
           description: data.description,
-          adPackage: selectedPackage,
+          adPackage: selectedPackage ? Number(selectedPackage) : null,
         };
         const ad = new ClientAdvertisement(adData);
-        await ad.save(images);
+        // لوج قبل الحفظ
+        console.log('Calling ad.save with images:', images, 'and receiptImage:', receiptImage);
+        await ad.save(images, receiptImage);
         setShowSuccess(true);
         handleReset();
         setTimeout(() => {
@@ -968,7 +975,11 @@ const ModernRealEstateForm = () => {
           </StyledCard>
 
           {/* إضافة مكون الباقات */}
-          <AdPackagesClient selectedPackageId={selectedPackage} setSelectedPackageId={setSelectedPackage} />
+          <Box width="100%" display="flex" justifyContent="center" my={4}>
+            <Box width={{ xs: '100%', md: '80%', lg: '30%' }}>
+              <AdPackagesClient selectedPackageId={selectedPackage} setSelectedPackageId={setSelectedPackage} onReceiptImageChange={setReceiptImage} />
+            </Box>
+          </Box>
 
           {/* خريطة عرض الموقع */}
           {coordinates && (

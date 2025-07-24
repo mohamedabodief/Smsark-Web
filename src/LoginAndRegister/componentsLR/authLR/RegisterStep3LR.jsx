@@ -110,8 +110,8 @@ export default function RegisterStep3LR({
       onComplete(); // استدعاء onComplete أولاً
       // التوجيه بشكل مستقل
       setTimeout(() => {
-        console.log("Navigating to /home...");
-        navigate("/home", { replace: true }); // replace عشان يمنع العودة
+        console.log("Navigating to /registration-success...");
+        navigate("/registration-success", { replace: true });
       }, 1500);
     } catch (err) {
       setError(err.message || "حدث خطأ أثناء حفظ البيانات");

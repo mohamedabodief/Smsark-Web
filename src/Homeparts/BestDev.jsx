@@ -17,7 +17,7 @@ export default function BestDev() {
   const [offers, setOffers] = useState([]);
   const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
+  useEffect(() => {
     const addUniqueAds = async () => {
       const existingAds = await RealEstateDeveloperAdvertisement.getAll();
 
@@ -40,7 +40,7 @@ export default function BestDev() {
       setLoading(false);
     });
 
-    
+
     const interval = setInterval(() => {
       const cardWidth = 344;
       if (sliderRef.current) {
@@ -49,11 +49,11 @@ export default function BestDev() {
           behavior: 'smooth',
         });
       }
-    }, 5000); 
+    }, 5000);
 
     return () => {
       unsubscribe();
-      clearInterval(interval); 
+      clearInterval(interval);
     };
   }, []);
 
@@ -110,7 +110,11 @@ export default function BestDev() {
                       {item.price_start_from?.toLocaleString()} - {item.price_end_to?.toLocaleString()} ج.م
                     </Typography>
                     <Typography variant="subtitle1">{item.developer_name}</Typography>
-                    <Typography variant="body2" color="text.secondary">{item.location}</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {typeof item.location === 'object' && item.location !== null
+                        ? `${item.location.governorate || ''} - ${item.location.city || ''}`
+                        : item.location || ''}
+                    </Typography>
                     <Typography variant="body2" mt={1}>{item.description}</Typography>
                   </CardContent>
                 </Card>

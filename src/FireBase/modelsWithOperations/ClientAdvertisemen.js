@@ -22,6 +22,15 @@ import { db, auth } from '../firebaseConfig';
 import Notification from '../MessageAndNotification/Notification';
 import User from './User';
 
+console.log('ClientAdvertisemen.js loaded');
+
+// أضف هذا الكائن الثابت بعد الاستيرادات
+const PACKAGE_INFO = {
+  1: { name: 'باقة الأساس', price: 'مجانا', duration: 7 },
+  2: { name: 'باقة النخبة', price: 50, duration: 14 },
+  3: { name: 'باقة التميز', price: 100, duration: 21 },
+};
+
 class ClientAdvertisement {
   #id = null;
 
@@ -60,8 +69,22 @@ class ClientAdvertisement {
 
   // ✅ حفظ إعلان جديد + رفع صور + إشعار الأدمن
   async save(imageFiles = [], receiptFile = null) {
+    console.log('Receipt file in save:', receiptFile);
     const colRef = collection(db, 'ClientAdvertisements');
-    const docRef = await addDoc(colRef, this.#getAdData());
+    // تجهيز معلومات الباقة
+    let adPackageName = null, adPackagePrice = null, adPackageDuration = null;
+    const pkgKey = String(this.adPackage);
+    if (pkgKey && PACKAGE_INFO[pkgKey]) {
+      adPackageName = PACKAGE_INFO[pkgKey].name;
+      adPackagePrice = PACKAGE_INFO[pkgKey].price;
+      adPackageDuration = PACKAGE_INFO[pkgKey].duration;
+    }
+    const docRef = await addDoc(colRef, {
+      ...this.#getAdData(),
+      adPackageName,
+      adPackagePrice,
+      adPackageDuration,
+    });
     this.#id = docRef.id;
     await updateDoc(docRef, { id: this.#id });
 
@@ -71,10 +94,14 @@ class ClientAdvertisement {
       await updateDoc(docRef, { images: urls });
     }
 
+    // لوج للتشخيص
+    console.log('Receipt file in save:', receiptFile);
+
     if (receiptFile) {
       const receiptUrl = await this.#uploadReceipt(receiptFile);
       this.receipt_image = receiptUrl;
       await updateDoc(docRef, { receipt_image: receiptUrl });
+      console.log('Receipt image saved in Firestore:', receiptUrl);
     }
 
     const admins = await User.getAllUsersByType('admin');
@@ -110,6 +137,20 @@ class ClientAdvertisement {
       const newReceiptUrl = await this.#uploadReceipt(newReceiptFile);
       updates.receipt_image = newReceiptUrl;
       this.receipt_image = newReceiptUrl;
+    }
+
+    // تحديث معلومات الباقة إذا تم تغييرها
+    if (typeof updates.adPackage !== 'undefined' && updates.adPackage !== null) {
+      const pkgKey = String(updates.adPackage);
+      if (PACKAGE_INFO[pkgKey]) {
+        updates.adPackageName = PACKAGE_INFO[pkgKey].name;
+        updates.adPackagePrice = PACKAGE_INFO[pkgKey].price;
+        updates.adPackageDuration = PACKAGE_INFO[pkgKey].duration;
+      } else {
+        updates.adPackageName = null;
+        updates.adPackagePrice = null;
+        updates.adPackageDuration = null;
+      }
     }
 
     await updateDoc(docRef, updates);
@@ -442,8 +483,8 @@ class ClientAdvertisement {
       const file = limitedFiles[i];
       const imageRef = ref(
         storage,
-       `property_images/${auth.currentUser.uid}/${Date.now()}_${file.name}`)
-      ;
+        `property_images/${this.userId}/${Date.now()}_${file.name}`
+      );
       await uploadBytes(imageRef, file);
       const url = await getDownloadURL(imageRef);
       imageUrls.push(url);
@@ -468,9 +509,13 @@ class ClientAdvertisement {
   // ✅ رفع إيصال الدفع
   async #uploadReceipt(file) {
     const storage = getStorage();
-    const receiptRef = ref(storage, `client_ads/${this.#id}/receipt.jpg`);
+    const path = `property_images/${this.userId}/receipt.jpg`;
+    console.log('Uploading receipt to:', path);
+    const receiptRef = ref(storage, path);
     await uploadBytes(receiptRef, file);
-    return await getDownloadURL(receiptRef);
+    const url = await getDownloadURL(receiptRef);
+    console.log('Receipt uploaded to:', url);
+    return url;
   }
 
   // ✅ حذف إيصال الدفع
@@ -486,6 +531,14 @@ class ClientAdvertisement {
 
   // ✅ البيانات الخام للحفظ في Firestore
   #getAdData() {
+    // تجهيز معلومات الباقة
+    let adPackageName = null, adPackagePrice = null, adPackageDuration = null;
+    const pkgKey = String(this.adPackage);
+    if (pkgKey && PACKAGE_INFO[pkgKey]) {
+      adPackageName = PACKAGE_INFO[pkgKey].name;
+      adPackagePrice = PACKAGE_INFO[pkgKey].price;
+      adPackageDuration = PACKAGE_INFO[pkgKey].duration;
+    }
     return {
       title: this.title,
       type: this.type,
@@ -512,6 +565,9 @@ class ClientAdvertisement {
       status: this.status,
       receipt_image: this.receipt_image,
       ...(this.adPackage !== undefined && this.adPackage !== null ? { adPackage: this.adPackage } : {}),
+      adPackageName,
+      adPackagePrice,
+      adPackageDuration,
     };
   }
 }

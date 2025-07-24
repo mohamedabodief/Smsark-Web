@@ -34,7 +34,7 @@ const packages = [
     },
 ];
 
-const AdPackagesClient = ({ selectedPackageId, setSelectedPackageId }) => {
+const AdPackagesClient = ({ selectedPackageId, setSelectedPackageId, onReceiptImageChange }) => {
     const [receiptImages, setReceiptImages] = useState({});
     const theme = useTheme();
 
@@ -49,6 +49,7 @@ const AdPackagesClient = ({ selectedPackageId, setSelectedPackageId }) => {
             ...prev,
             [pkgId]: file,
         }));
+        if (onReceiptImageChange) onReceiptImageChange(file); // مرر الصورة للأب
         console.log('📤 تم رفع الريسيت للباقة:', pkgId, file);
     };
 

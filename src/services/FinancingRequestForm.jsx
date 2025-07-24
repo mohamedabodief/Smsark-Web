@@ -43,6 +43,7 @@ export default function FinancingRequestForm() {
     dependents: '',
     financing_amount: '',
     repayment_years: '',
+    phone_number: '', // أضف رقم الهاتف
   });
 
   const updateInstallment = (updatedForm) => {
@@ -139,6 +140,7 @@ export default function FinancingRequestForm() {
           { name: 'monthly_income', label: 'الدخل الشهري (ج.م)', type: 'number' },
           { name: 'job_title', label: 'المسمى الوظيفي' },
           { name: 'employer', label: 'جهة العمل' },
+          { name: 'phone_number', label: 'رقم الهاتف', type: 'text' },
           { name: 'age', label: 'السن', type: 'number' },
           { name: 'dependents', label: 'عدد المعالين', type: 'number' },
           { name: 'financing_amount', label: 'قيمة التمويل المطلوبة (ج.م)', type: 'number' },
