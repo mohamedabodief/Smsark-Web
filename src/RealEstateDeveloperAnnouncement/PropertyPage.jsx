@@ -134,7 +134,7 @@ const PropertyPage = () => {
       sx={{
         display: "flex",
         minHeight: "100vh",
-        backgroundColor: "#f9f9f9",
+        // backgroundColor: "#f9f9f9",
         flexDirection: isMobile ? "column" : "row-reverse",
       }}
     >

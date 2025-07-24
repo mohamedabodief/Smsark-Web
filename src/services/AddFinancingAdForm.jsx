@@ -183,13 +183,16 @@ export default function AddFinancingAdForm() {
         // الصور القديمة (روابط فقط)
         const existingImageUrls = previewUrls.filter(url => !url.startsWith('blob:'));
         let finalImageUrls = existingImageUrls;
+        let updateImages = undefined;
         if (images.length > 0) {
           // إذا تم اختيار صور جديدة، سيتم رفعها ودمجها مع القديمة (حتى 4 صور)
           const newImageUrls = await uploadImagesToFirebase(images);
           finalImageUrls = [...existingImageUrls, ...newImageUrls].slice(0, 4);
+          updateImages = finalImageUrls;
         }
-        ad = new FinancingAdvertisement({ ...form, adPackage: selectedPackage ? Number(selectedPackage) : null, images: finalImageUrls });
-        await ad.update({ ...form, adPackage: selectedPackage ? Number(selectedPackage) : null, images: finalImageUrls }, images.length > 0 ? images : null, receiptImage);
+        // مرر userId وid من editData دائماً
+        ad = new FinancingAdvertisement({ ...form, adPackage: selectedPackage ? Number(selectedPackage) : null, images: finalImageUrls, id: form.id, userId: editData.userId });
+        await ad.update({ ...form, adPackage: selectedPackage ? Number(selectedPackage) : null, ...(updateImages ? { images: updateImages } : {}), id: form.id, userId: editData.userId }, images.length > 0 ? images : null, receiptImage);
       } else {
         // في حالة إضافة إعلان جديد
         const currentUser = auth.currentUser;

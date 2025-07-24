@@ -346,7 +346,7 @@ function DetailsForClient() {
             </Button>
           )}
           <Divider sx={{ my: 3 }} />
-          <Grid container spacing={2}>
+          <Grid container spacing={2}>ب
             <Grid item xs={12} sm={6}>
               <Typography variant="body2" color="text.secondary">المحافظة</Typography>
               <Typography variant="body1" fontWeight="bold">{clientAds.governorate}</Typography>
@@ -405,13 +405,20 @@ function DetailsForClient() {
               startIcon={<PhoneIcon />}
               fullWidth
               sx={{
-                backgroundColor: '#DF3631',
-                '&:hover': { backgroundColor: '#c62828' },
-                borderRadius: '25px',
+                backgroundColor: "#DF3631",
+                "&:hover": { backgroundColor: "#c62828" },
+                borderRadius: "25px",
                 py: 1.5,
-                fontSize: '16px',
-                fontWeight: 'bold',
+                fontSize: "16px",
+                "& .MuiButton-startIcon": {
+                  marginLeft: "6px",
+                  marginRight: 0,
+                },
+                fontWeight: "bold",
                 mb: 2,
+              
+
+
               }}
               onClick={() => window.open(`tel:${clientAds.phone}`, '_self')}
             >
@@ -422,12 +429,16 @@ function DetailsForClient() {
               startIcon={<WhatsAppIcon />}
               fullWidth
               sx={{
-                backgroundColor: '#4DBD43',
-                '&:hover': { backgroundColor: '#388e3c' },
-                borderRadius: '25px',
-                py: 1.5,
-                fontSize: '16px',
-                fontWeight: 'bold',
+                backgroundColor: "#4DBD43",
+                    "&:hover": { backgroundColor: "#388e3c" },
+                    "& .MuiButton-startIcon": {
+                      marginLeft: "6px",
+                      marginRight: 0,
+                    },
+                    borderRadius: "25px",
+                    py: 1.5,
+                    fontSize: "16px",
+                    fontWeight: "bold",
               }}
               onClick={() => {
                 const message = 'مرحبًا، أريد الاستفسار عن الإعلان الخاص بك';

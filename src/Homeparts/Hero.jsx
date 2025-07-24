@@ -9,7 +9,7 @@ export default function SimpleHeroSlider() {
 
   // Subscribe to active ads
   useEffect(() => {
-    const unsubscribe = HomepageAdvertisement.subscribeActiveAds((data) => {
+    const unsubscribe = HomepageAdvertisement.subscribeActiveAds(async (data) => {
       setAds(data);
       setIndex(0); // Reset index if ads change
     });
@@ -25,7 +25,6 @@ export default function SimpleHeroSlider() {
     return () => clearInterval(interval);
   }, [ads.length]);
 
-  
   // Navigation functions
   const nextSlide = () => {
     setIndex((prev) => (prev + 1) % ads.length);

@@ -128,20 +128,29 @@ class FinancingAdvertisement {
         updates.adPackageDuration = null;
       }
     }
-
+    // الصور: لا تحذف الصور القديمة إلا إذا تم تمرير صور جديدة
     if (newImageFiles && Array.isArray(newImageFiles) && newImageFiles.length > 0) {
       await this.#deleteAllImages();
+      // ارفع الصور الجديدة على نفس id الإعلان الأصلي
       const newUrls = await this.#uploadImages(newImageFiles);
       updates.images = newUrls;
       this.images = newUrls;
-    } // إذا لم يتم تمرير صور جديدة، لا تغير الصور القديمة
-
+    } else if (typeof updates.images === 'undefined') {
+      // إذا لم يتم رفع صور جديدة ولم يتم تمرير images في التحديثات، احتفظ بالصور القديمة
+      updates.images = this.images;
+    }
     if (newReceiptFile) {
       const receiptUrl = await this.#uploadReceipt(newReceiptFile);
       updates.receipt_image = receiptUrl;
       this.receipt_image = receiptUrl;
     }
-
+    // لا تغير userId أو id إلا إذا تم تمريرهم بشكل صريح
+    if (typeof updates.userId === 'undefined' || !updates.userId) {
+      updates.userId = this.userId;
+    }
+    if (typeof updates.id === 'undefined' || !updates.id) {
+      updates.id = this.#id;
+    }
     // تحقق من صحة قيمة الحالة
     if (
       updates.status &&
@@ -149,7 +158,6 @@ class FinancingAdvertisement {
     ) {
       throw new Error('❌ قيمة حالة الإعلان غير صالحة');
     }
-
     await updateDoc(docRef, updates);
   }
 

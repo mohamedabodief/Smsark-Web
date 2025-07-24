@@ -272,12 +272,12 @@ function DetailsForFinaccingAds() {
                     </Grid>
                   )}
                   {/* عرض صورة الريسيت إذا كانت موجودة */}
-                  {clientAds.receipt_image && (
+                  {/* {clientAds.receipt_image && (
                     <Grid item xs={12} sm={6}>
                       <Typography variant="body2" color="text.secondary">إيصال الدفع</Typography>
                       <img src={clientAds.receipt_image} alt="إيصال الدفع" style={{ maxWidth: 200, borderRadius: 8, marginTop: 8 }} />
                     </Grid>
-                  )}
+                  )} */}
                 </Grid>
                 <Divider sx={{ my: 3 }} />
                 <Box sx={{ width: '50%', display: 'flex', marginTop: '30px', marginLeft: 'auto' }} dir='rtl'>

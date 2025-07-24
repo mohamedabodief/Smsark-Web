@@ -20,17 +20,17 @@ export default function Advertise() {
       }
     };
 
-  //   fetchUserType();
-  // }, []);
+    //   fetchUserType();
+    // }, []);
 
-  // اختبار يدوي فقط
-//   const user = { id: 'test-user', type: 'financer' }; // client | developer | financer
-//   const userType = user.type;
+    // اختبار يدوي فقط
+    //   const user = { id: 'test-user', type: 'financer' }; // client | developer | financer
+    //   const userType = user.type;
 
     fetchUserType();
   }, []);
 
-  
+
   const options = [
     {
       icon: <SearchRounded fontSize="large" sx={{ color: '#1976d2' }} />,
@@ -42,7 +42,7 @@ export default function Advertise() {
     {
       icon: <HomeWorkRounded fontSize="large" sx={{ color: '#388e3c' }} />,
       title: 'مطور؟',
-      description: 'أضف عقارك الآن وابدأ في تلقي العروض بسهولة وسرعة.',
+      description: 'أضف عقارك الآن وابدأ في تلقي العروض بسهولة.',
       type: 'developer',
       route: '/AdddeveloperAds',
     },
@@ -64,8 +64,10 @@ export default function Advertise() {
     if (userType === 'admin') {
       navigate(item.route);
     } else if (userType === 'organization') {
-      if (item.type === 'developer' || item.type === 'financer') {
-        navigate(item.route);
+      if (item.type === 'developer') {
+        navigate('/AdddeveloperAds');
+      } else if (item.type === 'financer') {
+        navigate('/add-financing-ad');
       } else {
         alert('غير مسموح للمُنظمات بإضافة إعلانات العملاء');
       }
@@ -76,63 +78,65 @@ export default function Advertise() {
     }
   };
 
-  return (
-    <Box sx={{ py: 10, px: { xs: 2, md: 10 }, direction: 'rtl' }}>
-      <Grid container spacing={4} justifyContent="center">
-        <Grid item xs={12} textAlign="center">
-          <Typography variant="h5" fontWeight="bold" mt={10} mb={4}>
-            أعلن عن عقارك 
-          </Typography>
-        </Grid>
 
-        {options.map((item, index) => (
-          <Grid item xs={12} sm={6} md={4} key={index}>
-            <Box
-              sx={{
-                borderRadius: 5,
-                p: 4,
-                textAlign: 'center',
-                height: '100%',
-                boxShadow: '0 0 10px rgba(134, 132, 132, 0.1)',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-                transition: 'transform 0.3s',
-                '&:hover': {
-                  transform: 'translateY(-8px)',
-                  boxShadow: 12,
-                },
-              }}
-            >
-              <Box>
-                <Avatar sx={{ width: 70, height: 70, mx: 'auto', mb: 2 }}>
-                  {item.icon}
-                </Avatar>
-                <Typography variant="h6" mb={1} fontWeight="bold">
-                  {item.title}
-                </Typography>
-                <Typography variant="body2" sx={{ color: 'gray' }}>
-                  {item.description}
-                </Typography>
-              </Box>
-              <Button
-                variant="contained"
-                sx={{
-                  mt: 3,
-                  borderRadius: '25px',
-                  textTransform: 'none',
-                  width: '140px',
-                  mx: 'auto',
-                  fontWeight: 'bold',
-                }}
-                onClick={() => handleNavigate(item)}
-              >
-                أضف إعلانك
-              </Button>
-            </Box>
-          </Grid>
-        ))}
+  return (
+<Box sx={{ py: 10, px: { xs: 2, md: 10 }, direction: 'rtl' }}>
+  <Grid container spacing={7} justifyContent="center">
+    <Grid item xs={12} md={12} textAlign="center">
+      <Typography variant="h5" fontWeight="bold" mt={10} mb={4} >
+        أعلن عن عقارك
+      </Typography>
+    </Grid>
+
+    {options.map((item, index) => (
+      <Grid item xs={12} md={12} key={index}>
+        <Box
+          sx={{
+            borderRadius: 5,
+            p: 4,
+            textAlign: 'center',
+            height: '100%',
+            boxShadow: '0 0 10px rgba(134, 132, 132, 0.1)',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            transition: 'transform 0.3s',
+            '&:hover': {
+              transform: 'translateY(-8px)',
+              boxShadow: 12,
+            },
+          }}
+        >
+          <Box>
+            <Avatar sx={{ width: 70, height: 70, mx: 'auto', mb: 2 }}>
+              {item.icon}
+            </Avatar>
+            <Typography variant="h6" mb={1} fontWeight="bold">
+              {item.title}
+            </Typography>
+            <Typography variant="body2" sx={{ color: 'gray' }}>
+              {item.description}
+            </Typography>
+          </Box>
+          <Button
+            variant="contained"
+            sx={{
+              mt: 3,
+              borderRadius: '25px',
+              textTransform: 'none',
+              width: '140px',
+              mx: 'auto',
+              fontWeight: 'bold',
+            }}
+            onClick={() => handleNavigate(item)}
+          >
+            أضف إعلانك
+          </Button>
+        </Box>
       </Grid>
-    </Box>
-  );
+    ))}
+  </Grid>
+</Box>
+
+);
 }
