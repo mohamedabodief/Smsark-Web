@@ -65,7 +65,9 @@ const AdPackagesClient = ({ selectedPackageId, setSelectedPackageId, onReceiptIm
                 اختر الباقة المناسبة لإعلانك
             </Typography>
 
-            <Box display="flex" justifyContent="center" gap={2} flexWrap="wrap">
+            <Box display="flex" justifyContent="center" gap={2} flexWrap="wrap"
+                flexDirection={{ xs: 'column', md: 'row' }}
+            >
                 {packages.map((pkg) => (
                     <Card
                         key={pkg.id}
