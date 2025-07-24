@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from "react";
-import { Route, Routes, useNavigate ,} from "react-router-dom";
+import { Route, Routes, useNavigate, } from "react-router-dom";
 import DetailsForClient from "./pages/Details/detailsForClient";
 import DetailsForFinancingAds from "./pages/Details/detailsForFinaccingAds";
 import DetailsForDevelopment from "./pages/Details/detailsForDevelopment";
@@ -60,18 +60,14 @@ function App() {
   const [loading, setLoading] = useState(true);
   ////////////////////////////////////////////////////
   const notificationSound = new Audio('/sounds/not.mp3');
-  ///////////////////////////////////////////////////
   useEffect(() => {
-    ///////////////////////////////
     const checkNotificationPermission = () => {
       if ("Notification" in window && Notification.permission !== "granted") {
-  setOpenPermissionDialog(true);
-} else if (Notification.permission === "granted") {
-  setSoundEnabled(true);
-}
+        setOpenPermissionDialog(true);
+      } else if (Notification.permission === "granted") {
+        setSoundEnabled(true);
       }
-    
-
+    }
     checkNotificationPermission();
     ////////////////////////////////
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -135,14 +131,14 @@ function App() {
       const permission = await Notification.requestPermission();
       if (permission === "granted") {
         setSoundEnabled(true);
-        toast.dismiss(); 
+        toast.dismiss();
         notificationSound.play().catch((error) => {
           console.error("خطأ في تشغيل صوت الإشعار:", error);
         });
       }
     } else {
       setSoundEnabled(true);
-      toast.dismiss(); 
+      toast.dismiss();
       notificationSound.play().catch((error) => {
         console.error("خطأ في تشغيل صوت الإشعار:", error);
       });
@@ -161,12 +157,12 @@ function App() {
   const handleCloseSnackbar = () => {
     setOpenSnackbar(false);
   };
-const handleMarkAsRead = async () => {
-  setOpenSnackbar(false);
+  const handleMarkAsRead = async () => {
+    setOpenSnackbar(false);
     if (currentNotification) {
       NotificationService.markAsRead(currentNotification.id);
     }
-};
+  };
   //////////////////////////////
 
 
@@ -174,88 +170,88 @@ const handleMarkAsRead = async () => {
 
   return (
     <>
-    <AuthSync />
-    <ToastContainer/>
+      <AuthSync />
+      <ToastContainer />
       <Layout>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/home" element={<Home />} />
-            <Route path="/" element={<Navigate to="/login" replace />} />
-            <Route path="/home" element={<Home />} />
-            {/* صفحات الدخول والتسجيل */}
-            <Route path="login" element={<LoginRegister />} />
-            <Route path="register" element={<LoginRegister />} />
-            <Route path="/registration-success" element={<RegistrationSuccess />} />
-            {/* صفحات عامة */}
-            <Route path="/about" element={<AboutUs />} />
-            <Route path="/contact" element={<ContactUs />} />
-            <Route path="/favorite" element={<Favorite />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/search" element={<SearchPage />} />
-            <Route path="/inbox" element={<InboxChats />} />
-            <Route path="/privateChat/:id" element={<ChatBox />} />
-            {/* خدمات الإعلانات */}
-            <Route path="/services/sell" element={<SellAds />} />
-            <Route path="/services/rent" element={<RentAds />} />
-            <Route path="/services/buy" element={<BuyAds />} />
-            <Route path="/services/finance" element={<FinancingAdsPage />} />
+          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="/home" element={<Home />} />
+          {/* صفحات الدخول والتسجيل */}
+          <Route path="login" element={<LoginRegister />} />
+          <Route path="register" element={<LoginRegister />} />
+          <Route path="/registration-success" element={<RegistrationSuccess />} />
+          {/* صفحات عامة */}
+          <Route path="/about" element={<AboutUs />} />
+          <Route path="/contact" element={<ContactUs />} />
+          <Route path="/favorite" element={<Favorite />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/search" element={<SearchPage />} />
+          <Route path="/inbox" element={<InboxChats />} />
+          <Route path="/privateChat/:id" element={<ChatBox />} />
+          {/* خدمات الإعلانات */}
+          <Route path="/services/sell" element={<SellAds />} />
+          <Route path="/services/rent" element={<RentAds />} />
+          <Route path="/services/buy" element={<BuyAds />} />
+          <Route path="/services/finance" element={<FinancingAdsPage />} />
 
-            <Route path="/chat" element={<ChatAiPage />} />
+          <Route path="/chat" element={<ChatAiPage />} />
 
-            {/* <AddMultipleAdsOnce/> */}
-            <Route path="/services/developmentAds" element={<DeveloperAdsPage />} />
-            {/* صفحات الإعلانات العقارية */}
-            <Route path="/RealEstateDeveloperAnnouncement" element={<PropertyPage />} />
-            <Route path="/AdddeveloperAds" element={<PropertyPage />} />
-            {/* صفحات الباقات */}
-            <Route path="/packages" element={<AdPackages />} />
-            <Route path="/Client-packages" element={<AdPackagesClient />} />
-            {/* صفحات الإدخال والنماذج */}
-            <Route path="/add-financing-ad" element={<AddFinancingAdForm />} />
-            <Route path="/insert-finance-data" element={<FinancingAdvExample />} />
-            <Route path="/insert-dev-data" element={<RealEstateDevAdvExample />} />
-            <Route path="/financing-request" element={<FinancingRequestForm />} />
-            <Route path="/AddAdvertisement" element={<ModernRealEstateForm />} />
-            {/* صفحات الداشبورد */}
-            <Route element={<PrivateRoute />}>
-              <Route path="/admin-dashboard" element={<AdminDashboard />} />
-              <Route path="/client-dashboard" element={<ClientDashboard />} />
-              <Route path="/organization-dashboard" element={<OrganizationDashboard />} />
-            </Route>
-            {/* صفحات التفاصيل */}
-            <Route path="/detailsForDevelopment/:id" element={<DetailsForDevelopment />} />
-            <Route path="/detailsForDevelopment" element={<Navigate to="/RealEstateDeveloperAnnouncement" replace />} />
-            <Route path="/details/financingAds/:id" element={<DetailsForFinancingAds />} />
-            <Route path="/details/clientAds/:id" element={<DetailsForClient />} />
-            <Route path="/details/developmentAds/:id" element={<DetailsForDevelopment />} />
-            <Route path="/detailsForClient/:id" element={<DetailsForClient />} />
-            {/* صفحات التفاصيل القديمة (للتوافق) */}
-            <Route path="details">
-              <Route path="financingAds/:id" element={<DetailsForFinancingAds />} />
-              <Route path="clientAds/:id" element={<DetailsForClient />} />
-              <Route path="developmentAds/:id" element={<DetailsForDevelopment />} />
-            </Route>
-          </Routes>
-          {/* <Footer /> */}
-        </Layout>
+          {/* <AddMultipleAdsOnce/> */}
+          <Route path="/services/developmentAds" element={<DeveloperAdsPage />} />
+          {/* صفحات الإعلانات العقارية */}
+          <Route path="/RealEstateDeveloperAnnouncement" element={<PropertyPage />} />
+          <Route path="/AdddeveloperAds" element={<PropertyPage />} />
+          {/* صفحات الباقات */}
+          <Route path="/packages" element={<AdPackages />} />
+          <Route path="/Client-packages" element={<AdPackagesClient />} />
+          {/* صفحات الإدخال والنماذج */}
+          <Route path="/add-financing-ad" element={<AddFinancingAdForm />} />
+          <Route path="/insert-finance-data" element={<FinancingAdvExample />} />
+          <Route path="/insert-dev-data" element={<RealEstateDevAdvExample />} />
+          <Route path="/financing-request" element={<FinancingRequestForm />} />
+           <Route path="/AddAdvertisement" element={<ModernRealEstateForm />} /> 
+          {/* صفحات الداشبورد */}
+          <Route element={<PrivateRoute />}>
+            <Route path="/admin-dashboard" element={<AdminDashboard />} />
+            <Route path="/client-dashboard" element={<ClientDashboard />} />
+            <Route path="/organization-dashboard" element={<OrganizationDashboard />} />
+          </Route>
+          {/* صفحات التفاصيل */}
+          <Route path="/detailsForDevelopment/:id" element={<DetailsForDevelopment />} />
+          <Route path="/detailsForDevelopment" element={<Navigate to="/RealEstateDeveloperAnnouncement" replace />} />
+          <Route path="/details/financingAds/:id" element={<DetailsForFinancingAds />} />
+          <Route path="/details/clientAds/:id" element={<DetailsForClient />} />
+          <Route path="/details/developmentAds/:id" element={<DetailsForDevelopment />} />
+          <Route path="/detailsForClient/:id" element={<DetailsForClient />} />
+          {/* صفحات التفاصيل القديمة (للتوافق) */}
+          <Route path="details">
+            <Route path="financingAds/:id" element={<DetailsForFinancingAds />} />
+            {/* <Route path="clientAds/:id" element={<DetailsForClient />} /> */}
+            <Route path="developmentAds/:id" element={<DetailsForDevelopment />} />
+          </Route>
+        </Routes>
+        {/* <Footer /> */}
+      </Layout>
       <Snackbar
-      autoHideDuration={10000}
+        autoHideDuration={10000}
         open={openSnackbar}
         onClose={handleCloseSnackbar}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-       
+
       >
         <Alert
           severity="info"
           action={
             <>
-              <Button color="inherit" size="small" sx={{fontWeight:'bold',fontSize:'18px'}} onClick={handleOpenChat}>
+              <Button color="inherit" size="small" sx={{ fontWeight: 'bold', fontSize: '18px' }} onClick={handleOpenChat}>
                 فتح
               </Button>
-                 <Button color="inherit" size="small" sx={{fontWeight:'bold',fontSize:'18px'}} onClick={handleMarkAsRead}>
-          تحديد كمقروء
-        </Button>
-              <Button color="inherit" size="small" sx={{fontWeight:'bold',fontSize:'18px'}} onClick={handleCloseSnackbar}>
+              <Button color="inherit" size="small" sx={{ fontWeight: 'bold', fontSize: '18px' }} onClick={handleMarkAsRead}>
+                تحديد كمقروء
+              </Button>
+              <Button color="inherit" size="small" sx={{ fontWeight: 'bold', fontSize: '18px' }} onClick={handleCloseSnackbar}>
                 إغلاق
               </Button>
             </>
@@ -282,31 +278,31 @@ const handleMarkAsRead = async () => {
           {currentNotification?.body}
         </Alert>
       </Snackbar>
-  <Dialog open={openPermissionDialog} onClose={() => setOpenPermissionDialog(false)}>
-  <DialogTitle>🔔 تفعيل إشعارات الصوت</DialogTitle>
-  <DialogContent>
-    هل ترغب في تفعيل الإشعارات حتى يتم إعلامك بالتحديثات؟
-  </DialogContent>
-  <DialogActions>
-    <Button onClick={() => setOpenPermissionDialog(false)} color="error">
-      لا، شكرًا
-    </Button>
-    <Button
-      onClick={async () => {
-        const permission = await Notification.requestPermission();
-        if (permission === "granted") {
-          setSoundEnabled(true);
-          setOpenPermissionDialog(false);
-          notificationSound.play().catch(err => console.error("فشل في تشغيل الصوت:", err));
-        }
-      }}
-      color="primary"
-      autoFocus
-    >
-      نعم، فعّل الإشعارات
-    </Button>
-  </DialogActions>
-</Dialog>
+      <Dialog open={openPermissionDialog} onClose={() => setOpenPermissionDialog(false)}>
+        <DialogTitle>🔔 تفعيل إشعارات الصوت</DialogTitle>
+        <DialogContent>
+          هل ترغب في تفعيل الإشعارات حتى يتم إعلامك بالتحديثات؟
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenPermissionDialog(false)} color="error">
+            لا، شكرًا
+          </Button>
+          <Button
+            onClick={async () => {
+              const permission = await Notification.requestPermission();
+              if (permission === "granted") {
+                setSoundEnabled(true);
+                setOpenPermissionDialog(false);
+                notificationSound.play().catch(err => console.error("فشل في تشغيل الصوت:", err));
+              }
+            }}
+            color="primary"
+            autoFocus
+          >
+            نعم، فعّل الإشعارات
+          </Button>
+        </DialogActions>
+      </Dialog>
 
     </>
   );

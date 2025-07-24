@@ -7,6 +7,7 @@ export default function MapPicker({ lat, lng, onLocationSelect }) {
   const prevLocation = useRef(null);
 
   useEffect(() => {
+    console.log('[DEBUG] MapPicker props:', { lat, lng, onLocationSelect });
     if (lat && lng) {
       console.log('[DEBUG] تعيين الإحداثيات من الـ props:', { lat, lng });
       setLocation({ lat, lng });
@@ -21,7 +22,7 @@ export default function MapPicker({ lat, lng, onLocationSelect }) {
           setLocation(newLocation);
         },
         (err) => {
-          console.warn('Fallback location:', err);
+          console.warn('[DEBUG] Fallback location:', err);
           const fallbackLocation = { lat: 30.0444, lng: 31.2357 };
           setLocation(fallbackLocation);
         }
