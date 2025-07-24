@@ -788,7 +788,7 @@ const AboutUs = () => {
           sx={{
             p: 6,
             borderRadius: 2,
-            backgroundColor: "white",
+            // backgroundColor: "white",
             border: "1px solid #e8e8e8",
             textAlign: "center",
           }}

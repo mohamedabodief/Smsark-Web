@@ -37,6 +37,8 @@ import OrganizationDashboard from "./Dashboard/organization/organizationDashboar
 import PrivateRoute from "./PrivateRoute";
 import AuthSync from "./AuthSync";
 // import RequireNotAuth from "./LoginAndRegister/RequireNotAuth";
+import { Fab, Box } from '@mui/material';
+import { FaRobot } from 'react-icons/fa';
 
 
 import { onMessage, messaging, auth } from "./FireBase/firebaseConfig";
@@ -46,6 +48,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import RegistrationSuccess from "./LoginAndRegister/componentsLR/RegistrationSuccess";
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { SearchProvider } from "./context/searchcontext";
 function App() {
   const [notifications, setNotifications] = useState([]);
   const [openSnackbar, setOpenSnackbar] = useState(false);
@@ -60,6 +63,9 @@ function App() {
   const [loading, setLoading] = useState(true);
   ////////////////////////////////////////////////////
   const notificationSound = new Audio('/sounds/not.mp3');
+  const goToChat = () => {
+    navigate('/chat');
+  };
   useEffect(() => {
     const checkNotificationPermission = () => {
       if ("Notification" in window && Notification.permission !== "granted") {
@@ -98,7 +104,6 @@ function App() {
 
     return () => unsubscribe();
   }, []);
-  ///////////////////////////////
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
       setCurrentUser(user);
@@ -171,7 +176,6 @@ function App() {
   return (
     <>
       <AuthSync />
-      <ToastContainer />
       <Layout>
         <Routes>
           <Route path="/" element={<Home />} />
