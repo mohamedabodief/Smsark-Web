@@ -83,7 +83,7 @@ function HorizontalCard({ image, title, price,adress,type,status,city,governomen
       </Typography>
      
       <Typography variant="h6" sx={{ mt: '20px',fontWeight:'normal',color:'gray' }}>
-       <LocationOnIcon sx={{}}/> {adress}، {city} {governoment}
+       <LocationOnIcon sx={{}}/> {typeof adress === 'object' ? adress.full || '' : adress}، {typeof city === 'object' ? city.full || '' : city} {typeof governoment === 'object' ? governoment.full || '' : governoment}
       </Typography>
     </CardContent>
   </Box>

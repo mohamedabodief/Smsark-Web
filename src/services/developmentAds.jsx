@@ -100,7 +100,7 @@ const DeveloperAdsPage = () => {
         </Box>
       )}
 
-      {error && <p>حدث خطأ: {error}</p>}
+      {error && <p>حدث خطأ: {typeof error === 'object' ? JSON.stringify(error) : error}</p>}
 
       {filteredAds.length === 0 ? (
         <Box
