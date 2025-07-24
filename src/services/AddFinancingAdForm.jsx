@@ -22,7 +22,6 @@ export default function AddFinancingAdForm() {
       setForm({
         title: editData.title || '',
         description: editData.description || '',
-        financing_model: editData.financing_model || '',
         phone: editData.phone || '',
         start_limit: editData.start_limit || '',
         end_limit: editData.end_limit || '',
@@ -50,7 +49,6 @@ export default function AddFinancingAdForm() {
   const [form, setForm] = useState({
     title: editData?.title || '',
     description: editData?.description || '',
-    financing_model: editData?.financing_model || '',
     phone: editData?.phone || '',
     start_limit: editData?.start_limit || '',
     end_limit: editData?.end_limit || '',
@@ -72,6 +70,7 @@ export default function AddFinancingAdForm() {
   const [images, setImages] = useState([]); // ملفات الصور الجديدة
   const [previewUrls, setPreviewUrls] = useState(editData?.images || []); // روابط الصور للمعاينة (قديمة وجديدة)
   const [selectedPackage, setSelectedPackage] = useState(editData?.adPackage || null);
+  const [receiptImage, setReceiptImage] = useState(null);
 
   // / --- START: صور الإعلان ---
   // const [images, setImages] = useState([]); // ملفات الصور الجديدة
@@ -153,7 +152,7 @@ export default function AddFinancingAdForm() {
 
   const isFormValid = () => {
     const requiredFields = [
-      'title', 'description', 'financing_model', 'phone', 'org_name',
+      'title', 'description', 'phone', 'org_name',
       'start_limit', 'end_limit',
       'interest_rate_upto_5', 'interest_rate_upto_10', 'interest_rate_above_10'
     ];
@@ -184,13 +183,16 @@ export default function AddFinancingAdForm() {
         // الصور القديمة (روابط فقط)
         const existingImageUrls = previewUrls.filter(url => !url.startsWith('blob:'));
         let finalImageUrls = existingImageUrls;
+        let updateImages = undefined;
         if (images.length > 0) {
           // إذا تم اختيار صور جديدة، سيتم رفعها ودمجها مع القديمة (حتى 4 صور)
           const newImageUrls = await uploadImagesToFirebase(images);
           finalImageUrls = [...existingImageUrls, ...newImageUrls].slice(0, 4);
+          updateImages = finalImageUrls;
         }
-        ad = new FinancingAdvertisement({ ...form, adPackage: selectedPackage, images: finalImageUrls });
-        await ad.update({ ...form, adPackage: selectedPackage, images: finalImageUrls }, images.length > 0 ? images : null);
+        // مرر userId وid من editData دائماً
+        ad = new FinancingAdvertisement({ ...form, adPackage: selectedPackage ? Number(selectedPackage) : null, images: finalImageUrls, id: form.id, userId: editData.userId });
+        await ad.update({ ...form, adPackage: selectedPackage ? Number(selectedPackage) : null, ...(updateImages ? { images: updateImages } : {}), id: form.id, userId: editData.userId }, images.length > 0 ? images : null, receiptImage);
       } else {
         // في حالة إضافة إعلان جديد
         const currentUser = auth.currentUser;
@@ -198,8 +200,9 @@ export default function AddFinancingAdForm() {
         ad = new FinancingAdvertisement({
           ...form,
           userId: currentUser.uid,
+          adPackage: selectedPackage ? Number(selectedPackage) : null,
         });
-        await ad.save(images);
+        await ad.save(images, receiptImage);
         form.id = ad.id;
       }
       setSuccess(true);
@@ -222,7 +225,7 @@ export default function AddFinancingAdForm() {
   }, [isEditMode, editData]);
 
   return (
-    <Paper elevation={3} sx={{ p: 3, borderRadius: 2, mt: 5, maxWidth: 700, mx: "auto" }}>
+    <Paper elevation={3} sx={{ p: 3, borderRadius: 2, mt: 5, maxWidth: '70%', mx: "auto" }}>
       <Typography
         variant="h4"
         gutterBottom
@@ -395,6 +398,8 @@ export default function AddFinancingAdForm() {
               )}
             </Box>
           </Grid>
+          <AdPackages selectedPackageId={selectedPackage} setSelectedPackageId={setSelectedPackage} onReceiptImageChange={setReceiptImage} />
+
           <Grid item xs={12} sx={{ textAlign: 'center', mt: 2 }}>
             <Button
               type="submit"
@@ -410,7 +415,6 @@ export default function AddFinancingAdForm() {
         </Grid>
       </form>
       {/* أضف مكون الباقات أسفل الفورم */}
-      <AdPackages selectedPackageId={selectedPackage} setSelectedPackageId={setSelectedPackage} />
     </Paper>
   );
 }

@@ -333,11 +333,7 @@ function DetailsForDevelopment() {
               src={mainImage}
               alt="صورة العقار الرئيسية"
               style={{
-                maxWidth: "100%",
-                maxHeight: "100%",
-                objectFit: "contain",
-                borderRadius: "12px",
-                display: "block"
+                width: '100%', height: '100%', borderRadius: '8px', objectFit: 'cover'
               }}
               onError={(e) => {
                 console.log("Image failed to load:", mainImage);
@@ -433,6 +429,8 @@ function DetailsForDevelopment() {
               >
                 {clientAds.project_types?.join(" - ") || "عقار للبيع"}
               </Typography>
+
+
 
               <Typography
                 sx={{
@@ -647,14 +645,7 @@ function DetailsForDevelopment() {
                     </Box>
                   </Box>
                 </Grid>
-                {clientAds.adPackage && (
-                  <Grid item xs={12} sm={6}>
-                    <Typography variant="body2" color="text.secondary">الباقة المختارة</Typography>
-                    <Typography variant="body1" fontWeight="bold" color="primary">
-                      {String(clientAds.adPackage) === "1" ? 'باقة الأساس' : String(clientAds.adPackage) === "2" ? 'باقة النخبة' : String(clientAds.adPackage) === "3" ? 'باقة التميز' : clientAds.adPackage}
-                    </Typography>
-                  </Grid>
-                )}
+
 
                 <Grid item xs={12} sm={6}>
                   <Box
@@ -745,14 +736,15 @@ function DetailsForDevelopment() {
                 )}
               </Grid>
 
+
               {/* مميزات العقار */}
               {clientAds.features && clientAds.features.length > 0 && (
                 <>
-                  <Divider sx={{ my: 4 }} />
+                  {/* <Divider sx={{ my: 4 }} /> */}
                   <Typography
                     variant="h6"
                     gutterBottom
-                    sx={{ color: "#6E00FE", mb: 3 }}
+                    sx={{ color: "#6E00FE" }}
                   >
                     مميزات العقار
                   </Typography>
@@ -770,6 +762,25 @@ function DetailsForDevelopment() {
                   </Box>
                 </>
               )}
+              {/* سطر معلومات الباقة */}
+
+              {clientAds.adPackage && (
+                <Grid item xs={12} sm={6} mt={3}>
+                  <Typography variant="body2" color="text.secondary">الباقة المختارة</Typography>
+                  <Typography variant="body1" fontWeight="bold" color="primary">
+                    {/* {clientAds.adPackage} */}
+                    {clientAds.adPackage === 1 ? 'باقة الأساس' : clientAds.adPackage === 2 ? 'باقة النخبة' : clientAds.adPackage === 3 ? 'باقة التميز' : clientAds.adPackage}
+
+                  </Typography>
+
+                </Grid>
+              )}
+              {/* {clientAds.receipt_image && (
+                <Grid item xs={12} sm={6} mt={3}>
+                  <Typography variant="body2" color="text.secondary">إيصال الدفع</Typography>
+                  <img src={clientAds.receipt_image} alt="إيصال الدفع" style={{ maxWidth: 200, borderRadius: 8, marginTop: 8 }} />
+                </Grid>
+              )} */}
             </CardContent>
           </Paper>
         </Grid>
@@ -903,12 +914,14 @@ function DetailsForDevelopment() {
               "&:hover": { backgroundColor: "#200D3A" },
               borderRadius: "25px",
               px: 3,
+              mt: 3, // استخدم mt بدلاً من marginTop لمزيد من التوافق
               boxShadow: "0px 4px 12px rgba(0,0,0,0.2)",
               flexDirection: "row-reverse",
               gap: 1.5,
               "& .MuiButton-startIcon": {
                 marginLeft: "12px",
                 marginRight: 0,
+                // marginTop: 3,
               },
             }}
           >

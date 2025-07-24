@@ -17,7 +17,7 @@ export default function BestDev() {
   const [offers, setOffers] = useState([]);
   const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
+  useEffect(() => {
     const addUniqueAds = async () => {
       const existingAds = await RealEstateDeveloperAdvertisement.getAll();
 
@@ -40,7 +40,7 @@ export default function BestDev() {
       setLoading(false);
     });
 
-    
+
     const interval = setInterval(() => {
       const cardWidth = 344;
       if (sliderRef.current) {
@@ -49,11 +49,11 @@ export default function BestDev() {
           behavior: 'smooth',
         });
       }
-    }, 5000); 
+    }, 5000);
 
     return () => {
       unsubscribe();
-      clearInterval(interval); 
+      clearInterval(interval);
     };
   }, []);
 

@@ -18,6 +18,7 @@ class FinancingAdvertisementData {
     review_note,  // ملاحظات المراجعة أو سبب الرفض
     ads,          // هل الإعلان مفعّل؟
     adExpiryTime, // وقت انتهاء التفعيل (timestamp)
+    adPackage,
   }) {
     this.title = title || '';
     this.description = description || '';
@@ -45,6 +46,7 @@ class FinancingAdvertisementData {
     // حالة الإعلان المدفوع
     this.ads = ads !== undefined ? ads : false;
     this.adExpiryTime = adExpiryTime || null;
+    this.adPackage = adPackage !== undefined ? adPackage : null;
   }
 }
 

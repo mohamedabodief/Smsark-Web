@@ -20,7 +20,17 @@ import {
 } from 'firebase/storage';
 import { db, auth } from '../firebaseConfig';
 import Notification from '../MessageAndNotification/Notification';
-import User from '../modelsWithOperations/User';
+import User from './User';
+
+console.log('ClientAdvertisemen.js loaded');
+
+// أضف هذا الكائن الثابت بعد الاستيرادات
+const PACKAGE_INFO = {
+  1: { name: 'باقة الأساس', price: 'مجانا', duration: 7 },
+  2: { name: 'باقة النخبة', price: 50, duration: 14 },
+  3: { name: 'باقة التميز', price: 100, duration: 21 },
+};
+
 class ClientAdvertisement {
   #id = null;
 
@@ -58,14 +68,22 @@ class ClientAdvertisement {
   }
 
   async save(imageFiles = [], receiptFile = null) {
-    if (!auth.currentUser) {
-      throw new Error('يجب تسجيل الدخول لإضافة إعلان');
-    }
-    this.userId = auth.currentUser.uid; // التأكد من تعيين userId
-    console.log('[DEBUG] حفظ إعلان جديد مع userId:', this.userId, 'title:', this.title);
-
+    console.log('Receipt file in save:', receiptFile);
     const colRef = collection(db, 'ClientAdvertisements');
-    const docRef = await addDoc(colRef, this.#getAdData());
+    // تجهيز معلومات الباقة
+    let adPackageName = null, adPackagePrice = null, adPackageDuration = null;
+    const pkgKey = String(this.adPackage);
+    if (pkgKey && PACKAGE_INFO[pkgKey]) {
+      adPackageName = PACKAGE_INFO[pkgKey].name;
+      adPackagePrice = PACKAGE_INFO[pkgKey].price;
+      adPackageDuration = PACKAGE_INFO[pkgKey].duration;
+    }
+    const docRef = await addDoc(colRef, {
+      ...this.#getAdData(),
+      adPackageName,
+      adPackagePrice,
+      adPackageDuration,
+    });
     this.#id = docRef.id;
     await updateDoc(docRef, { id: this.#id });
 
@@ -75,10 +93,14 @@ class ClientAdvertisement {
       await updateDoc(docRef, { images: urls });
     }
 
+    // لوج للتشخيص
+    console.log('Receipt file in save:', receiptFile);
+
     if (receiptFile) {
       const receiptUrl = await this.#uploadReceipt(receiptFile);
       this.receipt_image = receiptUrl;
       await updateDoc(docRef, { receipt_image: receiptUrl });
+      console.log('Receipt image saved in Firestore:', receiptUrl);
     }
 
     const admins = await User.getAllUsersByType('admin');
@@ -115,11 +137,21 @@ class ClientAdvertisement {
       this.receipt_image = newReceiptUrl;
     }
 
-    // التأكد من تحديث title وuserId إذا تم تمريرهما
-    if (updates.title) this.title = updates.title;
-    if (updates.userId) this.userId = updates.userId;
-    await updateDoc(docRef, { ...updates, title: this.title, userId: this.userId });
-    console.log('[DEBUG] تم تحديث الإعلان:', this.#id, 'مع userId:', this.userId);
+    // تحديث معلومات الباقة إذا تم تغييرها
+    if (typeof updates.adPackage !== 'undefined' && updates.adPackage !== null) {
+      const pkgKey = String(updates.adPackage);
+      if (PACKAGE_INFO[pkgKey]) {
+        updates.adPackageName = PACKAGE_INFO[pkgKey].name;
+        updates.adPackagePrice = PACKAGE_INFO[pkgKey].price;
+        updates.adPackageDuration = PACKAGE_INFO[pkgKey].duration;
+      } else {
+        updates.adPackageName = null;
+        updates.adPackagePrice = null;
+        updates.adPackageDuration = null;
+      }
+    }
+
+    await updateDoc(docRef, updates);
   }
 
   async delete() {
@@ -164,10 +196,10 @@ async approveAd() {
     console.warn('[DEBUG] لا يوجد userId للإعلان:', this.#id);
     return;
   }
-  const userRef = doc(db, 'users', this.uid);
+  const userRef = doc(db, 'users', this.userId);
   const userSnap = await getDoc(userRef);
   if (!userSnap.exists()) {
-    console.warn('[DEBUG] المستخدم غير موجود في قاعدة البيانات:', this.uid);
+    console.warn('[DEBUG] المستخدم غير موجود في قاعدة البيانات:', this.userId);
     return;
   }
   try {
@@ -443,7 +475,7 @@ async approveAd() {
       const file = limitedFiles[i];
       const imageRef = ref(
         storage,
-        `property_images/${auth.currentUser.uid}/${Date.now()}_${file.name}`
+        `property_images/${this.userId}/${Date.now()}_${file.name}`
       );
       await uploadBytes(imageRef, file);
       const url = await getDownloadURL(imageRef);
@@ -467,9 +499,13 @@ async approveAd() {
 
   async #uploadReceipt(file) {
     const storage = getStorage();
-    const receiptRef = ref(storage, `client_ads/${this.#id}/receipt.jpg`);
+    const path = `property_images/${this.userId}/receipt.jpg`;
+    console.log('Uploading receipt to:', path);
+    const receiptRef = ref(storage, path);
     await uploadBytes(receiptRef, file);
-    return await getDownloadURL(receiptRef);
+    const url = await getDownloadURL(receiptRef);
+    console.log('Receipt uploaded to:', url);
+    return url;
   }
 
   async #deleteReceipt() {
@@ -483,6 +519,14 @@ async approveAd() {
   }
 
   #getAdData() {
+    // تجهيز معلومات الباقة
+    let adPackageName = null, adPackagePrice = null, adPackageDuration = null;
+    const pkgKey = String(this.adPackage);
+    if (pkgKey && PACKAGE_INFO[pkgKey]) {
+      adPackageName = PACKAGE_INFO[pkgKey].name;
+      adPackagePrice = PACKAGE_INFO[pkgKey].price;
+      adPackageDuration = PACKAGE_INFO[pkgKey].duration;
+    }
     return {
       title: this.title,
       type: this.type,
@@ -509,6 +553,9 @@ async approveAd() {
       status: this.status,
       receipt_image: this.receipt_image,
       ...(this.adPackage !== undefined && this.adPackage !== null ? { adPackage: this.adPackage } : {}),
+      adPackageName,
+      adPackagePrice,
+      adPackageDuration,
     };
   }
 }
