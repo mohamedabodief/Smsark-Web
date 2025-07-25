@@ -238,97 +238,185 @@ const updateAdvertisementStatus = createAsyncThunk(
 );
 
 // Async Thunk for approving advertisement
+// const approveAdvertisement = createAsyncThunk(
+//   'advertisements/approveAdvertisement',
+//   async (adId, { rejectWithValue }) => {
+//     try {
+//       const adInstance = new ClientAdvertisement({ id: adId });
+//       await adInstance.approveAd();
+//       return adId;
+//     } catch (error) {
+//       return rejectWithValue(error.message || 'Failed to approve advertisement.');
+//     }
+//   }
+// );
+// Async Thunk for approving advertisement and send notification by user id
 const approveAdvertisement = createAsyncThunk(
   'advertisements/approveAdvertisement',
   async (adId, { rejectWithValue }) => {
     try {
-      const adInstance = new ClientAdvertisement({ id: adId });
+      const adInstance = await ClientAdvertisement.getById(adId);
+      if (!adInstance) {
+        return rejectWithValue('Advertisement not found.');
+      }
       await adInstance.approveAd();
-      return adId;
+      return adInstance;
     } catch (error) {
       return rejectWithValue(error.message || 'Failed to approve advertisement.');
     }
   }
 );
 
-// Async Thunk for rejecting advertisement
+
+
+// Async Thunk for rejecting an advertisement
 const rejectAdvertisement = createAsyncThunk(
   'advertisements/rejectAdvertisement',
   async ({ adId, reason }, { rejectWithValue }) => {
     try {
-      const adInstance = new ClientAdvertisement({ id: adId });
+      // Fetch the full advertisement object from the database
+      const adInstance = await ClientAdvertisement.getById(adId);
+
+      // Check if the ad exists
+      if (!adInstance) {
+        return rejectWithValue('Advertisement not found.');
+      }
+
+      // Call the rejectAd method on the fetched instance
       await adInstance.rejectAd(reason);
-      return { adId, reason };
+
+      // Return the updated ad instance for the reducer
+      return adInstance;
+
     } catch (error) {
+      // Handle any errors that occur during the process
       return rejectWithValue(error.message || 'Failed to reject advertisement.');
     }
   }
 );
 
-// Async Thunk for returning advertisement to pending
+// Async Thunk for returning an advertisement to pending status
 const returnAdvertisementToPending = createAsyncThunk(
   'advertisements/returnAdvertisementToPending',
   async (adId, { rejectWithValue }) => {
     try {
-      const adInstance = new ClientAdvertisement({ id: adId });
+      // Fetch the full advertisement object from the database
+      const adInstance = await ClientAdvertisement.getById(adId);
+
+      // Check if the ad exists before proceeding
+      if (!adInstance) {
+        return rejectWithValue('Advertisement not found.');
+      }
+
+      // Call the returnToPending method on the fetched instance
       await adInstance.returnToPending();
-      return adId;
+
+      // Return the updated ad instance for the reducer
+      return adInstance;
+
     } catch (error) {
+      // Handle any errors that occur during the process
       return rejectWithValue(error.message || 'Failed to return advertisement to pending.');
     }
   }
 );
 
-// Async Thunk for client returning advertisement to pending
+// Async Thunk for a client returning an advertisement to pending status
 const clientReturnAdvertisementToPending = createAsyncThunk(
   'advertisements/clientReturnAdvertisementToPending',
   async (adId, { rejectWithValue }) => {
     try {
-      const adInstance = new ClientAdvertisement({ id: adId });
+      // Fetch the full advertisement object from the database
+      const adInstance = await ClientAdvertisement.getById(adId);
+
+      // Check if the ad was found
+      if (!adInstance) {
+        return rejectWithValue('Advertisement not found.');
+      }
+
+      // Call the method on the fetched instance
       await adInstance.clientReturnToPending();
-      return adId;
+
+      // Return the updated ad instance for the reducer
+      return adInstance;
+
     } catch (error) {
       return rejectWithValue(error.message || 'Failed to return advertisement to pending.');
     }
   }
 );
 
-// Async Thunk for activating advertisement
+// Async Thunk for activating an advertisement
 const activateAdvertisement = createAsyncThunk(
   'advertisements/activateAdvertisement',
   async ({ adId, days }, { rejectWithValue }) => {
     try {
-      const adInstance = new ClientAdvertisement({ id: adId });
+      // Fetch the full advertisement object from the database
+      const adInstance = await ClientAdvertisement.getById(adId);
+
+      // Check if the ad exists
+      if (!adInstance) {
+        return rejectWithValue('Advertisement not found.');
+      }
+
+      // Call the adsActivation method on the fetched instance
       await adInstance.adsActivation(days);
-      return { adId, days };
+
+      // Return the updated ad instance for the reducer
+      return adInstance;
+
     } catch (error) {
       return rejectWithValue(error.message || 'Failed to activate advertisement.');
     }
   }
 );
 
-// Async Thunk for deactivating advertisement
+
+// Async Thunk for deactivating an advertisement
 const deactivateAdvertisement = createAsyncThunk(
   'advertisements/deactivateAdvertisement',
   async (adId, { rejectWithValue }) => {
     try {
-      const adInstance = new ClientAdvertisement({ id: adId });
+      // Fetch the full advertisement object from the database
+      const adInstance = await ClientAdvertisement.getById(adId);
+
+      // Check if the ad was found
+      if (!adInstance) {
+        return rejectWithValue('Advertisement not found.');
+      }
+
+      // Call the method on the fetched instance
       await adInstance.removeAds();
-      return adId;
+
+      // Return the updated ad instance for the reducer
+      return adInstance;
+
     } catch (error) {
       return rejectWithValue(error.message || 'Failed to deactivate advertisement.');
     }
   }
 );
 
-// Async Thunk for updating advertisement
+// Async Thunk for updating an advertisement
 const updateAdvertisement = createAsyncThunk(
   'advertisements/updateAdvertisement',
   async ({ adId, updates, newImageFiles, newReceiptFile }, { rejectWithValue }) => {
     try {
-      const adInstance = new ClientAdvertisement({ id: adId });
+      // Fetch the full advertisement object from the database
+      const adInstance = await ClientAdvertisement.getById(adId);
+
+      // Check if the ad was found
+      if (!adInstance) {
+        return rejectWithValue('Advertisement not found.');
+      }
+
+      // Call the update method on the fetched instance
       await adInstance.update(updates, newImageFiles, newReceiptFile);
-      return { adId, updates };
+
+      // Return the updated ad instance for the reducer
+      // The adInstance object is now updated with the new data and URLs
+      return adInstance;
+
     } catch (error) {
       return rejectWithValue(error.message || 'Failed to update advertisement.');
     }

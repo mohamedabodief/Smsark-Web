@@ -43,18 +43,19 @@ export default function FinancingRequestForm() {
     dependents: '',
     financing_amount: '',
     repayment_years: '',
+    phone_number: '', // أضف رقم الهاتف
   });
 
   const updateInstallment = async (updatedForm) => {
-  const tempRequest = new FinancingRequest(updatedForm);
-  try {
-    const result = await tempRequest.calculateMonthlyInstallment();
-    setMonthlyInstallment(result);
-  } catch (err) {
-    console.error('خطأ في حساب القسط الشهري:', err);
-    setMonthlyInstallment('');
-  }
-};
+    const tempRequest = new FinancingRequest(updatedForm);
+    try {
+      const result = await tempRequest.calculateMonthlyInstallment();
+      setMonthlyInstallment(result);
+    } catch (err) {
+      console.error('خطأ في حساب القسط الشهري:', err);
+      setMonthlyInstallment('');
+    }
+  };
 
   const handleChange = (e) => {
     const updatedForm = { ...form, [e.target.name]: e.target.value };
@@ -107,7 +108,7 @@ export default function FinancingRequestForm() {
       }
       setShowSuccessMessage(true);
       setTimeout(() => {
-        navigate('/profile');
+        navigate('/home');
       }, 1500);
     } catch (err) {
       alert("حدث خطأ أثناء الإرسال");
@@ -144,6 +145,7 @@ export default function FinancingRequestForm() {
           { name: 'monthly_income', label: 'الدخل الشهري (ج.م)', type: 'number' },
           { name: 'job_title', label: 'المسمى الوظيفي' },
           { name: 'employer', label: 'جهة العمل' },
+          { name: 'phone_number', label: 'رقم الهاتف', type: 'text' },
           { name: 'age', label: 'السن', type: 'number' },
           { name: 'dependents', label: 'عدد المعالين', type: 'number' },
           { name: 'financing_amount', label: 'قيمة التمويل المطلوبة (ج.م)', type: 'number' },

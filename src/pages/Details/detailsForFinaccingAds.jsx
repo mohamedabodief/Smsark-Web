@@ -32,6 +32,13 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import FinancingAdvertisement from '../../FireBase/modelsWithOperations/FinancingAdvertisement';
 import { auth } from '../../FireBase/firebaseConfig';
 
+// أضف هذا بعد الاستيرادات مباشرة
+const PACKAGE_INFO = {
+  1: { name: 'باقة الأساس', price: 100, duration: 7 },
+  2: { name: 'باقة النخبة', price: 150, duration: 14 },
+  3: { name: 'باقة التميز', price: 200, duration: 21 },
+};
+
 function DetailsForFinaccingAds() {
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState("");
@@ -265,20 +272,28 @@ function DetailsForFinaccingAds() {
                       <Typography variant="body1" fontWeight="bold">{clientAds.end_limit} ج.م</Typography>
                     </Box>
                   </Grid>
-                  {clientAds.adPackage && (
-                    <Grid item xs={12} sm={6}>
-                      <Typography variant="body2" color="text.secondary">الباقة المختارة</Typography>
-                      <Typography variant="body1" fontWeight="bold" color="primary">
-                        {String(clientAds.adPackage) === "1" ? 'باقة الأساس' : String(clientAds.adPackage) === "2" ? 'باقة النخبة' : String(clientAds.adPackage) === "3" ? 'باقة التميز' : clientAds.adPackage}
-                      </Typography>
-                    </Grid>
-                  )}
                   <Grid item xs={12} sm={12}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
                       <Typography variant="body2" color="text.secondary">نسب الفائدة:</Typography>
                       <Typography variant="body1" fontWeight="bold">حتى 5 سنوات: {clientAds.interest_rate_upto_5}% | حتى 10 سنوات: {clientAds.interest_rate_upto_10}% | أكثر من 10 سنوات: {clientAds.interest_rate_above_10}%</Typography>
                     </Box>
                   </Grid>
+                  {/* عرض اسم الباقة المختارة */}
+                  {(clientAds.adPackageName || PACKAGE_INFO[String(clientAds.adPackage)]?.name) && (
+                    <Grid item xs={12} sm={6} lg={12}>
+                      <Typography variant="body2" color="text.secondary">الباقة المختارة</Typography>
+                      <Typography variant="body1" fontWeight="bold" color="primary">
+                        {clientAds.adPackageName || PACKAGE_INFO[String(clientAds.adPackage)]?.name}
+                      </Typography>
+                    </Grid>
+                  )}
+                  {/* عرض صورة الريسيت إذا كانت موجودة */}
+                  {/* {clientAds.receipt_image && (
+                    <Grid item xs={12} sm={6}>
+                      <Typography variant="body2" color="text.secondary">إيصال الدفع</Typography>
+                      <img src={clientAds.receipt_image} alt="إيصال الدفع" style={{ maxWidth: 200, borderRadius: 8, marginTop: 8 }} />
+                    </Grid>
+                  )} */}
                 </Grid>
                 <Divider sx={{ my: 3 }} />
                 <Box sx={{ width: '50%', display: 'flex', marginTop: '30px', marginLeft: 'auto' }} dir='rtl'>

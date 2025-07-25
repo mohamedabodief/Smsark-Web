@@ -26,11 +26,11 @@ const PropertyPage = () => {
   const [success, setSuccess] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   // التحقق من وجود بيانات التعديل
   const isEditMode = location.state?.editMode || false;
   const editData = location.state?.adData || null;
-  
+
   // طباعة بيانات التعديل للتأكد
   console.log('Edit mode:', isEditMode);
   console.log('Edit data:', editData);
@@ -47,7 +47,7 @@ const PropertyPage = () => {
     } else {
       console.log('User logged in:', currentUser.uid);
     }
-    
+
     // إذا كان في وضع التعديل، تعيين نوع العقار من البيانات
     if (isEditMode && editData) {
       const propertyType = editData.project_types?.[0] || "شقق للبيع";
@@ -84,7 +84,9 @@ const PropertyPage = () => {
           project_types: [selectedItem],
           images: allImageUrls.length > 0 ? allImageUrls : oldImages,
           id: editData.id, // تأكيد تمرير الـ ID الأصلي
-          userId: editData.userId || currentUser.uid // تأكيد userId
+          userId: editData.userId || currentUser.uid, // تأكيد userId
+          adPackage: formData.adPackage, // استخدم القيمة الجديدة من الفورم
+          receiptImage: editData.receiptImage || null, // تأكيد receiptImage
         };
         console.log('Updated data with ID:', updatedData.id);
         const advertisement = new RealEstateDeveloperAdvertisement(updatedData);
@@ -102,13 +104,14 @@ const PropertyPage = () => {
           userId: currentUser.uid,
           type_of_user: "developer",
           images: images || [], // إضافة الصور كروابط
+          adPackage: formData.adPackage, // أضف هذا السطر
         });
         const advertisement = new RealEstateDeveloperAdvertisement(realEstateData);
-        
-        // حفظ الإعلان مع الصور والحصول على ID
-        const adId = await advertisement.save();
+
+        // حفظ الإعلان مع الصور والإيصال والحصول على ID
+        const adId = await advertisement.save(images, formData.receiptImage);
         setSuccess(true);
-        
+
         // الانتقال التلقائي لصفحة الديتيلز بعد ثانيتين
         setTimeout(() => {
           navigate(`/detailsForDevelopment/${adId}`);
@@ -179,10 +182,10 @@ const PropertyPage = () => {
         >
           <Alert
             severity="success"
-            sx={{ width: "100%",mt:3 }}
+            sx={{ width: "100%", mt: 3 }}
             onClose={handleCloseSnackbar}
           >
-            {isEditMode ? 
+            {isEditMode ?
               "تم تحديث العقار بنجاح! سيتم الانتقال لصفحة التفاصيل خلال ثانيتين..." :
               "تم حفظ العقار بنجاح! سيتم الانتقال لصفحة التفاصيل خلال ثانيتين..."
             }
@@ -194,7 +197,7 @@ const PropertyPage = () => {
             sx={{
               display: "flex",
               justifyContent: "center",
-              mt:3,
+              mt: 3,
               my: 4,
             }}
           >
@@ -202,19 +205,19 @@ const PropertyPage = () => {
           </Box>
         )}
 
-        <PropertyForm 
-          onSubmit={handleSubmit} 
-          loading={loading} 
+        <PropertyForm
+          onSubmit={handleSubmit}
+          loading={loading}
           initialData={editData}
           isEditMode={isEditMode}
         />
-        
+
         {isEditMode && (
           <Box sx={{ mt: 3, textAlign: 'center' }}>
             <Button
               variant="outlined"
               onClick={() => navigate(`/detailsForDevelopment/${editData.id}`)}
-              sx={{ 
+              sx={{
                 borderColor: '#6E00FE',
                 color: '#6E00FE',
                 '&:hover': {

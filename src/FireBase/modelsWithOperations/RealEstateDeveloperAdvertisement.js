@@ -544,6 +544,13 @@ import { db, auth } from '../firebaseConfig';
 import Notification from '../MessageAndNotification/Notification';
 import User from './User';
 
+// أضف هذا الكائن الثابت في أعلى الملف بعد الاستيرادات
+const PACKAGE_INFO = {
+  1: { name: 'باقة الأساس', price: 100, duration: 7 },
+  2: { name: 'باقة النخبة', price: 150, duration: 14 },
+  3: { name: 'باقة التميز', price: 200, duration: 21 },
+};
+
 class RealEstateDeveloperAdvertisement {
   #id = null;
 
@@ -584,6 +591,7 @@ class RealEstateDeveloperAdvertisement {
     this.reviewStatus = data.reviewStatus || 'pending';
     this.reviewed_by = data.reviewed_by || null;
     this.review_note = data.review_note || null;
+    this.adPackage = data.adPackage !== undefined ? data.adPackage : null;
   }
 
   // ✅ getter للـ ID
@@ -620,6 +628,7 @@ class RealEstateDeveloperAdvertisement {
     }
     // إذا كانت الصور روابط بالفعل، لا نحتاج لرفعها
 
+    // رفع الريسيت بعد تعيين this.#id
     if (receiptFile) {
       const receiptUrl = await this.#uploadReceipt(receiptFile);
       this.receipt_image = receiptUrl;
@@ -652,6 +661,20 @@ class RealEstateDeveloperAdvertisement {
     
     if (!this.#id) throw new Error('الإعلان بدون ID صالح للتحديث');
     const docRef = doc(db, 'RealEstateDeveloperAdvertisements', this.#id);
+
+    // تحديث معلومات الباقة إذا تم تغييرها
+    if (typeof updates.adPackage !== 'undefined' && updates.adPackage !== null) {
+      const pkgKey = String(updates.adPackage);
+      if (PACKAGE_INFO[pkgKey]) {
+        updates.adPackageName = PACKAGE_INFO[pkgKey].name;
+        updates.adPackagePrice = PACKAGE_INFO[pkgKey].price;
+        updates.adPackageDuration = PACKAGE_INFO[pkgKey].duration;
+      } else {
+        updates.adPackageName = null;
+        updates.adPackagePrice = null;
+        updates.adPackageDuration = null;
+      }
+    }
 
     // الصور
     if (newImagesFiles?.length > 0) {
@@ -829,7 +852,7 @@ class RealEstateDeveloperAdvertisement {
       const data = snap.data();
       const advertisement = new RealEstateDeveloperAdvertisement({
         ...data,
-        id: id // إضافة الـ ID بشكل صريح
+        id: snap.id // إضافة الـ ID بشكل صريح
       });
       return advertisement;
     }
@@ -937,21 +960,36 @@ class RealEstateDeveloperAdvertisement {
     });
   }
 
-  // 🔐 رفع صور الإعلان
-  async #uploadImages(files = []) {
+  // 🔁 استماع لحظي لجميع الإعلانات
+  static subscribeAllAds(callback) {
     // التحقق من حالة تسجيل الدخول
     const currentUser = auth.currentUser;
     if (!currentUser) {
-      throw new Error("يجب تسجيل الدخول أولاً قبل رفع الصور");
+      throw new Error("يجب تسجيل الدخول أولاً قبل الاشتراك في العقارات");
     }
-    
+    const q = collection(db, 'RealEstateDeveloperAdvertisements');
+    return onSnapshot(q, (snap) => {
+      const ads = snap.docs.map(
+        (d) => new RealEstateDeveloperAdvertisement({
+          ...d.data(),
+          id: d.id
+        })
+      );
+      callback(ads);
+    });
+  }
+
+  // 🔐 رفع صور الإعلان
+  async #uploadImages(files = []) {
+    const currentUser = auth.currentUser;
+    if (!currentUser) throw new Error("يجب تسجيل الدخول أولاً قبل رفع الصور");
     const storage = getStorage();
     const urls = [];
     const limited = files.slice(0, 4);
     for (let i = 0; i < limited.length; i++) {
       const refPath = ref(
         storage,
-        `developer_ads/${this.#id}/image_${i + 1}.jpg`
+        `property_images/${this.userId}/image_${i + 1}.jpg`
       );
       await uploadBytes(refPath, limited[i]);
       urls.push(await getDownloadURL(refPath));
@@ -961,14 +999,10 @@ class RealEstateDeveloperAdvertisement {
 
   // 🔐 رفع إيصال الدفع
   async #uploadReceipt(file) {
-    // التحقق من حالة تسجيل الدخول
     const currentUser = auth.currentUser;
-    if (!currentUser) {
-      throw new Error("يجب تسجيل الدخول أولاً قبل رفع الإيصال");
-    }
-    
+    if (!currentUser) throw new Error("يجب تسجيل الدخول أولاً قبل رفع الإيصال");
     const storage = getStorage();
-    const refPath = ref(storage, `developer_ads/${this.#id}/receipt.jpg`);
+    const refPath = ref(storage, `property_images/${this.userId}/receipt.jpg`);
     await uploadBytes(refPath, file);
     return await getDownloadURL(refPath);
   }
@@ -981,7 +1015,7 @@ class RealEstateDeveloperAdvertisement {
       throw new Error("يجب تسجيل الدخول أولاً قبل حذف الصور");
     }
     
-    const dirRef = ref(getStorage(), `developer_ads/${this.#id}`);
+    const dirRef = ref(getStorage(), `property_images/${this.userId}`);
     try {
       const list = await listAll(dirRef);
       for (const fileRef of list.items) await deleteObject(fileRef);
@@ -996,7 +1030,7 @@ class RealEstateDeveloperAdvertisement {
       throw new Error("يجب تسجيل الدخول أولاً قبل حذف الإيصال");
     }
     
-    const fileRef = ref(getStorage(), `developer_ads/${this.#id}/receipt.jpg`);
+    const fileRef = ref(getStorage(), `property_images/${this.userId}/receipt.jpg`);
     try {
       await deleteObject(fileRef);
     } catch (_) {}
@@ -1010,6 +1044,15 @@ class RealEstateDeveloperAdvertisement {
       throw new Error("يجب تسجيل الدخول أولاً قبل تجهيز بيانات العقار");
     }
     
+    // استخراج معلومات الباقة إذا كانت موجودة
+    let adPackageName = null, adPackagePrice = null, adPackageDuration = null;
+    const pkgKey = String(this.adPackage);
+    if (pkgKey && PACKAGE_INFO[pkgKey]) {
+      adPackageName = PACKAGE_INFO[pkgKey].name;
+      adPackagePrice = PACKAGE_INFO[pkgKey].price;
+      adPackageDuration = PACKAGE_INFO[pkgKey].duration;
+    }
+
     const data = {
       developer_name: this.developer_name,
       description: this.description,
@@ -1037,6 +1080,10 @@ class RealEstateDeveloperAdvertisement {
       reviewStatus: this.reviewStatus,
       reviewed_by: this.reviewed_by,
       review_note: this.review_note,
+      adPackage: this.adPackage,
+      adPackageName,
+      adPackagePrice,
+      adPackageDuration,
     };
     
     // إضافة الـ ID إذا كان موجوداً

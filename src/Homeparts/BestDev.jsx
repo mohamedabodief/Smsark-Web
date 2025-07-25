@@ -2,9 +2,6 @@ import {
   Box, Typography, Card, CardMedia, CardContent, IconButton, Tooltip
 } from '@mui/material';
 import { ArrowBackIos, ArrowForwardIos } from '@mui/icons-material';
-import FavoriteIcon from '@mui/icons-material/Favorite';
-import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
-import { useDispatch, useSelector } from 'react-redux';
 import FavoriteButton from './FavoriteButton';
 import { useRef, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -17,51 +14,68 @@ export default function BestDev() {
   const [offers, setOffers] = useState([]);
   const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
+  useEffect(() => {
     const addUniqueAds = async () => {
-      const existingAds = await RealEstateDeveloperAdvertisement.getAll();
+      try {
+        console.log('Fetching existing developer ads...');
+        const existingAds = await RealEstateDeveloperAdvertisement.getAll();
+        console.log('Existing ads:', existingAds);
 
-      devAdsData.forEach(async (adData) => {
-        const alreadyExists = existingAds.some(
-          (ad) => ad.title === adData.title && ad.developer_name === adData.developer_name
-        );
+        for (const adData of devAdsData) {
+          const alreadyExists = existingAds.some(
+            (ad) => ad.title === adData.title && ad.developer_name === adData.developer_name
+          );
 
-        if (!alreadyExists) {
-          const ad = new RealEstateDeveloperAdvertisement(adData);
-          await ad.save();
+          if (!alreadyExists) {
+            console.log('Adding new ad:', adData);
+            const ad = new RealEstateDeveloperAdvertisement(adData);
+            await ad.save();
+            console.log('Successfully saved ad:', adData.title);
+          } else {
+            console.log('Ad already exists, skipping:', adData.title);
+          }
         }
-      });
+      } catch (error) {
+        console.error('Failed to add unique ads:', error);
+        setLoading(false);
+      }
     };
 
     addUniqueAds();
 
+    console.log('Subscribing to active developer ads...');
     const unsubscribe = RealEstateDeveloperAdvertisement.subscribeActiveAds((ads) => {
-      setOffers(ads);
+      console.log('Received active ads:', ads);
+      // Explicitly filter ads to ensure ads: true
+      const activeAds = ads.filter(ad => ad.ads === true);
+      console.log('Filtered active ads (ads: true):', activeAds);
+      setOffers(activeAds);
       setLoading(false);
     });
 
-    
+
     const interval = setInterval(() => {
       const cardWidth = 344;
       if (sliderRef.current) {
+        console.log('Auto-scrolling slider...');
         sliderRef.current.scrollBy({
           left: -cardWidth,
           behavior: 'smooth',
         });
       }
-    }, 5000); 
+    }, 5000);
 
     return () => {
+      console.log('Unsubscribing from active ads and clearing interval...');
       unsubscribe();
-      clearInterval(interval); 
+      clearInterval(interval);
     };
   }, []);
-
-
 
   const scroll = (direction) => {
     const cardWidth = 344;
     if (sliderRef.current) {
+      console.log(`Scrolling ${direction}...`);
       sliderRef.current.scrollBy({
         left: direction === 'left' ? -cardWidth : cardWidth,
         behavior: 'smooth',
@@ -97,24 +111,24 @@ export default function BestDev() {
             offers.map((item, index) => (
               <Box
                 key={index}
-                onClick={() => navigate(`/details/developmentAds/${item.id}`)}
+                onClick={() => {
+                  console.log('Navigating to ad details:', item.id);
+                  navigate(`/details/developmentAds/${item.id}`);
+                }}
                 sx={{ cursor: 'pointer' }}
               >
-                <Card sx={{ minWidth: { xs: 260, sm: 300, md: 320 }, scrollSnapAlign: 'start', flexShrink: 0, borderRadius: 3, position: 'relative' }}>
-                  <CardMedia component="img" height="160" image={item.image || '/default-placeholder.png'} />
-
+                <Card sx={{ minWidth: { xs: 260, sm: 300, md: 320 }, scrollSnapAlign: 'start', flexShrink: 0, borderRadius: 3, position: 'relative', height: '100%' }}>
+                  <CardMedia component="img" height="160" image={item.images?.[0] || '/default-placeholder.png'} />
                   <FavoriteButton advertisementId={item.id} type="developer" />
-
                   <CardContent>
                     <Typography color="primary" fontWeight="bold">
                       {item.price_start_from?.toLocaleString()} - {item.price_end_to?.toLocaleString()} ج.م
                     </Typography>
                     <Typography variant="subtitle1">{item.developer_name}</Typography>
                     <Typography variant="body2" color="text.secondary">{typeof item.location === 'object' ? (item.location.full || JSON.stringify(item.location)) : item.location}</Typography>
-                    <Typography variant="body2" mt={1}>{typeof item.description === 'object' ? JSON.stringify(item.description) : item.description}</Typography>
+                    <Typography variant="body2" mt={1}>{item.description}</Typography>
                   </CardContent>
                 </Card>
-
               </Box>
             ))
           )}

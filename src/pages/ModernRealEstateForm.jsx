@@ -199,8 +199,9 @@ const ModernRealEstateForm = () => {
   const [coordinates, setCoordinates] = useState(null);
   const [enableMapPick, setEnableMapPick] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState(null);
-  const [geocodingError, setGeocodingError] = useState('');
-  const [isGeocodingLoading, setIsGeocodingLoading] = useState(false);
+  const [receiptImage, setReceiptImage] = useState(null);
+  const [isGeocodingLoading, setIsGeocodingLoading] = useState(false); // أضف هذا
+  const [geocodingError, setGeocodingError] = useState(''); // أضف هذا
   const navigate = useNavigate();
   const location = useLocation();
   const editData = location.state?.adData || null;
@@ -363,8 +364,9 @@ const ModernRealEstateForm = () => {
       return;
     }
 
-    const userId = auth.currentUser.uid;
-    console.log('[DEBUG] userId من auth.currentUser:', userId);
+    // لوجات التشخيص
+    console.log('Selected package:', selectedPackage);
+    console.log('Receipt image before save:', receiptImage);
 
     try {
       if (isEditMode && (!editData.id || editData.id === undefined || editData.id === null)) {
@@ -390,11 +392,7 @@ const ModernRealEstateForm = () => {
           ad_type: data.adType,
           ad_status: data.adStatus,
           images: oldImages,
-          adPackage: selectedPackage,
-          userId: userId,
-          address: data.fullAddress,
-          city: data.city,
-          governorate: data.governorate,
+          adPackage: selectedPackage ? Number(selectedPackage) : null,
         }, filesToUpload);
         console.log('[DEBUG] تم تحديث الإعلان:', editData.id);
         setShowSuccess(true);
@@ -427,12 +425,13 @@ const ModernRealEstateForm = () => {
             ? Date.now() + data.activationDays * 24 * 60 * 60 * 1000
             : null,
           description: data.description,
-          adPackage: selectedPackage,
+          adPackage: selectedPackage ? Number(selectedPackage) : null,
         };
         console.log('[DEBUG] بيانات الإعلان الجديد:', adData);
         const ad = new ClientAdvertisement(adData);
-        await ad.save(images);
-        console.log('[DEBUG] تم إضافة الإعلان:', ad.id);
+        // لوج قبل الحفظ
+        console.log('Calling ad.save with images:', images, 'and receiptImage:', receiptImage);
+        await ad.save(images, receiptImage);
         setShowSuccess(true);
         handleReset();
         setTimeout(() => {
@@ -463,7 +462,7 @@ const ModernRealEstateForm = () => {
       className="modern-form-container"
       sx={{
         minHeight: '100vh',
-        display: 'flex',
+        // display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: '#f5f5f5',
@@ -503,7 +502,9 @@ const ModernRealEstateForm = () => {
         <Box component="form" onSubmit={handleSubmit(onSubmit)} width={'100%'} sx={{ direction: 'rtl' }}>
           <StyledCard>
             <CardContent>
-              <Container maxWidth='lg' sx={{ display: 'flex', flexDirection: 'column' }}>
+              <Container maxWidth='lg' sx={{ display: 'flex' }}>
+                {/* <Grid container spacing={2} dir="rtl"> */}
+
                 {/* Basic Information */}
                 <Grid item width={'100%'}>
                   <Typography variant="h6" sx={{ mb: 3, color: '#6E00FE', fontWeight: 600 }}>
@@ -1024,7 +1025,11 @@ const ModernRealEstateForm = () => {
       </Container>
       
     </Box>
-          <AdPackagesClient/>
+       <AdPackagesClient
+          selectedPackageId={selectedPackage}
+          setSelectedPackageId={setSelectedPackage}
+          onReceiptImageChange={setReceiptImage}
+        />
         <Box sx={{ mt: 4, display: 'flex', gap: 2, justifyContent: 'center' ,mb:'16px'}}>
     
             <Button
@@ -1076,3 +1081,5 @@ const ModernRealEstateForm = () => {
 };
 
 export default ModernRealEstateForm;
+
+

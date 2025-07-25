@@ -260,7 +260,7 @@ class FinancingRequest {
     this.dependents = data.dependents;
     this.financing_amount = data.financing_amount;
     this.repayment_years = data.repayment_years;
-    this.phone_number = data.phone_number || ''; // ✅ مضاف: رقم الهاتف
+    this.phone_number = data.phone_number || '';
     this.status = data.status || 'pending';
     this.reviewStatus = data.reviewStatus || 'pending'; // ✅ حالة مراجعة الطلب
     this.submitted_at = data.submitted_at || Timestamp.now();
@@ -296,7 +296,7 @@ class FinancingRequest {
       dependents: this.dependents,
       financing_amount: this.financing_amount,
       repayment_years: this.repayment_years,
-      phone_number: this.phone_number, // ✅ مضاف: رقم الهاتف
+      phone_number: this.phone_number, // أضف رقم الهاتف
       status: this.status,
       reviewStatus: this.reviewStatus,
       submitted_at: this.submitted_at,
