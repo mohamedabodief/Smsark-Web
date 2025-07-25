@@ -118,6 +118,10 @@ import {
     // deactivateHomepageAd
 } from "../../feature/ads/homepageAdsSlice";
 import Notification from '../../FireBase/MessageAndNotification/Notification';
+// financing 
+import FinancingAdvertisement from '../../FireBase/modelsWithOperations/FinancingAdvertisement';
+import FinancingRequest from '../../FireBase/modelsWithOperations/FinancingRequest';
+import { fetchFinancialRequests, updateFinancialRequest, deleteFinancialRequest } from '../../reduxToolkit/slice/financialRequestSlice';
 // Define shared data (could be moved to a constants file)
 const governorates = [
     "القاهرة", "الإسكندرية", "الجيزة", "الشرقية", "الدقهلية", "البحيرة", "المنيا", "أسيوط",
@@ -154,18 +158,6 @@ const NAVIGATION = [
         icon: <AccountBoxIcon />,
         tooltip: 'الملف الشخصي',
     },
-    // {
-    //     segment: 'users',
-    //     title: 'المستخدمين',
-    //     icon: <GroupIcon />,
-    //     tooltip: 'المستخدمين',
-    // },
-    // {
-    //     segment: 'properties',
-    //     title: 'العقارات',
-    //     icon: <HomeIcon />,
-    //     tooltip: 'العقارات',
-    // },
     {
         segment: 'mainadvertisment',
         title: 'إعلانات القسم الرئيسى',
@@ -179,23 +171,17 @@ const NAVIGATION = [
         tooltip: 'إعلانات ممولة',
     },
     // {
-    //     segment: 'clientadvertisment',
-    //     title: 'إعلانات العملاء',
-    //     icon: <SupervisedUserCircleIcon />,
-    //     tooltip: 'إعلانات العملاء',
+    //     segment: 'inquiries',
+    //     title: 'المحادثات',
+    //     icon: <MessageIcon />,
+    //     tooltip: 'المحادثات',
     // },
     {
-        segment: 'inquiries',
-        title: 'المحادثات',
-        icon: <MessageIcon />,
-        tooltip: 'المحادثات',
+        segment: 'orders',
+        title: 'الطلبات',
+        icon: <ShoppingCartIcon />,
+        tooltip: 'الطلبات',
     },
-    // {
-    //     segment: 'orders',
-    //     title: 'الطلبات',
-    //     icon: <ShoppingCartIcon />,
-    //     tooltip: 'الطلبات',
-    // },
     {
         kind: 'divider',
     },
@@ -1227,14 +1213,28 @@ function ProfilePage() {
     // Effect to update local form data when Redux userProfile changes
     useEffect(() => {
         if (userProfile) {
-            console.log("OrganizationProfilePage: userProfile updated in Redux, setting formData:", userProfile);
             setFormData({
-                ...userProfile,
-                email: auth.currentUser?.email || userProfile.email || "", // Get email from auth first, then fallback to profile
+                org_name: userProfile.org_name || "",
+                type_of_organization: userProfile.type_of_organization || "",
+                phone: userProfile.phone || "",
+                email: auth.currentUser?.email || userProfile.email || "",
+                // Ensure governorate is always a string and valid
+                governorate: typeof userProfile.governorate === 'string' && governorates.includes(userProfile.governorate)
+                  ? userProfile.governorate
+                  : '',
+                city: userProfile.city || "",
+                address: userProfile.address || "",
             });
         } else {
-            console.log("OrganizationProfilePage: userProfile is null or undefined, clearing formData.");
-            setFormData({});
+            setFormData({
+                org_name: "",
+                type_of_organization: "",
+                phone: "",
+                email: "",
+                governorate: '',
+                city: "",
+                address: "",
+            });
         }
     }, [userProfile]);
 
@@ -1515,11 +1515,12 @@ function ProfilePage() {
                                 fullWidth
                                 margin="normal"
                                 name="governorate"
-                                value={typeof formData.governorate === 'object' ? formData.governorate.full || '' : formData.governorate}
+                                value={governorates.includes(formData.governorate) ? formData.governorate : ''}
                                 onChange={handleChange}
                                 select
                                 InputProps={{ style: { direction: 'rtl' } }}
                             >
+                                <MenuItem value="">اختر المحافظة</MenuItem>
                                 {governorates.map((gov) => (
                                     <MenuItem key={gov} value={gov}>{gov}</MenuItem>
                                 ))}
@@ -3100,23 +3101,158 @@ function InquiriesPage() {
 }
 
 function OrdersPage() {
+    const userProfile = useSelector((state) => state.user.profile);
+    const dispatch = useDispatch();
+    const [ads, setAds] = useState([]);
+    const [loadingAds, setLoadingAds] = useState(true);
+    const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+
+    // Redux slice state
+    const requests = useSelector((state) => state.financialRequests.list);
+    const requestsLoading = useSelector((state) => state.financialRequests.loading);
+    const requestsError = useSelector((state) => state.financialRequests.error);
+    const [actionLoading, setActionLoading] = useState({});
+
+    // Fetch all financing ads for this org
+    useEffect(() => {
+        let isMounted = true;
+        if (!userProfile?.uid) return;
+        setLoadingAds(true);
+        FinancingAdvertisement.getByUserId(userProfile.uid)
+            .then((ads) => {
+                if (isMounted) setAds(ads);
+            })
+            .catch(() => {
+                setSnackbar({ open: true, message: 'فشل تحميل الإعلانات', severity: 'error' });
+            })
+            .finally(() => {
+                if (isMounted) setLoadingAds(false);
+            });
+        return () => { isMounted = false; };
+    }, [userProfile?.uid]);
+
+    // Fetch all financing requests on mount
+    useEffect(() => {
+        dispatch(fetchFinancialRequests());
+    }, [dispatch]);
+
+    // Action handlers using Redux slice
+    const handleRequestAction = async (reqId, action, adId, ...args) => {
+        setActionLoading((prev) => ({ ...prev, [reqId]: true }));
+        try {
+            if (action === 'pending') {
+                await dispatch(updateFinancialRequest({ id: reqId, updates: { reviewStatus: 'pending' } })).unwrap();
+                setSnackbar({ open: true, message: 'تمت إعادة الطلب للمراجعة', severity: 'info' });
+            } else if (action === 'reject') {
+                await dispatch(updateFinancialRequest({ id: reqId, updates: { reviewStatus: 'rejected', review_note: args[0] || '' } })).unwrap();
+                setSnackbar({ open: true, message: 'تم رفض الطلب', severity: 'error' });
+            } else if (action === 'delete') {
+                await dispatch(deleteFinancialRequest(reqId)).unwrap();
+                setSnackbar({ open: true, message: 'تم حذف الطلب', severity: 'success' });
+            }
+        } catch (e) {
+            setSnackbar({ open: true, message: e.message || 'خطأ في تنفيذ العملية', severity: 'error' });
+        } finally {
+            setActionLoading((prev) => ({ ...prev, [reqId]: false }));
+        }
+    };
+
     return (
-        <Box sx={{ p: 2, textAlign: 'right' }}>
-            <Typography variant="h4" gutterBottom>Orders List</Typography>
+        <Box  sx={{ p: 2, textAlign: 'left' }}>
+            <Typography variant="h4" gutterBottom>طلبات التمويل على إعلاناتك</Typography>
             <Paper sx={{ p: 2, borderRadius: 2, minHeight: 400, textAlign: 'right' }}>
-                <Typography variant="h6" color="text.secondary">Table of recent orders (placeholder)</Typography>
-                <Box sx={{ mt: 2, p: 2, border: '1px dashed #ccc', borderRadius: 1, textAlign: 'right' }}>
-                    <Typography variant="body1" color="text.secondary">
-                        Here you would integrate a data grid component (like `@mui/x-data-grid`) to display a list of orders,
-                        with features like sorting, filtering, and pagination.
+                {loadingAds ? (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 200 }}>
+                        <CircularProgress />
+                        <Typography sx={{ ml: 2 }}>جاري تحميل الإعلانات...</Typography>
+                    </Box>
+                ) : ads.length === 0 ? (
+                    <Typography variant="body1" color="text.secondary" sx={{ mt: 4, textAlign: 'center' }}>
+                        لا توجد إعلانات تمويلية خاصة بك.
                     </Typography>
-                    <ul style={{ listStyle: 'none', padding: 0, textAlign: 'right' }}>
-                        <li>Order #12345: John Doe - $150.00 - Pending</li>
-                        <li>Order #12346: Jane Smith - $220.50 - Shipped</li>
-                        <li>Order #12347: Peter Jones - $75.25 - Delivered</li>
-                    </ul>
-                </Box>
+                ) : requestsLoading ? (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 200 }}>
+                        <CircularProgress />
+                        <Typography sx={{ ml: 2 }}>جاري تحميل الطلبات...</Typography>
+                    </Box>
+                ) : requestsError ? (
+                    <Alert severity="error">{requestsError}</Alert>
+                ) : (
+                    ads.map((ad) => {
+                        const requestsForAd = requests.filter((r) => r.advertisement_id === ad.id);
+                        return (
+                            <Box key={ad.id}  sx={{ mb: 4, border: '1px solid #eee', borderRadius: 2, p: 2 }}>
+                                <Box dir='ltr' sx={{ textAlign: 'left' }}>
+                                <Typography variant="h6" color="primary" sx={{ mb: 1 }}>{ad.title}</Typography>
+                                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>الحد الأدنى: {ad.start_limit} | الحد الأقصى: {ad.end_limit}</Typography>
+                                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>نسبة الفائدة حتى 5 سنوات: {ad.interest_rate_upto_5}% | حتى 10 سنوات: {ad.interest_rate_upto_10}% | أكثر من 10 سنوات: {ad.interest_rate_above_10}%</Typography>
+                                </Box>
+                                {requestsForAd.length > 0 ? (
+                                    <List>
+                                        {requestsForAd.map((req) => (
+                                            <ListItem key={req.id} sx={{ borderBottom: '1px solid #eee', flexDirection: 'row-reverse' }}>
+                                                <ListItemText
+                                                    primary={<>
+                                                        <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>مقدم الطلب: {req.user_id}</Typography>
+                                                        <Typography variant="body2">المبلغ المطلوب: {req.financing_amount} | سنوات السداد: {req.repayment_years}</Typography>
+                                                        <Typography variant="body2">الحالة: {req.reviewStatus}</Typography>
+                                                    </>}
+                                                    secondary={<>
+                                                        <Typography variant="caption" color="text.secondary">ID: {req.id}</Typography>
+                                                    </>}
+                                                />
+                                                <Stack direction="row" spacing={1.5}>
+                                                    <Button
+                                                        variant="outlined"
+                                                        color="success"
+                                                        size="small"
+                                                        disabled={actionLoading[req.id]}
+                                                        onClick={() => handleRequestAction(req.id, 'pending', ad.id)}
+                                                    >
+                                                        إعادة للمراجعة
+                                                    </Button>
+                                                    <Button
+                                                        variant="outlined"
+                                                        color="error"
+                                                        size="small"
+                                                        disabled={actionLoading[req.id]}
+                                                        onClick={() => handleRequestAction(req.id, 'reject', ad.id, 'تم الرفض من قبل المؤسسة')}
+                                                    >
+                                                        رفض
+                                                    </Button>
+                                                    <Button
+                                                        variant="outlined"
+                                                        color="secondary"
+                                                        size="small"
+                                                        disabled={actionLoading[req.id]}
+                                                        onClick={() => handleRequestAction(req.id, 'delete', ad.id)}
+                                                    >
+                                                        حذف
+                                                    </Button>
+                                                </Stack>
+                                            </ListItem>
+                                        ))}
+                                    </List>
+                                ) : (
+                                    <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+                                        لا توجد طلبات تمويل لهذا الإعلان.
+                                    </Typography>
+                                )}
+                            </Box>
+                        );
+                    })
+                )}
             </Paper>
+            <Snackbar
+                open={snackbar.open}
+                autoHideDuration={6000}
+                onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+            >
+                <Alert onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))} severity={snackbar.severity} sx={{ width: '100%' }}>
+                    {snackbar.message}
+                </Alert>
+            </Snackbar>
         </Box>
     );
 }
