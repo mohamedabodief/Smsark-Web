@@ -169,7 +169,7 @@ class FinancingAdvertisement {
     await deleteDoc(doc(db, 'FinancingAdvertisements', this.#id));
   }
 
-  // ✅ الموافقة على الإعلان من قبل الأدمن
+  // ✅ الموافقة على الإعلان من قبل صانع الإعلان  
   async approve() {
     const admin = await User.getByUid(auth.currentUser.uid);
     const updates = {

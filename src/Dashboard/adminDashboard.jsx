@@ -2527,6 +2527,13 @@ function PaidAdvertismentPage() {
         severity: 'success',
     });
 
+    // Add at the top of PaidAdvertismentPage (after snackbar state):
+    const [receiptDialogOpen, setReceiptDialogOpen] = useState(false);
+    const [receiptDialogImage, setReceiptDialogImage] = useState(null);
+    const [receiptDialogAd, setReceiptDialogAd] = useState(null);
+    const [receiptDialogType, setReceiptDialogType] = useState(null);
+    const [receiptDialogDays, setReceiptDialogDays] = useState(7);
+
     // --- Data Fetching Effect ---
     useEffect(() => {
         let unsubscribeDeveloper;
@@ -2746,15 +2753,13 @@ function PaidAdvertismentPage() {
     };
 
     // New: Handle activation with a specific number of days
-    const handleActivateWithDays = async (days) => {
-        if (!adToActivate || !adToActivateType) return;
-      
+    const handleActivateWithDays = async (days, ad = adToActivate, type = adToActivateType) => {
+        if (!ad || !type) return;
         handleActivationMenuClose();
-      
-        dispatch(adToActivateType === 'developer' ? setLoadingDeveloper(true) : setLoadingFunder(true));
-      
+        setReceiptDialogOpen(false);
+        dispatch(type === 'developer' ? setLoadingDeveloper(true) : setLoadingFunder(true));
         try {
-          await dispatch(toggleAdStatus({ adId: adToActivate.id, type: adToActivateType, days })).unwrap();
+          await dispatch(toggleAdStatus({ adId: ad.id, type, days })).unwrap();
           setSnackbar({
             open: true,
             message: `تم تفعيل الإعلان بنجاح لمدة ${days} يوم.`,
@@ -2767,7 +2772,7 @@ function PaidAdvertismentPage() {
             severity: 'error',
           });
         } finally {
-          dispatch(adToActivateType === 'developer' ? setLoadingDeveloper(false) : setLoadingFunder(false));
+          dispatch(type === 'developer' ? setLoadingDeveloper(false) : setLoadingFunder(false));
         }
       };
       
@@ -2953,6 +2958,22 @@ function PaidAdvertismentPage() {
                             </IconButton>
                         </span>
                     </Tooltip>
+                    {/* Add a new column to developerColumns for receipt image */}
+                    {params.row.receipt_image && (
+                        <Tooltip title="إيصال الدفع">
+                            <span>
+                                <IconButton
+                                    aria-label="receipt"
+                                    size="small"
+                                    onClick={() => handleReceiptClick(params.row, 'developer')}
+                                    color="info"
+                                    disabled={loading.developer}
+                                >
+                                    <VisibilityIcon fontSize="small" />
+                                </IconButton>
+                            </span>
+                        </Tooltip>
+                    )}
                 </Box>
             ),
         },
@@ -3105,6 +3126,22 @@ function PaidAdvertismentPage() {
                             </IconButton>
                         </span>
                     </Tooltip>
+                    {/* Add a new column to funderColumns for receipt image */}
+                    {params.row.receipt_image && (
+                        <Tooltip title="إيصال الدفع">
+                            <span>
+                                <IconButton
+                                    aria-label="receipt"
+                                    size="small"
+                                    onClick={() => handleReceiptClick(params.row, 'funder')}
+                                    color="info"
+                                    disabled={loading.funder}
+                                >
+                                    <VisibilityIcon fontSize="small" />
+                                </IconButton>
+                            </span>
+                        </Tooltip>
+                    )}
                 </Box>
             ),
         },
@@ -3148,6 +3185,27 @@ function PaidAdvertismentPage() {
                 />
             );
         }
+    };
+
+    // Handler to open dialog
+    const handleReceiptClick = (ad, type) => {
+      let days = 7;
+      if (ad.adPackage === 1) days = 7;
+      else if (ad.adPackage === 2) days = 14;
+      else if (ad.adPackage === 3) days = 21;
+      setReceiptDialogImage(ad.receipt_image);
+      setReceiptDialogAd(ad);
+      setReceiptDialogType(type);
+      setReceiptDialogDays(days);
+      setReceiptDialogOpen(true);
+    };
+
+    // Handler to activate with days from dialog
+    const handleReceiptDialogActivate = async () => {
+      if (receiptDialogAd && receiptDialogType) {
+        await handleActivateWithDays(receiptDialogDays, receiptDialogAd, receiptDialogType);
+        setReceiptDialogOpen(false);
+      }
     };
 
     return (
@@ -3303,6 +3361,47 @@ function PaidAdvertismentPage() {
                     {snackbar.message || error}
                 </Alert>
             </Snackbar>
+
+            {/* Receipt Dialog */}
+            <Dialog open={receiptDialogOpen} onClose={() => setReceiptDialogOpen(false)} maxWidth="sm" fullWidth dir="rtl">
+              <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span>إيصال الدفع</span>
+                <IconButton onClick={() => setReceiptDialogOpen(false)}><CloseIcon /></IconButton>
+              </DialogTitle>
+              <DialogContent sx={{ textAlign: 'center' }}>
+                {receiptDialogImage ? (
+                  <img src={receiptDialogImage} alt="إيصال الدفع" style={{ maxWidth: '100%', maxHeight: 400, borderRadius: 8, marginBottom: 16 }} />
+                ) : (
+                  <Typography color="text.secondary">لا يوجد إيصال دفع</Typography>
+                )}
+                <FormControl fullWidth sx={{ mt: 3 }}>
+                  <InputLabel id="receipt-dialog-days-label">مدة التفعيل (بالأيام)</InputLabel>
+                  <Select
+                    labelId="receipt-dialog-days-label"
+                    value={receiptDialogDays}
+                    label="مدة التفعيل (بالأيام)"
+                    onChange={e => setReceiptDialogDays(Number(e.target.value))}
+                  >
+                    <MenuItem value={7}>7 أيام</MenuItem>
+                    <MenuItem value={14}>14 يوم</MenuItem>
+                    <MenuItem value={21}>21 يوم</MenuItem>
+                    <MenuItem value={28}>28 يوم</MenuItem>
+                  </Select>
+                  {/* Helper text for package */}
+                  {receiptDialogAd?.adPackage && (
+                    <Typography variant="caption" color="primary" sx={{ mt: 1, display: 'block' }}>
+                      {receiptDialogAd.adPackage === 1 && 'باقة الأساس (7 أيام)'}
+                      {receiptDialogAd.adPackage === 2 && 'باقة النخبة (14 يوم)'}
+                      {receiptDialogAd.adPackage === 3 && 'باقة التميز (21 يوم)'}
+                    </Typography>
+                  )}
+                </FormControl>
+              </DialogContent>
+              <DialogActions>
+                <Button onClick={() => setReceiptDialogOpen(false)}>إلغاء</Button>
+                <Button onClick={handleReceiptDialogActivate} variant="contained" color="primary">تفعيل</Button>
+              </DialogActions>
+            </Dialog>
         </Box>
     );
 }

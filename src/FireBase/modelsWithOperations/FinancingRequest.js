@@ -452,6 +452,31 @@ class FinancingRequest {
     }
     return null;
   }
+
+  /**
+   * جلب جميع الطلبات المرتبطة بإعلان تمويلي معيّن
+   * @param {string} advertisement_id - معرّف الإعلان التمويلي
+   * @returns {Promise<FinancingRequest[]>}
+   */
+  static async getByAdvertisementId(advertisement_id) {
+    const q = query(collection(db, 'FinancingRequests'), where('advertisement_id', '==', advertisement_id));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map((doc) => new FinancingRequest({ id: doc.id, ...doc.data() }));
+  }
+
+  /**
+   * الاشتراك اللحظي في جميع الطلبات المرتبطة بإعلان تمويلي معيّن (Real-time listener)
+   * @param {string} advertisement_id - معرّف الإعلان التمويلي
+   * @param {function} callback - دالة تُستدعى عند التحديث
+   * @returns {function} unsubscribe - دالة لإلغاء الاشتراك
+   */
+  static subscribeByAdvertisementId(advertisement_id, callback) {
+    const q = query(collection(db, 'FinancingRequests'), where('advertisement_id', '==', advertisement_id));
+    return onSnapshot(q, (snap) => {
+      const requests = snap.docs.map((doc) => new FinancingRequest({ id: doc.id, ...doc.data() }));
+      callback(requests);
+    });
+  }
 }
 
 export default FinancingRequest;
