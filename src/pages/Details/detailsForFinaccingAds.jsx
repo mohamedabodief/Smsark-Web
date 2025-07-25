@@ -62,7 +62,22 @@ function DetailsForFinaccingAds() {
     };
     if (id) fetchAd();
   }, [id]);
-
+ const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: clientAds?.title || 'إعلان عقاري',
+          text: clientAds?.description || 'تحقق من هذا الإعلان العقاري!',
+          url: window.location.href,
+        });
+        console.log('[DEBUG] تمت المشاركة بنجاح');
+      } catch (error) {
+        console.error('[DEBUG] حدث خطأ أثناء المشاركة:', error);
+      }
+    } else {
+      alert('المتصفح لا يدعم خاصية المشاركة.');
+    }
+  };
   const isOwner = auth.currentUser?.uid && clientAds?.userId && auth.currentUser.uid === clientAds.userId;
   // Debug
   console.log('auth.currentUser?.uid:', auth.currentUser?.uid);
@@ -94,7 +109,7 @@ function DetailsForFinaccingAds() {
   return (
     <Container maxWidth="lg" dir="rtl">
       {/* أزرار التفاعل */}
-      <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 4 }}>
+      <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 4 ,mt:5}}>
         <Box sx={{ display: "flex", gap: 2, flexDirection: "row-reverse" }}>
           <Button
             variant="outlined"
@@ -144,6 +159,7 @@ function DetailsForFinaccingAds() {
                 marginRight: 0,
               },
             }}
+            onClick={handleShare}
           >
             مشاركة
           </Button>
@@ -334,6 +350,7 @@ function DetailsForFinaccingAds() {
                           },
                           fontWeight: "bold",
                         }}
+                         onClick={() => window.open(`tel:${clientAds.phone}`, '_self')}
                       >
                         اتصل الآن
                       </Button>
@@ -354,6 +371,11 @@ function DetailsForFinaccingAds() {
                           fontSize: "16px",
                           fontWeight: "bold",
                         }}
+                            onClick={() => {
+                const message = 'مرحبًا، أريد الاستفسار عن الإعلان الخاص بك';
+                const url = `https://wa.me/${clientAds.phone}?text=${encodeURIComponent(message)}`;
+                window.open(url, '_blank');
+              }}
                       >
                         واتساب
                       </Button>

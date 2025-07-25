@@ -108,7 +108,6 @@ function DetailsForClient() {
       alert('فشل في إرسال الرسالة!');
     }
   };
-
   const handleShare = async () => {
     if (navigator.share) {
       try {

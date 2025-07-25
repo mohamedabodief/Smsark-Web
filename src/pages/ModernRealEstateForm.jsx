@@ -458,6 +458,7 @@ const ModernRealEstateForm = () => {
   const adStatuses = ['تحت العرض', 'تحت التفاوض', 'منتهي'];
 
   return (
+     <>
     <Box
       className="modern-form-container"
       sx={{
@@ -998,54 +999,34 @@ const ModernRealEstateForm = () => {
 
                 {/* Activation Settings */}
                 <Grid item xs={12} md={6} width={'100%'}>
-                  <Typography variant="h6" sx={{ mb: 3, color: '#6E00FE', fontWeight: 600, fontSize: '20px' }}>
-                    <AttachMoney sx={{ mr: 1, verticalAlign: 'middle', ml: '6px', mt: '-6px' }} />
-                    إعدادات التفعيل
-                  </Typography>
-
-                  <Controller
-                    name="adsActivation"
-                    control={control}
-                    render={({ field }) => (
-                      <FormControlLabel
-                        control={
-                          <Switch
-                            checked={field.value}
-                            onChange={field.onChange}
-                            color="primary"
-                          />
-                        }
-                        label="تفعيل الإعلان"
-                        sx={{ mb: 2 }}
-                      />
-                    )}
-                  />
-
-                  {adsActivation && (
-                    <Controller
-                      name="activationDays"
-                      control={control}
-                      render={({ field }) => (
-                        <StyledTextField
-                          {...field}
-                          fullWidth
-                          label="عدد أيام التفعيل"
-                          type="number"
-                          InputProps={{
-                            endAdornment: <InputAdornment position="end">أيام</InputAdornment>,
-                          }}
-                        />
-                      )}
-                    />
-                  )}
+                  
                 </Grid>
+                
               </Container>
+              
             </CardContent>
+            
           </StyledCard>
+          
+        </Box>
 
-          <AdPackagesClient selectedPackageId={selectedPackage} setSelectedPackageId={setSelectedPackage} />
-
-          <Box sx={{ mt: 4, display: 'flex', gap: 2, justifyContent: 'center' }}>
+        <Snackbar
+          open={showSuccess}
+          autoHideDuration={6000}
+          onClose={() => setShowSuccess(false)}
+        >
+          <Alert onClose={() => setShowSuccess(false)} severity="success" sx={{ width: '100%' }}>
+            تم {isEditMode ? 'تحديث' : 'إضافة'} الإعلان بنجاح!
+          </Alert>
+        </Snackbar>
+    
+          
+      </Container>
+      
+    </Box>
+          <AdPackagesClient/>
+        <Box sx={{ mt: 4, display: 'flex', gap: 2, justifyContent: 'center' ,mb:'16px'}}>
+    
             <Button
               type="submit"
               variant="contained"
@@ -1090,19 +1071,7 @@ const ModernRealEstateForm = () => {
           {submitError && (
             <Alert severity="error" sx={{ mt: 2 }}>{submitError}</Alert>
           )}
-        </Box>
-
-        <Snackbar
-          open={showSuccess}
-          autoHideDuration={6000}
-          onClose={() => setShowSuccess(false)}
-        >
-          <Alert onClose={() => setShowSuccess(false)} severity="success" sx={{ width: '100%' }}>
-            تم {isEditMode ? 'تحديث' : 'إضافة'} الإعلان بنجاح!
-          </Alert>
-        </Snackbar>
-      </Container>
-    </Box>
+   </>
   );
 };
 

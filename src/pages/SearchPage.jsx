@@ -6,7 +6,7 @@ import '../styles/searchInput.css'
 import { SearchProvider } from '../context/searchcontext'
 function SearchPage() {
   return (
-   <Container maxWidth='lg' dir='rtl'>
+   <Container maxWidth='lg' sx={{mt:'100px'}} dir='rtl'>
      <h2 className="tileSearch">كل ما تبحث عنه فى عالم العقارات.. تجده هنا</h2>
      <SearchProvider>
       <SearchInput/>
