@@ -14,6 +14,10 @@ import {
     Select,
     MenuItem,
     Menu,
+    Chip,
+    Stack,
+    Card,
+    CardContent,
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
@@ -39,6 +43,11 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import { logout } from '../LoginAndRegister/featuresLR/authSlice';
 import { signOut } from 'firebase/auth';
 import { auth } from '../FireBase/firebaseConfig';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import ApprovalIcon from '@mui/icons-material/Approval';
+import DoNotDisturbOnIcon from '@mui/icons-material/DoNotDisturbOn';
+import PendingIcon from '@mui/icons-material/Pending';
+import CloseIcon from '@mui/icons-material/Close';
 // import { addUser, editUser, deleteUser } from '../reduxToolkit/slice/usersSlice';
 // import { addOrganization, editOrganization, deleteOrganization } from '../reduxToolkit/slice/organizationsSlice';
 // import { addAdmin, editAdmin, deleteAdmin } from '../reduxToolkit/slice/adminsSlice';
@@ -50,7 +59,7 @@ import { StyledEngineProvider } from '@mui/material/styles';
 import { DataGrid } from '@mui/x-data-grid';
 // import { useDemoData } from '@mui/x-data-grid-generator';
 import { MOCK_ADVERTISEMENTS } from './mockAds';
-import { Chip, Link } from '@mui/material';
+import { Link } from '@mui/material';
 
 
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
@@ -82,7 +91,8 @@ import {
     setDeveloperAds, setFunderAds,
     setLoadingDeveloper, setLoadingFunder,
     setErrorDeveloper, setErrorFunder,
-    deleteAd, toggleAdStatus
+    deleteAd, toggleAdStatus,
+    approveAd, rejectAd, returnAdToPending
 } from '../reduxToolkit/slice/paidAdsSlice';
 import FinancingAdvertisement from '../FireBase/modelsWithOperations/FinancingAdvertisement';
 import RealEstateDeveloperAdvertisement from '../FireBase/modelsWithOperations/RealEstateDeveloperAdvertisement';
@@ -122,6 +132,8 @@ import AddHomepageAdModal from './adminDashboard/AddHomepageAdModal';
 import EditHomepageAdModal from './adminDashboard/EditHomepageAdModal';
 import Notification from '../FireBase/MessageAndNotification/Notification';
 import ClientAdvertisement from '../FireBase/modelsWithOperations/ClientAdvertisemen';
+import NotificationsIcon from '@mui/icons-material/Notifications';
+import Badge from '@mui/material/Badge';
 
 // Create RTL cache for Emotion
 const cacheRtl = createCache({
@@ -1458,8 +1470,8 @@ function ProfilePage() {
                                 disabled
                             />
                             {/* Password field with reset button */}
-                            <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-end' }}>
-                            <TextField
+                            <Box dir='rtl' sx={{ display: 'flex', gap: 2, alignItems: 'flex-end' }}>
+                            {/* <TextField
                                 label="كلمة المرور"
                                 fullWidth
                                 margin="normal"
@@ -1468,18 +1480,19 @@ function ProfilePage() {
                                 InputProps={{ style: { direction: 'ltr' } }}
                                 disabled
                                     sx={{ flexGrow: 1 }}
-                                />
+                                /> */}
                                 <Button
                                     variant="outlined"
                                     color="primary"
                                     onClick={handleResetPassword}
                                     disabled={resetPasswordLoading}
-                                    sx={{ mb: 1, minWidth: 120 }}
+                                    sx={{ m: 1, minWidth: 120 }}
+                                    
                                 >
                                     {resetPasswordLoading ? (
                                         <CircularProgress size={20} color="inherit" />
                                     ) : (
-                                        "إعادة تعيين"
+                                        "إعادة تعيين كلمة المرور"
                                     )}
                                 </Button>
                             </Box>
@@ -2001,10 +2014,7 @@ function Mainadvertisment(props) {
     // Handle add ad
     const handleAddAd = async (adData) => {
         try {
-            // أضف userId من المستخدم الحالي
-            const userId = auth.currentUser?.uid;
-            const dataWithUserId = { ...adData, userId };
-            await dispatch(createHomepageAd({ adData: dataWithUserId, imageFile: adData.imageFile, receiptFile: adData.receiptFile })).unwrap();
+            await dispatch(createHomepageAd(adData)).unwrap();
             setSnackbar({ open: true, message: "تم إضافة الإعلان بنجاح!", severity: "success" });
         } catch (error) {
             setSnackbar({ open: true, message: "فشل إضافة الإعلان: " + (error.message || "خطأ غير معروف"), severity: "error" });
@@ -2033,300 +2043,67 @@ function Mainadvertisment(props) {
             console.error("Error deleting ad:", error);
         }
     };
-    //////////////////////////
-
-    //////////////////////////////
 
     // Handle approve ad
- const handleApproveAd = async (adId, db, dispatch, setSnackbar) => {
-  console.log("[DEBUG] تم الضغط على زر الموافقة", adId);
-  try {
-    const adRef = doc(db, 'ClientAdvertisements', adId);
-    const adSnap = await getDoc(adRef);
-    if (!adSnap.exists()) {
-      console.error("[DEBUG] الإعلان غير موجود:", adId);
-      setSnackbar({
-        open: true,
-        message: "الإعلان غير موجود!",
-        severity: "error",
-      });
-      return;
-    }
-  const adData = adSnap.data();
-    console.log("[DEBUG] بيانات الإعلان:", adData);
-    const userId = adData.userId;
-    if (!userId) {
-      console.error("[DEBUG] لا يوجد userId لهذا الإعلان:", adId, adData);
-      setSnackbar({
-        open: true,
-        message: "لا يمكن إرسال الإشعار: المستخدم غير محدد!",
-        severity: "error",
-      });
-      return;
-    }
-    const userRef = doc(db, 'users', userId);
-    const userSnap = await getDoc(userRef);
-    if (!userSnap.exists()) {
-      console.error("[DEBUG] المستخدم غير موجود في users:", userId);
-      setSnackbar({
-        open: true,
-        message: "لا يمكن إرسال الإشعار: المستخدم غير موجود!",
-        severity: "error",
-      });
-      return;
-    }
-    const adTitle = adData.title || `إعلان ${adId}`;
-    console.log("[DEBUG] عنوان الإعلان:", adTitle);
-    const auth = getAuth();
-    const adminName = auth.currentUser?.displayName || "الأدمن";
-    const ad = new ClientAdvertisement(adData);
-    await ad.approveAd();
-    console.log("[DEBUG] تمت الموافقة على الإعلان:", adId);
-    setSnackbar({
-      open: true,
-      message: "تمت الموافقة على الإعلان وحفظ الإشعار!",
-      severity: "success",
-    });
-  } catch (error) {
-    console.error("[DEBUG] خطأ أثناء معالجة الموافقة:", error);
-    setSnackbar({
-      open: true,
-      message: "فشل الموافقة على الإعلان: " + (error.message || "خطأ غير معروف"),
-      severity: "error",
-    });
-  }
-};
+    const handleApproveAd = async (adId) => {
+        try {
+            await dispatch(approveHomepageAd(adId)).unwrap();
+            setSnackbar({ open: true, message: "تمت الموافقة على الإعلان!", severity: "success" });
+        } catch (error) {
+            setSnackbar({ open: true, message: "فشل الموافقة على الإعلان: " + (error.message || "خطأ غير معروف"), severity: "error" });
+            console.error("Error approving ad:", error);
+        }
+    };
 
-   // Handle reject ad
-const handleRejectAd = async (adId, reason, db, setSnackbar) => {
-  console.log("[DEBUG] تم الضغط على زر رفض الإعلان", adId, reason);
-  
-  try {
-    // استرجاع الإعلان من ClientAdvertisements
-    const adRef = doc(db, 'ClientAdvertisements', adId);
-    const adSnap = await getDoc(adRef);
-    
-    if (!adSnap.exists()) {
-      console.error("[DEBUG] الإعلان غير موجود في ClientAdvertisements:", adId);
-      setSnackbar({
-        open: true,
-        message: "الإعلان غير موجود!",
-        severity: "error",
-      });
-      return;
-    }
+    // Handle reject ad
+    const handleRejectAd = async (adId, reason) => {
+        try {
+            await dispatch(rejectHomepageAd({ id: adId, reason })).unwrap();
+            setSnackbar({ open: true, message: "تم رفض الإعلان!", severity: "warning" });
+        } catch (error) {
+            setSnackbar({ open: true, message: "فشل رفض الإعلان: " + (error.message || "خطأ غير معروف"), severity: "error" });
+            console.error("Error rejecting ad:", error);
+        }
+    };
 
-    const adData = adSnap.data();
-    const userId = adData.userId;
-    console.log("[DEBUG] userId الخاص بالإعلان:", userId);
-    
-    if (!userId) {
-      console.error("[DEBUG] لا يوجد userId لهذا الإعلان:", adId, adData);
-      setSnackbar({
-        open: true,
-        message: "لا يمكن إرسال الإشعار: المستخدم غير محدد!",
-        severity: "error",
-      });
-      return;
-    }
+    // Handle activate ad
+    const handleActivateAd = async (adId, days = 30) => {
+        try {
+            await dispatch(activateHomepageAd({ id: adId, days })).unwrap();
+            setSnackbar({ open: true, message: "تم تفعيل الإعلان لمدة " + days + " يوم!", severity: "success" });
+        } catch (error) {
+            setSnackbar({ open: true, message: "فشل تفعيل الإعلان: " + (error.message || "خطأ غير معروف"), severity: "error" });
+            console.error("Error activating ad:", error);
+        }
+    };
 
-    // رفض الإعلان باستخدام الكلاس
-    const ad = new ClientAdvertisement(adData);
-    await ad.rejectAd(reason);
-    
-    setSnackbar({
-      open: true,
-      message: "تم رفض الإعلان وحفظ الإشعار!",
-      severity: "warning",
-    });
-    
-    console.log("[DEBUG] تم رفض الإعلان بنجاح:", adId);
-  } catch (error) {
-    console.error("[DEBUG] خطأ أثناء رفض الإعلان:", error);
-    setSnackbar({
-      open: true,
-      message: "فشل رفض الإعلان: " + (error.message || "خطأ غير معروف"),
-      severity: "error",
-    });
-  }
-};
+    // Handle deactivate ad
+    const handleDeactivateAd = async (adId) => {
+        try {
+            await dispatch(deactivateHomepageAd(adId)).unwrap();
+            setSnackbar({ open: true, message: "تم إلغاء تفعيل الإعلان!", severity: "info" });
+        } catch (error) {
+            setSnackbar({ open: true, message: "فشل إلغاء تفعيل الإعلان: " + (error.message || "خطأ غير معروف"), severity: "error" });
+            console.error("Error deactivating ad:", error);
+        }
+    };
 
-// Handle activate ad
-const handleActivateAd = async (adId, days = 30, db, setSnackbar) => {
-  console.log("[DEBUG] تم الضغط على زر تفعيل الإعلان", adId, days);
-  
-  try {
-    // استرجاع الإعلان من ClientAdvertisements
-    const adRef = doc(db, 'ClientAdvertisements', adId);
-    const adSnap = await getDoc(adRef);
-    
-    if (!adSnap.exists()) {
-      console.error("[DEBUG] الإعلان غير موجود في ClientAdvertisements:", adId);
-      setSnackbar({
-        open: true,
-        message: "الإعلان غير موجود!",
-        severity: "error",
-      });
-      return;
-    }
+    // Handle return to pending
+    const handleReturnToPending = async (adId) => {
+        try {
+            await dispatch(returnHomepageAdToPending(adId)).unwrap();
+            setSnackbar({ open: true, message: "تم إرجاع الإعلان لحالة المراجعة!", severity: "info" });
+        } catch (error) {
+            setSnackbar({ open: true, message: "فشل إرجاع الإعلان: " + (error.message || "خطأ غير معروف"), severity: "error" });
+            console.error("Error returning ad to pending:", error);
+        }
+    };
 
-    const adData = adSnap.data();
-    const userId = adData.userId;
-    console.log("[DEBUG] userId الخاص بالإعلان:", userId);
-    
-    if (!userId) {
-      console.error("[DEBUG] لا يوجد userId لهذا الإعلان:", adId, adData);
-      setSnackbar({
-        open: true,
-        message: "لا يمكن إرسال الإشعار: المستخدم غير محدد!",
-        severity: "error",
-      });
-      return;
-    }
-
-    // تفعيل الإعلان باستخدام الكلاس
-    const ad = new ClientAdvertisement(adData);
-    await ad.adsActivation(days);
-    
-    // إرسال إشعار التفعيل
-    const notification = new Notification({
-      receiver_id: userId,
-      title: "تم تفعيل إعلانك",
-      body: `إعلانك "${adData.title || 'إعلان بدون عنوان'}" الآن نشط وسيظهر لمدة ${days} يوم!`,
-      type: "success",
-      link: `/detailsForClient/${adId}`,
-    });
-    await notification.send();
-    console.log("[DEBUG] تم حفظ إشعار التفعيل في فايربيز بنجاح:", notification);
-    
-    setSnackbar({
-      open: true,
-      message: `تم تفعيل الإعلان لمدة ${days} يوم!`,
-      severity: "success",
-    });
-  } catch (error) {
-    console.error("[DEBUG] خطأ أثناء تفعيل الإعلان:", error);
-    setSnackbar({
-      open: true,
-      message: "فشل تفعيل الإعلان: " + (error.message || "خطأ غير معروف"),
-      severity: "error",
-    });
-  }
-};
-
-// Handle deactivate ad
-const handleDeactivateAd = async (adId, db, setSnackbar) => {
-  console.log("[DEBUG] تم الضغط على زر إلغاء تفعيل الإعلان", adId);
-  
-  try {
-    // استرجاع الإعلان من ClientAdvertisements
-    const adRef = doc(db, 'ClientAdvertisements', adId);
-    const adSnap = await getDoc(adRef);
-    
-    if (!adSnap.exists()) {
-      console.error("[DEBUG] الإعلان غير موجود في ClientAdvertisements:", adId);
-      setSnackbar({
-        open: true,
-        message: "الإعلان غير موجود!",
-        severity: "error",
-      });
-      return;
-    }
-
-    const adData = adSnap.data();
-    const userId = adData.userId;
-    console.log("[DEBUG] userId الخاص بالإعلان:", userId);
-    
-    if (!userId) {
-      console.error("[DEBUG] لا يوجد userId لهذا الإعلان:", adId, adData);
-      setSnackbar({
-        open: true,
-        message: "لا يمكن إرسال الإشعار: المستخدم غير محدد!",
-        severity: "error",
-      });
-      return;
-    }
-
-    // إلغاء تفعيل الإعلان باستخدام الكلاس
-    const ad = new ClientAdvertisement(adData);
-    await ad.removeAds();
-    
-    // إرسال إشعار إلغاء التفعيل
-    const notification = new Notification({
-      receiver_id: userId,
-      title: "تم إلغاء تفعيل إعلانك",
-      body: `إعلانك "${adData.title || 'إعلان بدون عنوان'}" لم يعد نشطًا على الصفحة الرئيسية.`,
-      type: "info",
-      link: `/`,
-    });
-    await notification.send();
-    console.log("[DEBUG] تم حفظ إشعار إلغاء التفعيل في فايربيز بنجاح:", notification);
-    
-    setSnackbar({
-      open: true,
-      message: "تم إلغاء تفعيل الإعلان!",
-      severity: "info",
-    });
-  } catch (error) {
-    console.error("[DEBUG] خطأ أثناء إلغاء تفعيل الإعلان:", error);
-    setSnackbar({
-      open: true,
-      message: "فشل إلغاء تفعيل الإعلان: " + (error.message || "خطأ غير معروف"),
-      severity: "error",
-    });
-  }
-};
-
-// Handle return to pending
-const handleReturnToPending = async (adId, db, setSnackbar) => {
-  console.log("[DEBUG] تم الضغط على زر إرجاع الإعلان للمراجعة", adId);
-  
-  try {
-    // استرجاع الإعلان من ClientAdvertisements
-    const adRef = doc(db, 'ClientAdvertisements', adId);
-    const adSnap = await getDoc(adRef);
-    if (!adSnap.exists()) {
-      console.error("[DEBUG] الإعلان غير موجود في ClientAdvertisements:", adId);
-      setSnackbar({
-        open: true,
-        message: "الإعلان غير موجود!",
-        severity: "error",
-      });
-      return;
-    }
-    const adData = adSnap.data();
-    const userId = adData.userId;
-    console.log("[DEBUG] userId الخاص بالإعلان:", userId);  
-    if (!userId) {
-      console.error("[DEBUG] لا يوجد userId لهذا الإعلان:", adId, adData);
-      setSnackbar({
-        open: true,
-        message: "لا يمكن إرسال الإشعار: المستخدم غير محدد!",
-        severity: "error",
-      });
-      return;
-    }
-
-    // إرجاع الإعلان لحالة المراجعة باستخدام الكلاس
-    const ad = new ClientAdvertisement(adData);
-    await ad.returnToPending();
-    
-    setSnackbar({
-      open: true,
-      message: "تم إرجاع الإعلان لحالة المراجعة!",
-      severity: "info",
-    });
-    
-    console.log("[DEBUG] تم إرجاع الإعلان للمراجعة بنجاح:", adId);
-  } catch (error) {
-    console.error("[DEBUG] خطأ أثناء إرجاع الإعلان للمراجعة:", error);
-    setSnackbar({
-      open: true,
-      message: "فشل إرجاع الإعلان: " + (error.message || "خطأ غير معروف"),
-      severity: "error",
-    });
-  }
-};
+    // Handle activation menu
+    const handleActivationMenuOpen = (event, ad) => {
+        setActivationMenuAnchor(event.currentTarget);
+        setSelectedAdForActivation(ad);
+    };
 
     const handleActivationMenuClose = () => {
         setActivationMenuAnchor(null);
@@ -2711,68 +2488,311 @@ const handleReturnToPending = async (adId, db, setSnackbar) => {
     );
 }
 
+
+const statusChipColor = {
+    pending: 'warning',
+    approved: 'success',
+    rejected: 'error',
+    active: 'primary',
+    inactive: 'default',
+};
+
 function PaidAdvertismentPage() {
-    const navigate = useNavigate();
     const dispatch = useDispatch();
+    const { developerAds, funderAds, loading, error } = useSelector((state) => state.paidAds);
 
     const [activeTab, setActiveTab] = useState('developerAds');
-    const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+    const [reviewStatusFilter, setReviewStatusFilter] = useState('all');
+
+    // State for delete dialog
     const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
     const [adToDelete, setAdToDelete] = useState(null);
     const [adToDeleteType, setAdToDeleteType] = useState(null);
 
-    const { developerAds, funderAds, loading, error } = useSelector((state) => state.paidAds);
+    // State for rejection dialog
+    const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+    const [adToReject, setAdToReject] = useState(null);
+    const [adToRejectType, setAdToRejectType] = useState(null);
+    const [rejectReason, setRejectReason] = useState('');
 
-    // Memoize filtered funderAds to avoid selector warning
-    const filteredFunderAds = useMemo(
-        () => funderAds.filter(ad => ad.id !== null && ad.id !== undefined),
-        [funderAds]
-    );
+    // State for activation menu dropdown
+    const [activationMenuAnchorEl, setActivationMenuAnchorEl] = useState(null);
+    const [adToActivate, setAdToActivate] = useState(null);
+    const [adToActivateType, setAdToActivateType] = useState(null);
 
-    // Effect to subscribe to Developer Ads in real-time
+    // Snackbar state for notifications
+    const [snackbar, setSnackbar] = useState({
+        open: false,
+        message: '',
+        severity: 'success',
+    });
+
+    // --- Data Fetching Effect ---
     useEffect(() => {
-        dispatch(setLoadingDeveloper(true));
-        const unsubscribe = RealEstateDeveloperAdvertisement.subscribeActiveAds(
-            (ads) => {
-                dispatch(setDeveloperAds(ads.map(ad => ({
-                    ...ad,
-                    id: ad.id || `temp-${Math.random()}`
-                }))));
-            },
-            (err) => {
-                console.error("Error subscribing to developer ads:", err);
-                dispatch(setErrorDeveloper(err.message || "فشل تحميل إعلانات المطورين النشطة."));
-                setSnackbar({ open: true, message: `فشل تحميل إعلانات المطورين النشطة: ${err.message}`, severity: 'error' });
+        let unsubscribeDeveloper;
+        let unsubscribeFunder;
+
+        const fetchData = async () => {
+            dispatch(setLoadingDeveloper(true));
+            dispatch(setLoadingFunder(true));
+            try {
+                // Subscribe to real-time updates for developer ads
+                unsubscribeDeveloper = RealEstateDeveloperAdvertisement.subscribeAllAds((ads) => {
+                    dispatch(setDeveloperAds(ads));
+                });
+
+                // Subscribe to real-time updates for funder ads
+                unsubscribeFunder = FinancingAdvertisement.subscribeAllAds((ads) => {
+                    dispatch(setFunderAds(ads));
+                });
+            } catch (err) {
+                console.error("Failed to fetch ads:", err);
+                dispatch(setErrorDeveloper(err.message));
+                dispatch(setErrorFunder(err.message));
+                setSnackbar({
+                    open: true,
+                    message: `فشل تحميل الإعلانات: ${err.message}`,
+                    severity: 'error',
+                });
             }
-        );
+        };
 
-        return () => unsubscribe();
-    }, [dispatch]);
+        fetchData();
 
-    // Effect to subscribe to Funder Ads in real-time
-    useEffect(() => {
-        dispatch(setLoadingFunder(true));
-        const unsubscribe = FinancingAdvertisement.subscribeActiveAds(
-            (ads) => {
-                dispatch(setFunderAds(ads.map(ad => ({
-                    ...ad,
-                    id: ad.id || `temp-${Math.random()}`
-                }))));
-            },
-            (err) => {
-                console.error("Error subscribing to funder ads:", err);
-                dispatch(setErrorFunder(err.message || "فشل تحميل إعلانات الممولين النشطة."));
-                setSnackbar({ open: true, message: `فشل تحميل إعلانات الممولين النشطة: ${err.message}`, severity: 'error' });
-            }
-        );
+        // Cleanup function for unsubscriptions
+        return () => {
+            if (unsubscribeDeveloper) unsubscribeDeveloper();
+            if (unsubscribeFunder) unsubscribeFunder();
+        };
+    }, [dispatch]); // Depend on dispatch
 
-        return () => unsubscribe();
-    }, [dispatch]);
+    // --- Filtering Logic ---
+    const filteredDeveloperAds = developerAds.filter((ad) => {
+        if (reviewStatusFilter === 'all') return true;
+        return ad.reviewStatus === reviewStatusFilter;
+    });
 
+    const filteredFunderAds = funderAds.filter((ad) => {
+        if (reviewStatusFilter === 'all') return true;
+        return ad.reviewStatus === reviewStatusFilter;
+    });
 
-    const handleTabChange = (event, newValue) => {
-        setActiveTab(newValue);
+    // --- Handlers for Actions ---
+
+    const handleStatusChipClick = (status) => {
+        setReviewStatusFilter(status);
     };
+
+    const handleEditClick = (ad, type) => {
+        // Implement navigation or open an edit dialog
+        console.log(`Edit ${type} ad:`, ad);
+        setSnackbar({
+            open: true,
+            message: `وظيفة التعديل للإعلان ${ad.title || ad.developer_name} قيد التنفيذ.`,
+            severity: 'info',
+        });
+    };
+
+    const handleDeleteClick = (ad, type) => {
+        setAdToDelete(ad);
+        setAdToDeleteType(type);
+        setOpenDeleteDialog(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        setOpenDeleteDialog(false);
+        if (!adToDelete || !adToDeleteType) return;
+
+        const adTypeLoadingKey = adToDeleteType; // 'developer' or 'funder'
+        dispatch(adTypeLoadingKey === 'developer' ? setLoadingDeveloper(true) : setLoadingFunder(true));
+
+        try {
+            await dispatch(deleteAd({ id: adToDelete.id, type: adToDeleteType })).unwrap(); // Use .unwrap() to propagate errors
+            setSnackbar({
+                open: true,
+                message: `تم حذف الإعلان "${adToDelete.developer_name || adToDelete.title}" بنجاح!`,
+                severity: 'success',
+            });
+        } catch (err) {
+            console.error(`Failed to delete ${adToDeleteType} ad for ID ${adToDelete.id}:`, err);
+            setSnackbar({
+                open: true,
+                message: `فشل حذف الإعلان: ${err.message || 'حدث خطأ غير معروف.'}`,
+                severity: 'error',
+            });
+        } finally {
+            dispatch(adTypeLoadingKey === 'developer' ? setLoadingDeveloper(false) : setLoadingFunder(false));
+            setAdToDelete(null);
+            setAdToDeleteType(null);
+        }
+    };
+
+    const handleApprove = async (ad) => {
+        const adType = activeTab === 'developerAds' ? 'developer' : 'funder';
+        dispatch(adType === 'developer' ? setLoadingDeveloper(true) : setLoadingFunder(true));
+        try {
+            await dispatch(approveAd({ id: ad.id, type: adType })).unwrap();
+            setSnackbar({
+                open: true,
+                message: `تمت الموافقة على الإعلان "${ad.developer_name || ad.title}" بنجاح!`,
+                severity: 'success',
+            });
+        } catch (err) {
+            setSnackbar({
+                open: true,
+                message: `فشل الموافقة على الإعلان: ${err.message || 'حدث خطأ غير معروف.'}`,
+                severity: 'error',
+            });
+        } finally {
+            dispatch(adType === 'developer' ? setLoadingDeveloper(false) : setLoadingFunder(false));
+        }
+    };
+
+    const handleReject = (ad) => {
+        const adType = activeTab === 'developerAds' ? 'developer' : 'funder';
+        setAdToReject(ad);
+        setAdToRejectType(adType);
+        setRejectDialogOpen(true);
+    };
+
+    const handleConfirmReject = async () => {
+        if (!adToReject || !adToRejectType || rejectReason.trim() === '') return;
+        dispatch(adToRejectType === 'developer' ? setLoadingDeveloper(true) : setLoadingFunder(true));
+        setRejectDialogOpen(false);
+        try {
+            await dispatch(rejectAd({ id: adToReject.id, type: adToRejectType, reason: rejectReason.trim() })).unwrap();
+            setSnackbar({
+                open: true,
+                message: `تم رفض الإعلان "${adToReject.developer_name || adToReject.title}" بنجاح!`,
+                severity: 'success',
+            });
+            setRejectReason('');
+        } catch (err) {
+            setSnackbar({
+                open: true,
+                message: `فشل رفض الإعلان: ${err.message || 'حدث خطأ غير معروف.'}`,
+                severity: 'error',
+            });
+        } finally {
+            dispatch(adToRejectType === 'developer' ? setLoadingDeveloper(false) : setLoadingFunder(false));
+            setAdToReject(null);
+            setAdToRejectType(null);
+        }
+    };
+
+    // const handleDeveloperConfirmReject = async () => {
+    //     if (!adToReject || rejectReason.trim() === '') return;
+
+    //     const adTypeLoadingKey = 'developer';
+    //     dispatch(setLoadingDeveloper(true));
+    //     setRejectDialogOpen(false); // Close dialog
+
+    //     try {
+    //         const instance = new RealEstateDeveloperAdvertisement({ id: adToReject.id });
+    //         await instance.reject(rejectReason.trim());
+    //         setSnackbar({
+    //             open: true,
+    //             message: `تم رفض إعلان المطور "${adToReject.developer_name}" بنجاح!`,
+    //             severity: 'success',
+    //         });
+    //         setRejectReason(''); // Clear reason
+    //     } catch (err) {
+    //         console.error(`Failed to reject developer ad for ID ${adToReject.id}:`, err);
+    //         setSnackbar({
+    //             open: true,
+    //             message: `فشل رفض إعلان المطور: ${err.message || 'حدث خطأ غير معروف.'}`,
+    //             severity: 'error',
+    //         });
+    //     } finally {
+    //         dispatch(setLoadingDeveloper(false));
+    //         setAdToReject(null);
+    //     }
+    // };
+
+
+    const handleReturnToPending = async (ad) => {
+        const adType = activeTab === 'developerAds' ? 'developer' : 'funder';
+        dispatch(adType === 'developer' ? setLoadingDeveloper(true) : setLoadingFunder(true));
+        try {
+            await dispatch(returnAdToPending({ id: ad.id, type: adType })).unwrap();
+            setSnackbar({
+                open: true,
+                message: `تمت إعادة الإعلان "${ad.developer_name || ad.title}" إلى قيد المراجعة بنجاح!`,
+                severity: 'success',
+            });
+        } catch (err) {
+            setSnackbar({
+                open: true,
+                message: `فشل إعادة الإعلان للمراجعة: ${err.message || 'حدث خطأ غير معروف.'}`,
+                severity: 'error',
+            });
+        } finally {
+            dispatch(adType === 'developer' ? setLoadingDeveloper(false) : setLoadingFunder(false));
+        }
+    };
+
+    // New: Handle opening the activation menu
+    const handleActivationMenuOpen = (event, ad, type) => {
+        setActivationMenuAnchorEl(event.currentTarget);
+        setAdToActivate(ad);
+        setAdToActivateType(type);
+    };
+
+    // New: Handle closing the activation menu
+    const handleActivationMenuClose = () => {
+        setActivationMenuAnchorEl(null);
+        setAdToActivate(null);
+        setAdToActivateType(null);
+    };
+
+    // New: Handle activation with a specific number of days
+    const handleActivateWithDays = async (days) => {
+        if (!adToActivate || !adToActivateType) return;
+      
+        handleActivationMenuClose();
+      
+        dispatch(adToActivateType === 'developer' ? setLoadingDeveloper(true) : setLoadingFunder(true));
+      
+        try {
+          await dispatch(toggleAdStatus({ adId: adToActivate.id, type: adToActivateType, days })).unwrap();
+          setSnackbar({
+            open: true,
+            message: `تم تفعيل الإعلان بنجاح لمدة ${days} يوم.`,
+            severity: 'success',
+          });
+        } catch (error) {
+          setSnackbar({
+            open: true,
+            message: `فشل تفعيل الإعلان: ${error.message || 'حدث خطأ غير معروف.'}`,
+            severity: 'error',
+          });
+        } finally {
+          dispatch(adToActivateType === 'developer' ? setLoadingDeveloper(false) : setLoadingFunder(false));
+        }
+      };
+      
+      const handleDeactivate = async (ad) => {
+        const adType = activeTab === 'developerAds' ? 'developer' : 'funder';
+        console.log('Deactivating ad:', { id: ad.id, type: adType });
+        dispatch(adType === 'developer' ? setLoadingDeveloper(true) : setLoadingFunder(true));
+        try {
+          await dispatch(toggleAdStatus({ adId: ad.id, type: adType })).unwrap();
+          setSnackbar({
+            open: true,
+            message: `تم إلغاء تفعيل الإعلان "${ad.developer_name || ad.title}" بنجاح!`,
+            severity: 'success',
+          });
+        } catch (err) {
+          setSnackbar({
+            open: true,
+            message: `فشل إلغاء تفعيل الإعلان: ${err.message || 'حدث خطأ غير معروف.'}`,
+            severity: 'error',
+          });
+        } finally {
+          dispatch(adType === 'developer' ? setLoadingDeveloper(false) : setLoadingFunder(false));
+        }
+      };
+
 
     const handleSnackbarClose = (event, reason) => {
         if (reason === 'clickaway') {
@@ -2781,172 +2801,176 @@ function PaidAdvertismentPage() {
         setSnackbar({ ...snackbar, open: false });
     };
 
-    // --- Delete Logic ---
-    const handleDeleteClick = (ad, type) => {
-        setAdToDelete(ad);
-        setAdToDeleteType(type);
-        setOpenDeleteDialog(true);
-    };
-
-    const handleConfirmDelete = async () => {
-        if (!adToDelete || !adToDeleteType) return;
-
-        try {
-            await dispatch(deleteAd({ id: adToDelete.id, type: adToDeleteType })).unwrap();
-            setSnackbar({ open: true, message: "الإعلان تم حذفه بنجاح!", severity: "success" });
-        } catch (err) {
-            console.error(`Error deleting ${adToDeleteType} ad:`, err);
-            const errorMessage = `فشل حذف الإعلان: ${err || 'خطأ غير معروف'}`;
-            setSnackbar({ open: true, message: errorMessage, severity: "error" });
-        } finally {
-            setOpenDeleteDialog(false);
-            setAdToDelete(null);
-            setAdToDeleteType(null);
-        }
-    };
-
-    // --- Edit Logic ---
-    const handleEditClick = (ad, type) => {
-        console.log(`Edit ${type} advertisement:`, ad);
-        setSnackbar({ open: true, message: `تعديل إعلان: ${ad.developer_name || ad.org_name || ad.title}`, severity: "info" });
-        navigate(`/admin/paid-advertisements/edit/${type}/${ad.id}`, { state: { adData: ad } });
-    };
-
-    // --- Toggle Ad Status (adsActivation / removeAds) Logic ---
-    const handleToggleAdStatus = async (ad, type) => {
-        try {
-            await dispatch(toggleAdStatus({ ad, type })).unwrap();
-            const message = ad.ads ? "تم إنهاء عرض الإعلان بنجاح!" : "تم إعادة عرض الإعلان بنجاح!";
-            setSnackbar({ open: true, message: message, severity: "success" });
-        } catch (err) {
-            console.error(`Error toggling ${type} ad status:`, err);
-            const message = `فشل تغيير حالة الإعلان: ${err || 'خطأ غير معروف'}`;
-            setSnackbar({ open: true, message: message, severity: "error" });
-        }
-    };
-
-
-    // Columns for Developer Ads
+    // DataGrid columns for developer ads
     const developerColumns = [
         { field: 'developer_name', headerName: 'اسم المطور', width: 200 },
         { field: 'description', headerName: 'الوصف', width: 300 },
         {
-            field: 'image',
-            headerName: 'الصورة',
+            field: 'images',
+            headerName: 'الصور',
             width: 100,
             renderCell: (params) => (
                 <Avatar
-                    src={params.value || ''}
+                    src={(params.value && params.value[0]) || 'https://placehold.co/50x50/E0E0E0/FFFFFF?text=No+Image'}
                     variant="rounded"
-                    sx={{ width: 50, height: 50 }}
+                    sx={{ width: 60, height: 50 }}
                 />
             ),
             sortable: false,
             filterable: false,
         },
         { field: 'phone', headerName: 'رقم الهاتف', width: 150 },
+        { field: 'location', headerName: 'الموقع', width: 150, renderCell: (params) => {
+            const loc = params.value;
+            if (!loc) return 'غير محدد';
+            if (typeof loc === 'object') {
+              return `${loc.governorate || ''}${loc.governorate && loc.city ? ' - ' : ''}${loc.city || ''}`;
+            }
+            return loc;
+        } },
+        { field: 'price_start_from', headerName: 'السعر من', width: 120, type: 'number' },
+        { field: 'price_end_to', headerName: 'السعر إلى', width: 120, type: 'number' },
         {
-            field: 'project_types',
-            headerName: 'أنواع المشاريع',
-            width: 200,
+            field: 'reviewStatus',
+            headerName: 'حالة المراجعة',
+            width: 140,
             renderCell: (params) => (
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                    {params.value && Array.isArray(params.value) && params.value.map((type, index) => (
-                        <Chip key={index} label={type} size="small" />
-                    ))}
-                </Box>
+                <Chip
+                    label={params.value === 'pending' ? 'قيد المراجعة' : params.value === 'approved' ? 'مقبول' : 'مرفوض'}
+                    color={statusChipColor[params.value] || 'default'}
+                    size="small"
+                />
             ),
         },
         {
-            field: 'website_url',
-            headerName: 'الموقع الإلكتروني',
-            width: 180,
+            field: 'ads',
+            headerName: 'التفعيل',
+            width: 100,
             renderCell: (params) => (
-                params.value ? (
-                    <Link href={params.value} target="_blank" rel="noopener">
-                        زيارة الموقع
-                    </Link>
-                ) : 'لا يوجد'
+                <Chip
+                    label={params.value ? 'مفعل' : 'غير مفعل'}
+                    color={params.value ? 'success' : 'default'}
+                    size="small"
+                />
             ),
-        },
-        { field: 'price_start_from', headerName: 'السعر يبدأ من', width: 150, type: 'number' },
-        { field: 'price_end_to', headerName: 'السعر ينتهي عند', width: 150, type: 'number' },
-        { field: 'userId', headerName: 'معرف المستخدم', width: 180 },
-        {
-            field: 'ad_status',
-            headerName: 'الحالة (Active?)',
-            width: 120,
-            editable: false,
-            renderCell: (params) => {
-                const statusLabel = params.row.ads ? 'تحت العرض' : 'منتهي';
-                const statusColor = params.row.ads ? 'primary' : 'default';
-                return (
-                    <Chip
-                        label={statusLabel}
-                        color={statusColor}
-                        size="small"
-                    />
-                );
-            },
         },
         {
             field: 'actions',
             headerName: 'الإجراءات',
-            width: 150,
+            width: 350,
             sortable: false,
             filterable: false,
             renderCell: (params) => (
-                <Box sx={{ display: 'flex', gap: 0.5 }}>
-                    <Tooltip title="تعديل إعلان المطور">
-                        <IconButton
-                            aria-label="edit"
-                            size="small"
-                            onClick={() => handleEditClick(params.row, 'developer')}
-                            disabled={loading.developer}
-                        >
-                            <EditIcon fontSize="small" />
-                        </IconButton>
+                <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                    <Tooltip title="موافقة">
+                        <span>
+                            <IconButton
+                                aria-label="approve"
+                                size="small"
+                                onClick={() => handleApprove(params.row)}
+                                color="success"
+                                disabled={params.row.reviewStatus === 'approved' || loading.developer}
+                            >
+                                <ApprovalIcon fontSize="small" />
+                            </IconButton>
+                        </span>
                     </Tooltip>
-                    <Tooltip title={params.row.ads ? "إنهاء العرض" : "تفعيل العرض"}>
-                        <IconButton
-                            aria-label="toggle status"
-                            size="small"
-                            onClick={() => handleToggleAdStatus(params.row, 'developer')}
-                            color={params.row.ads ? 'warning' : 'success'}
-                            disabled={loading.developer}
-                        >
-                            {params.row.ads ? <BlockIcon fontSize="small" /> : <CheckCircleOutlineIcon fontSize="small" />}
-                        </IconButton>
+                    <Tooltip title="رفض">
+                        <span>
+                            <IconButton
+                                aria-label="reject"
+                                size="small"
+                                onClick={() => handleReject(params.row)}
+                                color="error"
+                                disabled={params.row.reviewStatus === 'rejected' || loading.developer}
+                            >
+                                <DoNotDisturbOnIcon fontSize="small" />
+                            </IconButton>
+                        </span>
                     </Tooltip>
-                    <Tooltip title="حذف إعلان المطور">
-                        <IconButton
-                            aria-label="delete"
-                            size="small"
-                            onClick={() => handleDeleteClick(params.row, 'developer')}
-                            color="error"
-                            disabled={loading.developer}
-                        >
-                            <DeleteIcon fontSize="small" />
-                        </IconButton>
+                    <Tooltip title="إعادة للمراجعة">
+                        <span>
+                            <IconButton
+                                aria-label="return to pending"
+                                size="small"
+                                onClick={() => handleReturnToPending(params.row)}
+                                color="warning"
+                                disabled={params.row.reviewStatus === 'pending' || loading.developer}
+                            >
+                                <PendingIcon fontSize="small" />
+                            </IconButton>
+                        </span>
+                    </Tooltip>
+                    <Tooltip title="تفعيل">
+                        <span>
+                            <IconButton
+                                aria-label="activate"
+                                size="small"
+                                onClick={(e) => handleActivationMenuOpen(e, params.row, 'developer')} // UPDATED for dropdown
+                                color="primary"
+                                disabled={params.row.ads || params.row.reviewStatus !== 'approved' || loading.developer}
+                            >
+                                <CheckCircleOutlineIcon fontSize="small" />
+                            </IconButton>
+                        </span>
+                    </Tooltip>
+                    <Tooltip title="إلغاء تفعيل">
+                        <span>
+                            <IconButton
+                                aria-label="deactivate"
+                                size="small"
+                                onClick={() => handleDeactivate(params.row)}
+                                color="secondary"
+                                disabled={!params.row.ads || loading.developer}
+                            >
+                                <BlockIcon fontSize="small" />
+                            </IconButton>
+                        </span>
+                    </Tooltip>
+                    <Tooltip title="تعديل">
+                        <span>
+                            <IconButton
+                                aria-label="edit"
+                                size="small"
+                                onClick={() => handleEditClick(params.row, 'developer')}
+                                color="info"
+                                disabled={loading.developer}
+                            >
+                                <EditIcon fontSize="small" />
+                            </IconButton>
+                        </span>
+                    </Tooltip>
+                    <Tooltip title="حذف">
+                        <span>
+                            <IconButton
+                                aria-label="delete"
+                                size="small"
+                                onClick={() => handleDeleteClick(params.row, 'developer')}
+                                color="error"
+                                disabled={loading.developer}
+                            >
+                                <DeleteIcon fontSize="small" />
+                            </IconButton>
+                        </span>
                     </Tooltip>
                 </Box>
             ),
         },
+        { field: 'adExpiryTime', headerName: 'تاريخ الانتهاء', width: 150, renderCell: (params) => params.value ? new Date(params.value).toLocaleDateString('ar-EG') : '—' },
     ];
 
-    // Columns for Funder Ads
+    // DataGrid columns for funder ads
     const funderColumns = [
-        { field: 'org_name', headerName: 'اسم المؤسسة', width: 200 },
-        { field: 'title', headerName: 'العنوان', width: 250 },
+        { field: 'org_name', headerName: 'المؤسسة', width: 200 },
+        { field: 'title', headerName: 'العنوان', width: 200 },
         { field: 'description', headerName: 'الوصف', width: 300 },
-        { field: 'financing_model', headerName: 'نموذج التمويل', width: 150 },
         {
             field: 'image',
             headerName: 'الصورة',
             width: 100,
             renderCell: (params) => (
                 <Avatar
-                    src={params.value || ''}
+                    src={params.value || 'https://placehold.co/50x50/E0E0E0/FFFFFF?text=No+Image'}
                     variant="rounded"
                     sx={{ width: 50, height: 50 }}
                 />
@@ -2955,206 +2979,189 @@ function PaidAdvertismentPage() {
             filterable: false,
         },
         { field: 'phone', headerName: 'رقم الهاتف', width: 150 },
-        { field: 'start_limit', headerName: 'حد البدء', width: 120, type: 'number' },
-        { field: 'end_limit', headerName: 'حد الانتهاء', width: 120, type: 'number' },
-        { field: 'interest_rate_upto_5', headerName: 'فائدة حتى 5 سنوات', width: 180, type: 'number' },
-        { field: 'interest_rate_upto_10', headerName: 'فائدة حتى 10 سنوات', width: 180, type: 'number' },
-        { field: 'interest_rate_above_10', headerName: 'فائدة أكثر من 10 سنوات', width: 200, type: 'number' },
-        { field: 'userId', headerName: 'معرف المستخدم', width: 180 },
+        { field: 'financing_model', headerName: 'نموذج التمويل', width: 150 },
+        { field: 'start_limit', headerName: 'حدود التمويل من', width: 120, type: 'number' },
+        { field: 'end_limit', headerName: 'حدود التمويل إلى', width: 120, type: 'number' },
         {
-            field: 'ad_status',
-            headerName: 'الحالة (Active?)',
-            width: 120,
-            editable: false,
-            renderCell: (params) => {
-                const statusLabel = params.row.ads ? 'تحت العرض' : 'منتهي';
-                const statusColor = params.row.ads ? 'primary' : 'default';
-                return (
-                    <Chip
-                        label={statusLabel}
-                        color={statusColor}
-                        size="small"
-                    />
-                );
-            },
+            field: 'reviewStatus',
+            headerName: 'حالة المراجعة',
+            width: 140,
+            renderCell: (params) => (
+                <Chip
+                    label={params.value === 'pending' ? 'قيد المراجعة' : params.value === 'approved' ? 'مقبول' : 'مرفوض'}
+                    color={statusChipColor[params.value] || 'default'}
+                    size="small"
+                />
+            ),
+        },
+        {
+            field: 'ads',
+            headerName: 'التفعيل',
+            width: 100,
+            renderCell: (params) => (
+                <Chip
+                    label={params.value ? 'مفعل' : 'غير مفعل'}
+                    color={params.value ? 'success' : 'default'}
+                    size="small"
+                />
+            ),
         },
         {
             field: 'actions',
             headerName: 'الإجراءات',
-            width: 150,
+            width: 350,
             sortable: false,
             filterable: false,
             renderCell: (params) => (
-                <Box sx={{ display: 'flex', gap: 0.5 }}>
-                    <Tooltip title="تعديل إعلان الممول">
-                        <IconButton
-                            aria-label="edit"
-                            size="small"
-                            onClick={() => handleEditClick(params.row, 'funder')}
-                            disabled={loading.funder}
-                        >
-                            <EditIcon fontSize="small" />
-                        </IconButton>
+                <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                    <Tooltip title="موافقة">
+                        <span>
+                            <IconButton
+                                aria-label="approve"
+                                size="small"
+                                onClick={() => handleApprove(params.row)}
+                                color="success"
+                                disabled={params.row.reviewStatus === 'approved' || loading.funder}
+                            >
+                                <ApprovalIcon fontSize="small" />
+                            </IconButton>
+                        </span>
                     </Tooltip>
-                    <Tooltip title={params.row.ads ? "إنهاء العرض" : "تفعيل العرض"}>
-                        <IconButton
-                            aria-label="toggle status"
-                            size="small"
-                            onClick={() => handleToggleAdStatus(params.row, 'funder')}
-                            color={params.row.ads ? 'warning' : 'success'}
-                            disabled={loading.funder}
-                        >
-                            {params.row.ads ? <BlockIcon fontSize="small" /> : <CheckCircleOutlineIcon fontSize="small" />}
-                        </IconButton>
+                    <Tooltip title="رفض">
+                        <span>
+                            <IconButton
+                                aria-label="reject"
+                                size="small"
+                                onClick={() => handleReject(params.row)}
+                                color="error"
+                                disabled={params.row.reviewStatus === 'rejected' || loading.funder}
+                            >
+                                <DoNotDisturbOnIcon fontSize="small" />
+                            </IconButton>
+                        </span>
                     </Tooltip>
-                    <Tooltip title="حذف إعلان الممول">
-                        <IconButton
-                            aria-label="delete"
-                            size="small"
-                            onClick={() => handleDeleteClick(params.row, 'funder')}
-                            color="error"
-                            disabled={loading.funder}
-                        >
-                            <DeleteIcon fontSize="small" />
-                        </IconButton>
+                    <Tooltip title="إعادة للمراجعة">
+                        <span>
+                            <IconButton
+                                aria-label="return to pending"
+                                size="small"
+                                onClick={() => handleReturnToPending(params.row)}
+                                color="warning"
+                                disabled={params.row.reviewStatus === 'pending' || loading.funder}
+                            >
+                                <PendingIcon fontSize="small" />
+                            </IconButton>
+                        </span>
+                    </Tooltip>
+                    <Tooltip title="تفعيل">
+                        <span>
+                            <IconButton
+                                aria-label="activate"
+                                size="small"
+                                onClick={(e) => handleActivationMenuOpen(e, params.row, 'funder')} // UPDATED for dropdown
+                                color="primary"
+                                disabled={params.row.ads || params.row.reviewStatus !== 'approved' || loading.funder}
+                            >
+                                <CheckCircleOutlineIcon fontSize="small" />
+                            </IconButton>
+                        </span>
+                    </Tooltip>
+                    <Tooltip title="إلغاء تفعيل">
+                        <span>
+                            <IconButton
+                                aria-label="deactivate"
+                                size="small"
+                                onClick={() => handleDeactivate(params.row)}
+                                color="secondary"
+                                disabled={!params.row.ads || loading.funder}
+                            >
+                                <BlockIcon fontSize="small" />
+                            </IconButton>
+                        </span>
+                    </Tooltip>
+                    <Tooltip title="تعديل">
+                        <span>
+                            <IconButton
+                                aria-label="edit"
+                                size="small"
+                                onClick={() => handleEditClick(params.row, 'funder')}
+                                color="info"
+                                disabled={loading.funder}
+                            >
+                                <EditIcon fontSize="small" />
+                            </IconButton>
+                        </span>
+                    </Tooltip>
+                    <Tooltip title="حذف">
+                        <span>
+                            <IconButton
+                                aria-label="delete"
+                                size="small"
+                                onClick={() => handleDeleteClick(params.row, 'funder')}
+                                color="error"
+                                disabled={loading.funder}
+                            >
+                                <DeleteIcon fontSize="small" />
+                            </IconButton>
+                        </span>
                     </Tooltip>
                 </Box>
             ),
         },
+        { field: 'adExpiryTime', headerName: 'تاريخ الانتهاء', width: 150, renderCell: (params) => params.value ? new Date(params.value).toLocaleDateString('ar-EG') : '—' },
     ];
-
 
     // Function to get the DataGrid content based on the active tab
     const renderDataGrid = () => {
         if (activeTab === 'developerAds') {
             return (
-                <>
-                    {loading.developer ? (
-                        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-                            <CircularProgress />
-                            <Typography variant="body1" sx={{ ml: 2 }}>جارٍ تحميل إعلانات المطورين...</Typography>
-                        </Box>
-                    ) : error.developer ? (
-                        <Alert severity="error" sx={{ width: '100%' }}>{error.developer}</Alert>
-                    ) : (
-                        <DataGrid
-                            rows={developerAds.filter(ad => ad.id !== null && ad.id !== undefined)}
-                            columns={developerColumns}
-                            pageSizeOptions={[5, 10, 20]}
-                            initialState={{
-                                pagination: {
-                                    paginationModel: { pageSize: 10 },
-                                },
-                            }}
-                            getRowId={(row) => row.id || `temp-${Math.random()}`}
-                            disableRowSelectionOnClick
-                            localeText={{
-                                MuiTablePagination: {
-                                    labelRowsPerPage: 'صفوف لكل صفحة:',
-                                    labelDisplayedRows: ({ from, to, count }) =>
-                                        `${from}-${to} من ${count !== -1 ? count : `أكثر من ${to}`}`,
-                                },
-                                columnMenuUnsort: "إلغاء الفرز",
-                                columnMenuSortAsc: "الفرز تصاعديا",
-                                columnMenuSortDesc: "الفرز تنازليا",
-                                columnMenuFilter: "تصفية",
-                                columnMenuHideColumn: "إخفاء العمود",
-                                columnMenuShowColumns: "إظهار الأعمدة",
-                                filterPanelOperators: "العوامل",
-                                filterPanelColumns: "الأعمدة",
-                                filterPanelInputLabel: "القيمة",
-                                filterPanelLogicOperator: "المنطق",
-                                filterPanelOperatorAnd: "و",
-                                filterPanelOperatorOr: "أو",
-                                filterPanelOperatorContains: "يحتوي على",
-                                filterPanelOperatorEquals: "يساوي",
-                                filterPanelOperatorStartsWith: "يبدأ بـ",
-                                filterPanelOperatorEndsWith: "ينتهي بـ",
-                                filterPanelOperatorIsEmpty: "فارغ",
-                                filterPanelOperatorIsNotEmpty: "ليس فارغا",
-                                filterPanelOperatorIsAnyOf: "أي من",
-                                noRowsLabel: "لا توجد إعلانات مطورين لعرضها.",
-                                noResultsOverlayLabel: "لم يتم العثور على نتائج.",
-                            }}
-                            showToolbar
-                        />
-                    )}
-                </>
+                <DataGrid
+                    rows={filteredDeveloperAds.filter(ad => ad.id !== null && ad.id !== undefined)}
+                    columns={developerColumns}
+                    pageSizeOptions={[5, 10, 20]}
+                    initialState={{
+                        pagination: {
+                            paginationModel: { pageSize: 10 },
+                        },
+                    }}
+                    autoHeight
+                    disableRowSelectionOnClick
+                    sx={{ background: '#fff', borderRadius: 2, mb: 2 }}
+                    showToolbar
+                />
             );
-        } else if (activeTab === 'funderAds') {
+        } else {
             return (
-                <>
-                    {loading.funder ? (
-                        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-                            <CircularProgress />
-                            <Typography variant="body1" sx={{ ml: 2 }}>جارٍ تحميل إعلانات الممولين...</Typography>
-                        </Box>
-                    ) : error.funder ? (
-                        <Alert severity="error" sx={{ width: '100%' }}>{error.funder}</Alert>
-                    ) : (
-                        <DataGrid
-                            rows={filteredFunderAds}
-                            columns={funderColumns}
-                            pageSizeOptions={[5, 10, 20]}
-                            initialState={{
-                                pagination: {
-                                    paginationModel: { pageSize: 10 },
-                                },
-                            }}
-                            getRowId={(row) => row.id || `temp-${Math.random()}`}
-                            disableRowSelectionOnClick
-                            localeText={{
-                                MuiTablePagination: {
-                                    labelRowsPerPage: 'صفوف لكل صفحة:',
-                                    labelDisplayedRows: ({ from, to, count }) =>
-                                        `${from}-${to} من ${count !== -1 ? count : `أكثر من ${to}`}`,
-                                },
-                                columnMenuUnsort: "إلغاء الفرز",
-                                columnMenuSortAsc: "الفرز تصاعديا",
-                                columnMenuSortDesc: "الفرز تنازليا",
-                                columnMenuFilter: "تصفية",
-                                columnMenuHideColumn: "إخفاء العمود",
-                                columnMenuShowColumns: "إظهار الأعمدة",
-                                filterPanelOperators: "العوامل",
-                                filterPanelColumns: "الأعمدة",
-                                filterPanelInputLabel: "القيمة",
-                                filterPanelLogicOperator: "المنطق",
-                                filterPanelOperatorAnd: "و",
-                                filterPanelOperatorOr: "أو",
-                                filterPanelOperatorContains: "يحتوي على",
-                                filterPanelOperatorEquals: "يساوي",
-                                filterPanelOperatorStartsWith: "يبدأ بـ",
-                                filterPanelOperatorEndsWith: "ينتهي بـ",
-                                filterPanelOperatorIsEmpty: "فارغ",
-                                filterPanelOperatorIsNotEmpty: "ليس فارغا",
-                                filterPanelOperatorIsAnyOf: "أي من",
-                                noRowsLabel: "لا توجد إعلانات ممولين لعرضها.",
-                                noResultsOverlayLabel: "لم يتم العثور على نتائج.",
-                            }}
-                            showToolbar
-                        />
-                    )}
-                </>
+                <DataGrid
+                    rows={filteredFunderAds.filter(ad => ad.id !== null && ad.id !== undefined)}
+                    columns={funderColumns}
+                    pageSizeOptions={[5, 10, 20]}
+                    initialState={{
+                        pagination: {
+                            paginationModel: { pageSize: 10 },
+                        },
+                    }}
+                    autoHeight
+                    disableRowSelectionOnClick
+                    sx={{ background: '#fff', borderRadius: 2, mb: 2 }}
+                    showToolbar
+                />
             );
         }
-        return null;
     };
 
     return (
-        <Box dir={'rtl'} sx={{ p: 2, textAlign: 'right', display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
-
-            <Typography sx={{ display: 'flex', flexDirection: 'row' }} variant="h4" gutterBottom>
+        <Box dir={'rtl'} sx={{ p: { xs: 1, md: 3 }, textAlign: 'right', display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
+            <Typography sx={{ display: 'flex', flexDirection: 'row', mb: 2 }} variant="h4" gutterBottom>
                 الإعلانات المدفوعة
             </Typography>
-            <Paper dir={'rtl'} sx={{ p: 2, borderRadius: 2, minHeight: 400, textAlign: 'right', flexGrow: 1 }}>
-                {/* Tabs for switching */}
+            <Paper dir={'rtl'} sx={{ p: { xs: 1, md: 3 }, borderRadius: 2, minHeight: 400, textAlign: 'right', flexGrow: 1 }}>
                 <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
                     <Tabs
                         variant='scrollable'
                         value={activeTab}
-                        onChange={handleTabChange}
+                        onChange={(e, v) => setActiveTab(v)}
                         aria-label="advertisement tabs"
-                        // centered
                         textColor="primary"
                         indicatorColor="primary"
                     >
@@ -3162,13 +3169,38 @@ function PaidAdvertismentPage() {
                         <Tab value="funderAds" label="إعلانات ممولين عقاريين" />
                     </Tabs>
                 </Box>
-
-                {/* DataGrid Container */}
-                <Box sx={{ height: 'auto', width: '100%', padding: '1rem', flexGrow: 1 }}>
+                {/* Filter Chips */}
+                <Stack direction="row" spacing={1} mb={3} flexWrap="wrap">
+                    <Chip
+                        label="الكل"
+                        color={reviewStatusFilter === 'all' ? 'primary' : 'default'}
+                        onClick={() => handleStatusChipClick('all')}
+                        sx={{ borderRadius: 1.5 }}
+                    />
+                    <Chip
+                        label="قيد المراجعة"
+                        color={reviewStatusFilter === 'pending' ? statusChipColor['pending'] : 'default'}
+                        onClick={() => handleStatusChipClick('pending')}
+                        sx={{ borderRadius: 1.5 }}
+                    />
+                    <Chip
+                        label="مقبول"
+                        color={reviewStatusFilter === 'approved' ? statusChipColor['approved'] : 'default'}
+                        onClick={() => handleStatusChipClick('approved')}
+                        sx={{ borderRadius: 1.5 }}
+                    />
+                    <Chip
+                        label="مرفوض"
+                        color={reviewStatusFilter === 'rejected' ? statusChipColor['rejected'] : 'default'}
+                        onClick={() => handleStatusChipClick('rejected')}
+                        sx={{ borderRadius: 1.5 }}
+                    />
+                </Stack>
+                {/* DataGrid Table */}
+                <Box sx={{ width: '100%', flexGrow: 1 }}>
                     {renderDataGrid()}
                 </Box>
             </Paper>
-
             {/* Delete Confirmation Dialog */}
             <Dialog
                 open={openDeleteDialog}
@@ -3193,24 +3225,87 @@ function PaidAdvertismentPage() {
                     </Button>
                 </DialogActions>
             </Dialog>
+            {/* Rejection Dialog for both tabs */}
+            {/* <Dialog open={rejectDialogOpen} onClose={() => setRejectDialogOpen(false)} dir="rtl">
+                <DialogTitle>سبب الرفض</DialogTitle>
+                <DialogContent>
+                    <TextField
+                        autoFocus
+                        margin="dense"
+                        label="سبب الرفض"
+                        type="text"
+                        fullWidth
+                        value={rejectReason}
+                        onChange={e => setRejectReason(e.target.value)}
+                        helperText={rejectReason.trim() === '' ? 'الرجاء إدخال سبب لرفض الإعلان.' : ''}
+                        error={rejectReason.trim() === ''}
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setRejectDialogOpen(false)}>إلغاء</Button>
+                    <Button
+                        onClick={activeTab === 'developerAds' ? handleDeveloperConfirmReject : handleConfirmReject}
+                        color="error"
+                        disabled={rejectReason.trim() === ''}
+                    >
+                        رفض
+                    </Button>
+                </DialogActions>
+            </Dialog> */}
+            <Dialog open={rejectDialogOpen} onClose={() => setRejectDialogOpen(false)} dir="rtl">
+  <DialogTitle>سبب الرفض</DialogTitle>
+  <DialogContent>
+    <TextField
+      autoFocus
+      margin="dense"
+      label="سبب الرفض"
+      type="text"
+      fullWidth
+      value={rejectReason}
+      onChange={e => setRejectReason(e.target.value)}
+      helperText={rejectReason.trim() === '' ? 'الرجاء إدخال سبب لرفض الإعلان.' : ''}
+      error={rejectReason.trim() === ''}
+    />
+  </DialogContent>
+  <DialogActions>
+    <Button onClick={() => setRejectDialogOpen(false)}>إلغاء</Button>
+    <Button
+      onClick={handleConfirmReject} // Use handleConfirmReject for both tabs
+      color="error"
+      disabled={rejectReason.trim() === ''}
+    >
+      رفض
+    </Button>
+  </DialogActions>
+</Dialog>
+
+            {/* NEW: Activation Duration Menu */}
+            <Menu
+                anchorEl={activationMenuAnchorEl}
+                open={Boolean(activationMenuAnchorEl)}
+                onClose={handleActivationMenuClose}
+                dir="rtl" // For right-to-left display
+            >
+                <MenuItem onClick={() => handleActivateWithDays(7)}>7 أيام</MenuItem>
+                <MenuItem onClick={() => handleActivateWithDays(14)}>14 يومًا</MenuItem>
+                <MenuItem onClick={() => handleActivateWithDays(21)}>21 يومًا</MenuItem>
+                <MenuItem onClick={() => handleActivateWithDays(28)}>28 يومًا</MenuItem>
+            </Menu>
 
             {/* Snackbar for Notifications */}
             <Snackbar
-                open={snackbar.open}
+                open={snackbar.open || (loading === 'failed' && !!error)} // Show error Snackbar if fetch failed
                 autoHideDuration={6000}
                 onClose={handleSnackbarClose}
                 anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
             >
-                <Alert onClose={handleSnackbarClose} severity={snackbar.severity} sx={{ width: '100%' }}>
-                    {snackbar.message}
+                <Alert onClose={handleSnackbarClose} severity={snackbar.severity || 'error'} sx={{ width: '100%' }}>
+                    {snackbar.message || error}
                 </Alert>
             </Snackbar>
         </Box>
     );
 }
-
-
-
 function ClientAdvertismentPage() {
     const dispatch = useDispatch();
     const advertisements = useSelector((state) => state.advertisements.list);
@@ -3232,6 +3327,8 @@ function ClientAdvertismentPage() {
     // Activation dialog
     const [openActivateDialog, setOpenActivateDialog] = useState(false);
     const [activationDays, setActivationDays] = useState(30);
+    const [adToActivate, setAdToActivate] = useState(null);
+    const [adToActivateType, setAdToActivateType] = useState(null);
 
     useEffect(() => {
         dispatch(fetchAdvertisements());
@@ -3344,22 +3441,24 @@ function ClientAdvertismentPage() {
 
     // Activation Operations
     const handleActivateClick = (ad) => {
-        setAdToReview(ad);
+        setAdToActivate(ad);
+        setAdToActivateType('client');
         setActivationDays(30);
         setOpenActivateDialog(true);
     };
 
     const handleConfirmActivate = async () => {
-        if (adToReview) {
+        if (adToActivate) {
             try {
-                await dispatch(activateAdvertisement({ adId: adToReview.id, days: activationDays })).unwrap();
+                await dispatch(activateAdvertisement({ adId: adToActivate.id, days: activationDays })).unwrap();
                 setSnackbar({ open: true, message: `تم تفعيل الإعلان لمدة ${activationDays} يوم بنجاح!`, severity: "success" });
             } catch (err) {
                 console.error("Error activating advertisement:", err);
                 setSnackbar({ open: true, message: `فشل تفعيل الإعلان: ${err.message || 'خطأ غير معروف'}`, severity: "error" });
             } finally {
                 setOpenActivateDialog(false);
-                setAdToReview(null);
+                setAdToActivate(null);
+                setAdToActivateType(null);
             }
         }
     };
@@ -3923,23 +4022,32 @@ function ClientAdvertismentPage() {
                 <DialogTitle id="activate-dialog-title">{"تفعيل الإعلان"}</DialogTitle>
                 <DialogContent>
                     <DialogContentText id="activate-dialog-description" sx={{ mb: 2 }}>
-                        تفعيل الإعلان: "{adToReview?.title}"
+                        تفعيل الإعلان: "{adToActivate?.title}"
                     </DialogContentText>
-                    <TextField
-                        fullWidth
-                        label="عدد أيام التفعيل"
-                        type="number"
-                        value={activationDays}
-                        onChange={(e) => setActivationDays(parseInt(e.target.value) || 30)}
-                        inputProps={{ min: 1, max: 365 }}
-                        helperText="اختر عدد أيام تفعيل الإعلان (1-365 يوم)"
-                    />
+                    <FormControl fullWidth sx={{ mt: 2 }}>
+                        <InputLabel id="activation-days-label">مدة التفعيل (بالأيام)</InputLabel>
+                        <Select
+                            labelId="activation-days-label"
+                            value={activationDays}
+                            label="مدة التفعيل (بالأيام)"
+                            onChange={e => setActivationDays(Number(e.target.value))}
+                        >
+                            <MenuItem value={7}>7 أيام</MenuItem>
+                            <MenuItem value={14}>14 يوم</MenuItem>
+                            <MenuItem value={21}>21 يوم</MenuItem>
+                            <MenuItem value={28}>28 يوم</MenuItem>
+                        </Select>
+                    </FormControl>
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => setOpenActivateDialog(false)} color="primary" disabled={loading === 'pending'}>
                         إلغاء
                     </Button>
-                    <Button onClick={handleConfirmActivate} color="success" autoFocus disabled={loading === 'pending'}>
+                    <Button
+                        onClick={handleConfirmActivate}
+                        color="success"
+                        variant="contained"
+                    >
                         تفعيل
                     </Button>
                 </DialogActions>
@@ -4462,6 +4570,58 @@ export default function AdminDashboard(props) {
     const userName = userProfile?.adm_name || userProfile?.cli_name || userProfile?.org_name || 'Admin';
     console.log("AdminDashboard: userProfile in render:", userProfile);
     console.log("AdminDashboard: displayName in render:", userName);
+
+    // Notification state
+    const [notifications, setNotifications] = React.useState([]);
+    const [notificationAnchorEl, setNotificationAnchorEl] = React.useState(null);
+    const [unreadCount, setUnreadCount] = React.useState(0);
+    const [snackbarOpen, setSnackbarOpen] = React.useState(false);
+    const [snackbarMessage, setSnackbarMessage] = React.useState('');
+    const [snackbarSeverity, setSnackbarSeverity] = React.useState('success');
+
+    // Notification handlers
+    const handleNotificationClick = (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        setNotificationAnchorEl(event.currentTarget);
+    };
+    const handleNotificationClose = () => {
+        setNotificationAnchorEl(null);
+    };
+    const handleMarkAsRead = async (notificationId) => {
+        try {
+            await Notification.markAsRead(notificationId);
+            setNotifications(prev => prev.map(notif => notif.id === notificationId ? { ...notif, is_read: true } : notif));
+            setUnreadCount(prev => Math.max(0, prev - 1));
+        } catch (error) {
+            console.error('Error marking notification as read:', error);
+        }
+    };
+    const handleMarkAllAsRead = async () => {
+        if (!authUid) return;
+        try {
+            await Notification.markAllAsRead(authUid);
+            setNotifications(prev => prev.map(notif => ({ ...notif, is_read: true })));
+            setUnreadCount(0);
+        } catch (error) {
+            console.error('Error marking all notifications as read:', error);
+        }
+    };
+    // Real-time notification effect
+    React.useEffect(() => {
+        if (!authUid) return;
+        const unsubscribeNotifications = Notification.subscribeByUser(authUid, (notifs) => {
+            setNotifications(notifs);
+        });
+        const unsubscribeUnreadCount = Notification.subscribeUnreadCount(authUid, (count) => {
+            setUnreadCount(count);
+        });
+        return () => {
+            unsubscribeNotifications();
+            unsubscribeUnreadCount();
+        };
+    }, [authUid]);
+
     return (
         <StyledEngineProvider injectFirst>
             <CacheProvider value={cacheRtl}>
@@ -4479,6 +4639,98 @@ export default function AdminDashboard(props) {
                                         />
                                     )}
                                     <Box sx={{ flexGrow: 1 }} />
+                                    {/* Notification Bell Icon */}
+                                    <IconButton 
+                                        sx={{ mr: -1 }} 
+                                        onClick={handleNotificationClick} 
+                                        color="inherit"
+                                    >
+                                        <Badge badgeContent={unreadCount} color="error">
+                                            <NotificationsIcon />
+                                        </Badge>
+                                    </IconButton>
+                                    {/* Notification Menu */}
+                                    {notificationAnchorEl && (
+                                        <Box sx={{ 
+                                            position: 'absolute', 
+                                            top: 60, 
+                                            right: 20, 
+                                            width: 400, 
+                                            maxHeight: 500,
+                                            backgroundColor: 'white',
+                                            border: '1px solid #ccc',
+                                            borderRadius: 1,
+                                            zIndex: 1000,
+                                            p: 2
+                                        }}>
+                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                                                <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                                                    الإشعارات ({notifications.length})
+                                                </Typography>
+                                                <Button size="small" onClick={handleMarkAllAsRead} disabled={unreadCount === 0}>
+                                                    تعليم الكل كمقروء
+                                                </Button>
+                                                <IconButton size="small" onClick={handleNotificationClose}>
+                                                    <CloseIcon />
+                                                </IconButton>
+                                            </Box>
+                                            <Box sx={{ maxHeight: 400, overflow: 'auto' }}>
+                                                {notifications.length === 0 ? (
+                                                    <Box sx={{ p: 3, textAlign: 'center' }}>
+                                                        <Typography variant="body2" color="text.secondary">
+                                                            لا توجد إشعارات
+                                                        </Typography>
+                                                    </Box>
+                                                ) : (
+                                                    notifications.map((notification) => (
+                                                        <Card 
+                                                            key={notification.id}
+                                                            sx={{ 
+                                                                m: 1, 
+                                                                cursor: 'pointer',
+                                                                backgroundColor: notification.is_read ? 'transparent' : 'action.hover',
+                                                                '&:hover': { backgroundColor: 'action.selected' },
+                                                            }}
+                                                            onClick={() => handleMarkAsRead(notification.id)}
+                                                        >
+                                                            <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+                                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                                                                    <Typography 
+                                                                        variant="subtitle2" 
+                                                                        sx={{ fontWeight: notification.is_read ? 'normal' : 'bold', color: notification.is_read ? 'text.secondary' : 'text.primary' }}
+                                                                    >
+                                                                        {notification.title}
+                                                                    </Typography>
+                                                                    {!notification.is_read && (
+                                                                        <Chip label="جديد" size="small" color="error" sx={{ fontSize: '0.6rem', height: 20 }} />
+                                                                    )}
+                                                                </Box>
+                                                                <Typography variant="body2" color="text.secondary" sx={{ mb: 1, lineHeight: 1.4 }}>
+                                                                    {notification.body}
+                                                                </Typography>
+                                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                                    <Typography variant="caption" color="text.secondary">
+                                                                        {notification.timestamp?.toDate ? notification.timestamp.toDate().toLocaleString('ar-EG') : new Date(notification.timestamp).toLocaleString('ar-EG')}
+                                                                    </Typography>
+                                                                    {notification.type && (
+                                                                        <Chip label={notification.type === 'system' ? 'نظام' : notification.type} size="small" variant="outlined" sx={{ fontSize: '0.6rem', height: 20 }} />
+                                                                    )}
+                                                                </Box>
+                                                            </CardContent>
+                                                        </Card>
+                                                    ))
+                                                )}
+                                            </Box>
+                                        </Box>
+                                    )}
+                                    <IconButton
+                                        sx={{ ml: 1 }}
+                                        color="inherit"
+                                        onClick={() => navigate('/home')}
+                                        title="العودة للصفحة الرئيسية"
+                                    >
+                                        <HomeIcon />
+                                    </IconButton>
                                     <IconButton sx={{ mr: 1 }} onClick={colorMode.toggleColorMode} color="inherit">
                                         {theme.palette.mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
                                     </IconButton>
@@ -4491,7 +4743,9 @@ export default function AdminDashboard(props) {
                                     >
                                         تسجيل الخروج
                                     </Button>
+                                    
                                 </Toolbar>
+
                             </AppBarStyled>
 
                             <Drawer

@@ -1086,23 +1086,13 @@ function ProfilePage() {
                                 }}
                             />
                             {/* Password field with reset button */}
-                            <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-end' }}>
-                            <TextField
-                                label="كلمة المرور"
-                                fullWidth
-                                margin="normal"
-                                type="password"
-                                placeholder="******"
-                                InputProps={{ style: { direction: 'ltr' } }}
-                                    disabled
-                                    sx={{ flexGrow: 1 }}
-                                />
+                            <Box dir='rtl' sx={{ display: 'flex', gap: 2, alignItems: 'flex-end' }}>
                                 <Button
                                     variant="outlined"
                                     color="primary"
                                     onClick={handleResetPassword}
                                     disabled={resetPasswordLoading}
-                                    sx={{ mb: 1, minWidth: 120 }}
+                                    sx={{ m: 1, minWidth: 120 }}
                                 >
                                     {resetPasswordLoading ? (
                                         <CircularProgress size={20} color="inherit" />
@@ -3244,7 +3234,7 @@ export default function ClientDashboard(props) {
                                     
                                     {/* Notification Bell Icon */}
                                     <IconButton 
-                                        sx={{ mr: 1 }} 
+                                        sx={{ mr: -1 }} 
                                         onClick={handleNotificationClick} 
                                         color="inherit"
                                     >
@@ -3282,14 +3272,11 @@ export default function ClientDashboard(props) {
                                                         <Typography variant="body2" color="text.secondary">
                                                             لا توجد إشعارات
                                                         </Typography>
-                                                        <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-                                                            User ID: {authUid}
-                                                        </Typography>
                                                     </Box>
                                                 ) : (
                                                     notifications.map((notification) => {
                                                         const isRejectionNotification = notification.title === 'تم رفض إعلانك' || 
-                                                                                     notification.title.includes('رفض');
+                                                        notification.title.includes('رفض');
                                                         
                                                         return (
                                                             <Card 
@@ -3422,6 +3409,14 @@ export default function ClientDashboard(props) {
                                             </Box>
                                         </Box>
                                     )}
+                                    <IconButton
+                                        sx={{ ml: 1 }}
+                                        color="inherit"
+                                        onClick={() => navigate('/home')}
+                                        title="العودة للصفحة الرئيسية"
+                                    >
+                                        <HomeIcon />
+                                    </IconButton>
                                     <IconButton sx={{ mr: 1 }} onClick={colorMode.toggleColorMode} color="inherit">
                                         {theme.palette.mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
                                     </IconButton>
@@ -3434,14 +3429,7 @@ export default function ClientDashboard(props) {
                                     >
                                         تسجيل الخروج
                                     </Button>
-                                    <IconButton
-                                        sx={{ ml: 1 }}
-                                        color="inherit"
-                                        onClick={() => navigate('/home')}
-                                        title="العودة للصفحة الرئيسية"
-                                    >
-                                        <HomeIcon />
-                                    </IconButton>
+                                    
                                 </Toolbar>
                             </AppBarStyled>
 
