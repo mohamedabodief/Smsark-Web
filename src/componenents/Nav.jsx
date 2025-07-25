@@ -132,10 +132,36 @@ const toSerachpage=()=>{
         </Stack>
 
         <Stack direction="row" spacing={1} alignItems="center">
-          <Tooltip title="قائمة المفضل">
-            <Button onClick={() => navigate('/favorite')} sx={{ color: '#fff' }}>
-              <FavoriteIcon />
-            </Button>
+               <Tooltip title="الإشعارات">
+            <IconButton
+              size="small"
+              sx={{ color: "white" }}
+              onClick={handleClick}
+            >
+              <Badge
+                badgeContent={unreadCount}
+                color="error"
+                sx={{
+                  "& .MuiBadge-badge": {
+                    top: "0px",
+                    right: "0px",
+                    backgroundColor: "#d1d1d1ff",
+                    color: "black",
+                    fontWeight: "bold",
+                    minWidth: "20px",
+                    height: "20px",
+                    borderRadius: "50%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: "14px",
+                    zIndex: "10000",
+                  },
+                }}
+              >
+                <NotificationsIcon />
+              </Badge>
+            </IconButton>
           </Tooltip>
           <Tooltip title="الرسائل">
             <IconButton
@@ -168,36 +194,10 @@ const toSerachpage=()=>{
               </Badge>
             </IconButton>
           </Tooltip>
-          <Tooltip title="الإشعارات">
-            <IconButton
-              size="small"
-              sx={{ color: "white" }}
-              onClick={handleClick}
-            >
-              <Badge
-                badgeContent={unreadCount}
-                color="error"
-                sx={{
-                  "& .MuiBadge-badge": {
-                    top: "0px",
-                    right: "0px",
-                    backgroundColor: "#d1d1d1ff",
-                    color: "black",
-                    fontWeight: "bold",
-                    minWidth: "20px",
-                    height: "20px",
-                    borderRadius: "50%",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: "14px",
-                    zIndex: "10000",
-                  },
-                }}
-              >
-                <NotificationsIcon />
-              </Badge>
-            </IconButton>
+            <Tooltip title="قائمة المفضل">
+            <Button onClick={() => navigate('/favorite')} sx={{ color: '#fff' }}>
+              <FavoriteIcon />
+            </Button>
           </Tooltip>
           <Tooltip title="تبديل الثيم">
             <IconButton size="small" onClick={toggleMode}>
@@ -215,7 +215,7 @@ const toSerachpage=()=>{
             onClose={handleClose}
             anchorOrigin={{
               vertical: 'bottom',
-              horizontal: 'right',
+              horizontal: 'left',
             }}
             transformOrigin={{
               vertical: 'top',

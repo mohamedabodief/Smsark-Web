@@ -457,6 +457,7 @@ const ModernRealEstateForm = () => {
   const adStatuses = ['تحت العرض', 'تحت التفاوض', 'منتهي'];
 
   return (
+     <>
     <Box
       className="modern-form-container"
       sx={{
@@ -998,57 +999,39 @@ const ModernRealEstateForm = () => {
                 <Divider sx={{ my: 3, borderColor: '#e0e0e0' }} />
 
                 {/* Activation Settings */}
-
-
-
-                {/* تعديل شغل الباكدجات  بداية  */}
-
-
-
-                {/* نهاية تعديل شغل الباكدجات */}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                {/* <Grid >
-
-
-
+                <Grid item xs={12} md={6} width={'100%'}>
                   
-                  <Box width="100%" display="flex" justifyContent="center" my={4}>
-                    <Box display="flex" justifyContent="center" flexDirection={{ xs: 'column', md: 'row' }} width={{ xs: '100%', md: '80%', lg: '40%' }}>
-
-                  </Box>
-                  </Box>
-
-
-                 
-
-                </Grid> */}
-                {/* </Grid> */}
+                </Grid>
+                
               </Container>
+              
             </CardContent>
+            
           </StyledCard>
+          
+        </Box>
 
-
-
-          <Box sx={{ mt: 4, display: 'flex', gap: 2, justifyContent: 'center' }}>
+        <Snackbar
+          open={showSuccess}
+          autoHideDuration={6000}
+          onClose={() => setShowSuccess(false)}
+        >
+          <Alert onClose={() => setShowSuccess(false)} severity="success" sx={{ width: '100%' }}>
+            تم {isEditMode ? 'تحديث' : 'إضافة'} الإعلان بنجاح!
+          </Alert>
+        </Snackbar>
+    
+          
+      </Container>
+      
+    </Box>
+       <AdPackagesClient
+          selectedPackageId={selectedPackage}
+          setSelectedPackageId={setSelectedPackage}
+          onReceiptImageChange={setReceiptImage}
+        />
+        <Box sx={{ mt: 4, display: 'flex', gap: 2, justifyContent: 'center' ,mb:'16px'}}>
+    
             <Button
               type="submit"
               variant="contained"
@@ -1093,36 +1076,7 @@ const ModernRealEstateForm = () => {
           {submitError && (
             <Alert severity="error" sx={{ mt: 2 }}>{submitError}</Alert>
           )}
-        </Box>
-
-        <Snackbar
-          open={showSuccess}
-          autoHideDuration={6000}
-          onClose={() => setShowSuccess(false)}
-        >
-          <Alert onClose={() => setShowSuccess(false)} severity="success" sx={{ width: '100%' }}>
-            تم {isEditMode ? 'تحديث' : 'إضافة'} الإعلان بنجاح!
-          </Alert>
-        </Snackbar>
-      </Container>
-      <Box
-        // display="flex"
-        flexDirection={{ xs: 'column', md: 'row', lg: 'row' }}
-        gap={2}
-        // justifyContent="center"
-        // alignItems="stretch"
-        width="40%"
-        my={3}
-      >
-        <AdPackagesClient
-          selectedPackageId={selectedPackage}
-          setSelectedPackageId={setSelectedPackage}
-          onReceiptImageChange={setReceiptImage}
-        />
-      </Box>
-      
-    </Box>
-
+   </>
   );
 };
 

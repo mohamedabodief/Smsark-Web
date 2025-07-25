@@ -15,11 +15,11 @@ export default function Layout({ children }) {
         palette: {
           mode,
           primary: {
-            main: "#6E00FE", 
+            main: "#6E00FE",
           },
         },
         typography: {
-          fontFamily: 'Cairo, sans-serif', 
+          fontFamily: 'Cairo, sans-serif',
         },
       }),
     [mode]
@@ -41,15 +41,22 @@ export default function Layout({ children }) {
 
   return (
     <UnreadMessagesProvider>
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <Nav toggleMode={toggleMode} />
-      <Box component="main" sx={{ mt: { xs: 5, md: 8 } }}>
-        {children}
-      </Box>
-      {/* Only show Footer if not on a dashboard route */}
-      {!isDashboard && <Footer />}
-    </ThemeProvider>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <Box sx={{
+          display: "flex",
+          flexDirection: "column",
+          minHeight: "100vh",
+        }}
+        >
+          <Nav toggleMode={toggleMode} />
+          <Box component="main" sx={{ mt: { xs: 5, md: 8 }, flex: 1 }}>
+            {children}
+          </Box>
+          {/* Only show Footer if not on a dashboard route */}
+          {!isDashboard && <Footer />}
+        </Box>
+      </ThemeProvider>
     </UnreadMessagesProvider>
   );
 }

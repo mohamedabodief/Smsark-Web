@@ -412,7 +412,7 @@ const PropertyForm = ({
   return (
     <Paper
       elevation={3}
-      sx={{ p: 3, borderRadius: 2, width: "90%", mx: "auto" }}
+      sx={{ p: 3, borderRadius: 2, mt: 5, maxWidth: 1200, mx: "auto" ,}}
     >
       <Typography
         variant="h4"
@@ -989,9 +989,9 @@ const PropertyForm = ({
           )}
 
           {/* أضف مكون الباقات أسفل الفورم */}
-          
-          <AdPackages selectedPackageId={selectedPackage} setSelectedPackageId={setSelectedPackage} onReceiptImageChange={setReceiptImage} />
-
+          <Box sx={{display:'flex',justifyContent:'center',width:'100%'}}>
+          <AdPackages selectedPackageId={selectedPackage} setSelectedPackageId={setSelectedPackage} />
+</Box>
           <Grid size={{ xs: 12, md: 6, lg: 4 }}>
             <StyledButton
               type="submit"

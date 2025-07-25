@@ -1,6 +1,7 @@
 import {
   Avatar,
   Box,
+  CircularProgress,
   Container,
   InputAdornment,
   TextField,
@@ -21,6 +22,7 @@ function InboxChats() {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentUserEmail, setCurrentUserEmail] = useState(null);
   const [currentUserId, setCurrentUserId] = useState(null);
+const [loading, setLoading] = useState(true);
 
   const getUserNameById = async (userId) => {
   try {
@@ -103,9 +105,10 @@ function InboxChats() {
       setFilteredChats(sorted);
       const totalUnread = sorted.reduce((sum, chat) => sum + chat.unreadCount, 0);
       setTotalUnreadCount(totalUnread);
-      console.log('Total unread messages:', totalUnread);
+       setLoading(false); 
     }, (err) => {
       console.error('Error fetching conversations:', err);
+       setLoading(false); 
     });
 
     return () => unsubscribe();
@@ -181,7 +184,24 @@ function InboxChats() {
         />
       </Box>
 
-      {filteredChats.map((chat) => (
+      {loading ? (
+  <Box sx={{ display: 'flex', justifyContent: 'center', mt: 9 }}>
+    <CircularProgress/>
+  </Box>
+) : filteredChats.length === 0 ? (
+  <Typography
+    sx={{
+      textAlign: 'center',
+      mt: 4,
+      fontSize: '18px',
+      color: 'gray',
+      fontWeight: 'bold',
+    }}
+  >
+    لا توجد محادثات بعد
+  </Typography>
+) :
+      filteredChats.map((chat) => (
         <Box
           key={chat.userId}
           sx={{

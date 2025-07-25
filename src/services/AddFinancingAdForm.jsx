@@ -225,7 +225,7 @@ export default function AddFinancingAdForm() {
   }, [isEditMode, editData]);
 
   return (
-    <Paper elevation={3} sx={{ p: 3, borderRadius: 2, mt: 5, maxWidth: '70%', mx: "auto" }}>
+    <Paper elevation={3} sx={{ p: 3, borderRadius: 2, mt: 5, maxWidth: 1100, mx: "auto" ,mb:10}} >
       <Typography
         variant="h4"
         gutterBottom
@@ -415,6 +415,7 @@ export default function AddFinancingAdForm() {
         </Grid>
       </form>
       {/* أضف مكون الباقات أسفل الفورم */}
+      
     </Paper>
   );
 }
