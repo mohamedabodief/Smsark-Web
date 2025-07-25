@@ -220,14 +220,14 @@ class FinancingAdvertisement {
   // ✅ جلب إعلان واحد باستخدام ID
   static async getById(id) {
     const snap = await getDoc(doc(db, 'FinancingAdvertisements', id));
-    return snap.exists() ? new FinancingAdvertisement(snap.data()) : null;
+    return snap.exists() ? new FinancingAdvertisement({ ...snap.data(), id: snap.id }) : null;
   }
 
   // ✅ جلب جميع الإعلانات
   static async getAll() {
     const col = collection(db, 'FinancingAdvertisements');
     const snap = await getDocs(col);
-    return snap.docs.map((d) => new FinancingAdvertisement(d.data()));
+    return snap.docs.map((d) => new FinancingAdvertisement({ ...d.data(), id: d.id }));
   }
 
   // ✅ جلب الإعلانات حسب حالة المراجعة (pending | approved | rejected)
@@ -237,7 +237,7 @@ class FinancingAdvertisement {
       where('reviewStatus', '==', status)
     );
     const snap = await getDocs(q);
-    return snap.docs.map((d) => new FinancingAdvertisement(d.data()));
+    return snap.docs.map((d) => new FinancingAdvertisement({ ...d.data(), id: d.id }));
   }
 
   // ✅ الاشتراك اللحظي في الإعلانات حسب حالة المراجعة (pending | approved | rejected)
@@ -248,7 +248,7 @@ class FinancingAdvertisement {
     );
     return onSnapshot(q, (snapshot) => {
       const ads = snapshot.docs.map(
-        (docSnap) => new FinancingAdvertisement(docSnap.data())
+        (docSnap) => new FinancingAdvertisement({ ...docSnap.data(), id: docSnap.id })
       );
       callback(ads);
     });
@@ -261,7 +261,7 @@ class FinancingAdvertisement {
       where('userId', '==', userId)
     );
     const snap = await getDocs(q);
-    return snap.docs.map((d) => new FinancingAdvertisement(d.data()));
+    return snap.docs.map((d) => new FinancingAdvertisement({ ...d.data(), id: d.id }));
   }
 
   // ✅ الاشتراك اللحظي في الإعلانات المفعّلة فقط (Real-time listener)
@@ -271,7 +271,18 @@ class FinancingAdvertisement {
       where('ads', '==', true)
     );
     return onSnapshot(q, (snap) => {
-      const ads = snap.docs.map((d) => new FinancingAdvertisement(d.data()));
+      const ads = snap.docs.map((d) => new FinancingAdvertisement({ ...d.data(), id: d.id }));
+      callback(ads);
+    });
+  }
+
+  // 🔁 استماع لحظي لجميع الإعلانات
+  static subscribeAllAds(callback) {
+    const q = collection(db, 'FinancingAdvertisements');
+    return onSnapshot(q, (snap) => {
+      const ads = snap.docs.map(
+        (d) => new FinancingAdvertisement({ ...d.data(), id: d.id })
+      );
       callback(ads);
     });
   }

@@ -829,7 +829,7 @@ class RealEstateDeveloperAdvertisement {
       const data = snap.data();
       const advertisement = new RealEstateDeveloperAdvertisement({
         ...data,
-        id: id // إضافة الـ ID بشكل صريح
+        id: snap.id // إضافة الـ ID بشكل صريح
       });
       return advertisement;
     }
@@ -926,6 +926,25 @@ class RealEstateDeveloperAdvertisement {
       collection(db, 'RealEstateDeveloperAdvertisements'),
       where('ads', '==', true)
     );
+    return onSnapshot(q, (snap) => {
+      const ads = snap.docs.map(
+        (d) => new RealEstateDeveloperAdvertisement({
+          ...d.data(),
+          id: d.id
+        })
+      );
+      callback(ads);
+    });
+  }
+
+  // 🔁 استماع لحظي لجميع الإعلانات
+  static subscribeAllAds(callback) {
+    // التحقق من حالة تسجيل الدخول
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      throw new Error("يجب تسجيل الدخول أولاً قبل الاشتراك في العقارات");
+    }
+    const q = collection(db, 'RealEstateDeveloperAdvertisements');
     return onSnapshot(q, (snap) => {
       const ads = snap.docs.map(
         (d) => new RealEstateDeveloperAdvertisement({

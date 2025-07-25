@@ -12,6 +12,10 @@ import {
     CircularProgress,
     Snackbar,
     Alert,
+    Card,
+    CardContent,
+    Chip,
+    Badge,
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
@@ -34,6 +38,7 @@ import BroadcastOnHomeIcon from '@mui/icons-material/BroadcastOnHome';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
 import MessageIcon from '@mui/icons-material/Message';
+import NotificationsIcon from '@mui/icons-material/Notifications';
 import LogoutIcon from '@mui/icons-material/Logout';
 import { logout } from '../../LoginAndRegister/featuresLR/authSlice';
 import { addUser, editUser, deleteUser } from '../../reduxToolkit/slice/usersSlice';
@@ -47,7 +52,7 @@ import { StyledEngineProvider } from '@mui/material/styles';
 import { DataGrid } from '@mui/x-data-grid';
 import { setProfilePic } from '../../reduxToolkit/slice/profilePicSlice';
 import { MOCK_ADVERTISEMENTS } from '../mockAds';
-import { Chip, Link } from '@mui/material';
+import { Link } from '@mui/material';
 
 import {
     addProperty,
@@ -112,6 +117,7 @@ import {
     // activateHomepageAd,
     // deactivateHomepageAd
 } from "../../feature/ads/homepageAdsSlice";
+import Notification from '../../FireBase/MessageAndNotification/Notification';
 // Define shared data (could be moved to a constants file)
 const governorates = [
     "القاهرة", "الإسكندرية", "الجيزة", "الشرقية", "الدقهلية", "البحيرة", "المنيا", "أسيوط",
@@ -1492,16 +1498,6 @@ function ProfilePage() {
                             />
                             {/* Password field with reset button */}
                             <Box dir='rtl' sx={{ display: 'flex', gap: 2, alignItems: 'flex-end' }}>
-                            <TextField
-                                label="كلمة المرور"
-                                fullWidth
-                                margin="normal"
-                                type="password"
-                                placeholder="******"
-                                InputProps={{ style: { direction: 'ltr' } }}
-                                disabled
-                                    sx={{ flexGrow: 1 }}
-                                />
                                 <Button
                                     variant="outlined"
                                     color="primary"
@@ -3275,35 +3271,14 @@ export default function OrganizationDashboard(props) {
     const navigate = useNavigate();
     // const authStatus = useSelector((state) => state.auth.status); // Get auth status to disable button
 
-    const [isLoggingOut, setIsLoggingOut] = useState(false); // New state to manage loading visual for logout button
-
-    // const handleLogout = async () => {
-    //     setIsLoggingOut(true); // Indicate that logout is in progress
-
-    //     // Dispatch the logoutUser async thunk
-    //     const resultAction = await dispatch(logoutUser());
-
-    //     // Check if the logout was successful
-    //     if (logoutUser.fulfilled.match(resultAction)) {
-    //         console.log("Logged out successfully!");
-    //         // Add a delay (e.g., 1000 milliseconds = 1 second)
-    //         setTimeout(() => {
-    //             navigate('/login'); // Redirect to the login page after the delay
-    //             setIsLoggingOut(false); // Reset loading state after redirection
-    //         }, 30000); // Adjust delay time as needed (in milliseconds)
-    //     } else {
-    //         // Handle error if logout failed (less common for Firebase signOut)
-    //         console.error("Logout failed:", resultAction.payload);
-    //         setIsLoggingOut(false); // Reset loading state even on failure
-    //         // Optionally, show an error message to the user
-    //     }
-    // };
     const handleLogout = async () => {
         console.log('جارى تسجيل الخروج');
         try {
             await signOut(auth); // Sign out from Firebase
             dispatch(logout()); // Dispatch Redux logout action to clear state
-            navigate('/login'); // Redirect to login page
+            setTimeout(() => {
+                navigate('/login'); // Redirect to login page
+            }, 2000);
             console.log('تم تسجيل الخروج بنجاح.');
         } catch (error) {
             console.error('خطأ في تسجيل الخروج:', error);
@@ -3400,6 +3375,57 @@ export default function OrganizationDashboard(props) {
             break;
     }
 
+    // Notification state
+    const [notifications, setNotifications] = React.useState([]);
+    const [notificationAnchorEl, setNotificationAnchorEl] = React.useState(null);
+    const [unreadCount, setUnreadCount] = React.useState(0);
+    const [snackbarOpen, setSnackbarOpen] = React.useState(false);
+    const [snackbarMessage, setSnackbarMessage] = React.useState('');
+    const [snackbarSeverity, setSnackbarSeverity] = React.useState('success');
+    const authUid = useSelector((state) => state.auth.uid);
+    // Notification handlers
+    const handleNotificationClick = (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        setNotificationAnchorEl(event.currentTarget);
+    };
+    const handleNotificationClose = () => {
+        setNotificationAnchorEl(null);
+    };
+    const handleMarkAsRead = async (notificationId) => {
+        try {
+            await Notification.markAsRead(notificationId);
+            setNotifications(prev => prev.map(notif => notif.id === notificationId ? { ...notif, is_read: true } : notif));
+            setUnreadCount(prev => Math.max(0, prev - 1));
+        } catch (error) {
+            console.error('Error marking notification as read:', error);
+        }
+    };
+    const handleMarkAllAsRead = async () => {
+        if (!authUid) return;
+        try {
+            await Notification.markAllAsRead(authUid);
+            setNotifications(prev => prev.map(notif => ({ ...notif, is_read: true })));
+            setUnreadCount(0);
+        } catch (error) {
+            console.error('Error marking all notifications as read:', error);
+        }
+    };
+    // Real-time notification effect
+    React.useEffect(() => {
+        if (!authUid) return;
+        const unsubscribeNotifications = Notification.subscribeByUser(authUid, (notifs) => {
+            setNotifications(notifs);
+        });
+        const unsubscribeUnreadCount = Notification.subscribeUnreadCount(authUid, (count) => {
+            setUnreadCount(count);
+        });
+        return () => {
+            unsubscribeNotifications();
+            unsubscribeUnreadCount();
+        };
+    }, [authUid]);
+
     return (
         <StyledEngineProvider injectFirst>
             <CacheProvider value={cacheRtl}>
@@ -3417,20 +3443,90 @@ export default function OrganizationDashboard(props) {
                                         />
                                     )}
                                     <Box sx={{ flexGrow: 1 }} />
-                                    <IconButton sx={{ mr: 1 }} onClick={colorMode.toggleColorMode} color="inherit">
-                                        {theme.palette.mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
-                                    </IconButton>
-                                    <Button
-                                        variant="outlined"
+                                    {/* Notification Bell Icon */}
+                                    <IconButton 
+                                        sx={{ mr: -1 }} 
+                                        onClick={handleNotificationClick} 
                                         color="inherit"
-                                        onClick={handleLogout}
-                                        endIcon={isLoggingOut ? <CircularProgress size={20} color="inherit" /> : <LogoutIcon />} // Show spinner during logout
-                                        sx={{ mr: 2, borderRadius: 2, direction: 'ltr' }}
-                                        // disabled={isLoggingOut || authStatus === 'loading'} // Disable button during logout or other auth loading
-                                        disabled={isLoggingOut}
                                     >
-                                        {isLoggingOut ? 'جارِ تسجيل الخروج...' : 'تسجيل الخروج'} {/* Change text during logout */}
-                                    </Button>
+                                        <Badge badgeContent={unreadCount} color="error">
+                                            <NotificationsIcon />
+                                        </Badge>
+                                    </IconButton>
+                                    {/* Notification Menu */}
+                                    {notificationAnchorEl && (
+                                        <Box sx={{ 
+                                            position: 'absolute', 
+                                            top: 60, 
+                                            right: 20, 
+                                            width: 400, 
+                                            maxHeight: 500,
+                                            backgroundColor: 'white',
+                                            border: '1px solid #ccc',
+                                            borderRadius: 1,
+                                            zIndex: 1000,
+                                            p: 2
+                                        }}>
+                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                                                <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                                                    الإشعارات ({notifications.length})
+                                                </Typography>
+                                                <Button size="small" onClick={handleMarkAllAsRead} disabled={unreadCount === 0}>
+                                                    تعليم الكل كمقروء
+                                                </Button>
+                                                <IconButton size="small" onClick={handleNotificationClose}>
+                                                    <CloseIcon />
+                                                </IconButton>
+                                            </Box>
+                                            <Box sx={{ maxHeight: 400, overflow: 'auto' }}>
+                                                {notifications.length === 0 ? (
+                                                    <Box sx={{ p: 3, textAlign: 'center' }}>
+                                                        <Typography variant="body2" color="text.secondary">
+                                                            لا توجد إشعارات
+                                                        </Typography>
+                                                    </Box>
+                                                ) : (
+                                                    notifications.map((notification) => (
+                                                        <Card 
+                                                            key={notification.id} 
+                                                            sx={{ 
+                                                                m: 1, 
+                                                                cursor: 'pointer',
+                                                                backgroundColor: notification.is_read ? 'transparent' : 'action.hover',
+                                                                '&:hover': { backgroundColor: 'action.selected' },
+                                                            }}
+                                                            onClick={() => handleMarkAsRead(notification.id)}
+                                                        >
+                                                            <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+                                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                                                                    <Typography 
+                                                                        variant="subtitle2" 
+                                                                        sx={{ fontWeight: notification.is_read ? 'normal' : 'bold', color: notification.is_read ? 'text.secondary' : 'text.primary' }}
+                                                                    >
+                                                                        {notification.title}
+                                                                    </Typography>
+                                                                    {!notification.is_read && (
+                                                                        <Chip label="جديد" size="small" color="error" sx={{ fontSize: '0.6rem', height: 20 }} />
+                                                                    )}
+                                                                </Box>
+                                                                <Typography variant="body2" color="text.secondary" sx={{ mb: 1, lineHeight: 1.4 }}>
+                                                                    {notification.body}
+                                                                </Typography>
+                                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                                    <Typography variant="caption" color="text.secondary">
+                                                                        {notification.timestamp?.toDate ? notification.timestamp.toDate().toLocaleString('ar-EG') : new Date(notification.timestamp).toLocaleString('ar-EG')}
+                                                                    </Typography>
+                                                                    {notification.type && (
+                                                                        <Chip label={notification.type === 'system' ? 'نظام' : notification.type} size="small" variant="outlined" sx={{ fontSize: '0.6rem', height: 20 }} />
+                                                                    )}
+                                                                </Box>
+                                                            </CardContent>
+                                                        </Card>
+                                                    ))
+                                                )}
+                                            </Box>
+                                        </Box>
+                                    )}
                                     <IconButton
                                         sx={{ ml: 1 }}
                                         color="inherit"
@@ -3439,6 +3535,19 @@ export default function OrganizationDashboard(props) {
                                     >
                                         <HomeIcon />
                                     </IconButton>
+                                    <IconButton sx={{ mr: 1 }} onClick={colorMode.toggleColorMode} color="inherit">
+                                        {theme.palette.mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
+                                    </IconButton>
+                                    <Button
+                                        variant="outlined"
+                                        color="inherit"
+                                        onClick={handleLogout}
+                                        endIcon={<LogoutIcon />}
+                                        sx={{ mr: 2, borderRadius: 2, direction: 'ltr' }}
+                                    >
+                                        تسجيل الخروج
+                                    </Button>
+                                    
                                 </Toolbar>
                             </AppBarStyled>
 
