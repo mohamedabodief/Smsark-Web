@@ -200,6 +200,8 @@ const ModernRealEstateForm = () => {
   const [enableMapPick, setEnableMapPick] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState(null);
   const [receiptImage, setReceiptImage] = useState(null);
+  const [isGeocodingLoading, setIsGeocodingLoading] = useState(false); // أضف هذا
+  const [geocodingError, setGeocodingError] = useState(''); // أضف هذا
   const navigate = useNavigate();
   const location = useLocation();
   const editData = location.state?.adData || null;
@@ -459,7 +461,7 @@ const ModernRealEstateForm = () => {
       className="modern-form-container"
       sx={{
         minHeight: '100vh',
-        display: 'flex',
+        // display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: '#f5f5f5',
@@ -499,7 +501,9 @@ const ModernRealEstateForm = () => {
         <Box component="form" onSubmit={handleSubmit(onSubmit)} width={'100%'} sx={{ direction: 'rtl' }}>
           <StyledCard>
             <CardContent>
-              <Container maxWidth='lg' sx={{ display: 'flex', flexDirection: 'column' }}>
+              <Container maxWidth='lg' sx={{ display: 'flex' }}>
+                {/* <Grid container spacing={2} dir="rtl"> */}
+
                 {/* Basic Information */}
                 <Grid item width={'100%'}>
                   <Typography variant="h6" sx={{ mb: 3, color: '#6E00FE', fontWeight: 600 }}>
@@ -994,58 +998,55 @@ const ModernRealEstateForm = () => {
                 <Divider sx={{ my: 3, borderColor: '#e0e0e0' }} />
 
                 {/* Activation Settings */}
-                <Grid item xs={12} md={6} width={'100%'}>
-                  <Typography variant="h6" sx={{ mb: 3, color: '#6E00FE', fontWeight: 600, fontSize: '20px' }}>
-                    <AttachMoney sx={{ mr: 1, verticalAlign: 'middle', ml: '6px', mt: '-6px' }} />
-                    إعدادات التفعيل
-                  </Typography>
 
-                  <Controller
-                    name="adsActivation"
-                    control={control}
-                    render={({ field }) => (
-                      <FormControlLabel
-                        control={
-                          <Switch
-                            checked={field.value}
-                            onChange={field.onChange}
-                            color="primary"
-                          />
-                        }
-                        label="تفعيل الإعلان"
-                        sx={{ mb: 2 }}
-                      />
-                    )}
-                  />
 
-                  {adsActivation && (
-                    <Controller
-                      name="activationDays"
-                      control={control}
-                      render={({ field }) => (
-                        <StyledTextField
-                          {...field}
-                          fullWidth
-                          label="عدد أيام التفعيل"
-                          type="number"
-                          InputProps={{
-                            endAdornment: <InputAdornment position="end">أيام</InputAdornment>,
-                          }}
-                        />
-                      )}
-                    />
-                  )}
-                </Grid>
+
+                {/* تعديل شغل الباكدجات  بداية  */}
+
+
+
+                {/* نهاية تعديل شغل الباكدجات */}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                {/* <Grid >
+
+
+
+                  
+                  <Box width="100%" display="flex" justifyContent="center" my={4}>
+                    <Box display="flex" justifyContent="center" flexDirection={{ xs: 'column', md: 'row' }} width={{ xs: '100%', md: '80%', lg: '40%' }}>
+
+                  </Box>
+                  </Box>
+
+
+                 
+
+                </Grid> */}
+                {/* </Grid> */}
               </Container>
             </CardContent>
           </StyledCard>
 
-          {/* إضافة مكون الباقات */}
-          <Box width="100%" display="flex" justifyContent="center" my={4}>
-            <Box width={{ xs: '100%', md: '80%', lg: '30%' }}>
-              <AdPackagesClient selectedPackageId={selectedPackage} setSelectedPackageId={setSelectedPackage} onReceiptImageChange={setReceiptImage} />
-            </Box>
-          </Box>
+
 
           <Box sx={{ mt: 4, display: 'flex', gap: 2, justifyContent: 'center' }}>
             <Button
@@ -1104,8 +1105,27 @@ const ModernRealEstateForm = () => {
           </Alert>
         </Snackbar>
       </Container>
+      <Box
+        // display="flex"
+        flexDirection={{ xs: 'column', md: 'row', lg: 'row' }}
+        gap={2}
+        // justifyContent="center"
+        // alignItems="stretch"
+        width="40%"
+        my={3}
+      >
+        <AdPackagesClient
+          selectedPackageId={selectedPackage}
+          setSelectedPackageId={setSelectedPackage}
+          onReceiptImageChange={setReceiptImage}
+        />
+      </Box>
+      
     </Box>
+
   );
 };
 
 export default ModernRealEstateForm;
+
+

@@ -47,15 +47,15 @@ export default function FinancingRequestForm() {
   });
 
   const updateInstallment = async (updatedForm) => {
-  const tempRequest = new FinancingRequest(updatedForm);
-  try {
-    const result = await tempRequest.calculateMonthlyInstallment();
-    setMonthlyInstallment(result);
-  } catch (err) {
-    console.error('خطأ في حساب القسط الشهري:', err);
-    setMonthlyInstallment('');
-  }
-};
+    const tempRequest = new FinancingRequest(updatedForm);
+    try {
+      const result = await tempRequest.calculateMonthlyInstallment();
+      setMonthlyInstallment(result);
+    } catch (err) {
+      console.error('خطأ في حساب القسط الشهري:', err);
+      setMonthlyInstallment('');
+    }
+  };
 
   const handleChange = (e) => {
     const updatedForm = { ...form, [e.target.name]: e.target.value };
@@ -108,7 +108,7 @@ export default function FinancingRequestForm() {
       }
       setShowSuccessMessage(true);
       setTimeout(() => {
-        navigate('/profile');
+        navigate('/home');
       }, 1500);
     } catch (err) {
       alert("حدث خطأ أثناء الإرسال");
