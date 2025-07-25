@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
@@ -44,9 +44,11 @@ import {
   Map
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
-import MapDisplay from '../LocationComponents/MapDisplay';
 import MapPicker from '../LocationComponents/MapPicker';
 import { useNavigate, useLocation } from 'react-router-dom';
+import AdPackagesClient from '../../packages/packagesClient';
+import { getAuth } from 'firebase/auth';
+import useReverseGeocoding from '../LocationComponents/useReverseGeocoding';
 
 // Custom styled components
 const StyledCard = styled(Card)(({ theme }) => ({
@@ -164,10 +166,10 @@ const ImagePreview = styled(Box)(({ theme }) => ({
 const validationSchema = yup.object().shape({
   title: yup.string().required('عنوان الإعلان مطلوب'),
   propertyType: yup.string().required('نوع العقار مطلوب'),
-  price: yup.number().positive('السعر يجب أن يكون رقم موجب').required('السعر مطلوب'),
-  area: yup.number().positive('المساحة يجب أن تكون رقم موجب').required('المساحة مطلوبة'),
+  price: yup.number().positive('السعر يجب أن يكون رقمًا موجباً').required('السعر مطلوب'),
+  area: yup.number().positive('المساحة يجب أن تكون رقمًا موجباً').required('المساحة مطلوبة'),
   buildingDate: yup.string().required('تاريخ البناء مطلوب'),
-  address: yup.string().required('العنوان مطلوب'),
+  fullAddress: yup.string().required('العنوان الكامل مطلوب'),
   city: yup.string().required('المدينة مطلوبة'),
   governorate: yup.string().required('المحافظة مطلوبة'),
   phone: yup.string().required('رقم الهاتف مطلوب'),
@@ -181,7 +183,7 @@ const uploadImagesAndGetUrls = async (imageFiles) => {
   const urls = [];
   for (let i = 0; i < imageFiles.length; i++) {
     const file = imageFiles[i];
-    const storageRef = ref(storage, `property_images/${auth.currentUser.uid}/${Date.now()}_${file.name}`); // تعديل: property_images/{userId}
+    const storageRef = ref(storage, `property_images/${auth.currentUser.uid}/${Date.now()}_${file.name}`);
     await uploadBytes(storageRef, file);
     const url = await getDownloadURL(storageRef);
     urls.push(url);
@@ -196,10 +198,19 @@ const ModernRealEstateForm = () => {
   const [submitError, setSubmitError] = useState('');
   const [coordinates, setCoordinates] = useState(null);
   const [enableMapPick, setEnableMapPick] = useState(false);
+  const [selectedPackage, setSelectedPackage] = useState(null);
+  const [receiptImage, setReceiptImage] = useState(null);
+  const [isGeocodingLoading, setIsGeocodingLoading] = useState(false); // أضف هذا
+  const [geocodingError, setGeocodingError] = useState(''); // أضف هذا
   const navigate = useNavigate();
   const location = useLocation();
   const editData = location.state?.adData || null;
   const isEditMode = location.state?.editMode || false;
+  const prevAddressFromMap = useRef(null);
+
+  // استخدام useReverseGeocoding للحصول على العنوان
+  const addressFromMap = useReverseGeocoding(coordinates);
+
   const {
     control,
     handleSubmit,
@@ -215,7 +226,7 @@ const ModernRealEstateForm = () => {
       price: editData?.price || '',
       area: editData?.area || '',
       buildingDate: editData?.date_of_building || '',
-      address: editData?.address || '',
+      fullAddress: editData?.address || '',
       city: editData?.city || '',
       governorate: editData?.governorate || '',
       phone: editData?.phone || '',
@@ -231,25 +242,101 @@ const ModernRealEstateForm = () => {
   // عند التعديل، عرّض الصور القديمة للمعاينة
   useEffect(() => {
     if (isEditMode && editData && Array.isArray(editData.images)) {
-      setImages([]); // الصور الجديدة فقط
+      setImages([]);
       setImageError('');
+      if (editData.location?.lat && editData.location?.lng) {
+        setCoordinates({ lat: editData.location.lat, lng: editData.location.lng });
+      }
     }
   }, [isEditMode, editData]);
 
+  // عند التعديل، مرر adPackage من editData إلى selectedPackage
+  useEffect(() => {
+    if (isEditMode && editData && editData.adPackage) {
+      setSelectedPackage(editData.adPackage);
+    }
+  }, [isEditMode, editData]);
+
+  // تحديث حقول العنوان بناءً على addressFromMap
+  useEffect(() => {
+    console.log('[DEBUG] addressFromMap in ModernRealEstateForm:', addressFromMap);
+    if (!enableMapPick || !addressFromMap || !coordinates) return;
+    if (
+      prevAddressFromMap.current &&
+      prevAddressFromMap.current.full === addressFromMap.full &&
+      prevAddressFromMap.current.city === addressFromMap.city &&
+      prevAddressFromMap.current.governorate === addressFromMap.governorate
+    ) return;
+
+    setIsGeocodingLoading(true);
+    const timer = setTimeout(() => {
+      if (addressFromMap.full && addressFromMap.city && addressFromMap.governorate) {
+        setValue('fullAddress', addressFromMap.full, { shouldValidate: true });
+        setValue('city', addressFromMap.city, { shouldValidate: true });
+        setValue('governorate', addressFromMap.governorate, { shouldValidate: true });
+        setGeocodingError('');
+      } else {
+        setGeocodingError('فشل جلب العنوان من الخريطة. حاولي مرة أخرى.');
+      }
+      setIsGeocodingLoading(false);
+      prevAddressFromMap.current = addressFromMap;
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [addressFromMap, enableMapPick, coordinates, setValue]);
+
   const adsActivation = watch('adsActivation');
+  const addressValue = watch('fullAddress');
+  const cityValue = watch('city');
+  const governorateValue = watch('governorate');
+
+  // التعامل مع اختيار الموقع من MapPicker
+  const handleLocationSelect = (location) => {
+    console.log('[DEBUG] إحداثيات الموقع المختار:', location);
+    if (location && location.lat && location.lng) {
+      setCoordinates(location);
+    }
+  };
+
+  // جلب الإحداثيات بناءً على حقول العنوان باستخدام Nominatim
+  useEffect(() => {
+    const fetchCoordinates = async () => {
+      if (!addressValue && !cityValue && !governorateValue) return;
+      if (enableMapPick) return;
+      const fullAddress = `${addressValue || ''}, ${cityValue || ''}, ${governorateValue || ''}`;
+      const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(fullAddress)}&format=json&addressdetails=1`;
+      try {
+        const res = await fetch(url, {
+          headers: {
+            'User-Agent': 'MyRealEstateApp/1.0 (your.email@example.com)',
+          },
+        });
+        const data = await res.json();
+        console.log('[DEBUG] استجابة Nominatim للإحداثيات:', data);
+        if (data.length > 0) {
+          const { lat, lon } = data[0];
+          const newCoordinates = { lat: parseFloat(lat), lng: parseFloat(lon) };
+          if (!coordinates || coordinates.lat !== newCoordinates.lat || coordinates.lng !== newCoordinates.lng) {
+            setCoordinates(newCoordinates);
+          }
+        } else {
+          console.error('[DEBUG] فشل جلب الإحداثيات: لا توجد نتائج');
+        }
+      } catch (err) {
+        console.error('[DEBUG] فشل جلب الإحداثيات:', err);
+      }
+    };
+    fetchCoordinates();
+  }, [addressValue, cityValue, governorateValue, enableMapPick, coordinates]);
+
   const handleImageUpload = (event) => {
     const files = Array.from(event.target.files);
-
-    // Validate number of images
     if (!isEditMode && (images.length + files.length > 4)) {
       setImageError('يمكنك إضافة 4 صور كحد أقصى');
       return;
     }
 
-    // Validate file types
     const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
     const invalidFiles = files.filter(file => !validTypes.includes(file.type));
-
     if (invalidFiles.length > 0) {
       setImageError('يرجى إضافة صور بصيغة JPG, PNG, أو WebP فقط');
       return;
@@ -270,31 +357,33 @@ const ModernRealEstateForm = () => {
       setImageError('الصور مطلوبة، أضف 4 صور على الأكثر');
       return;
     }
+
+    const auth = getAuth();
     if (!auth.currentUser) {
-      setSubmitError('يجب تسجيل الدخول لإضافة إعلان. من فضلك، قم بتسجيل الدخول أولاً.');
+      setSubmitError('يجب تسجيل الدخول لإضافة إعلان.');
       return;
     }
+
+    // لوجات التشخيص
+    console.log('Selected package:', selectedPackage);
+    console.log('Receipt image before save:', receiptImage);
 
     try {
       if (isEditMode && (!editData.id || editData.id === undefined || editData.id === null)) {
         setSubmitError('لا يمكن تعديل إعلان بدون معرف (ID).');
         return;
       }
-      console.log('Current User:', auth.currentUser); // سجل للتحقق من المستخدم
+
       if (isEditMode && editData) {
-        // تحديث إعلان موجود
         const ad = new ClientAdvertisement({ ...editData, id: editData.id });
-        // الصور القديمة (روابط فقط)
         const oldImages = Array.isArray(editData.images) ? editData.images : [];
-        // الصور الجديدة (ملفات فقط)
         const newImageFiles = images;
         let finalImageUrls = oldImages;
         let filesToUpload = null;
         if (newImageFiles.length > 0) {
           filesToUpload = newImageFiles;
-          // سيتم رفع الصور الجديدة ودمجها في update
         }
-        // مرر الصور القديمة في updates.images، ومرر newImageFiles فقط إذا كانت موجودة
+
         await ad.update({
           ...editData,
           ...data,
@@ -303,14 +392,15 @@ const ModernRealEstateForm = () => {
           ad_type: data.adType,
           ad_status: data.adStatus,
           images: oldImages,
+          adPackage: selectedPackage ? Number(selectedPackage) : null,
         }, filesToUpload);
+        console.log('[DEBUG] تم تحديث الإعلان:', editData.id);
         setShowSuccess(true);
         handleReset();
         setTimeout(() => {
           navigate(`/detailsForClient/${ad.id}`);
         }, 1500);
       } else {
-        // إضافة إعلان جديد
         const adData = {
           title: data.title,
           type: data.propertyType,
@@ -321,12 +411,12 @@ const ModernRealEstateForm = () => {
             lat: coordinates?.lat || 0,
             lng: coordinates?.lng || 0,
           },
-          address: data.address,
+          address: data.fullAddress,
           city: data.city,
           governorate: data.governorate,
           phone: data.phone,
           user_name: data.username,
-          userId: auth.currentUser.uid,
+          userId: userId,
           ad_type: data.adType,
           ad_status: data.adStatus,
           type_of_user: 'client',
@@ -335,9 +425,13 @@ const ModernRealEstateForm = () => {
             ? Date.now() + data.activationDays * 24 * 60 * 60 * 1000
             : null,
           description: data.description,
+          adPackage: selectedPackage ? Number(selectedPackage) : null,
         };
+        console.log('[DEBUG] بيانات الإعلان الجديد:', adData);
         const ad = new ClientAdvertisement(adData);
-        await ad.save(images);
+        // لوج قبل الحفظ
+        console.log('Calling ad.save with images:', images, 'and receiptImage:', receiptImage);
+        await ad.save(images, receiptImage);
         setShowSuccess(true);
         handleReset();
         setTimeout(() => {
@@ -345,8 +439,8 @@ const ModernRealEstateForm = () => {
         }, 1500);
       }
     } catch (error) {
-      setSubmitError(error.message || 'حدث خطأ أثناء إضافة الإعلان. تأكد من أن الصور يتم رفعها إلى المسار الصحيح (property_images).');
-      console.error('Error during submission:', error);
+      setSubmitError(error.message || 'حدث خطأ أثناء إضافة الإعلان.');
+      console.error('[DEBUG] خطأ أثناء إضافة/تعديل الإعلان:', error);
     }
   };
 
@@ -354,41 +448,20 @@ const ModernRealEstateForm = () => {
     reset();
     setImages([]);
     setImageError('');
+    setCoordinates(null);
+    setGeocodingError('');
   };
 
   const propertyTypes = ['شقة', 'فيلا', 'استوديو', 'دوبلكس', 'محل تجاري'];
   const adTypes = ['بيع', 'إيجار', 'شراء'];
   const adStatuses = ['تحت العرض', 'تحت التفاوض', 'منتهي'];
-  const addressValue = watch('address');
-  const cityValue = watch('city');
-  const governorateValue = watch('governorate');
-
-  useEffect(() => {
-    const fetchCoordinates = async () => {
-      if (!addressValue && !cityValue && !governorateValue) return;
-      const fullAddress = `${addressValue || ''}, ${cityValue || ''}, ${governorateValue || ''}`;
-      const apiKey = 'YOUR_GOOGLE_MAPS_API_KEY'; 
-      const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(fullAddress)}&key=${apiKey}`;
-      try {
-        const res = await fetch(url);
-        const data = await res.json();
-        if (data.status === 'OK' && data.results.length > 0) {
-          const { lat, lng } = data.results[0].geometry.location;
-          setCoordinates({ lat, lng });
-        }
-      } catch (err) {
-        console.error('Failed to fetch coordinates:', err);
-      }
-    };
-    if (!enableMapPick) fetchCoordinates();
-  }, [addressValue, cityValue, governorateValue, enableMapPick]);
 
   return (
     <Box
       className="modern-form-container"
       sx={{
         minHeight: '100vh',
-        display: 'flex',
+        // display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: '#f5f5f5',
@@ -409,7 +482,7 @@ const ModernRealEstateForm = () => {
             fontFamily: 'Cairo, Noto Kufi Arabic, sans-serif'
           }}
         >
-          إضافة إعلان عقاري
+          {isEditMode ? 'تعديل إعلان عقاري' : 'إضافة إعلان عقاري'}
         </Typography>
 
         <Typography
@@ -428,11 +501,13 @@ const ModernRealEstateForm = () => {
         <Box component="form" onSubmit={handleSubmit(onSubmit)} width={'100%'} sx={{ direction: 'rtl' }}>
           <StyledCard>
             <CardContent>
-              <Container maxWidth='lg' sx={{ display: 'flex', flexDirection: 'coloumn' }}>
-                {/* Basic Information - Full Width */}
+              <Container maxWidth='lg' sx={{ display: 'flex' }}>
+                {/* <Grid container spacing={2} dir="rtl"> */}
+
+                {/* Basic Information */}
                 <Grid item width={'100%'}>
                   <Typography variant="h6" sx={{ mb: 3, color: '#6E00FE', fontWeight: 600 }}>
-                    <Home sx={{ mr: 1, verticalAlign: 'middle', ml: '6px', mt: '-6px', }} />
+                    <Home sx={{ mr: 1, verticalAlign: 'middle', ml: '6px', mt: '-6px' }} />
                     المعلومات الأساسية
                   </Typography>
 
@@ -553,10 +628,7 @@ const ModernRealEstateForm = () => {
                   />
                 </Grid>
 
-                {/* Divider */}
-                <Grid item xs={12} md={12} lg={12}>
-                  <Divider sx={{ my: 3, borderColor: '#e0e0e0' }} />
-                </Grid>
+                <Divider sx={{ my: 3, borderColor: '#e0e0e0' }} />
 
                 {/* Images and Location */}
                 <Grid item xs={12} md={12} lg={12} width={'100%'}>
@@ -652,7 +724,6 @@ const ModernRealEstateForm = () => {
 
                     <Divider sx={{ my: 3 }} />
 
-                    {/* زر تفعيل الخريطة */}
                     <Button
                       variant="outlined"
                       startIcon={<Map sx={{ marginLeft: '10px' }} />}
@@ -664,21 +735,51 @@ const ModernRealEstateForm = () => {
                       {enableMapPick ? 'إلغاء اختيار الموقع من الخريطة' : 'تفعيل اختيار الموقع على الخريطة'}
                     </Button>
 
-                    {/* عرض الخريطة عند التفعيل */}
                     {enableMapPick && (
                       <Box
                         sx={{
                           height: '400px',
-                          width: '50%',
+                          width: '60%',
                           borderRadius: '12px',
                           overflow: 'hidden',
-                          mt: 2,
                           boxShadow: 3,
-                          border: 'none'
+                          border: 'none',
+                          display: 'flex',
+                          justifyContent: 'center',
+                          textAlign: 'center',
+                          margin: 'auto',
+                          mt: 4,
                         }}
                       >
-                        <MapPicker onLocationSelect={(location) => setCoordinates(location)} />
+                        <MapPicker onLocationSelect={handleLocationSelect} />
                       </Box>
+                    )}
+
+                    {isGeocodingLoading && (
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          color: '#666',
+                          fontSize: '0.75rem',
+                          mt: 1,
+                          textAlign: 'right'
+                        }}
+                      >
+                        جارٍ جلب العنوان...
+                      </Typography>
+                    )}
+                    {geocodingError && (
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          color: '#d32f2f',
+                          fontSize: '0.75rem',
+                          mt: 1,
+                          textAlign: 'right'
+                        }}
+                      >
+                        {geocodingError}
+                      </Typography>
                     )}
                   </Box>
 
@@ -686,28 +787,25 @@ const ModernRealEstateForm = () => {
                     العنوان التفصيلي
                   </Typography>
                   <Controller
-                    name="address"
+                    name="fullAddress"
                     control={control}
                     render={({ field }) => (
                       <StyledTextField
                         {...field}
                         fullWidth
-                        placeholder="اكتب العنوان التفصيلي"
-                        error={!!errors.address}
-                        helperText={errors.address?.message}
+                        placeholder="اكتب العنوان الكامل"
+                        error={!!errors.fullAddress}
+                        helperText={errors.fullAddress?.message}
                         sx={{ mb: 2 }}
                       />
                     )}
                   />
                 </Grid>
 
-                {/* Divider */}
-                <Grid item xs={12}>
-                  <Divider sx={{ borderColor: '#000000ff' }} />
-                </Grid>
+                <Divider sx={{ my: 3, borderColor: '#e0e0e0' }} />
 
                 {/* Location Details */}
-                <Grid item xs={12} md={6} width={'100%'} mt={'20px'}>
+                <Grid item xs={12} md={12} lg={12} width={'100%'} mt={'20px'}>
                   <Typography variant="h6" sx={{ mb: 3, color: '#6E00FE', fontWeight: 600 }}>
                     <LocationOn sx={{ mr: 1, verticalAlign: 'middle', ml: '6px', mt: '-6px' }} />
                     تفاصيل الموقع
@@ -750,10 +848,7 @@ const ModernRealEstateForm = () => {
                   />
                 </Grid>
 
-                {/* Divider */}
-                <Grid item xs={12}>
-                  <Divider sx={{ my: 3, borderColor: '#e0e0e0' }} />
-                </Grid>
+                <Divider sx={{ my: 3, borderColor: '#e0e0e0' }} />
 
                 {/* Contact Information */}
                 <Grid item xs={12} md={6} width={'100%'}>
@@ -762,7 +857,6 @@ const ModernRealEstateForm = () => {
                     معلومات التواصل
                   </Typography>
                   <Box sx={{ display: 'flex', gap: '10px' }}>
-
                     <Box width={'100%'}>
                       <Typography variant="body2" sx={{ mb: 1, color: '#666', fontWeight: 500, fontSize: '20px' }}>
                         رقم الهاتف
@@ -811,10 +905,7 @@ const ModernRealEstateForm = () => {
                   </Box>
                 </Grid>
 
-                {/* Divider */}
-                <Grid item xs={12}>
-                  <Divider sx={{ my: 3, borderColor: '#e0e0e0' }} />
-                </Grid>
+                <Divider sx={{ my: 3, borderColor: '#e0e0e0' }} />
 
                 {/* Ad Details */}
                 <Grid item xs={12} md={6} width={'100%'}>
@@ -904,69 +995,59 @@ const ModernRealEstateForm = () => {
                   />
                 </Grid>
 
-                {/* Divider */}
-                <Grid item xs={12}>
-                  <Divider sx={{ my: 3, borderColor: '#e0e0e0' }} />
-                </Grid>
+                <Divider sx={{ my: 3, borderColor: '#e0e0e0' }} />
 
                 {/* Activation Settings */}
-                <Grid item xs={12} md={6} width={'100%'}>
-                  <Typography variant="h6" sx={{ mb: 3, color: '#6E00FE', fontWeight: 600, fontSize: '20px' }}>
-                    <AttachMoney sx={{ mr: 1, verticalAlign: 'middle', ml: '6px', mt: '-6px' }} />
-                    إعدادات التفعيل
-                  </Typography>
 
-                  <Controller
-                    name="adsActivation"
-                    control={control}
-                    render={({ field }) => (
-                      <FormControlLabel
-                        control={
-                          <Switch
-                            checked={field.value}
-                            onChange={field.onChange}
-                            color="primary"
-                          />
-                        }
-                        label="تفعيل الإعلان"
-                        sx={{ mb: 2 }}
-                      />
-                    )}
-                  />
 
-                  {adsActivation && (
-                    <Controller
-                      name="activationDays"
-                      control={control}
-                      render={({ field }) => (
-                        <StyledTextField
-                          {...field}
-                          fullWidth
-                          label="عدد أيام التفعيل"
-                          type="number"
-                          InputProps={{
-                            endAdornment: <InputAdornment position="end">أيام</InputAdornment>,
-                          }}
-                        />
-                      )}
-                    />
-                  )}
-                </Grid>
+
+                {/* تعديل شغل الباكدجات  بداية  */}
+
+
+
+                {/* نهاية تعديل شغل الباكدجات */}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                {/* <Grid >
+
+
+
+                  
+                  <Box width="100%" display="flex" justifyContent="center" my={4}>
+                    <Box display="flex" justifyContent="center" flexDirection={{ xs: 'column', md: 'row' }} width={{ xs: '100%', md: '80%', lg: '40%' }}>
+
+                  </Box>
+                  </Box>
+
+
+                 
+
+                </Grid> */}
+                {/* </Grid> */}
               </Container>
             </CardContent>
           </StyledCard>
 
-          {/* خريطة عرض الموقع */}
-          {coordinates && (
-            <Box sx={{ my: 3 }}>
-              <Typography variant="body2" sx={{ mb: 1, color: '#666', fontWeight: 500, fontSize: '20px' }}>
-                الموقع على الخريطة
-              </Typography>
-              <MapDisplay location={coordinates} setLocation={enableMapPick ? setCoordinates : () => { }} />
-            </Box>
-          )}
 
-          {/* Action Buttons */}
+
           <Box sx={{ mt: 4, display: 'flex', gap: 2, justifyContent: 'center' }}>
             <Button
               type="submit"
@@ -984,7 +1065,7 @@ const ModernRealEstateForm = () => {
                 },
               }}
             >
-              أضف الإعلان
+              {isEditMode ? 'تحديث الإعلان' : 'أضف الإعلان'}
             </Button>
 
             <Button
@@ -1010,7 +1091,7 @@ const ModernRealEstateForm = () => {
             </Button>
           </Box>
           {submitError && (
-            <Alert severity="error" sx={{ mb: 2 }}>{submitError}</Alert>
+            <Alert severity="error" sx={{ mt: 2 }}>{submitError}</Alert>
           )}
         </Box>
 
@@ -1020,12 +1101,31 @@ const ModernRealEstateForm = () => {
           onClose={() => setShowSuccess(false)}
         >
           <Alert onClose={() => setShowSuccess(false)} severity="success" sx={{ width: '100%' }}>
-            تم إضافة الإعلان بنجاح!
+            تم {isEditMode ? 'تحديث' : 'إضافة'} الإعلان بنجاح!
           </Alert>
         </Snackbar>
       </Container>
+      <Box
+        // display="flex"
+        flexDirection={{ xs: 'column', md: 'row', lg: 'row' }}
+        gap={2}
+        // justifyContent="center"
+        // alignItems="stretch"
+        width="40%"
+        my={3}
+      >
+        <AdPackagesClient
+          selectedPackageId={selectedPackage}
+          setSelectedPackageId={setSelectedPackage}
+          onReceiptImageChange={setReceiptImage}
+        />
+      </Box>
+      
     </Box>
+
   );
 };
 
 export default ModernRealEstateForm;
+
+

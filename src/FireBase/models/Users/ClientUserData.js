@@ -12,5 +12,7 @@ export default class ClientUserData {
     this.address = data.address;
     this.created_at = new Date().toISOString();
     this.profile_completed = true;
+    this.adPackage = data.adPackage !== undefined ? data.adPackage : null;
+    this.receipt_image = data.receipt_image || null;
   }
 }

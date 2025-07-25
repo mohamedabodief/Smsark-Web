@@ -35,6 +35,7 @@ import { setFormData, resetForm } from "./propertySlice";
 import { governorates, propertyFeatures } from "./constants";
 import { storage, auth } from "../FireBase/firebaseConfig";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import AdPackages from '../../packages/packagesDevAndFin';
 
 const StyledButton = styled(Button)({
   backgroundColor: "#6E00FE",
@@ -70,6 +71,8 @@ const PropertyForm = ({
   const [previewUrls, setPreviewUrls] = useState([]);
   const [uploading, setUploading] = useState(false); // حالة محلية للتحقق من الرفع
   const [uploadError, setUploadError] = useState(null); // حالة محلية للأخطاء في الرفع
+  const [selectedPackage, setSelectedPackage] = useState(initialData?.adPackage || null);
+  const [receiptImage, setReceiptImage] = useState(null);
 
   // التحقق من حالة تسجيل الدخول عند تحميل المكون
   React.useEffect(() => {
@@ -135,6 +138,13 @@ const PropertyForm = ({
       });
     };
   }, [previewUrls]);
+
+  // أضف مكون الباقات أسفل الفورم
+  React.useEffect(() => {
+    if (isEditMode && initialData && initialData.adPackage) {
+      setSelectedPackage(initialData.adPackage);
+    }
+  }, [isEditMode, initialData]);
 
   // دالة للتعامل مع تغيير الصور
   const handleImageChange = (e) => {
@@ -380,7 +390,9 @@ const PropertyForm = ({
           floor: Number(formData.floor) || null,
           furnished: formData.furnished === "نعم",
           negotiable: formData.negotiable === "نعم",
+          adPackage: selectedPackage,
           images: imageUrls, // تمرير روابط الصور بدلاً من الملفات
+          receiptImage: receiptImage, // أضف هذا
         });
 
         if (!isEditMode) {
@@ -400,7 +412,7 @@ const PropertyForm = ({
   return (
     <Paper
       elevation={3}
-      sx={{ p: 3, borderRadius: 2, mt: 5, maxWidth: 1000, mx: "auto" }}
+      sx={{ p: 3, borderRadius: 2, width: "90%", mx: "auto" }}
     >
       <Typography
         variant="h4"
@@ -493,7 +505,7 @@ const PropertyForm = ({
             </FormControl>
           </Grid>
 
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 6, md: 6, lg: 4 }}>
             <TextField
               fullWidth
               label="المدينة"
@@ -975,6 +987,10 @@ const PropertyForm = ({
               </Alert>
             </Grid>
           )}
+
+          {/* أضف مكون الباقات أسفل الفورم */}
+          
+          <AdPackages selectedPackageId={selectedPackage} setSelectedPackageId={setSelectedPackage} onReceiptImageChange={setReceiptImage} />
 
           <Grid size={{ xs: 12, md: 6, lg: 4 }}>
             <StyledButton

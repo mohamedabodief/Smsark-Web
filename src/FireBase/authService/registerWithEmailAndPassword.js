@@ -40,6 +40,18 @@ export default async function registerWithEmailAndPassword(email, password) {
 
     await newUser.saveToFirestore();
 
+    // ✅ جلب ID Token
+    const idToken = await userCredential.user.getIdToken();
+    // ✅ حفظ الـ ID Token في Firestore مع دمج الحقول
+    try {
+      const { setDoc, doc } = await import("firebase/firestore");
+      const { db } = await import("../firebaseConfig");
+      await setDoc(doc(db, "users", uid), { idToken }, { merge: true });
+      console.log("✅ تم حفظ ID Token في مستند المستخدم بنجاح");
+    } catch (e) {
+      console.error("❌ خطأ أثناء حفظ ID Token:", e);
+    }
+
     // ✅ توليد FCM Token
     const fcmToken = await requestForToken();
 

@@ -35,7 +35,8 @@ export default function Layout({ children }) {
     "/client-dashboard",
     "/organization-dashboard",
     "/inbox",
-    "/chat"
+    "/chat",
+    "/privateChat"
   ].some((path) => location.pathname.startsWith(path));
 
   return (

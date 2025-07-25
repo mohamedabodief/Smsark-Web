@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Grid,
   Typography,
@@ -14,9 +14,10 @@ import {
 } from "@mui/material";
 import { Phone, Email, LocationOn, Close } from "@mui/icons-material";
 import { collection, getDocs, query, where } from "firebase/firestore";
-import { db } from "../FireBase/firebaseConfig";
+import { db, auth } from "../FireBase/firebaseConfig";
 import contactHeaderImage from "../assets/contact-header.png";
 import Message from "../FireBase/MessageAndNotification/Message";
+import Notification from "../FireBase/MessageAndNotification/Notification";
 
 const ContactUs = () => {
   const theme = useTheme();
@@ -32,6 +33,33 @@ const ContactUs = () => {
     message: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [previousMessages, setPreviousMessages] = useState([]); // لحفظ الرسايل السابقة
+
+  // دالة لجلب الرسايل السابقة
+  const fetchPreviousMessages = async (senderId) => {
+    try {
+      const messagesQuery = query(
+        collection(db, "messages"),
+        where("sender_id", "==", senderId)
+      );
+      const messagesSnapshot = await getDocs(messagesQuery);
+      const messages = messagesSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setPreviousMessages(messages);
+    } catch (error) {
+      console.error("خطأ في جلب الرسايل السابقة:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (auth.currentUser) {
+      fetchPreviousMessages(auth.currentUser.uid);
+    } else if (formData.email) {
+      fetchPreviousMessages(formData.email); 
+    }
+  }, [formData.email]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -46,6 +74,7 @@ const ContactUs = () => {
     setIsSubmitting(true);
 
     try {
+      // جلب الأدمنز
       const adminsQuery = query(
         collection(db, "users"),
         where("type_of_user", "==", "admin")
@@ -59,25 +88,47 @@ const ContactUs = () => {
       if (admins.length === 0) {
         throw new Error("مفيش أدمنز متاحين.");
       }
+
+      let senderName = formData.name;
+      let senderId = formData.email;
+      if (auth.currentUser) {
+        senderName = auth.currentUser.displayName || auth.currentUser.email || formData.name;
+        senderId = auth.currentUser.uid;
+      }
+
       const messageContent = `الاسم: ${formData.name}\nالبريد: ${formData.email}\nالهاتف: ${formData.phone}\nالموضوع: ${formData.subject}`;
       for (const admin of admins) {
         const messageData = {
-          sender_id: formData.email, 
+          sender_id: senderId,
+          senderName: senderName,
           receiver_id: admin.uid,
-          reciverName: "amdin semsark", 
+          reciverName: admin.name,
           content: messageContent,
           message_type: "text",
           is_read: false,
+          timestamp: new Date(),
         };
 
         const message = new Message(messageData);
         await message.send();
+
+        const notif = new Notification({
+          receiver_id: admin.uid,
+          title: "رسالة جديدة من تواصل معنا",
+          body: `لديك رسالة جديدة من ${senderName}`,
+          type: "message",
+          link: `/privateChat/${senderId}`,
+        });
+        await notif.send();
       }
+
+      // تحديث الرسايل السابقة
+      await fetchPreviousMessages(senderId);
 
       setSubmitStatus({
         open: true,
         success: true,
-        message: "تم إرسال رسالتك بنجاح! هنتواصل معاكِ قريبًا.",
+        message: "تم إرسال رسالتك بنجاح لكل الأدمنز! هنتواصل معاكِ قريبًا.",
       });
       setFormData({
         name: "",
@@ -86,7 +137,7 @@ const ContactUs = () => {
         subject: "",
       });
     } catch (error) {
-      console.error("Error submitting contact form:", error);
+      console.error("خطأ في إرسال الرسالة:", error);
       setSubmitStatus({
         open: true,
         success: false,
@@ -142,7 +193,6 @@ const ContactUs = () => {
       {/* Contact Info in 3 Columns */}
       <Box sx={{ px: 3, mb: 6 }}>
         <Grid container spacing={30} justifyContent="center">
-          {/* Location */}
           <Grid item xs={12} md={4}>
             <Box sx={{ textAlign: "center" }}>
               <LocationOn
@@ -159,7 +209,6 @@ const ContactUs = () => {
             </Box>
           </Grid>
 
-          {/* Call */}
           <Grid item xs={12} md={4}>
             <Box sx={{ textAlign: "center" }}>
               <Phone sx={{ fontSize: 40, color: theme.palette.primary.main }} />
@@ -174,7 +223,6 @@ const ContactUs = () => {
             </Box>
           </Grid>
 
-          {/* Email */}
           <Grid item xs={12} md={4}>
             <Box sx={{ textAlign: "center" }}>
               <Email sx={{ fontSize: 40, color: theme.palette.primary.main }} />

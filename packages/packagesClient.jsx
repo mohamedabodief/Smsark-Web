@@ -34,13 +34,12 @@ const packages = [
     },
 ];
 
-const AdPackagesClient = () => {
-    const [selectedPackageId, setSelectedPackageId] = useState(null);
+const AdPackagesClient = ({ selectedPackageId, setSelectedPackageId, onReceiptImageChange }) => {
     const [receiptImages, setReceiptImages] = useState({});
     const theme = useTheme();
 
     const handleSelectPackage = (pkgId) => {
-        setSelectedPackageId(pkgId);
+        if (setSelectedPackageId) setSelectedPackageId(pkgId);
         console.log('📦 تم اختيار الباقة:', pkgId);
     };
 
@@ -50,6 +49,7 @@ const AdPackagesClient = () => {
             ...prev,
             [pkgId]: file,
         }));
+        if (onReceiptImageChange) onReceiptImageChange(file); // مرر الصورة للأب
         console.log('📤 تم رفع الريسيت للباقة:', pkgId, file);
     };
 
@@ -65,7 +65,9 @@ const AdPackagesClient = () => {
                 اختر الباقة المناسبة لإعلانك
             </Typography>
 
-            <Box display="flex" justifyContent="center" gap={2} flexWrap="wrap">
+            <Box display="flex" justifyContent="center" gap={2} flexWrap="wrap"
+                flexDirection={{ xs: 'column', md: 'row' }}
+            >
                 {packages.map((pkg) => (
                     <Card
                         key={pkg.id}

@@ -22,12 +22,21 @@ import { db, auth } from '../firebaseConfig';
 import Notification from '../MessageAndNotification/Notification';
 import User from './User';
 
+console.log('ClientAdvertisemen.js loaded');
+
+// أضف هذا الكائن الثابت بعد الاستيرادات
+const PACKAGE_INFO = {
+  1: { name: 'باقة الأساس', price: 'مجانا', duration: 7 },
+  2: { name: 'باقة النخبة', price: 50, duration: 14 },
+  3: { name: 'باقة التميز', price: 100, duration: 21 },
+};
+
 class ClientAdvertisement {
   #id = null;
 
   constructor(data) {
     this.#id = data.id || null;
-    this.title = data.title;
+    this.title = data.title ||"ad  you have submited"
     this.type = data.type;
     this.price = data.price;
     this.area = data.area;
@@ -39,7 +48,7 @@ class ClientAdvertisement {
     this.governorate = data.governorate;
     this.phone = data.phone;
     this.user_name = data.user_name;
-    this.userId = data.userId;
+    this.userId = data.userId || auth.currentUser?.uid || null; // التأكد من userId
     this.ad_type = data.ad_type || 'بيع';
     this.ad_status = data.ad_status || 'pending';
     this.type_of_user = data.type_of_user || 'client';
@@ -48,19 +57,33 @@ class ClientAdvertisement {
     this.description = data.description;
     this.reviewed_by = data.reviewed_by || null;
     this.review_note = data.review_note || null;
-    this.reviewStatus = data.reviewStatus || 'pending'; // 👈 المراجعة (pending | approved | rejected)
-    this.status = data.status || 'تحت العرض'; // 👈 حالة الإعلان من منظور التفاوض (تحت العرض | تحت التفاوض | منتهي)
-    this.receipt_image = data.receipt_image || null; // 👈 إيصال الدفع
+    this.reviewStatus = data.reviewStatus || 'pending';
+    this.status = data.status || 'تحت العرض';
+    this.receipt_image = data.receipt_image || null;
+    this.adPackage = data.adPackage !== undefined ? data.adPackage : null;
   }
 
   get id() {
     return this.#id;
   }
 
-  // ✅ حفظ إعلان جديد + رفع صور + إشعار الأدمن
   async save(imageFiles = [], receiptFile = null) {
+    console.log('Receipt file in save:', receiptFile);
     const colRef = collection(db, 'ClientAdvertisements');
-    const docRef = await addDoc(colRef, this.#getAdData());
+    // تجهيز معلومات الباقة
+    let adPackageName = null, adPackagePrice = null, adPackageDuration = null;
+    const pkgKey = String(this.adPackage);
+    if (pkgKey && PACKAGE_INFO[pkgKey]) {
+      adPackageName = PACKAGE_INFO[pkgKey].name;
+      adPackagePrice = PACKAGE_INFO[pkgKey].price;
+      adPackageDuration = PACKAGE_INFO[pkgKey].duration;
+    }
+    const docRef = await addDoc(colRef, {
+      ...this.#getAdData(),
+      adPackageName,
+      adPackagePrice,
+      adPackageDuration,
+    });
     this.#id = docRef.id;
     await updateDoc(docRef, { id: this.#id });
 
@@ -70,10 +93,14 @@ class ClientAdvertisement {
       await updateDoc(docRef, { images: urls });
     }
 
+    // لوج للتشخيص
+    console.log('Receipt file in save:', receiptFile);
+
     if (receiptFile) {
       const receiptUrl = await this.#uploadReceipt(receiptFile);
       this.receipt_image = receiptUrl;
       await updateDoc(docRef, { receipt_image: receiptUrl });
+      console.log('Receipt image saved in Firestore:', receiptUrl);
     }
 
     const admins = await User.getAllUsersByType('admin');
@@ -93,7 +120,6 @@ class ClientAdvertisement {
     return this.#id;
   }
 
-  // ✅ تحديث بيانات الإعلان أو الصور أو المراجعة
   async update(updates = {}, newImageFiles = null, newReceiptFile = null) {
     if (!this.#id) throw new Error('الإعلان بدون ID صالح للتحديث');
     const docRef = doc(db, 'ClientAdvertisements', this.#id);
@@ -111,10 +137,23 @@ class ClientAdvertisement {
       this.receipt_image = newReceiptUrl;
     }
 
+    // تحديث معلومات الباقة إذا تم تغييرها
+    if (typeof updates.adPackage !== 'undefined' && updates.adPackage !== null) {
+      const pkgKey = String(updates.adPackage);
+      if (PACKAGE_INFO[pkgKey]) {
+        updates.adPackageName = PACKAGE_INFO[pkgKey].name;
+        updates.adPackagePrice = PACKAGE_INFO[pkgKey].price;
+        updates.adPackageDuration = PACKAGE_INFO[pkgKey].duration;
+      } else {
+        updates.adPackageName = null;
+        updates.adPackagePrice = null;
+        updates.adPackageDuration = null;
+      }
+    }
+
     await updateDoc(docRef, updates);
   }
 
-  // ✅ حذف الإعلان + الصور
   async delete() {
     if (!this.#id) throw new Error('الإعلان بدون ID صالح للحذف');
     await this.#deleteAllImages();
@@ -123,7 +162,6 @@ class ClientAdvertisement {
     await deleteDoc(docRef);
   }
 
-  // ✅ تفعيل الإعلان لفترة محددة
   async adsActivation(days) {
     if (!this.#id) throw new Error('الإعلان بدون ID لتفعيله');
     const ms = days * 24 * 60 * 60 * 1000;
@@ -132,7 +170,7 @@ class ClientAdvertisement {
     await this.update({ ads: true, adExpiryTime: this.adExpiryTime });
     setTimeout(() => this.removeAds().catch(console.error), ms);
   }
-  // ✅ إيقاف الإعلان يدويًا أو تلقائيًا
+
   async removeAds() {
     if (!this.#id) throw new Error('الإعلان بدون ID لإيقافه');
     this.ads = false;
@@ -140,59 +178,69 @@ class ClientAdvertisement {
     await this.update({ ads: false, adExpiryTime: null });
   }
 
-  // ✅ الموافقة على الإعلان
-  async approveAd() {
-    const admin = await User.getByUid(auth.currentUser.uid);
-    const updates = {
-      reviewStatus: 'approved',
-      reviewed_by: {
-        uid: admin.uid,
-        name: admin.adm_name,
-        image: admin.image || null,
-      },
-      review_note: null,
-    };
-    await this.update(updates);
+async approveAd() {
+  if (!auth.currentUser) throw new Error('يجب تسجيل الدخول كأدمن للموافقة');
+  const admin = await User.getByUid(auth.currentUser.uid);
+  const updates = {
+    reviewStatus: 'approved',
+    reviewed_by: {
+      uid: admin.uid,
+      name: admin.adm_name,
+      image: admin.image || null,
+    },
+    review_note: null,
+  };
+  await this.update(updates);
 
-    // Send notification to the advertisement owner only if userId exists
-    if (this.userId) {
-      try {
-        const notif = new Notification({
-          receiver_id: this.userId,
-          title: 'تمت الموافقة على إعلانك',
-          body: `إعلانك "${this.title}" تمت الموافقة عليه.`,
-          type: 'system',
-          link: `/client/ads/${this.#id}`,
-        });
-        await notif.send();
-      } catch (error) {
-        console.warn('Failed to send notification to advertisement owner:', error);
-      }
-    }
-
-    // Send notifications to other admins
-    try {
-      const otherAdmins = (await User.getAllUsersByType('admin')).filter(
-        (a) => a.uid !== admin.uid
-      );
-      await Promise.all(
-        otherAdmins.map((admin2) =>
-          new Notification({
-            receiver_id: admin2.uid,
-            title: '📢 تمت الموافقة على إعلان',
-            body: `${admin.adm_name} وافق على الإعلان "${this.title}"`,
-            type: 'system',
-            link: `/admin/client-ads/${this.#id}`,
-          }).send()
-        )
-      );
-    } catch (error) {
-      console.warn('Failed to send notifications to other admins:', error);
-    }
+  if (!this.userId) {
+    console.warn('[DEBUG] لا يوجد userId للإعلان:', this.#id);
+    return;
   }
+  const userRef = doc(db, 'users', this.userId);
+  const userSnap = await getDoc(userRef);
+  if (!userSnap.exists()) {
+    console.warn('[DEBUG] المستخدم غير موجود في قاعدة البيانات:', this.userId);
+    return;
+  }
+  try {
+    const notif = new Notification({
+      receiver_id: this.userId, 
+      title: '📢 تمت الموافقة على إعلانك',
+      body: `${admin.adm_name || 'الأدمن'} وافق على الإعلان `,
+      type: 'system',
+      link: `/`,
+    });
+    await notif.send();
+    console.log('[DEBUG] تم إرسال إشعار الموافقة إلى userId:', this.userId);
+  } catch (error) {
+    console.warn('[DEBUG] فشل إرسال إشعار الموافقة:', {
+      errorMessage: error.message,
+      userId: this.userId,
+      adId: this.#id,
+    });
+  }
+  try {
+    const otherAdmins = (await User.getAllUsersByType('admin')).filter(
+      (a) => a.uid !== admin.uid
+    );
+    await Promise.all(
+      otherAdmins.map((admin2) =>
+        new Notification({
+          receiver_id: admin2.uid,
+          title: '📢 تمت الموافقة على إعلان',
+          body: `${admin.adm_name} وافق على الإعلان `,
+          type: 'system',
+          link: `/`,
+        }).send()
+      )
+    );
+  } catch (error) {
+    console.warn('[DEBUG] فشل إرسال إشعارات للأدمنز الآخرين:', error);
+  }
+}
 
-  // ✅ رفض الإعلان مع ملاحظة
   async rejectAd(reason = '') {
+    if (!auth.currentUser) throw new Error('يجب تسجيل الدخول كأدمن للرفض');
     const admin = await User.getByUid(auth.currentUser.uid);
     const updates = {
       reviewStatus: 'rejected',
@@ -205,7 +253,6 @@ class ClientAdvertisement {
     };
     await this.update(updates);
 
-    // Send notification to the advertisement owner only if userId exists
     if (this.userId) {
       try {
         const notif = new Notification({
@@ -216,12 +263,12 @@ class ClientAdvertisement {
           link: `/client/ads/${this.#id}`,
         });
         await notif.send();
+        console.log('[DEBUG] تم إرسال إشعار الرفض إلى userId:', this.userId);
       } catch (error) {
-        console.warn('Failed to send notification to advertisement owner:', error);
+        console.warn('[DEBUG] فشل إرسال إشعار الرفض:', error);
       }
     }
 
-    // Send notifications to other admins
     try {
       const otherAdmins = (await User.getAllUsersByType('admin')).filter(
         (a) => a.uid !== admin.uid
@@ -238,12 +285,12 @@ class ClientAdvertisement {
         )
       );
     } catch (error) {
-      console.warn('Failed to send notifications to other admins:', error);
+      console.warn('[DEBUG] فشل إرسال إشعارات للأدمنز الآخرين:', error);
     }
   }
 
-  // ✅ إعادة الإعلان لحالة المراجعة
   async returnToPending() {
+    if (!auth.currentUser) throw new Error('يجب تسجيل الدخول كأدمن');
     const admin = await User.getByUid(auth.currentUser.uid);
     const updates = {
       reviewStatus: 'pending',
@@ -256,7 +303,6 @@ class ClientAdvertisement {
     };
     await this.update(updates);
 
-    // Send notification to the advertisement owner only if userId exists
     if (this.userId) {
       try {
         const notif = new Notification({
@@ -267,12 +313,12 @@ class ClientAdvertisement {
           link: `/client/ads/${this.#id}`,
         });
         await notif.send();
+        console.log('[DEBUG] تم إرسال إشعار إعادة المراجعة إلى userId:', this.userId);
       } catch (error) {
-        console.warn('Failed to send notification to advertisement owner:', error);
+        console.warn('[DEBUG] فشل إرسال إشعار إعادة المراجعة:', error);
       }
     }
 
-    // Send notifications to other admins
     try {
       const otherAdmins = (await User.getAllUsersByType('admin')).filter(
         (a) => a.uid !== admin.uid
@@ -289,11 +335,10 @@ class ClientAdvertisement {
         )
       );
     } catch (error) {
-      console.warn('Failed to send notifications to other admins:', error);
+      console.warn('[DEBUG] فشل إرسال إشعارات للأدمنز الآخرين:', error);
     }
   }
 
-  // ✅ إعادة الإعلان لحالة المراجعة (من العميل)
   async clientReturnToPending() {
     const updates = {
       reviewStatus: 'pending',
@@ -302,7 +347,6 @@ class ClientAdvertisement {
     };
     await this.update(updates);
 
-    // Send notifications to admins
     try {
       const admins = await User.getAllUsersByType('admin');
       await Promise.all(
@@ -317,11 +361,10 @@ class ClientAdvertisement {
         )
       );
     } catch (error) {
-      console.warn('Failed to send notifications to admins:', error);
+      console.warn('[DEBUG] فشل إرسال إشعارات للأدمنز:', error);
     }
   }
 
-  // ✅ تحديث حالة العرض (status)
   async updateStatus(newStatus) {
     const validStatuses = ['تحت العرض', 'تحت التفاوض', 'منتهي'];
     if (!validStatuses.includes(newStatus)) {
@@ -331,7 +374,6 @@ class ClientAdvertisement {
     await this.update({ status: newStatus });
   }
 
-  // ✅ جلب إعلان حسب ID
   static async getById(id) {
     const docRef = doc(db, 'ClientAdvertisements', id);
     const snapshot = await getDoc(docRef);
@@ -341,7 +383,6 @@ class ClientAdvertisement {
     return null;
   }
 
-  // ✅ جلب جميع الإعلانات
   static async getAll() {
     const colRef = collection(db, 'ClientAdvertisements');
     const snapshot = await getDocs(colRef);
@@ -353,7 +394,6 @@ class ClientAdvertisement {
     return ads;
   }
 
-  // ✅ جلب حسب حالة reviewStatus (pending, approved, rejected)
   static async getByReviewStatus(status) {
     const q = query(
       collection(db, 'ClientAdvertisements'),
@@ -365,7 +405,6 @@ class ClientAdvertisement {
     );
   }
 
-  // ✅ جلب حسب حالة العرض (status)
   static async getByAdStatus(status) {
     const q = query(
       collection(db, 'ClientAdvertisements'),
@@ -377,7 +416,6 @@ class ClientAdvertisement {
     );
   }
 
-  // ✅ جلب إعلانات مستخدم معيّن
   static async getByUserId(userId) {
     const q = query(
       collection(db, 'ClientAdvertisements'),
@@ -392,7 +430,6 @@ class ClientAdvertisement {
     return ads;
   }
 
-  // ✅ الاشتراك اللحظي في الإعلانات حسب حالة المراجعة (pending, approved, rejected)
   static subscribeByStatus(status, callback) {
     const q = query(
       collection(db, 'ClientAdvertisements'),
@@ -406,7 +443,6 @@ class ClientAdvertisement {
     });
   }
 
-  // ✅ الاشتراك اللحظي في الإعلانات المفعّلة
   static subscribeActiveAds(callback) {
     const colRef = collection(db, 'ClientAdvertisements');
     const q = query(colRef, where('ads', '==', true));
@@ -420,7 +456,6 @@ class ClientAdvertisement {
     });
   }
 
-  // ✅ معالجة انتهاء مدة الإعلان
   static async #handleExpiry(data) {
     const now = Date.now();
     if (data.ads === true && data.adExpiryTime && data.adExpiryTime <= now) {
@@ -432,7 +467,6 @@ class ClientAdvertisement {
     return new ClientAdvertisement(data);
   }
 
-  // ✅ رفع صور الإعلان
   async #uploadImages(files = []) {
     const storage = getStorage();
     const imageUrls = [];
@@ -441,8 +475,8 @@ class ClientAdvertisement {
       const file = limitedFiles[i];
       const imageRef = ref(
         storage,
-       `property_images/${auth.currentUser.uid}/${Date.now()}_${file.name}`)
-      ;
+        `property_images/${this.userId}/${Date.now()}_${file.name}`
+      );
       await uploadBytes(imageRef, file);
       const url = await getDownloadURL(imageRef);
       imageUrls.push(url);
@@ -450,7 +484,6 @@ class ClientAdvertisement {
     return imageUrls;
   }
 
-  // ✅ حذف جميع الصور
   async #deleteAllImages() {
     const storage = getStorage();
     const dirRef = ref(storage, `client_ads/${this.#id}`);
@@ -464,15 +497,17 @@ class ClientAdvertisement {
     }
   }
 
-  // ✅ رفع إيصال الدفع
   async #uploadReceipt(file) {
     const storage = getStorage();
-    const receiptRef = ref(storage, `client_ads/${this.#id}/receipt.jpg`);
+    const path = `property_images/${this.userId}/receipt.jpg`;
+    console.log('Uploading receipt to:', path);
+    const receiptRef = ref(storage, path);
     await uploadBytes(receiptRef, file);
-    return await getDownloadURL(receiptRef);
+    const url = await getDownloadURL(receiptRef);
+    console.log('Receipt uploaded to:', url);
+    return url;
   }
 
-  // ✅ حذف إيصال الدفع
   async #deleteReceipt() {
     const storage = getStorage();
     const receiptRef = ref(storage, `client_ads/${this.#id}/receipt.jpg`);
@@ -483,8 +518,15 @@ class ClientAdvertisement {
     }
   }
 
-  // ✅ البيانات الخام للحفظ في Firestore
   #getAdData() {
+    // تجهيز معلومات الباقة
+    let adPackageName = null, adPackagePrice = null, adPackageDuration = null;
+    const pkgKey = String(this.adPackage);
+    if (pkgKey && PACKAGE_INFO[pkgKey]) {
+      adPackageName = PACKAGE_INFO[pkgKey].name;
+      adPackagePrice = PACKAGE_INFO[pkgKey].price;
+      adPackageDuration = PACKAGE_INFO[pkgKey].duration;
+    }
     return {
       title: this.title,
       type: this.type,
@@ -510,6 +552,10 @@ class ClientAdvertisement {
       reviewStatus: this.reviewStatus,
       status: this.status,
       receipt_image: this.receipt_image,
+      ...(this.adPackage !== undefined && this.adPackage !== null ? { adPackage: this.adPackage } : {}),
+      adPackageName,
+      adPackagePrice,
+      adPackageDuration,
     };
   }
 }

@@ -13,7 +13,7 @@ import {
 } from 'firebase/firestore';
 
 import { db, timestamp } from '../firebaseConfig';
-
+import User from '../modelsWithOperations/User';
 class Notification {
   constructor(data) {
     if (!data.receiver_id || !data.title || !data.body) {

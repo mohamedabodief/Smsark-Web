@@ -1,7 +1,8 @@
 import * as React from 'react';
 import { useState, useEffect, useMemo } from 'react';
-import { useSelector, useDispatch ,shallowEqual } from 'react-redux';
+import { useSelector, useDispatch, shallowEqual } from 'react-redux';
 import { createTheme, ThemeProvider, styled } from '@mui/material/styles';
+import { db } from '../FireBase/firebaseConfig';
 import {
     Typography, Box, Paper, Tabs, Tab, CssBaseline, AppBar, Toolbar, IconButton, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Divider, Avatar, Button, Collapse, Grid, Dialog, DialogTitle, DialogContent, DialogActions, TextField, ListItemAvatar, Tooltip,
     Snackbar,
@@ -114,12 +115,12 @@ import {
 
 import { fetchUserProfile, updateUserProfile, uploadAndSaveProfileImage } from "../LoginAndRegister/featuresLR/userSlice";
 import sendResetPasswordEmail from "../FireBase/authService/sendResetPasswordEmail";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs } from "firebase/firestore";
 import { fetchFinancialRequests, deleteFinancialRequest, updateFinancialRequest } from '../reduxToolkit/slice/financialRequestSlice';
-import { 
-    fetchAllHomepageAds, 
-    createHomepageAd, 
-    updateHomepageAd, 
+import {
+    fetchAllHomepageAds,
+    createHomepageAd,
+    updateHomepageAd,
     deleteHomepageAd,
     approveHomepageAd,
     rejectHomepageAd,
@@ -129,10 +130,10 @@ import {
 } from '../feature/ads/homepageAdsSlice';
 import AddHomepageAdModal from './adminDashboard/AddHomepageAdModal';
 import EditHomepageAdModal from './adminDashboard/EditHomepageAdModal';
-
+import Notification from '../FireBase/MessageAndNotification/Notification';
+import ClientAdvertisement from '../FireBase/modelsWithOperations/ClientAdvertisemen';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import Badge from '@mui/material/Badge';
-import Notification from '../FireBase/MessageAndNotification/Notification';
 
 // Create RTL cache for Emotion
 const cacheRtl = createCache({
@@ -1215,7 +1216,7 @@ function ProfilePage() {
     }, [actualUid, userProfileStatus, userProfile, dispatch]);
 
     // Effect to update local form data when Redux userProfile changes
-  const initialized = React.useRef(false);
+    const initialized = React.useRef(false);
 
     useEffect(() => {
   if (userProfile && !initialized.current) {
@@ -2003,7 +2004,6 @@ function Mainadvertisment(props) {
     // State for activation menu
     const [activationMenuAnchor, setActivationMenuAnchor] = useState(null);
     const [selectedAdForActivation, setSelectedAdForActivation] = useState(null);
-    const [selectedAdTypeForActivation, setSelectedAdTypeForActivation] = useState(null);
 
     // Fetch all homepage ads when component mounts
     useEffect(() => {
@@ -2099,72 +2099,21 @@ function Mainadvertisment(props) {
         }
     };
 
-    // Unified activation menu open handler
-    const handleActivationMenuOpen = (event, ad, type) => {
-        setActivationMenuAnchorEl(event.currentTarget);
-        setAdToActivate(ad);
-        setAdToActivateType(type);
+    // Handle activation menu
+    const handleActivationMenuOpen = (event, ad) => {
+        setActivationMenuAnchor(event.currentTarget);
+        setSelectedAdForActivation(ad);
     };
-    
+
     const handleActivationMenuClose = () => {
-        setActivationMenuAnchorEl(null);
-        setAdToActivate(null);
-        setAdToActivateType(null);
+        setActivationMenuAnchor(null);
+        setSelectedAdForActivation(null);
     };
 
     const handleActivationWithDuration = async (days) => {
-        if (!selectedAdForActivation) return;
-        try {
-            if (selectedAdTypeForActivation === 'developer') {
-                const adInstance = new RealEstateDeveloperAdvertisement(selectedAdForActivation);
-                await adInstance.adsActivation(days);
-                setSnackbar({ open: true, message: `تم تفعيل إعلان المطور بنجاح (${days} يوم)!`, severity: 'success' });
-            } else if (selectedAdTypeForActivation === 'funder') {
-                const adInstance = new FinancingAdvertisement(selectedAdForActivation);
-                await adInstance.adsActivation(days);
-                setSnackbar({ open: true, message: `تم تفعيل إعلان الممول بنجاح (${days} يوم)!`, severity: 'success' });
-            }
-        } catch (err) {
-            setSnackbar({ open: true, message: `فشل تفعيل الإعلان: ${err.message || 'خطأ غير معروف'}`, severity: 'error' });
-        } finally {
+        if (selectedAdForActivation) {
+            await handleActivateAd(selectedAdForActivation.id, days);
             handleActivationMenuClose();
-        }
-    };
-
-    const handleActivateWithDays = async (days) => {
-        if (!adToActivate || !adToActivateType) return;
-        console.log('Activating ad:', { id: adToActivate.id, type: adToActivateType, days });
-        handleActivationMenuClose(); // Close the menu immediately
-    
-        const adTypeLoadingKey = adToActivateType; // 'developer' or 'funder'
-        dispatch(setLoadingDeveloper(true)); // Or setLoadingFunder based on type
-        dispatch(setLoadingFunder(true));
-    
-        try {
-            await dispatch(toggleAdStatus({
-                ad: { ...adToActivate, ads: false }, // Pass the ad with current status, implicitly setting to false before activation
-                type: adToActivateType,
-                days: days // Pass the selected days for activation
-            })).unwrap(); // Use .unwrap() to propagate errors for try/catch
-    
-            setSnackbar({
-                open: true,
-                message: `تم تفعيل الإعلان بنجاح لمدة ${days} يوم.`,
-                severity: 'success',
-            });
-            // You might need to refetch ads or update specific ad in state if toggleAdStatus doesn't
-            // dispatch(fetchDeveloperAds()); // Example if you had fetch thunks
-            // dispatch(fetchFunderAds());
-        } catch (error) {
-            console.error(`Failed to activate ${adToActivateType} ad for ID ${adToActivate.id}:`, error);
-            setSnackbar({
-                open: true,
-                message: `فشل تفعيل الإعلان: ${error.message || 'حدث خطأ غير معروف.'}`,
-                severity: 'error',
-            });
-        } finally {
-            dispatch(setLoadingDeveloper(false)); // Ensure loading is reset
-            dispatch(setLoadingFunder(false));
         }
     };
 
@@ -2390,7 +2339,7 @@ function Mainadvertisment(props) {
                                                 {!ad.ads ? (
                                                     <Tooltip title="تفعيل">
                                                         <IconButton
-                                                            onClick={(e) => handleActivationMenuOpen(e, ad, 'developer')}
+                                                            onClick={(e) => handleActivationMenuOpen(e, ad)}
                                                             sx={{ color: 'success.main' }}
                                                         >
                                                             <PlayArrowIcon />
@@ -2498,20 +2447,29 @@ function Mainadvertisment(props) {
                 anchorEl={activationMenuAnchor}
                 open={Boolean(activationMenuAnchor)}
                 onClose={handleActivationMenuClose}
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+                anchorOrigin={{
+                    vertical: 'bottom',
+                    horizontal: 'right',
+                }}
+                transformOrigin={{
+                    vertical: 'top',
+                    horizontal: 'right',
+                }}
             >
                 <MenuItem onClick={() => handleActivationWithDuration(7)}>
                     تفعيل لمدة أسبوع (7 أيام)
                 </MenuItem>
-                <MenuItem onClick={() => handleActivationWithDuration(14)}>
-                    تفعيل لمدة أسبوعين (14 يوم)
+                <MenuItem onClick={() => handleActivationWithDuration(15)}>
+                    تفعيل لمدة أسبوعين (15 يوم)
                 </MenuItem>
-                <MenuItem onClick={() => handleActivationWithDuration(21)}>
-                    تفعيل لمدة 3 أسابيع (21 يوم)
+                <MenuItem onClick={() => handleActivationWithDuration(30)}>
+                    تفعيل لمدة شهر (30 يوم)
                 </MenuItem>
-                <MenuItem onClick={() => handleActivationWithDuration(28)}>
-                    تفعيل لمدة 4 أسابيع (28 يوم)
+                <MenuItem onClick={() => handleActivationWithDuration(60)}>
+                    تفعيل لمدة شهرين (60 يوم)
+                </MenuItem>
+                <MenuItem onClick={() => handleActivationWithDuration(90)}>
+                    تفعيل لمدة 3 أشهر (90 يوم)
                 </MenuItem>
             </Menu>
 
@@ -2529,6 +2487,7 @@ function Mainadvertisment(props) {
         </Box>
     );
 }
+
 
 const statusChipColor = {
     pending: 'warning',
@@ -3357,14 +3316,14 @@ function ClientAdvertismentPage() {
     const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
     const [adToDelete, setAdToDelete] = useState(null);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
-    
+
     // Review actions dialogs
     const [openApproveDialog, setOpenApproveDialog] = useState(false);
     const [openRejectDialog, setOpenRejectDialog] = useState(false);
     const [openReturnDialog, setOpenReturnDialog] = useState(false);
     const [adToReview, setAdToReview] = useState(null);
     const [rejectReason, setRejectReason] = useState('');
-    
+
     // Activation dialog
     const [openActivateDialog, setOpenActivateDialog] = useState(false);
     const [activationDays, setActivationDays] = useState(30);
@@ -3695,7 +3654,7 @@ function ClientAdvertismentPage() {
                                 </Tooltip>
                             </>
                         )}
-                        
+
                         {(ad.reviewStatus === 'approved' || ad.reviewStatus === 'rejected') && (
                             <Tooltip title="إعادة إلى المراجعة">
                                 <IconButton
@@ -3852,7 +3811,7 @@ function ClientAdvertismentPage() {
                                 <MenuItem value="rejected">مرفوض</MenuItem>
                             </Select>
                         </FormControl>
-                        
+
                         <FormControl size="small" sx={{ minWidth: 150 }}>
                             <InputLabel>حالة العرض</InputLabel>
                             <Select
@@ -4725,7 +4684,7 @@ export default function AdminDashboard(props) {
                                                 ) : (
                                                     notifications.map((notification) => (
                                                         <Card 
-                                                            key={notification.id} 
+                                                            key={notification.id}
                                                             sx={{ 
                                                                 m: 1, 
                                                                 cursor: 'pointer',

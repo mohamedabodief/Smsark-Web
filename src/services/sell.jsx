@@ -113,7 +113,7 @@ console.log("sellAds Sample:", sellAds[0]);
       {loading &&  <Box sx={{ width: '100%' }}>
      <CircularProgress />
     </Box>}
-      {error && <p>حدث خطأ: {error}</p>}
+      {error && <p>حدث خطأ: {typeof error === 'object' ? JSON.stringify(error) : error}</p>}
       {sellAds.length === 0 ? (
         <Box sx={{display:'flex',justifyContent:'center',alignItems:'center',height:'100vh'}}>
               <Typography sx={{fontWeight:'800',color:'red'}}>لايوجد اعلانات حاليا</Typography>

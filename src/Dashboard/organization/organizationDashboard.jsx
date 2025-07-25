@@ -1515,7 +1515,7 @@ function ProfilePage() {
                                 fullWidth
                                 margin="normal"
                                 name="governorate"
-                                value={formData.governorate || ""}
+                                value={typeof formData.governorate === 'object' ? formData.governorate.full || '' : formData.governorate}
                                 onChange={handleChange}
                                 select
                                 InputProps={{ style: { direction: 'rtl' } }}
@@ -1530,7 +1530,7 @@ function ProfilePage() {
                                 fullWidth
                                 margin="normal"
                                 name="city"
-                                value={formData.city || ""}
+                                value={typeof formData.city === 'object' ? formData.city.full || '' : formData.city}
                                 onChange={handleChange}
                                 InputProps={{ style: { direction: 'rtl' } }}
                             />
@@ -1540,7 +1540,7 @@ function ProfilePage() {
                                 fullWidth
                                 margin="normal"
                                 name="address"
-                                value={formData.address || ""}
+                                value={typeof formData.address === 'object' ? formData.address.full || '' : formData.address}
                                 onChange={handleChange}
                                 multiline
                                 rows={3}
