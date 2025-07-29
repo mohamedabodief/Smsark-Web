@@ -1,4 +1,3 @@
-//scr/appLR/store.js
 import { createTheme } from "@mui/material/styles";
 
 const theme = createTheme({

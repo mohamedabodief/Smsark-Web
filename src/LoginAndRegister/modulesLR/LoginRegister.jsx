@@ -1,4 +1,3 @@
-//src/LoginAndRegister/modulesLR/LoginRegister.jsx
 import React, { useEffect, useState } from "react";
 import { Box, Typography, Paper, Alert } from "@mui/material";
 import { styled } from "@mui/material/styles";
@@ -6,128 +5,123 @@ import LoginFormLR from "../componentsLR/authLR/LoginFormLR";
 import RegisterStep1LR from "../componentsLR/authLR/RegisterStep1LR";
 import RegisterStep2LR from "../componentsLR/authLR/RegisterStep2LR";
 import RegisterStep3LR from "../componentsLR/authLR/RegisterStep3LR";
+import ForgotPasswordLR from "../componentsLR/authLR/ForgotPasswordLR";
 import background from "../../assets/background.jpg";
 import { useSelector } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom";
-import { auth } from "../../FireBase/firebaseConfig";
 
 const StyledContainer = styled(Box)({
-  minHeight: "100vh",
+  minHeight: "110vh",
   display: "flex",
   justifyContent: "center",
   alignItems: "center",
   backgroundImage: `url(${background})`,
-  backgroundColor: "#000000ff", // Fallback color
+  backgroundColor: "#000000",
   backgroundSize: "cover",
   backgroundPosition: "center",
   padding: "0 px",
-  // margin: "0",
 });
 
-const StyledPaper = styled(Paper)(({ theme }) => ({
-  // background: "rgba(255, 255, 255, 0.95)",
+const StyledPaper = styled(Paper)(() => ({
   borderRadius: "16px",
-  padding: theme.spacing(2),
+  padding:"30px",
   width: "100%",
-  maxWidth: "500px", // زيادة maxWidth لتتناسب مع التصميم الجديد
-  margin: "auto", // لتوسيط الكارد
-  boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1)",
-  // height: "70%"// عشان يأخذ الحجم الطبيعي
+  maxWidth: "480px",
+  margin: "auto",
+  boxShadow: "0 8px 32px rgba(0, 0, 0, 0)",
 }));
 
 export default function LoginRegister() {
-  const location = useLocation(); // Get the current location object
-  // Initialize isLogin based on the current path
-  const [isLogin, setIsLogin] = useState(location.pathname === '/login');
+  const location = useLocation();
+  const [isLogin, setIsLogin] = useState(location.pathname === "/login");
   const [currentStep, setCurrentStep] = useState(1);
   const [userType, setUserType] = useState(null);
   const [registerData, setRegisterData] = useState({ email: "", password: "" });
   const [message, setMessage] = useState({ text: "", type: "" });
   const [hasRedirected, setHasRedirected] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
 
-  // Use useSelector to get auth state from Redux
   const authStatus = useSelector((state) => state.auth.status);
   const authUid = useSelector((state) => state.auth.uid);
   const authUserType = useSelector((state) => state.auth.type_of_user);
-  const authOrganizationType = useSelector((state) => state.auth.type_of_organization);
-  const authAdminName = useSelector((state) => state.auth.adm_name);
 
-  const navigate = useNavigate(); // Initialize useNavigate hook
+  const navigate = useNavigate();
 
-  // Update isLogin when location changes
   useEffect(() => {
-    setIsLogin(location.pathname === '/login');
+    setIsLogin(location.pathname === "/login");
   }, [location.pathname]);
 
   useEffect(() => {
-    console.log('authUserType:', authUserType, 'authStatus:', authStatus, 'authUid:', authUid, 'isLogin:', isLogin, 'hasRedirected:', hasRedirected);
-    
-    // Reset hasRedirected when user logs out
+    console.log(
+      "authUserType:",
+      authUserType,
+      "authStatus:",
+      authStatus,
+      "authUid:",
+      authUid,
+      "isLogin:",
+      isLogin,
+      "hasRedirected:",
+      hasRedirected
+    );
+
     if (authStatus === "idle" && !authUid) {
       setHasRedirected(false);
       setMessage({ text: "", type: "" });
     }
-    
-    // Only proceed if we are currently in the login view AND authentication succeeded
-    // AND we haven't already redirected
+
     if (isLogin && authStatus === "succeeded" && authUid && !hasRedirected) {
-      console.log('🚀 Starting redirect process...');
-    setMessage({
-      text: "تم تسجيل الدخول بنجاح! يتم تحويلك...",
-      type: "success",
-    });
+      console.log("🚀 Starting redirect process...");
+      setMessage({
+        text: "تم تسجيل الدخول بنجاح! يتم تحويلك...",
+        type: "success",
+      });
       setHasRedirected(true);
-      
-      // Immediate redirect for testing
-      console.log('🎯 Immediate redirect test...');
+
+      console.log("🎯 Immediate redirect test...");
       try {
         if (authUserType === "admin") {
           console.log("Immediately redirecting to admin dashboard...");
           navigate("/admin-dashboard", { replace: true });
-          console.log("✅ Immediate navigation to admin dashboard completed");
-        } else if (authUserType === "client" || authUserType === "organization") {
+        } else if (
+          authUserType === "client" ||
+          authUserType === "organization"
+        ) {
           console.log("Immediately redirecting to home page...");
           navigate("/home", { replace: true });
-          console.log("✅ Immediate navigation to home completed");
         } else {
           console.warn("Unknown user type, immediately redirecting to home.");
           navigate("/home", { replace: true });
-          console.log("✅ Immediate navigation to home (fallback) completed");
         }
       } catch (error) {
         console.error("❌ Immediate navigation error:", error);
       }
-      
-      // Also keep the delayed redirect as backup
+
       const redirectTimer = setTimeout(() => {
-        console.log('🎯 Delayed redirect based on user type:', authUserType);
-        
+        console.log("🎯 Delayed redirect based on user type:", authUserType);
+
         try {
           if (authUserType === "admin") {
-            console.log("Delayed redirecting to admin dashboard...");
             navigate("/admin-dashboard", { replace: true });
-            console.log("✅ Delayed navigation to admin dashboard completed");
-          } else if (authUserType === "client" || authUserType === "organization") {
-            console.log("Delayed redirecting to home page...");
+          } else if (
+            authUserType === "client" ||
+            authUserType === "organization"
+          ) {
             navigate("/home", { replace: true });
-            console.log("✅ Delayed navigation to home completed");
           } else {
-            console.warn("Unknown user type, delayed redirecting to home.");
             navigate("/home", { replace: true });
-            console.log("✅ Delayed navigation to home (fallback) completed");
           }
         } catch (error) {
           console.error("❌ Delayed navigation error:", error);
         }
-  }, 1500);
+      }, 1500);
 
       return () => clearTimeout(redirectTimer);
     }
   }, [isLogin, authStatus, authUid, authUserType, navigate, hasRedirected]);
 
   const handleLoginSuccess = () => {
-    // The redirect will be handled by the useEffect based on Redux state
-    // This function is kept for compatibility but doesn't handle navigation
+    // The redirect will be handled by the useEffect
   };
 
   const handleRegisterStep1Success = (data) => {
@@ -148,6 +142,16 @@ export default function LoginRegister() {
     navigate("/registration-success", { replace: true });
   };
 
+  const handleForgotPassword = () => {
+    setShowForgotPassword(true);
+    setMessage({ text: "", type: "" });
+  };
+
+  const handleBackToLogin = () => {
+    setShowForgotPassword(false);
+    setMessage({ text: "", type: "" });
+  };
+
   return (
     <StyledContainer>
       <StyledPaper elevation={3}>
@@ -160,7 +164,11 @@ export default function LoginRegister() {
             fontWeight: "bold",
           }}
         >
-          {isLogin ? "تسجيل الدخول" : "إنشاء حساب جديد"}
+          {isLogin
+            ? showForgotPassword
+              ? "استعادة كلمة المرور"
+              : "تسجيل الدخول"
+            : "إنشاء حساب جديد"}
         </Typography>
 
         {message.text && (
@@ -170,15 +178,29 @@ export default function LoginRegister() {
         )}
 
         {isLogin ? (
-          <LoginFormLR
-            onLoginSuccess={handleLoginSuccess}
-            onSwitchToRegister={() => {
-              setIsLogin(false);
-              setCurrentStep(1);
-              setMessage({ text: "", type: "" });
-              navigate("/register", { replace: true });
-            }}
-          />
+          showForgotPassword ? (
+            <ForgotPasswordLR
+              onSuccess={() => {
+                setMessage({
+                  text: "تم إرسال رابط استعادة كلمة المرور إلى بريدك الإلكتروني",
+                  type: "success",
+                });
+                setShowForgotPassword(false);
+              }}
+              onBackToLogin={handleBackToLogin}
+            />
+          ) : (
+            <LoginFormLR
+              onLoginSuccess={handleLoginSuccess}
+              onSwitchToRegister={() => {
+                setIsLogin(false);
+                setCurrentStep(1);
+                setMessage({ text: "", type: "" });
+                navigate("/register", { replace: true });
+              }}
+              onForgotPassword={handleForgotPassword}
+            />
+          )
         ) : (
           <>
             {currentStep === 1 && (
