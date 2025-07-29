@@ -1,18 +1,20 @@
-//src/LoginAndRegister/componentsLR/authLR/LoginFormLR.jsx
 import React, { useState, useEffect } from "react";
 import { TextField, Button, CircularProgress, Alert, Box } from "@mui/material";
 import { Email, Lock } from "@mui/icons-material";
 import { useDispatch } from "react-redux";
 import { loginUser } from "../../featuresLR/authSlice";
 
-export default function LoginFormLR({ onLoginSuccess, onSwitchToRegister }) {
+export default function LoginFormLR({
+  onLoginSuccess,
+  onSwitchToRegister,
+  onForgotPassword,
+}) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const dispatch = useDispatch();
 
-  // Ensure fields are cleared on mount
   useEffect(() => {
     setEmail("");
     setPassword("");
@@ -39,22 +41,10 @@ export default function LoginFormLR({ onLoginSuccess, onSwitchToRegister }) {
   };
 
   return (
-    <Box component="form" onSubmit={handleSubmit} 
-    
-     sx={{
-      // margin:2
-              backgroundColor: "white",
-              borderRadius: "12px",
-              maxWidth: 500,
-              minHeight: 305,
-              // // display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              p: 4,
-              boxShadow: "0px 4px 12px rgba(0, 0, 0, 0.1)", // إضافة ظل خفيف للـ card
-            }}
-    
-    
+    <Box
+      component="form"
+      onSubmit={handleSubmit}
+   
     >
       <TextField
         fullWidth
@@ -114,9 +104,21 @@ export default function LoginFormLR({ onLoginSuccess, onSwitchToRegister }) {
 
       <Button
         fullWidth
+        onClick={onForgotPassword}
+        sx={{
+          mt: 1,
+          color: "#6E00FE",
+          textDecoration: "underline",
+        }}
+      >
+        نسيت كلمة المرور؟
+      </Button>
+
+      <Button
+        fullWidth
         onClick={onSwitchToRegister}
         sx={{
-          mt: 2,
+          mt: 1,
           color: "#6E00FE",
           fontWeight: "bold",
         }}
@@ -126,4 +128,3 @@ export default function LoginFormLR({ onLoginSuccess, onSwitchToRegister }) {
     </Box>
   );
 }
-

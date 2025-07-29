@@ -9,6 +9,8 @@ import React from 'react';
 import { storage, auth } from '../FireBase/firebaseConfig';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import AdPackages from '../../packages/packagesDevAndFin';
+import PaymentMethods from './PaymentMethods';
+
 
 export default function AddFinancingAdForm() {
   const navigate = useNavigate();
@@ -399,13 +401,14 @@ export default function AddFinancingAdForm() {
             </Box>
           </Grid>
           <AdPackages selectedPackageId={selectedPackage} setSelectedPackageId={setSelectedPackage} onReceiptImageChange={setReceiptImage} />
+          <PaymentMethods />
 
           <Grid item xs={12} sx={{ textAlign: 'center', mt: 2 }}>
             <Button
               type="submit"
               variant="contained"
               size="large"
-              sx={{ px: 5, py: 1.5, fontWeight: 'bold', borderRadius: 3, minWidth: 200 }}
+              sx={{ px: 5, py: 2, fontWeight: 'bold', borderRadius: 3, minWidth: 200 }}
               disabled={loading}
             >
               {loading ? <CircularProgress size={24} color="inherit" /> : isEditMode ? "حفظ التعديلات" : "حفظ الإعلان"}
@@ -414,7 +417,6 @@ export default function AddFinancingAdForm() {
 
         </Grid>
       </form>
-      {/* أضف مكون الباقات أسفل الفورم */}
       
     </Paper>
   );
