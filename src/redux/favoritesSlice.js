@@ -1,52 +1,75 @@
+// redux/favoritesSlice.js
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import Favorite from '../FireBase/modelsWithOperations/Favorite';
 
-// تحميل الفيفوريت من localStorage
+// helpers for localStorage
+const FAVORITES_KEY = 'favorites';
+
+const saveFavoritesToLocalStorage = (favorites) => {
+  localStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites));
+};
+
 const loadFavoritesFromLocalStorage = () => {
-  const data = localStorage.getItem('favorites');
+  const data = localStorage.getItem(FAVORITES_KEY);
   return data ? JSON.parse(data) : [];
 };
 
-// حفظ الفيفوريت في localStorage
-const saveFavoritesToLocalStorage = (favorites) => {
-  localStorage.setItem('favorites', JSON.stringify(favorites));
-};
 
 export const toggleFavoriteAsync = createAsyncThunk(
-  'favorites/toggleFavorite',
+  'favorites/toggleFavoriteAsync',
   async ({ userId, advertisementId, type }) => {
-    return { userId, advertisementId, type };
+    const result = await Favorite.toggleFavorite(userId, advertisementId);
+    return { advertisementId, favorited: result.favorited, type };
   }
 );
+
+export const loadFavoritesAsync = createAsyncThunk(
+  'favorites/loadFavoritesAsync',
+  async (userId) => {
+    return new Promise((resolve) => {
+      Favorite.subscribeByUser(userId, (favorites) => {
+        // هنا بنرجع كل من id و type عشان الكومبوننت يقدر يحدد isFavorited صح
+        resolve(favorites.map((fav) => ({
+          advertisement_id: fav.advertisement_id,
+          type: fav.type
+        })));
+      });
+    });
+  }
+);
+
 
 const favoritesSlice = createSlice({
   name: 'favorites',
   initialState: {
     list: loadFavoritesFromLocalStorage(),
   },
-  reducers: {
-    setFavorites(state, action) {
-      state.list = action.payload;
-      saveFavoritesToLocalStorage(state.list);
-    },
-  },
+  reducers: {},
   extraReducers: (builder) => {
-    builder.addCase(toggleFavoriteAsync.fulfilled, (state, action) => {
-      const { advertisementId, type } = action.payload;
-      const index = state.list.findIndex(
-        (fav) =>
-          fav.advertisement_id === advertisementId && fav.type === type
-      );
+    builder
+      .addCase(toggleFavoriteAsync.fulfilled, (state, action) => {
+        const { advertisementId, type } = action.meta.arg;
+        const { favorited } = action.payload;
 
-      if (index >= 0) {
-        state.list.splice(index, 1);
-      } else {
-        state.list.push({ advertisement_id: advertisementId, type });
-      }
+        if (favorited) {
+          state.list.push({ advertisement_id: advertisementId, type });
+        } else {
+          state.list = state.list.filter(
+            (fav) =>
+              !(fav.advertisement_id === advertisementId && fav.type === type)
+          );
+        }
+        saveFavoritesToLocalStorage(state.list);
+      })
 
-      saveFavoritesToLocalStorage(state.list);
-    });
+      .addCase(loadFavoritesAsync.fulfilled, (state, action) => {
+  state.list = action.payload;
+  saveFavoritesToLocalStorage(state.list);
+});
+
   },
 });
 
-export const { setFavorites } = favoritesSlice.actions;
 export default favoritesSlice.reducer;
+
+// stop______________________

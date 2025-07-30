@@ -272,7 +272,7 @@ export default function BestDev() {
               >
                 <Card sx={{ minWidth: { xs: 260, sm: 300, md: 320 }, scrollSnapAlign: 'start', flexShrink: 0, borderRadius: 3, position: 'relative', height: '100%' }}>
                   <CardMedia component="img" height="160" image={item.images?.[0] || '/default-placeholder.png'} />
-                  <FavoriteButton advertisementId={item.id} type="developer" />
+                  <FavoriteButton advertisementId={item.id}  />
                   <CardContent>
                     <Typography color="primary" fontWeight="bold">
                       {item.price_start_from?.toLocaleString()} - {item.price_end_to?.toLocaleString()} ج.م

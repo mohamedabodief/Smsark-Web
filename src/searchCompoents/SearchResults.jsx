@@ -136,6 +136,7 @@ function SearchResults() {
             {['بيع', 'إيجار', 'الغرض'].includes(filters.purpose) &&
               filteredClientAds.map((ad, idx) => (
                   <HorizontalCard
+                    // adv={ad}
                     key={ad.id}
                     title={ad.title}
                     price={ad.price}
