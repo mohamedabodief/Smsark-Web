@@ -18,18 +18,7 @@ export default function RegisterStep2LR({ onNext, onBack }) {
 
   return (
     <Box component="form" onSubmit={handleSubmit} 
-     sx={{
-      // mb:3,
-              backgroundColor: "white",
-              borderRadius: "12px",
-              maxWidth: 500,
-              minHeight: 305,
-              // display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              p: 4,
-              boxShadow: "0px 4px 12px rgba(0, 0, 0, 0.1)", // إضافة ظل خفيف للـ card
-            }}
+     
             >
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
