@@ -137,7 +137,8 @@ export default function BestFin() {
                     height="160"
                     image={item.images?.[0] || '/default-placeholder.png'}
                   />
-                  <FavoriteButton advertisementId={item.id} type="financing" />
+                  <FavoriteButton advertisementId={item.id} />
+                
                   <CardContent>
                     <Typography color="primary" fontWeight="bold">
                       {item.start_limit?.toLocaleString()} - {item.end_limit?.toLocaleString()} ج.م

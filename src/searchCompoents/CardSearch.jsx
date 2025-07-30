@@ -18,7 +18,7 @@ import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import { Link } from 'react-router-dom';
 import {ShareOutlined as ShareOutlinedIcon} from '@mui/icons-material'
 import FavoriteButton from '../Homeparts/FavoriteButton';
-function HorizontalCard({ image, title, price, adress, type, status, city, governoment, phone ,onClickCard ,id}) {
+function HorizontalCard({ image, title, price, adress, type, status, city, governoment, phone ,onClickCard ,id }) {
   const settings = {
     dots: false,
     infinite: true,
@@ -209,7 +209,7 @@ function HorizontalCard({ image, title, price, adress, type, status, city, gover
 
             }}
           > */}
-           <FavoriteButton advertisementId={id} type={type}/>
+           <FavoriteButton advertisementId={id} />
 
           {/* </Button> */}
         </Box>

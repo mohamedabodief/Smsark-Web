@@ -12,7 +12,7 @@ import {
 import RealEstateDeveloperAdvertisement from '../FireBase/modelsWithOperations/RealEstateDeveloperAdvertisement';
 import FinancingAdvertisement from '../FireBase/modelsWithOperations/FinancingAdvertisement';
 import FavoriteButton from '../Homeparts/FavoriteButton';
-
+import ClientAdvertisement from '../FireBase/modelsWithOperations/ClientAdvertisemen';
 const Favorite = () => {
   const favoriteItems = useSelector((state) => state.favorites.list);
   const [ads, setAds] = useState([]);
@@ -21,16 +21,23 @@ const Favorite = () => {
 
   useEffect(() => {
     const fetchAds = async () => {
+      const cleanedItems = favoriteItems.filter(
+        (item) => item && item.advertisement_id
+      );
+
       const results = await Promise.all(
-        favoriteItems.map(async ({ advertisement_id, type }) => {
-          if (type === 'developer') {
-            return await RealEstateDeveloperAdvertisement.getById(advertisement_id);
-          } else if (type === 'financing') {
-            return await FinancingAdvertisement.getById(advertisement_id);
+        cleanedItems.map(async ({ advertisement_id }) => {
+          let ad = await RealEstateDeveloperAdvertisement.getById(advertisement_id);
+          if (!ad) {
+            ad = await FinancingAdvertisement.getById(advertisement_id);
           }
-          return null;
+          if (!ad) {
+            ad = await ClientAdvertisement.getById(advertisement_id);
+          }
+          return ad;
         })
       );
+
 
       setAds(results.filter(Boolean));
       setLoading(false);
@@ -44,14 +51,17 @@ const Favorite = () => {
     }
   }, [favoriteItems]);
 
+
   const handleCardClick = (item) => {
-    const type = item.price_start_from ? 'developer' : 'financing';
-    if (type === 'developer') {
+    if (item.price_start_from !== undefined && item.price_end_to !== undefined) {
       navigate(`/details/developmentAds/${item.id}`);
-    } else {
+    } else if (item.start_limit !== undefined && item.end_limit !== undefined) {
       navigate(`/details/financingAds/${item.id}`);
+    } else {
+      navigate(`/details/clientAds/${item.id}`);
     }
   };
+
 
   return (
     <Box sx={{ p: 4, pt: 13, pb: 8 }}>
@@ -75,15 +85,13 @@ const Favorite = () => {
                 cursor: 'pointer',
               }}
             >
-              <Box
-                sx={{ position: 'absolute', top: 10, left: 10, zIndex: 10 }}
-                onClick={(e) => e.stopPropagation()}
-              >
+              <Box sx={{ position: 'absolute', top: 10, left: 10, zIndex: 10 }} onClick={(e) => e.stopPropagation()}>
                 <FavoriteButton
                   advertisementId={item.id}
-                  type={item.price_start_from ? 'developer' : 'financing'}
+                // type={item.type}
                 />
               </Box>
+
               <CardActionArea onClick={() => handleCardClick(item)}>
                 <CardMedia
                   component="img"
@@ -91,7 +99,7 @@ const Favorite = () => {
                   image={item.image || '/default-placeholder.png'}
                 />
                 <CardContent>
-                  {item.price_start_from ? (
+                  {item.price_start_from !== undefined && item.price_end_to !== undefined && (
                     <>
                       <Typography color="primary" fontWeight="bold">
                         {item.price_start_from?.toLocaleString()} - {item.price_end_to?.toLocaleString()} ج.م
@@ -100,7 +108,9 @@ const Favorite = () => {
                       <Typography variant="body2" color="text.secondary">{item.location}</Typography>
                       <Typography variant="body2" mt={1}>{item.description}</Typography>
                     </>
-                  ) : (
+                  )}
+
+                  {item.start_limit !== undefined && item.end_limit !== undefined && (
                     <>
                       <Typography color="primary" fontWeight="bold">
                         {item.start_limit?.toLocaleString()} - {item.end_limit?.toLocaleString()} ج.م
@@ -109,10 +119,18 @@ const Favorite = () => {
                       <Typography variant="body2" color="text.secondary">{item.financing_model}</Typography>
                     </>
                   )}
+
+                  {item.title && item.city && item.governorate && (
+                    <>
+                      <Typography variant="subtitle1">{item.title}</Typography>
+                      <Typography variant="body2" color="text.secondary">{item.city} - {item.governorate}</Typography>
+                      <Typography variant="body2" mt={1}>{item.description}</Typography>
+                    </>
+                  )}
                 </CardContent>
+
               </CardActionArea>
             </Card>
-
           ))}
         </Box>
       )}
@@ -121,3 +139,5 @@ const Favorite = () => {
 };
 
 export default Favorite;
+
+// stop______________________
