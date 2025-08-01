@@ -9,14 +9,22 @@ const FavoriteButton = ({ advertisementId, type }) => {
   const favorites = useSelector((state) => state.favorites.list);
   const user = { id: "test-user" };
 
-  const isFavorited = favorites.some(
-    (fav) =>
-      fav.advertisement_id === advertisementId && fav.type === type
-  );
+//   const isFavorited = favorites.some(
+//   (fav) =>
+//     fav.advertisement_id === advertisementId &&
+//     fav.type?.toLowerCase() === type?.toLowerCase()
+// );
 
+  const isFavorited = favorites.some(
+  (fav) => String(fav.advertisement_id) === String(advertisementId)
+);
+
+  console.log("Favorites in store:", favorites);
+  console.log("isFavorited:", isFavorited);
+  
   const handleToggle = () => {
     if (user?.id) {
-      dispatch(toggleFavoriteAsync({ userId: user.id, advertisementId, type }));
+      dispatch(toggleFavoriteAsync({ userId: user.id, advertisementId }));
     } else {
       alert('يرجى تسجيل الدخول أولاً');
     }
@@ -49,3 +57,5 @@ const FavoriteButton = ({ advertisementId, type }) => {
 };
 
 export default FavoriteButton;
+
+// stop______________________

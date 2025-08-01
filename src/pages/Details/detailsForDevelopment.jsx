@@ -909,14 +909,7 @@ function DetailsForDevelopment() {
             </CardContent>
           </Paper>
         </Grid>
-
-
-
-
       </Grid>
-
-
-
       {/* زر التعديل للمالك */}
       {isOwner && (
         <Box
@@ -951,16 +944,7 @@ function DetailsForDevelopment() {
           </Button>
         </Box>
       )}
-
-
-
-
-
-
     </Container>
-
-
-
   );
 }
 
