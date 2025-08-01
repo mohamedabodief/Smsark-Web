@@ -150,6 +150,7 @@ const PropertyPage = () => {
         const advertisement = new RealEstateDeveloperAdvertisement(realEstateData);
 
         // حفظ الإعلان مع الصور والإيصال والحصول على ID
+        console.log('About to save advertisement with receiptImage:', formData.receiptImage);
         const adId = await advertisement.save(images, formData.receiptImage);
         setSuccess(true);
 

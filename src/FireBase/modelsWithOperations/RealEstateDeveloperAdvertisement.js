@@ -1149,34 +1149,36 @@ class RealEstateDeveloperAdvertisement {
     return await getDownloadURL(refPath);
   }
 
-  // 🗑️ حذف كل الصور
-  async #deleteAllImages() {
-    // التحقق من حالة تسجيل الدخول
-    const currentUser = auth.currentUser;
-    if (!currentUser) {
-      throw new Error("يجب تسجيل الدخول أولاً قبل حذف الصور");
-    }
-    
-    const dirRef = ref(getStorage(), `property_images/${this.userId}`);
-    try {
-      const list = await listAll(dirRef);
-      for (const fileRef of list.items) await deleteObject(fileRef);
-    } catch (_) {}
+async #deleteAllImages() {
+  const currentUser = auth.currentUser;
+  if (!currentUser) {
+    throw new Error("يجب تسجيل الدخول أولاً قبل حذف الصور");
   }
+
+  const dirRef = ref(getStorage(), `property_images/${this.userId}`);
+  try {
+    const list = await listAll(dirRef);
+    for (const fileRef of list.items) await deleteObject(fileRef);
+  } catch {
+    // تجاهل الخطأ بصمت - ممكن الملفات تكون مش موجودة
+  }
+}
+
 
   // 🗑️ حذف إيصال الدفع
   async #deleteReceipt() {
-    // التحقق من حالة تسجيل الدخول
-    const currentUser = auth.currentUser;
-    if (!currentUser) {
-      throw new Error("يجب تسجيل الدخول أولاً قبل حذف الإيصال");
-    }
-    
-    const fileRef = ref(getStorage(), `property_images/${this.userId}/receipt.jpg`);
-    try {
-      await deleteObject(fileRef);
-    } catch (_) {}
+  const currentUser = auth.currentUser;
+  if (!currentUser) {
+    throw new Error("يجب تسجيل الدخول أولاً قبل حذف الإيصال");
   }
+
+  const fileRef = ref(getStorage(), `property_images/${this.userId}/receipt.jpg`);
+  try {
+    await deleteObject(fileRef);
+  } catch {
+    // الخطأ متوقع لو الملف مش موجود، مش مهم نعرضه
+  }
+}
 
   // 📤 تجهيز بيانات الإعلان للتخزين
   #getAdData() {

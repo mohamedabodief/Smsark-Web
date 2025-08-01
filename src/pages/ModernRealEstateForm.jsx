@@ -1,11 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useForm, Controller } from 'react-hook-form';
-import { yupResolver } from '@hookform/resolvers/yup';
-import * as yup from 'yup';
-import '../styles/ModernRealEstateForm.css';
-import ClientAdvertisement from '../FireBase/modelsWithOperations/ClientAdvertisemen';
-import { auth, storage } from '../FireBase/firebaseConfig';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import React, { useState, useEffect, useRef } from "react";
+import { useForm, Controller } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import * as yup from "yup";
+import "../styles/ModernRealEstateForm.css";
+import ClientAdvertisement from "../FireBase/modelsWithOperations/ClientAdvertisemen";
+import { storage } from "../FireBase/firebaseConfig";
+import PaymentMethods from "./PaymentMethods";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import {
   Box,
   Container,
@@ -26,8 +27,8 @@ import {
   Divider,
   Alert,
   Snackbar,
-  FormHelperText
-} from '@mui/material';
+  FormHelperText,
+} from "@mui/material";
 import {
   LocationOn,
   Phone,
@@ -41,149 +42,168 @@ import {
   Visibility,
   Add,
   Delete,
-  Map
-} from '@mui/icons-material';
-import { styled } from '@mui/material/styles';
-import MapPicker from '../LocationComponents/MapPicker';
-import { useNavigate, useLocation } from 'react-router-dom';
-import AdPackagesClient from '../../packages/packagesClient';
-import { getAuth } from 'firebase/auth';
-import useReverseGeocoding from '../LocationComponents/useReverseGeocoding';
+  Map,
+} from "@mui/icons-material";
+import { styled } from "@mui/material/styles";
+import MapPicker from "../LocationComponents/MapPicker";
+import { useNavigate, useLocation } from "react-router-dom";
+import AdPackagesClient from "../../packages/packagesClient";
+import { getAuth } from "firebase/auth";
+import useReverseGeocoding from "../LocationComponents/useReverseGeocoding";
 
 // Custom styled components
 const StyledCard = styled(Card)(({ theme }) => ({
-  borderRadius: '12px',
-  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-  transition: 'all 0.3s ease',
-  '&:hover': {
-    boxShadow: '0 4px 16px rgba(0, 0, 0, 0.15)',
+  borderRadius: "12px",
+  boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
+  transition: "all 0.3s ease",
+  "&:hover": {
+    boxShadow: "0 4px 16px rgba(0, 0, 0, 0.15)",
   },
   marginBottom: theme.spacing(3),
 }));
 
-const StyledTextField = styled(TextField)(({ theme, hasError }) => ({
-  '& .MuiInputBase-root': {
-    borderRadius: '12px',
-    backgroundColor: '#f8f9fa',
-    '&:hover': {
-      backgroundColor: '#f1f3f4',
+const StyledTextField = styled(TextField)(({ hasError }) => ({
+  "& .MuiInputBase-root": {
+    borderRadius: "12px",
+    backgroundColor: "#f8f9fa",
+    "&:hover": {
+      backgroundColor: "#f1f3f4",
     },
-    '&.Mui-focused': {
-      backgroundColor: '#ffffff',
+    "&.Mui-focused": {
+      backgroundColor: "#ffffff",
     },
   },
-  '& .MuiOutlinedInput-notchedOutline': {
-    borderColor: hasError ? '#d32f2f' : '#e0e0e0',
+  "& .MuiOutlinedInput-notchedOutline": {
+    borderColor: hasError ? "#d32f2f" : "#e0e0e0",
   },
-  '&:hover .MuiOutlinedInput-notchedOutline': {
-    borderColor: hasError ? '#d32f2f' : '#1976d2',
+  "&:hover .MuiOutlinedInput-notchedOutline": {
+    borderColor: hasError ? "#d32f2f" : "#1976d2",
   },
-  '& .Mui-focused .MuiOutlinedInput-notchedOutline': {
-    borderColor: hasError ? '#d32f2f' : '#1976d2',
+  "& .Mui-focused .MuiOutlinedInput-notchedOutline": {
+    borderColor: hasError ? "#d32f2f" : "#1976d2",
   },
-  '& .MuiFormHelperText-root': {
-    color: '#d32f2f',
-    fontSize: '0.75rem',
-    textAlign: 'right',
-    marginRight: '14px',
-    marginTop: '4px',
+  "& .MuiFormHelperText-root": {
+    color: "#d32f2f",
+    fontSize: "0.75rem",
+    textAlign: "right",
+    marginRight: "14px",
+    marginTop: "4px",
   },
-  '& .MuiInputLabel-root': {
-    textAlign: 'right',
-    right: 'auto',
-    left: 'auto',
-    transformOrigin: 'right',
+  "& .MuiInputLabel-root": {
+    textAlign: "right",
+    right: "auto",
+    left: "auto",
+    transformOrigin: "right",
   },
-  '& .MuiInputLabel-shrink': {
-    transform: 'translate(14px, -9px) scale(0.75)',
+  "& .MuiInputLabel-shrink": {
+    transform: "translate(14px, -9px) scale(0.75)",
   },
 }));
 
-const StyledFormControl = styled(FormControl)(({ theme, hasError }) => ({
-  '& .MuiInputBase-root': {
-    borderRadius: '12px',
-    backgroundColor: '#f8f9fa',
-    '&:hover': {
-      backgroundColor: '#f1f3f4',
+const StyledFormControl = styled(FormControl)(({ hasError }) => ({
+  "& .MuiInputBase-root": {
+    borderRadius: "12px",
+    backgroundColor: "#f8f9fa",
+    "&:hover": {
+      backgroundColor: "#f1f3f4",
     },
-    '&.Mui-focused': {
-      backgroundColor: '#ffffff',
+    "&.Mui-focused": {
+      backgroundColor: "#ffffff",
     },
   },
-  '& .MuiOutlinedInput-notchedOutline': {
-    borderColor: hasError ? '#d32f2f' : '#e0e0e0',
+  "& .MuiOutlinedInput-notchedOutline": {
+    borderColor: hasError ? "#d32f2f" : "#e0e0e0",
   },
-  '&:hover .MuiOutlinedInput-notchedOutline': {
-    borderColor: hasError ? '#d32f2f' : '#1976d2',
+  "&:hover .MuiOutlinedInput-notchedOutline": {
+    borderColor: hasError ? "#d32f2f" : "#1976d2",
   },
-  '& .Mui-focused .MuiOutlinedInput-notchedOutline': {
-    borderColor: hasError ? '#d32f2f' : '#1976d2',
+  "& .Mui-focused .MuiOutlinedInput-notchedOutline": {
+    borderColor: hasError ? "#d32f2f" : "#1976d2",
   },
-  '& .MuiFormHelperText-root': {
-    color: '#d32f2f',
-    fontSize: '0.75rem',
-    textAlign: 'right',
-    marginRight: '14px',
-    marginTop: '4px',
+  "& .MuiFormHelperText-root": {
+    color: "#d32f2f",
+    fontSize: "0.75rem",
+    textAlign: "right",
+    marginRight: "14px",
+    marginTop: "4px",
   },
-  '& .MuiInputLabel-root': {
-    textAlign: 'right',
-    right: 'auto',
-    left: 'auto',
-    transformOrigin: 'right',
+  "& .MuiInputLabel-root": {
+    textAlign: "right",
+    right: "auto",
+    left: "auto",
+    transformOrigin: "right",
   },
-  '& .MuiInputLabel-shrink': {
-    transform: 'translate(14px, -9px) scale(0.75)',
+  "& .MuiInputLabel-shrink": {
+    transform: "translate(14px, -9px) scale(0.75)",
   },
 }));
 
 const ImagePreviewBox = styled(Box)(({ theme }) => ({
-  display: 'flex',
-  flexWrap: 'wrap',
+  display: "flex",
+  flexWrap: "wrap",
   gap: theme.spacing(2),
   marginTop: theme.spacing(2),
 }));
 
-const ImagePreview = styled(Box)(({ theme }) => ({
-  position: 'relative',
+const ImagePreview = styled(Box)(() => ({
+  position: "relative",
   width: 120,
   height: 120,
-  borderRadius: '8px',
-  overflow: 'hidden',
-  border: '2px dashed #ccc',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  backgroundColor: '#f8f9fa',
-  cursor: 'pointer',
-  '&:hover': {
-    borderColor: '#1976d2',
-    backgroundColor: '#f1f3f4',
+  borderRadius: "8px",
+  overflow: "hidden",
+  border: "2px dashed #ccc",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  backgroundColor: "#f8f9fa",
+  cursor: "pointer",
+  "&:hover": {
+    borderColor: "#1976d2",
+    backgroundColor: "#f1f3f4",
   },
 }));
 
 // Yup validation schema
 const validationSchema = yup.object().shape({
-  title: yup.string().required('عنوان الإعلان مطلوب'),
-  propertyType: yup.string().required('نوع العقار مطلوب'),
-  price: yup.number().positive('السعر يجب أن يكون رقمًا موجباً').required('السعر مطلوب'),
-  area: yup.number().positive('المساحة يجب أن تكون رقمًا موجباً').required('المساحة مطلوبة'),
-  buildingDate: yup.string().required('تاريخ البناء مطلوب'),
-  fullAddress: yup.string().required('العنوان الكامل مطلوب'),
-  city: yup.string().required('المدينة مطلوبة'),
-  governorate: yup.string().required('المحافظة مطلوبة'),
-  phone: yup.string().required('رقم الهاتف مطلوب'),
-  username: yup.string().required('اسم المستخدم مطلوب'),
-  adType: yup.string().required('نوع الإعلان مطلوب'),
-  adStatus: yup.string().required('حالة الإعلان مطلوبة'),
-  description: yup.string().required('الوصف مطلوب'),
+  title: yup.string().required("عنوان الإعلان مطلوب"),
+  propertyType: yup.string().required("نوع العقار مطلوب"),
+  price: yup
+    .number()
+    .positive("السعر يجب أن يكون رقمًا موجباً")
+    .required("السعر مطلوب"),
+  area: yup
+    .number()
+    .positive("المساحة يجب أن تكون رقمًا موجباً")
+    .required("المساحة مطلوبة"),
+  buildingDate: yup.string().required("تاريخ البناء مطلوب"),
+  fullAddress: yup.string().required("العنوان الكامل مطلوب"),
+  city: yup.string().required("المدينة مطلوبة"),
+  governorate: yup.string().required("المحافظة مطلوبة"),
+  phone: yup.string().required("رقم الهاتف مطلوب"),
+  username: yup.string().required("اسم المستخدم مطلوب"),
+  adType: yup.string().required("نوع الإعلان مطلوب"),
+  adStatus: yup.string().required("حالة الإعلان مطلوبة"),
+  description: yup.string().required("الوصف مطلوب"),
+  adsActivation: yup.boolean(),
+  activationDays: yup.number().when("adsActivation", {
+    is: true,
+    then: (schema) =>
+      schema
+        .positive("عدد الأيام يجب أن يكون رقمًا موجباً")
+        .required("عدد أيام التفعيل مطلوب عند تفعيل الإعلان"),
+    otherwise: (schema) => schema.nullable(),
+  }),
 });
 
-const uploadImagesAndGetUrls = async (imageFiles) => {
+// Function to upload images to Firebase Storage
+const uploadImagesAndGetUrls = async (imageFiles, userId) => {
   const urls = [];
   for (let i = 0; i < imageFiles.length; i++) {
     const file = imageFiles[i];
-    const storageRef = ref(storage, `property_images/${auth.currentUser.uid}/${Date.now()}_${file.name}`);
+    const storageRef = ref(
+      storage,
+      `property_images/${userId}/${Date.now()}_${file.name}`
+    );
     await uploadBytes(storageRef, file);
     const url = await getDownloadURL(storageRef);
     urls.push(url);
@@ -191,17 +211,33 @@ const uploadImagesAndGetUrls = async (imageFiles) => {
   return urls;
 };
 
+// Function to upload receipt to Firebase Storage
+const uploadReceiptAndGetUrl = async (receiptImage, userId, adId) => {
+  const storageRef = ref(
+    storage,
+    `property_images/${userId}/${adId}_receipt.jpg`
+  );
+  console.log(
+    "[DEBUG] Uploading receipt to:",
+    `property_images/${userId}/${adId}_receipt.jpg`
+  );
+  await uploadBytes(storageRef, receiptImage);
+  const url = await getDownloadURL(storageRef);
+  console.log("[DEBUG] Receipt uploaded to:", url);
+  return url;
+};
+
 const ModernRealEstateForm = () => {
   const [images, setImages] = useState([]);
   const [showSuccess, setShowSuccess] = useState(false);
-  const [imageError, setImageError] = useState('');
-  const [submitError, setSubmitError] = useState('');
+  const [imageError, setImageError] = useState("");
+  const [submitError, setSubmitError] = useState("");
   const [coordinates, setCoordinates] = useState(null);
   const [enableMapPick, setEnableMapPick] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState(null);
   const [receiptImage, setReceiptImage] = useState(null);
-  const [isGeocodingLoading, setIsGeocodingLoading] = useState(false); // أضف هذا
-  const [geocodingError, setGeocodingError] = useState(''); // أضف هذا
+  const [isGeocodingLoading, setIsGeocodingLoading] = useState(false);
+  const [geocodingError, setGeocodingError] = useState("");
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -228,7 +264,7 @@ const ModernRealEstateForm = () => {
   const prevAddressFromMap = useRef(null);
   const userId = auth.currentUser?.uid;
 
-  // استخدام useReverseGeocoding للحصول على العنوان
+  // Use reverse geocoding to get address
   const addressFromMap = useReverseGeocoding(coordinates);
 
   const {
@@ -237,7 +273,7 @@ const ModernRealEstateForm = () => {
     formState: { errors, isValid },
     reset,
     watch,
-    setValue
+    setValue,
   } = useForm({
     resolver: yupResolver(validationSchema),
     defaultValues: {
@@ -300,13 +336,18 @@ const ModernRealEstateForm = () => {
 
   // عند التعديل، عرّض الصور القديمة للمعاينة
   useEffect(() => {
-    if (isEditMode && editData) {
+    if (isEditMode && editData && Array.isArray(editData.images)) {
+      setImages([]);
+      setImageError("");
       console.log('[DEBUG] Initializing edit mode with data:', editData);
       console.log('[DEBUG] Advertisement ID:', editData.id);
       
       // Set coordinates if available
       if (editData.location?.lat && editData.location?.lng) {
-        setCoordinates({ lat: editData.location.lat, lng: editData.location.lng });
+        setCoordinates({
+          lat: editData.location.lat,
+          lng: editData.location.lng,
+        });
       }
       
       // Clear any existing image errors
@@ -317,7 +358,7 @@ const ModernRealEstateForm = () => {
     }
   }, [isEditMode, editData]);
 
-  // عند التعديل، مرر adPackage من editData إلى selectedPackage
+  // Set selected package for edit mode
   useEffect(() => {
     if (isEditMode && editData && editData.adPackage) {
       setSelectedPackage(editData.adPackage);
@@ -327,25 +368,36 @@ const ModernRealEstateForm = () => {
 
 
   // تحديث حقول العنوان بناءً على addressFromMap
+  // Update address fields based on map selection
   useEffect(() => {
-    console.log('[DEBUG] addressFromMap in ModernRealEstateForm:', addressFromMap);
+    console.log(
+      "[DEBUG] addressFromMap in ModernRealEstateForm:",
+      addressFromMap
+    );
     if (!enableMapPick || !addressFromMap || !coordinates) return;
     if (
       prevAddressFromMap.current &&
       prevAddressFromMap.current.full === addressFromMap.full &&
       prevAddressFromMap.current.city === addressFromMap.city &&
       prevAddressFromMap.current.governorate === addressFromMap.governorate
-    ) return;
+    )
+      return;
 
     setIsGeocodingLoading(true);
     const timer = setTimeout(() => {
-      if (addressFromMap.full && addressFromMap.city && addressFromMap.governorate) {
-        setValue('fullAddress', addressFromMap.full, { shouldValidate: true });
-        setValue('city', addressFromMap.city, { shouldValidate: true });
-        setValue('governorate', addressFromMap.governorate, { shouldValidate: true });
-        setGeocodingError('');
+      if (
+        addressFromMap.full &&
+        addressFromMap.city &&
+        addressFromMap.governorate
+      ) {
+        setValue("fullAddress", addressFromMap.full, { shouldValidate: true });
+        setValue("city", addressFromMap.city, { shouldValidate: true });
+        setValue("governorate", addressFromMap.governorate, {
+          shouldValidate: true,
+        });
+        setGeocodingError("");
       } else {
-        setGeocodingError('فشل جلب العنوان من الخريطة. حاولي مرة أخرى.');
+        setGeocodingError("فشل جلب العنوان من الخريطة. حاولي مرة أخرى.");
       }
       setIsGeocodingLoading(false);
       prevAddressFromMap.current = addressFromMap;
@@ -353,45 +405,53 @@ const ModernRealEstateForm = () => {
     return () => clearTimeout(timer);
   }, [addressFromMap, enableMapPick, coordinates, setValue]);
 
-  const adsActivation = watch('adsActivation');
-  const addressValue = watch('fullAddress');
-  const cityValue = watch('city');
-  const governorateValue = watch('governorate');
+  const addressValue = watch("fullAddress");
+  const cityValue = watch("city");
+  const governorateValue = watch("governorate");
+  const adsActivation = watch("adsActivation");
 
-  // التعامل مع اختيار الموقع من MapPicker
+  // Handle location selection from MapPicker
   const handleLocationSelect = (location) => {
-    console.log('[DEBUG] إحداثيات الموقع المختار:', location);
+    console.log("[DEBUG] إحداثيات الموقع المختار:", location);
     if (location && location.lat && location.lng) {
       setCoordinates(location);
     }
   };
 
-  // جلب الإحداثيات بناءً على حقول العنوان باستخدام Nominatim
+  // Fetch coordinates using Nominatim
   useEffect(() => {
     const fetchCoordinates = async () => {
       if (!addressValue && !cityValue && !governorateValue) return;
       if (enableMapPick) return;
-      const fullAddress = `${addressValue || ''}, ${cityValue || ''}, ${governorateValue || ''}`;
-      const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(fullAddress)}&format=json&addressdetails=1`;
+      const fullAddress = `${addressValue || ""}, ${cityValue || ""}, ${
+        governorateValue || ""
+      }`;
+      const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
+        fullAddress
+      )}&format=json&addressdetails=1`;
       try {
         const res = await fetch(url, {
           headers: {
-            'User-Agent': 'MyRealEstateApp/1.0 (your.email@example.com)',
+            "User-Agent": "MyRealEstateApp/1.0 (your.email@example.com)",
           },
         });
         const data = await res.json();
-        console.log('[DEBUG] استجابة Nominatim للإحداثيات:', data);
+        console.log("[DEBUG] استجابة Nominatim للإحداثيات:", data);
         if (data.length > 0) {
           const { lat, lon } = data[0];
           const newCoordinates = { lat: parseFloat(lat), lng: parseFloat(lon) };
-          if (!coordinates || coordinates.lat !== newCoordinates.lat || coordinates.lng !== newCoordinates.lng) {
+          if (
+            !coordinates ||
+            coordinates.lat !== newCoordinates.lat ||
+            coordinates.lng !== newCoordinates.lng
+          ) {
             setCoordinates(newCoordinates);
           }
         } else {
-          console.error('[DEBUG] فشل جلب الإحداثيات: لا توجد نتائج');
+          console.error("[DEBUG] فشل جلب الإحداثيات: لا توجد نتائج");
         }
       } catch (err) {
-        console.error('[DEBUG] فشل جلب الإحداثيات:', err);
+        console.error("[DEBUG] فشل جلب الإحداثيات:", err);
       }
     };
     fetchCoordinates();
@@ -412,20 +472,22 @@ const ModernRealEstateForm = () => {
       return;
     }
 
-    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-    const invalidFiles = files.filter(file => !validTypes.includes(file.type));
+    const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+    const invalidFiles = files.filter(
+      (file) => !validTypes.includes(file.type)
+    );
     if (invalidFiles.length > 0) {
-      setImageError('يرجى إضافة صور بصيغة JPG, PNG, أو WebP فقط');
+      setImageError("يرجى إضافة صور بصيغة JPG, PNG, أو WebP فقط");
       return;
     }
 
-    setImages(prev => [...prev, ...files]);
-    setImageError('');
+    setImages((prev) => [...prev, ...files]);
+    setImageError("");
   };
 
   const removeImage = (index) => {
-    setImages(prev => prev.filter((_, i) => i !== index));
-    setImageError('');
+    setImages((prev) => prev.filter((_, i) => i !== index));
+    setImageError("");
   };
 
   const onSubmit = async (data) => {
@@ -435,21 +497,23 @@ const ModernRealEstateForm = () => {
     console.log('[DEBUG] editData:', editData);
     console.log('[DEBUG] form data:', data);
     
-    setSubmitError('');
     
     // Validate images for new advertisements
+    setSubmitError("");
     if (!isEditMode && images.length === 0) {
-      setImageError('الصور مطلوبة، أضف 4 صور على الأكثر');
+      setImageError("الصور مطلوبة، أضف 4 صور على الأكثر");
       return;
     }
 
     const auth = getAuth();
     if (!auth.currentUser) {
-      setSubmitError('يجب تسجيل الدخول لإضافة إعلان.');
+      setSubmitError("يجب تسجيل الدخول لإضافة إعلان.");
       return;
     }
 
-    // Additional validation for edit mode
+    console.log("[DEBUG] Current user UID:", auth.currentUser?.uid);
+    console.log("[DEBUG] Selected package:", selectedPackage);
+    console.log("[DEBUG] Receipt image before save:", receiptImage);
     if (isEditMode) {
       if (!editData) {
         setSubmitError('بيانات الإعلان غير متوفرة للتعديل.');
@@ -462,21 +526,34 @@ const ModernRealEstateForm = () => {
         return;
       }
     }
+    try  {
+      // Upload property images if any
+      let imageUrls = [];
+      if (images.length > 0) {
+        try {
+          imageUrls = await uploadImagesAndGetUrls(
+            images,
+            auth.currentUser.uid
+          );
+          console.log("[DEBUG] Image URLs after upload:", imageUrls);
+        } catch (error) {
+          console.error("[DEBUG] Error uploading property images:", error);
+          setSubmitError("فشل رفع الصور. تأكد من صلاحيات التخزين.");
+          return;
+        }
+      }
 
-    // لوجات التشخيص
-    console.log('Selected package:', selectedPackage);
-    console.log('Receipt image before save:', receiptImage);
-    console.log('[DEBUG] Edit mode:', isEditMode);
-    console.log('[DEBUG] Edit data:', editData);
-
-    try {
-      if (isEditMode && (!adId || adId === undefined || adId === null)) {
+      if (
+        isEditMode &&
+        (!adId || adId === undefined || adId === null)
+      ) {
         console.error('[DEBUG] Missing advertisement ID for edit mode');
         console.error('[DEBUG] adId value:', adId);
-        setSubmitError('لا يمكن تعديل إعلان بدون معرف (ID).');
+        setSubmitError("لا يمكن تعديل إعلان بدون معرف (ID).");
         return;
       }
 
+      let adId;
       if (isEditMode && editData) {
         console.log('[DEBUG] Starting advertisement update with ID:', adId);
         console.log('[DEBUG] Using adId:', adId);
@@ -486,12 +563,13 @@ const ModernRealEstateForm = () => {
         
         const ad = new ClientAdvertisement(adObject);
         const oldImages = Array.isArray(editData.images) ? editData.images : [];
-        const newImageFiles = images;
-        let filesToUpload = null;
+        // const newImageFiles = images;
+        // let filesToUpload = null;
         
-        if (newImageFiles.length > 0) {
-          filesToUpload = newImageFiles;
-        }
+        // if (newImageFiles.length > 0) {
+        //   filesToUpload = newImageFiles;
+        // }
+        const updatedImages = [...oldImages, ...imageUrls];
 
         // Prepare update data
         const updateData = {
@@ -507,6 +585,7 @@ const ModernRealEstateForm = () => {
           address: data.fullAddress,
           city: data.city,
           governorate: data.governorate,
+          images:updatedImages,
           phone: data.phone,
           user_name: data.username,
           ad_type: data.adType,
@@ -522,12 +601,34 @@ const ModernRealEstateForm = () => {
           reviewed_by: null,
           review_note: null,
         };
+        
+         // Upload receipt if provided
+         let receiptUrl = editData.receipt_image;
+         if (receiptImage) {
+           try {
+             receiptUrl = await uploadReceiptAndGetUrl(
+               receiptImage,
+               auth.currentUser.uid,
+               editData.id
+             );
+           } catch (error) {
+             console.error("[DEBUG] Error uploading receipt image:", error);
+             if (error.code === "storage/unauthorized") {
+               setSubmitError(
+                 "ليس لديك إذن لرفع صورة الإيصال. تحقق من إعدادات التخزين في Firebase."
+               );
+             } else {
+               setSubmitError("فشل رفع صورة الإيصال: " + error.message);
+             }
+             return;
+           }
+         }
 
         console.log('[DEBUG] Update data:', updateData);
         console.log('[DEBUG] Files to upload:', filesToUpload);
         console.log('[DEBUG] Ad instance ID:', ad.id);
 
-        await ad.update(updateData, filesToUpload);
+        await ad.update(updateData , receiptUrl);
         console.log('[DEBUG] Advertisement updated successfully:', adId);
         
         setShowSuccess(true);
@@ -537,7 +638,52 @@ const ModernRealEstateForm = () => {
         setTimeout(() => {
           navigate(`/detailsForClient/${adId}`);
         }, 1500);
-      } else {
+        ///////////////////////////////////////////////////////////////////////////////////////////////////
+        // const updatedImages = [...oldImages, ...imageUrls];
+
+        // Upload receipt if provided
+        // let receiptUrl = editData.receipt_image;
+        // if (receiptImage) {
+        //   try {
+        //     receiptUrl = await uploadReceiptAndGetUrl(
+        //       receiptImage,
+        //       auth.currentUser.uid,
+        //       editData.id
+        //     );
+        //   } catch (error) {
+        //     console.error("[DEBUG] Error uploading receipt image:", error);
+        //     if (error.code === "storage/unauthorized") {
+        //       setSubmitError(
+        //         "ليس لديك إذن لرفع صورة الإيصال. تحقق من إعدادات التخزين في Firebase."
+        //       );
+        //     } else {
+        //       setSubmitError("فشل رفع صورة الإيصال: " + error.message);
+        //     }
+        //     return;
+        //   }
+        // }
+
+        // await ad.update(
+        //   {
+        //     ...editData,
+        //     ...data,
+        //     type: data.propertyType,
+        //     user_name: data.username,
+        //     ad_type: data.adType,
+        //     ad_status: data.adStatus,
+        //     images: updatedImages,
+        //     adPackage: selectedPackage ? Number(selectedPackage) : null,
+        //     ads: data.adsActivation,
+        //     adExpiryTime: data.adsActivation
+        //       ? Date.now() + data.activationDays * 24 * 60 * 60 * 1000
+        //       : null,
+        //   },
+        //   receiptUrl
+        // );
+        // adId = editData.id;
+        // console.log("[DEBUG] تم تحديث الإعلان:", adId);
+///////////////////////////////////////////////////////////////////////////////////     //////////////////////////////
+} else {
         const adData = {
           title: data.title,
           type: data.propertyType,
@@ -553,301 +699,396 @@ const ModernRealEstateForm = () => {
           governorate: data.governorate,
           phone: data.phone,
           user_name: data.username,
-          userId: userId,
+          userId: auth.currentUser.uid,
           ad_type: data.adType,
           ad_status: data.adStatus,
-          type_of_user: 'client',
+          type_of_user: "client",
           ads: data.adsActivation,
           adExpiryTime: data.adsActivation
             ? Date.now() + data.activationDays * 24 * 60 * 60 * 1000
             : null,
           description: data.description,
+          images: imageUrls,
           adPackage: selectedPackage ? Number(selectedPackage) : null,
         };
-        console.log('[DEBUG] بيانات الإعلان الجديد:', adData);
+        console.log("[DEBUG] بيانات الإعلان الجديد:", adData);
         const ad = new ClientAdvertisement(adData);
-        // لوج قبل الحفظ
-        console.log('Calling ad.save with images:', images, 'and receiptImage:', receiptImage);
-        await ad.save(images, receiptImage);
-        setShowSuccess(true);
-        handleReset();
-        setTimeout(() => {
-          navigate(`/detailsForClient/${ad.id}`);
-        }, 1500);
+        adId = await ad.save(imageUrls, null); // Save without receipt initially
+        console.log("[DEBUG] Ad saved with ID:", adId);
+
+        // Upload receipt if provided
+        let receiptUrl = null;
+        if (receiptImage) {
+          try {
+            receiptUrl = await uploadReceiptAndGetUrl(
+              receiptImage,
+              auth.currentUser.uid,
+              adId
+            );
+            await ad.update({ receipt_image: receiptUrl });
+            console.log(
+              "[DEBUG] Receipt URL updated in Firestore:",
+              receiptUrl
+            );
+          } catch (error) {
+            console.error("[DEBUG] Error uploading receipt image:", error);
+            if (error.code === "storage/unauthorized") {
+              setSubmitError(
+                "ليس لديك إذن لرفع صورة الإيصال. تحقق من إعدادات التخزين في Firebase."
+              );
+            } else {
+              setSubmitError("فشل رفع صورة الإيصال: " + error.message);
+            }
+            return;
+          }
+        }
       }
+
+      setShowSuccess(true);
+      handleReset();
+      setTimeout(() => {
+        navigate(`/detailsForClient/${adId}`);
+      }, 1500);
     } catch (error) {
-      setSubmitError(error.message || 'حدث خطأ أثناء إضافة الإعلان.');
-      console.error('[DEBUG] خطأ أثناء إضافة/تعديل الإعلان:', error);
+      setSubmitError(error.message || "حدث خطأ أثناء إضافة الإعلان.");
+      console.error("[DEBUG] خطأ أثناء إضافة/تعديل الإعلان:", error);
     }
   };
 
   const handleReset = () => {
     reset();
     setImages([]);
-    setImageError('');
+    setImageError("");
     setCoordinates(null);
-    setGeocodingError('');
+    setGeocodingError("");
+    setSelectedPackage(null);
+    setReceiptImage(null);
   };
 
-  const propertyTypes = ['شقة', 'فيلا', 'استوديو', 'دوبلكس', 'محل تجاري'];
-  const adTypes = ['بيع', 'إيجار', 'شراء'];
-  const adStatuses = ['تحت العرض', 'تحت التفاوض', 'منتهي'];
+  const propertyTypes = ["شقة", "فيلا", "استوديو", "دوبلكس", "محل تجاري"];
+  const adTypes = ["بيع", "إيجار", "شراء"];
+  const adStatuses = ["تحت العرض", "تحت التفاوض", "منتهي"];
 
   return (
-     <>
-    <Box
-      className="modern-form-container"
-      sx={{
-        minHeight: '100vh',
-        // display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: '#f5f5f5',
-        py: 4,
-        direction: 'rtl'
-      }}
-    >
-      <Container maxWidth="lg" sx={{ direction: 'rtl' }}>
-        <Typography
-          variant="h3"
-          component="h1"
-          sx={{
-            mb: 1,
-            mt: '100px',
-            fontWeight: 700,
-            color: '#6E00FE',
-            textAlign: 'center',
-            fontFamily: 'Cairo, Noto Kufi Arabic, sans-serif'
-          }}
-        >
-          {isEditMode ? 'تعديل إعلان عقاري' : 'إضافة إعلان عقاري'}
-        </Typography>
+    <>
+      <Box
+        className="modern-form-container"
+        sx={{
+          minHeight: "100vh",
+          backgroundColor: "#f5f5f5",
+          py: 4,
+          direction: "rtl",
+        }}
+      >
+        <Container maxWidth="lg" sx={{ direction: "rtl" }}>
+          <Typography
+            variant="h3"
+            component="h1"
+            sx={{
+              mb: 1,
+              mt: "100px",
+              fontWeight: 700,
+              color: "#6E00FE",
+              textAlign: "center",
+              fontFamily: "Cairo, Noto Kufi Arabic, sans-serif",
+            }}
+          >
+            {isEditMode ? "تعديل إعلان عقاري" : "إضافة إعلان عقاري"}
+          </Typography>
 
-        <Typography
-          variant="h6"
-          sx={{
-            mb: 4,
-            color: '#666',
-            textAlign: 'center',
-            fontFamily: 'Cairo, Noto Kufi Arabic, sans-serif',
-            marginTop: '20px'
-          }}
-        >
-          أضف تفاصيل عقارك وابدأ في التواصل مع العملاء المحتملين
-        </Typography>
+          <Typography
+            variant="h6"
+            sx={{
+              mb: 4,
+              color: "#666",
+              textAlign: "center",
+              fontFamily: "Cairo, Noto Kufi Arabic, sans-serif",
+              marginTop: "20px",
+            }}
+          >
+            أضف تفاصيل عقارك وابدأ في التواصل مع العملاء المحتملين
+          </Typography>
 
-        <Box 
-          component="form" 
-          onSubmit={(e) => {
-            handleSubmit(onSubmit)(e);
-          }} 
-          width={'100%'} 
-          sx={{ direction: 'rtl' }}
-        >
-          <StyledCard>
-            <CardContent>
-              <Container maxWidth='lg' sx={{ display: 'flex', flexDirection: 'column' }}>
-                {/* <Grid container spacing={2} dir="rtl"> */}
-
-                {/* Basic Information */}
-                <Box width={'100%'}>
-                  <Typography variant="h6" sx={{ mb: 3, color: '#6E00FE', fontWeight: 600 }}>
-                    <Home sx={{ mr: 1, verticalAlign: 'middle', ml: '6px', mt: '-6px' }} />
-                    المعلومات الأساسية
-                  </Typography>
-
-                  <Typography sx={{ mb: 1, color: '#666', fontWeight: 500, fontSize: '20px' }}>
-                    عنوان الإعلان
-                  </Typography>
-                  <Controller
-                    name="title"
-                    control={control}
-                    render={({ field }) => (
-                      <StyledTextField
-                        {...field}
-                        fullWidth
-                        placeholder="اكتب عنوان الإعلان هنا"
-                        error={!!errors.title}
-                        helperText={errors.title?.message}
-                        sx={{ mb: 2 }}
-                      />
-                    )}
-                  />
-
-                  <Typography variant="body2" sx={{ mb: 1, color: '#666', fontWeight: 500, fontSize: '20px' }}>
-                    نوع العقار
-                  </Typography>
-                  <Controller
-                    name="propertyType"
-                    control={control}
-                    render={({ field }) => (
-                      <StyledFormControl fullWidth sx={{ mb: 2 }}>
-                        <Select
-                          {...field}
-                          displayEmpty
-                          error={!!errors.propertyType}
-                          renderValue={(selected) => {
-                            if (!selected) {
-                              return <span style={{ color: '#999' }}>اختر نوع العقار</span>;
-                            }
-                            return selected;
-                          }}
-                        >
-                          {propertyTypes.map((type) => (
-                            <MenuItem key={type} value={type}>{type}</MenuItem>
-                          ))}
-                        </Select>
-                        {errors.propertyType && (
-                          <FormHelperText>{errors.propertyType.message}</FormHelperText>
-                        )}
-                      </StyledFormControl>
-                    )}
-                  />
-
-                  <Typography variant="body2" sx={{ mb: 1, color: '#666', fontWeight: 500, fontSize: '20px' }}>
-                    السعر
-                  </Typography>
-                  <Controller
-                    name="price"
-                    control={control}
-                    render={({ field }) => (
-                      <StyledTextField
-                        {...field}
-                        fullWidth
-                        placeholder="أدخل السعر"
-                        type="number"
-                        error={!!errors.price}
-                        helperText={errors.price?.message}
-                        InputProps={{
-                          endAdornment: <InputAdornment position="end">جنيه</InputAdornment>,
-                        }}
-                        sx={{ mb: 2 }}
-                      />
-                    )}
-                  />
-
-                  <Typography variant="body2" sx={{ mb: 1, color: '#666', fontWeight: 500, fontSize: '20px' }}>
-                    المساحة
-                  </Typography>
-                  <Controller
-                    name="area"
-                    control={control}
-                    render={({ field }) => (
-                      <StyledTextField
-                        {...field}
-                        fullWidth
-                        placeholder="أدخل المساحة"
-                        type="number"
-                        error={!!errors.area}
-                        helperText={errors.area?.message}
-                        InputProps={{
-                          endAdornment: <InputAdornment position="end">م²</InputAdornment>,
-                        }}
-                        sx={{ mb: 2 }}
-                      />
-                    )}
-                  />
-
-                  <Typography variant="body2" sx={{ mb: 1, color: '#666', fontWeight: 500, fontSize: '20px' }}>
-                    تاريخ البناء
-                  </Typography>
-                  <Controller
-                    name="buildingDate"
-                    control={control}
-                    render={({ field }) => (
-                      <StyledTextField
-                        {...field}
-                        fullWidth
-                        type="date"
-                        error={!!errors.buildingDate}
-                        helperText={errors.buildingDate?.message}
-                        InputProps={{
-                          startAdornment: (
-                            <InputAdornment position="start">
-                              <CalendarToday />
-                            </InputAdornment>
-                          ),
-                        }}
-                      />
-                    )}
-                  />
-                </Box>
-
-                <Divider sx={{ my: 3, borderColor: '#e0e0e0' }} />
-
-                {/* Images and Location */}
-                <Box width={'100%'}>
-                  <Typography variant="h6" sx={{ mb: 3, color: '#6E00FE', fontWeight: 600 }}>
-                    <Image sx={{ mr: 1, verticalAlign: 'middle', ml: '6px', mt: '-6px' }} />
-                    الصور والموقع
-                  </Typography>
-
-                  <Typography variant="body2" sx={{ color: '#666', fontSize: '20px', mt: '40px' }}>
-                    الصور مطلوبة (1-4 صور) *
-                  </Typography>
-                  
-                  {isEditMode && (
-                    <Typography 
-                      variant="body2" 
-                      sx={{ 
-                        mb: 2, 
-                        color: '#666', 
-                        fontSize: '0.9rem',
-                        backgroundColor: '#f5f5f5',
-                        padding: '8px 12px',
-                        borderRadius: '6px',
-                        border: '1px solid #e0e0e0',
-                        mt: 2
-                      }}
+          <Box
+            component="form"
+            onSubmit={(e) => {
+              handleSubmit(onSubmit)(e);
+            }} 
+            width={"100%"}
+            sx={{ direction: "rtl" }}
+          >
+            <StyledCard>
+              <CardContent>
+                <Container
+                  maxWidth="lg"
+                  sx={{ display: "flex", flexDirection: "column" }}
+                >
+                  {/* Basic Information */}
+                  <Grid item width={"100%"}>
+                    <Typography
+                      variant="h6"
+                      sx={{ mb: 3, color: "#6E00FE", fontWeight: 600 }}
                     >
-                      💡 في وضع التعديل: الصور الموجودة ستبقى كما هي. يمكنك إضافة صور جديدة أو الاحتفاظ بالصور الحالية.
-                    </Typography>
-                  )}
-                  <Box sx={{ display: 'flex', gap: '10px', marginBottom: '30px', flexDirection: 'column' }}>
-                    <Button
-                      variant="outlined"
-                      component="label"
-                      startIcon={<Add sx={{ marginLeft: '10px' }} />}
-                      fullWidth
-                      sx={{
-                        height: '49px',
-                        marginTop: '2px',
-                        borderRadius: '12px',
-                        py: 1.5,
-                        borderColor: imageError ? '#d32f2f' : '#c6c9c9ff',
-                        color: imageError ? '#d32f2f' : '#6E00FE',
-                        '&:hover': {
-                          borderColor: imageError ? '#d32f2f' : '#5a00d4',
-                          backgroundColor: imageError ? 'rgba(211, 47, 47, 0.04)' : 'rgba(110, 0, 254, 0.04)',
-                        },
-                      }}
-                    >
-                      رفع الصور
-                      <input
-                        type="file"
-                        multiple
-                        accept="image/*"
-                        hidden
-                        onChange={handleImageUpload}
-                      />
-                    </Button>
-
-                    {imageError && (
-                      <Typography
-                        variant="body2"
+                      <Home
                         sx={{
-                          color: '#d32f2f',
-                          fontSize: '0.75rem',
-                          mb: 2,
-                          textAlign: 'right'
+                          mr: 1,
+                          verticalAlign: "middle",
+                          ml: "6px",
+                          mt: "-6px",
+                        }}
+                      />
+                      المعلومات الأساسية
+                    </Typography>
+
+                    <Typography
+                      sx={{
+                        mb: 1,
+                        color: "#666",
+                        fontWeight: 500,
+                        fontSize: "20px",
+                      }}
+                    >
+                      عنوان الإعلان
+                    </Typography>
+                    <Controller
+                      name="title"
+                      control={control}
+                      render={({ field }) => (
+                        <StyledTextField
+                          {...field}
+                          fullWidth
+                          placeholder="اكتب عنوان الإعلان هنا"
+                          error={!!errors.title}
+                          helperText={errors.title?.message}
+                          sx={{ mb: 2 }}
+                        />
+                      )}
+                    />
+
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        mb: 1,
+                        color: "#666",
+                        fontWeight: 500,
+                        fontSize: "20px",
+                      }}
+                    >
+                      نوع العقار
+                    </Typography>
+                    <Controller
+                      name="propertyType"
+                      control={control}
+                      render={({ field }) => (
+                        <StyledFormControl fullWidth sx={{ mb: 2 }}>
+                          <Select
+                            {...field}
+                            displayEmpty
+                            error={!!errors.propertyType}
+                            renderValue={(selected) => {
+                              if (!selected) {
+                                return (
+                                  <span style={{ color: "#999" }}>
+                                    اختر نوع العقار
+                                  </span>
+                                );
+                              }
+                              return selected;
+                            }}
+                          >
+                            {propertyTypes.map((type) => (
+                              <MenuItem key={type} value={type}>
+                                {type}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                          {errors.propertyType && (
+                            <FormHelperText>
+                              {errors.propertyType.message}
+                            </FormHelperText>
+                          )}
+                        </StyledFormControl>
+                      )}
+                    />
+
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        mb: 1,
+                        color: "#666",
+                        fontWeight: 500,
+                        fontSize: "20px",
+                      }}
+                    >
+                      السعر
+                    </Typography>
+                    <Controller
+                      name="price"
+                      control={control}
+                      render={({ field }) => (
+                        <StyledTextField
+                          {...field}
+                          fullWidth
+                          placeholder="أدخل السعر"
+                          type="number"
+                          error={!!errors.price}
+                          helperText={errors.price?.message}
+                          InputProps={{
+                            endAdornment: (
+                              <InputAdornment position="end">
+                                جنيه
+                              </InputAdornment>
+                            ),
+                          }}
+                          sx={{ mb: 2 }}
+                        />
+                      )}
+                    />
+
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        mb: 1,
+                        color: "#666",
+                        fontWeight: 500,
+                        fontSize: "20px",
+                      }}
+                    >
+                      المساحة
+                    </Typography>
+                    <Controller
+                      name="area"
+                      control={control}
+                      render={({ field }) => (
+                        <StyledTextField
+                          {...field}
+                          fullWidth
+                          placeholder="أدخل المساحة"
+                          type="number"
+                          error={!!errors.area}
+                          helperText={errors.area?.message}
+                          InputProps={{
+                            endAdornment: (
+                              <InputAdornment position="end">م²</InputAdornment>
+                            ),
+                          }}
+                          sx={{ mb: 2 }}
+                        />
+                      )}
+                    />
+
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        mb: 1,
+                        color: "#666",
+                        fontWeight: 500,
+                        fontSize: "20px",
+                      }}
+                    >
+                      تاريخ البناء
+                    </Typography>
+                    <Controller
+                      name="buildingDate"
+                      control={control}
+                      render={({ field }) => (
+                        <StyledTextField
+                          {...field}
+                          fullWidth
+                          type="date"
+                          error={!!errors.buildingDate}
+                          helperText={errors.buildingDate?.message}
+                          InputProps={{
+                            startAdornment: (
+                              <InputAdornment position="start">
+                                <CalendarToday />
+                              </InputAdornment>
+                            ),
+                          }}
+                        />
+                      )}
+                    />
+                  </Grid>
+
+                  <Divider sx={{ my: 3, borderColor: "#e0e0e0" }} />
+
+                  {/* Images and Location */}
+                  <Grid item xs={12} md={12} lg={12} width={"100%"}>
+                    <Typography
+                      variant="h6"
+                      sx={{ mb: 3, color: "#6E00FE", fontWeight: 600 }}
+                    >
+                      <Image
+                        sx={{
+                          mr: 1,
+                          verticalAlign: "middle",
+                          ml: "6px",
+                          mt: "-6px",
+                        }}
+                      />
+                      الصور والموقع
+                    </Typography>
+
+                    <Typography
+                      variant="body2"
+                      sx={{ color: "#666", fontSize: "20px", mt: "40px" }}
+                    >
+                      الصور مطلوبة (1-4 صور) *
+                    </Typography>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        gap: "10px",
+                        marginBottom: "30px",
+                        flexDirection: "column",
+                      }}
+                    >
+                      <Button
+                        variant="outlined"
+                        component="label"
+                        startIcon={<Add sx={{ marginLeft: "10px" }} />}
+                        fullWidth
+                        sx={{
+                          height: "49px",
+                          marginTop: "2px",
+                          borderRadius: "12px",
+                          py: 1.5,
+                          borderColor: imageError ? "#d32f2f" : "#c6c9c9ff",
+                          color: imageError ? "#d32f2f" : "#6E00FE",
+                          "&:hover": {
+                            borderColor: imageError ? "#d32f2f" : "#5a00d4",
+                            backgroundColor: imageError
+                              ? "rgba(211, 47, 47, 0.04)"
+                              : "rgba(110, 0, 254, 0.04)",
+                          },
                         }}
                       >
-                        {imageError}
-                      </Typography>
-                    )}
+                        رفع الصور
+                        <input
+                          type="file"
+                          multiple
+                          accept="image/*"
+                          hidden
+                          onChange={handleImageUpload}
+                        />
+                      </Button>
 
-                    <ImagePreviewBox>
-                      {/* Show existing images in edit mode */}
+                      {imageError && (
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            color: "#d32f2f",
+                            fontSize: "0.75rem",
+                            mb: 2,
+                            textAlign: "right",
+                          }}
+                        >
+                          {imageError}
+                        </Typography>
+                      )}
+
+                      <ImagePreviewBox>
+                          {/* Show existing images in edit mode */}
                       {isEditMode && editData?.images && editData.images.map((imageUrl, index) => (
                         <ImagePreview key={`existing-${index}`}>
                           <img
@@ -871,29 +1112,33 @@ const ModernRealEstateForm = () => {
                           </Box>
                         </ImagePreview>
                       ))}
-                      
-                      {/* Show new uploaded images */}
-                      {images.map((image, index) => (
-                        <ImagePreview key={`new-${index}`}>
-                          <img
-                            src={URL.createObjectURL(image)}
-                            alt={`صورة جديدة ${index + 1}`}
-                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                          />
-                          <IconButton
-                            size="small"
-                            onClick={() => removeImage(index)}
-                            sx={{
-                              position: 'absolute',
-                              top: 4,
-                              right: 4,
-                              backgroundColor: 'rgba(255, 255, 255, 0.8)',
-                              '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.9)' },
-                            }}
-                          >
-                            <Delete fontSize="small" />
-                          </IconButton>
-                          <Box
+                        {images.map((image, index) => (
+                          <ImagePreview key={index}>
+                            <img
+                              src={URL.createObjectURL(image)}
+                              alt={`صورة جديدة ${index + 1}`}
+                              style={{
+                                width: "100%",
+                                height: "100%",
+                                objectFit: "cover",
+                              }}
+                            />
+                            <IconButton
+                              size="small"
+                              onClick={() => removeImage(index)}
+                              sx={{
+                                position: "absolute",
+                                top: 4,
+                                right: 4,
+                                backgroundColor: "rgba(255, 255, 255, 0.8)",
+                                "&:hover": {
+                                  backgroundColor: "rgba(255, 255, 255, 0.9)",
+                                },
+                              }}
+                            >
+                              <Delete fontSize="small" />
+                            </IconButton>
+                            <Box
                             sx={{
                               position: 'absolute',
                               top: 4,
@@ -907,21 +1152,20 @@ const ModernRealEstateForm = () => {
                           >
                             جديدة
                           </Box>
-                        </ImagePreview>
-                      ))}
-                    </ImagePreviewBox>
+                          </ImagePreview>
+                        ))}
+                      </ImagePreviewBox>
 
-                    {(images.length > 0 || (isEditMode && editData?.images?.length > 0)) && (
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          mt: 1,
-                          color: '#2e7d32',
-                          fontSize: '0.75rem',
-                          textAlign: 'right'
-                        }}
-                      >
-                        {isEditMode ? (
+                      {(images.length > 0 || (isEditMode && editData?.images?.length > 0)) && (
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            mt: 1,
+                            color: images.length >= 1 ? "#2e7d32" : "#d32f2f",
+                            fontSize: "0.75rem",
+                            textAlign: "right",
+                          }}
+                        >{isEditMode ? (
                           <>
                             الصور الموجودة: {editData?.images?.length || 0} | 
                             الصور الجديدة: {images.length} | 
@@ -929,367 +1173,548 @@ const ModernRealEstateForm = () => {
                           </>
                         ) : (
                           `تم رفع ${images.length} من 4 صور`
-                        )}
-                      </Typography>
-                    )}
+                        )}</Typography>
+                      )}
 
-                    <Divider sx={{ my: 3 }} />
-
-                    <Button
-                      variant="outlined"
-                      startIcon={<Map sx={{ marginLeft: '10px' }} />}
-                      fullWidth
-                      sx={{ borderRadius: '12px', py: 1.5 }}
-                      onClick={() => setEnableMapPick((prev) => !prev)}
-                      type="button"
+                      <Divider sx={{ my: 3 }} />
+   <Typography
+                      variant="body2"
+                      sx={{
+                        mb: 1,
+                        color: "#666",
+                        fontWeight: 500,
+                        fontSize: "20px",
+                      }}
                     >
-                      {enableMapPick ? 'إلغاء اختيار الموقع من الخريطة' : 'تفعيل اختيار الموقع على الخريطة'}
-                    </Button>
+                      العنوان التفصيلي
+                    </Typography>
 
-                    {enableMapPick && (
-                      <Box
-                        sx={{
-                          height: '400px',
-                          width: '60%',
-                          borderRadius: '12px',
-                          overflow: 'hidden',
-                          boxShadow: 3,
-                          border: 'none',
-                          display: 'flex',
-                          justifyContent: 'center',
-                          textAlign: 'center',
-                          margin: 'auto',
-                          mt: 4,
-                        }}
+                    <Controller
+                      name="fullAddress"
+                      control={control}
+                      render={({ field }) => (
+                        <StyledTextField
+                          {...field}
+                          fullWidth
+                          placeholder="اكتب العنوان الكامل"
+                          error={!!errors.fullAddress}
+                          helperText={errors.fullAddress?.message}
+                          sx={{ mb: 2 }}
+                        />
+                      )}
+                    />
+                      <Button
+                        variant="outlined"
+                        startIcon={<Map sx={{ marginLeft: "10px" }} />}
+                        fullWidth
+                        sx={{ borderRadius: "12px", py: 1.5 }}
+                        onClick={() => setEnableMapPick((prev) => !prev)}
+                        type="button"
                       >
-                        <MapPicker onLocationSelect={handleLocationSelect} />
+                        {enableMapPick
+                          ? "إلغاء اختيار الموقع من الخريطة"
+                          : "تفعيل اختيار الموقع على الخريطة"}
+                      </Button>
+
+                      {enableMapPick && (
+                        <Box
+                          sx={{
+                            height: "400px",
+                            width: "60%",
+                            borderRadius: "12px",
+                            overflow: "hidden",
+                            boxShadow: 3,
+                            border: "none",
+                            display: "flex",
+                            justifyContent: "center",
+                            textAlign: "center",
+                            margin: "auto",
+                            mt: 4,
+                          }}
+                        >
+                          <MapPicker onLocationSelect={handleLocationSelect} />
+                        </Box>
+                      )}
+
+                      {isGeocodingLoading && (
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            color: "#666",
+                            fontSize: "0.75rem",
+                            mt: 1,
+                            textAlign: "right",
+                          }}
+                        >
+                          جارٍ جلب العنوان...
+                        </Typography>
+                      )}
+                      {geocodingError && (
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            color: "#d32f2f",
+                            fontSize: "0.75rem",
+                            mt: 1,
+                            textAlign: "right",
+                          }}
+                        >
+                          {geocodingError}
+                        </Typography>
+                      )}
+                    </Box>
+
+                 
+                  </Grid>
+
+                  <Divider sx={{ my: 3, borderColor: "#e0e0e0" }} />
+
+                  {/* Location Details */}
+                  <Grid item xs={12} md={12} lg={12} width={"100%"} mt={"20px"}>
+                    <Typography
+                      variant="h6"
+                      sx={{ mb: 3, color: "#6E00FE", fontWeight: 600 }}
+                    >
+                      <LocationOn
+                        sx={{
+                          mr: 1,
+                          verticalAlign: "middle",
+                          ml: "6px",
+                          mt: "-6px",
+                        }}
+                      />
+                      تفاصيل الموقع
+                    </Typography>
+
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        mb: 1,
+                        color: "#666",
+                        fontWeight: 500,
+                        fontSize: "20px",
+                      }}
+                    >
+                      المحافظة
+                    </Typography>
+                    <Controller
+                      name="governorate"
+                      control={control}
+                      render={({ field }) => (
+                        <StyledTextField
+                          {...field}
+                          fullWidth
+                          placeholder="اكتب اسم المحافظة"
+                          error={!!errors.governorate}
+                          helperText={errors.governorate?.message}
+                          sx={{ mb: 2 }}
+                        />
+                      )}
+                    />
+
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        mb: 1,
+                        color: "#666",
+                        fontWeight: 500,
+                        fontSize: "20px",
+                      }}
+                    >
+                      المدينة
+                    </Typography>
+                    <Controller
+                      name="city"
+                      control={control}
+                      render={({ field }) => (
+                        <StyledTextField
+                          {...field}
+                          fullWidth
+                          placeholder="اكتب اسم المدينة"
+                          error={!!errors.city}
+                          helperText={errors.city?.message}
+                          sx={{ mb: 2 }}
+                        />
+                      )}
+                    />
+                  </Grid>
+
+                  <Divider sx={{ my: 3, borderColor: "#e0e0e0" }} />
+
+                  {/* Contact Information */}
+                  <Grid item xs={12} md={6} width={"100%"}>
+                    <Typography
+                      variant="h6"
+                      sx={{ mb: 3, color: "#6E00FE", fontWeight: 600 }}
+                    >
+                      <Person
+                        sx={{
+                          mr: 1,
+                          verticalAlign: "middle",
+                          ml: "6px",
+                          mt: "-6px",
+                        }}
+                      />
+                      معلومات التواصل
+                    </Typography>
+                    <Box sx={{ display: "flex", gap: "10px" }}>
+                      <Box width={"100%"}>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            mb: 1,
+                            color: "#666",
+                            fontWeight: 500,
+                            fontSize: "20px",
+                          }}
+                        >
+                          رقم الهاتف
+                        </Typography>
+                        <Controller
+                          name="phone"
+                          control={control}
+                          render={({ field }) => (
+                            <StyledTextField
+                              {...field}
+                              fullWidth
+                              placeholder="أدخل رقم الهاتف"
+                              error={!!errors.phone}
+                              helperText={errors.phone?.message}
+                              InputProps={{
+                                startAdornment: (
+                                  <InputAdornment position="start">
+                                    <Phone />
+                                  </InputAdornment>
+                                ),
+                              }}
+                              sx={{ mb: 2 }}
+                            />
+                          )}
+                        />
                       </Box>
-                    )}
+                      <Box width={"100%"}>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            mb: 1,
+                            color: "#666",
+                            fontWeight: 500,
+                            fontSize: "20px",
+                          }}
+                        >
+                          اسم المستخدم
+                        </Typography>
+                        <Controller
+                          name="username"
+                          control={control}
+                          render={({ field }) => (
+                            <StyledTextField
+                              {...field}
+                              fullWidth
+                              placeholder="أدخل اسم المستخدم"
+                              error={!!errors.username}
+                              helperText={errors.username?.message}
+                              sx={{ mb: 2 }}
+                            />
+                          )}
+                        />
+                      </Box>
+                    </Box>
+                  </Grid>
 
-                    {isGeocodingLoading && (
-                      <Typography
-                        variant="body2"
+                  <Divider sx={{ my: 3, borderColor: "#e0e0e0" }} />
+
+                  {/* Ad Details */}
+                  <Grid item xs={12} md={6} width={"100%"}>
+                    <Typography
+                      variant="h6"
+                      sx={{ mb: 3, color: "#6E00FE", fontWeight: 600 }}
+                    >
+                      <Visibility
                         sx={{
-                          color: '#666',
-                          fontSize: '0.75rem',
-                          mt: 1,
-                          textAlign: 'right'
+                          mr: 1,
+                          verticalAlign: "middle",
+                          ml: "6px",
+                          mt: "-6px",
                         }}
-                      >
-                        جارٍ جلب العنوان...
-                      </Typography>
-                    )}
-                    {geocodingError && (
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          color: '#d32f2f',
-                          fontSize: '0.75rem',
-                          mt: 1,
-                          textAlign: 'right'
-                        }}
-                      >
-                        {geocodingError}
-                      </Typography>
-                    )}
-                  </Box>
-
-                  <Typography variant="body2" sx={{ mb: 1, color: '#666', fontWeight: 500, fontSize: '20px' }}>
-                    العنوان التفصيلي
-                  </Typography>
-                  <Controller
-                    name="fullAddress"
-                    control={control}
-                    render={({ field }) => (
-                      <StyledTextField
-                        {...field}
-                        fullWidth
-                        placeholder="اكتب العنوان الكامل"
-                        error={!!errors.fullAddress}
-                        helperText={errors.fullAddress?.message}
-                        sx={{ mb: 2 }}
                       />
-                    )}
-                  />
-                </Box>
+                      تفاصيل الإعلان
+                    </Typography>
 
-                <Divider sx={{ my: 3, borderColor: '#e0e0e0' }} />
-
-                {/* Location Details */}
-                <Box width={'100%'} mt={'20px'}>
-                  <Typography variant="h6" sx={{ mb: 3, color: '#6E00FE', fontWeight: 600 }}>
-                    <LocationOn sx={{ mr: 1, verticalAlign: 'middle', ml: '6px', mt: '-6px' }} />
-                    تفاصيل الموقع
-                  </Typography>
-
-                  <Typography variant="body2" sx={{ mb: 1, color: '#666', fontWeight: 500, fontSize: '20px' }}>
-                    المحافظة
-                  </Typography>
-                  <Controller
-                    name="governorate"
-                    control={control}
-                    render={({ field }) => (
-                      <StyledTextField
-                        {...field}
-                        fullWidth
-                        placeholder="اكتب اسم المحافظة"
-                        error={!!errors.governorate}
-                        helperText={errors.governorate?.message}
-                        sx={{ mb: 2 }}
-                      />
-                    )}
-                  />
-
-                  <Typography variant="body2" sx={{ mb: 1, color: '#666', fontWeight: 500, fontSize: '20px' }}>
-                    المدينة
-                  </Typography>
-                  <Controller
-                    name="city"
-                    control={control}
-                    render={({ field }) => (
-                      <StyledTextField
-                        {...field}
-                        fullWidth
-                        placeholder="اكتب اسم المدينة"
-                        error={!!errors.city}
-                        helperText={errors.city?.message}
-                        sx={{ mb: 2 }}
-                      />
-                    )}
-                  />
-                </Box>
-
-                <Divider sx={{ my: 3, borderColor: '#e0e0e0' }} />
-
-                {/* Contact Information */}
-                <Box width={'100%'}>
-                  <Typography variant="h6" sx={{ mb: 3, color: '#6E00FE', fontWeight: 600 }}>
-                    <Person sx={{ mr: 1, verticalAlign: 'middle', ml: '6px', mt: '-6px' }} />
-                    معلومات التواصل
-                  </Typography>
-                  <Box sx={{ display: 'flex', gap: '10px' }}>
-                    <Box width={'100%'}>
-                      <Typography variant="body2" sx={{ mb: 1, color: '#666', fontWeight: 500, fontSize: '20px' }}>
-                        رقم الهاتف
-                      </Typography>
-                      <Controller
-                        name="phone"
-                        control={control}
-                        render={({ field }) => (
-                          <StyledTextField
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        mb: 1,
+                        color: "#666",
+                        fontWeight: 500,
+                        fontSize: "20px",
+                      }}
+                    >
+                      نوع الإعلان
+                    </Typography>
+                    <Controller
+                      name="adType"
+                      control={control}
+                      render={({ field }) => (
+                        <StyledFormControl fullWidth sx={{ mb: 2 }}>
+                          <Select
                             {...field}
-                            fullWidth
-                            placeholder="أدخل رقم الهاتف"
-                            error={!!errors.phone}
-                            helperText={errors.phone?.message}
-                            InputProps={{
-                              startAdornment: (
-                                <InputAdornment position="start">
-                                  <Phone />
-                                </InputAdornment>
-                              ),
+                            displayEmpty
+                            error={!!errors.adType}
+                            renderValue={(selected) => {
+                              if (!selected) {
+                                return (
+                                  <span style={{ color: "#999" }}>
+                                    اختر نوع الإعلان
+                                  </span>
+                                );
+                              }
+                              return selected;
                             }}
-                            sx={{ mb: 2 }}
-                          />
-                        )}
-                      />
-                    </Box>
-                    <Box width={'100%'}>
-                      <Typography variant="body2" sx={{ mb: 1, color: '#666', fontWeight: 500, fontSize: '20px' }}>
-                        اسم المستخدم
-                      </Typography>
-                      <Controller
-                        name="username"
-                        control={control}
-                        render={({ field }) => (
-                          <StyledTextField
+                          >
+                            {adTypes.map((type) => (
+                              <MenuItem key={type} value={type}>
+                                {type}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                          {errors.adType && (
+                            <FormHelperText>
+                              {errors.adType.message}
+                            </FormHelperText>
+                          )}
+                        </StyledFormControl>
+                      )}
+                    />
+
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        mb: 1,
+                        color: "#666",
+                        fontWeight: 500,
+                        fontSize: "20px",
+                      }}
+                    >
+                      حالة الإعلان
+                    </Typography>
+                    <Controller
+                      name="adStatus"
+                      control={control}
+                      render={({ field }) => (
+                        <StyledFormControl fullWidth sx={{ mb: 2 }}>
+                          <Select
                             {...field}
-                            fullWidth
-                            placeholder="أدخل اسم المستخدم"
-                            error={!!errors.username}
-                            helperText={errors.username?.message}
-                            sx={{ mb: 2 }}
-                          />
-                        )}
-                      />
-                    </Box>
-                  </Box>
-                </Box>
+                            displayEmpty
+                            error={!!errors.adStatus}
+                            renderValue={(selected) => {
+                              if (!selected) {
+                                return (
+                                  <span style={{ color: "#999" }}>
+                                    اختر حالة الإعلان
+                                  </span>
+                                );
+                              }
+                              return selected;
+                            }}
+                          >
+                            {adStatuses.map((status) => (
+                              <MenuItem key={status} value={status}>
+                                {status}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                          {errors.adStatus && (
+                            <FormHelperText>
+                              {errors.adStatus.message}
+                            </FormHelperText>
+                          )}
+                        </StyledFormControl>
+                      )}
+                    />
 
-                <Divider sx={{ my: 3, borderColor: '#e0e0e0' }} />
-
-                {/* Ad Details */}
-                <Box width={'100%'}>
-                  <Typography variant="h6" sx={{ mb: 3, color: '#6E00FE', fontWeight: 600 }}>
-                    <Visibility sx={{ mr: 1, verticalAlign: 'middle', ml: '6px', mt: '-6px' }} />
-                    تفاصيل الإعلان
-                  </Typography>
-
-                  <Typography variant="body2" sx={{ mb: 1, color: '#666', fontWeight: 500, fontSize: '20px' }}>
-                    نوع الإعلان
-                  </Typography>
-                  <Controller
-                    name="adType"
-                    control={control}
-                    render={({ field }) => (
-                      <StyledFormControl fullWidth sx={{ mb: 2 }}>
-                        <Select
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        mb: 1,
+                        color: "#666",
+                        fontWeight: 500,
+                        fontSize: "20px",
+                      }}
+                    >
+                      الوصف
+                    </Typography>
+                    <Controller
+                      name="description"
+                      control={control}
+                      render={({ field }) => (
+                        <StyledTextField
                           {...field}
-                          displayEmpty
-                          error={!!errors.adType}
-                          renderValue={(selected) => {
-                            if (!selected) {
-                              return <span style={{ color: '#999' }}>اختر نوع الإعلان</span>;
-                            }
-                            return selected;
+                          fullWidth
+                          placeholder="اكتب وصف مفصل للعقار"
+                          multiline
+                          rows={4}
+                          error={!!errors.description}
+                          helperText={errors.description?.message}
+                          sx={{ mb: 2 }}
+                        />
+                      )}
+                    />
+                  </Grid>
+
+                  <Divider sx={{ my: 3, borderColor: "#e0e0e0" }} />
+
+                  {/* Activation Settings */}
+                  <Grid item xs={12} md={6} width={"100%"}>
+                    <Typography
+                      variant="h6"
+                      sx={{ mb: 3, color: "#6E00FE", fontWeight: 600 }}
+                    >
+                      <Visibility
+                        sx={{
+                          mr: 1,
+                          verticalAlign: "middle",
+                          ml: "6px",
+                          mt: "-6px",
+                        }}
+                      />
+                      إعدادات التفعيل
+                    </Typography>
+
+                    <Controller
+                      name="adsActivation"
+                      control={control}
+                      render={({ field }) => (
+                        <FormControlLabel
+                          control={
+                            <Switch
+                              {...field}
+                              checked={field.value}
+                              onChange={(e) => field.onChange(e.target.checked)}
+                            />
+                          }
+                          label="تفعيل الإعلان"
+                          sx={{ mb: 2 }}
+                        />
+                      )}
+                    />
+
+                    {adsActivation && (
+                      <>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            mb: 1,
+                            color: "#666",
+                            fontWeight: 500,
+                            fontSize: "20px",
                           }}
                         >
-                          {adTypes.map((type) => (
-                            <MenuItem key={type} value={type}>{type}</MenuItem>
-                          ))}
-                        </Select>
-                        {errors.adType && (
-                          <FormHelperText>{errors.adType.message}</FormHelperText>
-                        )}
-                      </StyledFormControl>
+                          عدد أيام التفعيل
+                        </Typography>
+                        <Controller
+                          name="activationDays"
+                          control={control}
+                          render={({ field }) => (
+                            <StyledTextField
+                              {...field}
+                              fullWidth
+                              placeholder="أدخل عدد الأيام"
+                              type="number"
+                              error={!!errors.activationDays}
+                              helperText={errors.activationDays?.message}
+                              sx={{ mb: 2 }}
+                            />
+                          )}
+                        />
+                      </>
                     )}
-                  />
+                  </Grid>
+                </Container>
+              </CardContent>
+            </StyledCard>
+          </Box>
 
-                  <Typography variant="body2" sx={{ mb: 1, color: '#666', fontWeight: 500, fontSize: '20px' }}>
-                    حالة الإعلان
-                  </Typography>
-                  <Controller
-                    name="adStatus"
-                    control={control}
-                    render={({ field }) => (
-                      <StyledFormControl fullWidth sx={{ mb: 2 }}>
-                        <Select
-                          {...field}
-                          displayEmpty
-                          error={!!errors.adStatus}
-                          renderValue={(selected) => {
-                            if (!selected) {
-                              return <span style={{ color: '#999' }}>اختر حالة الإعلان</span>;
-                            }
-                            return selected;
-                          }}
-                        >
-                          {adStatuses.map((status) => (
-                            <MenuItem key={status} value={status}>{status}</MenuItem>
-                          ))}
-                        </Select>
-                        {errors.adStatus && (
-                          <FormHelperText>{errors.adStatus.message}</FormHelperText>
-                        )}
-                      </StyledFormControl>
-                    )}
-                  />
+          <Snackbar
+            open={showSuccess}
+            autoHideDuration={6000}
+            onClose={() => setShowSuccess(false)}
+          >
+            <Alert
+              onClose={() => setShowSuccess(false)}
+              severity="success"
+              sx={{ width: "100%" }}
+            >
+              تم {isEditMode ? "تحديث" : "إضافة"} الإعلان بنجاح!
+            </Alert>
+          </Snackbar>
+        </Container>
+      </Box>
 
-                  <Typography variant="body2" sx={{ mb: 1, color: '#666', fontWeight: 500, fontSize: '20px' }}>
-                    الوصف
-                  </Typography>
-                  <Controller
-                    name="description"
-                    control={control}
-                    render={({ field }) => (
-                      <StyledTextField
-                        {...field}
-                        fullWidth
-                        placeholder="اكتب وصف مفصل للعقار"
-                        multiline
-                        rows={4}
-                        error={!!errors.description}
-                        helperText={errors.description?.message}
-                        sx={{ mb: 2 }}
-                      />
-                    )}
-                  />
-                </Box>
+      <AdPackagesClient
+        selectedPackageId={selectedPackage}
+        setSelectedPackageId={setSelectedPackage}
+        onReceiptImageChange={setReceiptImage}
+      />
+      <PaymentMethods />
 
-                <Divider sx={{ my: 3, borderColor: '#e0e0e0' }} />
-
-                {/* Activation Settings */}
-                <Box width={'100%'}>
-                  
-                </Box>
-                
-                {/* Submit Buttons */}
-                <Box sx={{ mt: 4, display: 'flex', gap: 2, justifyContent: 'center', mb: '16px' }}>
-                  <Button
-                    type="submit"
-                    variant="contained"
-                    size="large"
-                    onClick={() => console.log('🔘 Submit button clicked')}
-                    sx={{
-                      borderRadius: '12px',
-                      px: 4,
-                      py: 1.5,
-                      fontSize: '1.1rem',
-                      fontWeight: 600,
-                      backgroundColor: '#6E00FE',
-                      '&:hover': {
-                        backgroundColor: '#5a00d4',
-                      },
-                    }}
-                  >
-                    {isEditMode ? 'تحديث الإعلان' : 'أضف الإعلان'}
-                  </Button>
-
-                  <Button
-                    type="button"
-                    variant="outlined"
-                    size="large"
-                    onClick={handleReset}
-                    sx={{
-                      borderRadius: '12px',
-                      px: 4,
-                      py: 1.5,
-                      fontSize: '1.1rem',
-                      fontWeight: 600,
-                      borderColor: '#6E00FE',
-                      color: '#6E00FE',
-                      '&:hover': {
-                        borderColor: '#5a00d4',
-                        backgroundColor: 'rgba(110, 0, 254, 0.04)',
-                      },
-                    }}
-                  >
-                    إعادة تعيين
-                  </Button>
-                </Box>
-                
-                {submitError && (
-                  <Alert severity="error" sx={{ mt: 2 }}>{submitError}</Alert>
-                )}
-                
-              </Container>
-              
-            </CardContent>
-            
-          </StyledCard>
-          
-        </Box>
-
-        <Snackbar
-          open={showSuccess}
-          autoHideDuration={6000}
-          onClose={() => setShowSuccess(false)}
+      <Box
+        sx={{
+          mt: 4,
+          display: "flex",
+          gap: 2,
+          justifyContent: "center",
+          mb: "16px",
+        }}
+      >
+        <Button
+          type="submit"
+          variant="contained"
+          size="large"
+          onClick={handleSubmit(onSubmit)}
+          sx={{
+            borderRadius: "12px",
+            px: 4,
+            py: 1.5,
+            fontSize: "1.1rem",
+            fontWeight: 600,
+            backgroundColor: "#6E00FE",
+            "&:hover": {
+              backgroundColor: "#5a00d4",
+            },
+          }}
         >
-          <Alert onClose={() => setShowSuccess(false)} severity="success" sx={{ width: '100%' }}>
-            تم {isEditMode ? 'تحديث' : 'إضافة'} الإعلان بنجاح!
-          </Alert>
-        </Snackbar>
-    
-          
-      </Container>
-      
-    </Box>
-       <AdPackagesClient
-          selectedPackageId={selectedPackage}
-          setSelectedPackageId={setSelectedPackage}
-          onReceiptImageChange={setReceiptImage}
-        />
-   </>
+          {isEditMode ? "تحديث الإعلان" : "أضف الإعلان"}
+        </Button>
+
+        <Button
+          type="button"
+          variant="outlined"
+          size="large"
+          onClick={handleReset}
+          sx={{
+            borderRadius: "12px",
+            px: 4,
+            py: 1.5,
+            fontSize: "1.1rem",
+            fontWeight: 600,
+            borderColor: "#6E00FE",
+            color: "#6E00FE",
+            "&:hover": {
+              borderColor: "#5a00d4",
+              backgroundColor: "rgba(110, 0, 254, 0.04)",
+            },
+          }}
+        >
+          إعادة تعيين
+        </Button>
+      </Box>
+      {submitError && (
+        <Alert severity="error" sx={{ mt: 2, mx: "auto", maxWidth: "lg" }}>
+          {submitError}
+        </Alert>
+      )}
+    </>
   );
 };
 

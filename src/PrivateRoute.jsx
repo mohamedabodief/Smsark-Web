@@ -14,6 +14,7 @@ export default function PrivateRoute() {
   if (uid) {
     return <Outlet />;
   } else {
+    // alert("يجب تسجيل الدخول أولاً");
     return <Navigate to="/login" replace />;
   }
 }

@@ -62,7 +62,6 @@ function ChatBox() {
               msg.receiver_id === currentUser.uid)
         );
       setMessages(allMsgs);
-      console.log("Messages:", allMsgs);
     });
 
     return () => unsubscribe();
@@ -127,7 +126,7 @@ function ChatBox() {
 
   return (
     <>
-    <Box sx={{ mt: "100px", mx: "auto", maxWidth: 600 }} dir="rtl">
+    <Box sx={{ mt: "100px", mx: "auto", maxWidth: 600 ,mb:10}} dir="rtl">
       <Button onClick={() => navigate(-1)} sx={{ mb: 2 }}>
         🔙 عودة للمحادثات
       </Button>

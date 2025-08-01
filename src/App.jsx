@@ -179,9 +179,9 @@ function App() {
       <AuthSync />
       <Layout>
         <Routes>
-          <Route path="/" element={<Home />} />
+<Route path="/" element={<Navigate to="/home" replace />} />
           <Route path="/home" element={<Home />} />
-          <Route path="/" element={<Navigate to="/login" replace />} />
+          {/* <Route path="/" element={<Navigate to="/login" replace />} /> */}
           <Route path="/home" element={<Home />} />
           {/* صفحات الدخول والتسجيل */}
           <Route path="login" element={<LoginRegister />} />

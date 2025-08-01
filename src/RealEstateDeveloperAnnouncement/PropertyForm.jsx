@@ -1,4 +1,3 @@
-//scr/RealEstateDeveloperAnnouncement/PropertyForm.jsx
 import React, { useState } from "react";
 import {
   TextField,
@@ -30,12 +29,16 @@ import BathtubIcon from "@mui/icons-material/Bathtub";
 import KingBedIcon from "@mui/icons-material/KingBed";
 import SquareFootIcon from "@mui/icons-material/SquareFoot";
 import DeleteIcon from "@mui/icons-material/Delete";
+import MapIcon from "@mui/icons-material/Map";
 import { useDispatch, useSelector } from "react-redux";
 import { setFormData, resetForm } from "./propertySlice";
-import { governorates, propertyFeatures } from "./constants";
+import { propertyFeatures } from "./constants";
 import { storage, auth } from "../FireBase/firebaseConfig";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import AdPackages from '../../packages/packagesDevAndFin';
+import AdPackages from "../../packages/packagesDevAndFin";
+import MapPicker from "../LocationComponents/MapPicker";
+import useReverseGeocoding from "../LocationComponents/useReverseGeocoding";
+import PaymentMethods from "./PaymentMethods";
 
 const StyledButton = styled(Button)({
   backgroundColor: "#6E00FE",
@@ -68,12 +71,27 @@ const PropertyForm = ({
   const dispatch = useDispatch();
   const formData = useSelector((state) => state.property.formData);
   const [errors, setErrors] = useState({});
-  const [images, setImages] = useState([]); // حالة محلية لتخزين ملفات الصور
+  const [images, setImages] = useState([]);
   const [previewUrls, setPreviewUrls] = useState([]);
-  const [uploading, setUploading] = useState(false); // حالة محلية للتحقق من الرفع
-  const [uploadError, setUploadError] = useState(null); // حالة محلية للأخطاء في الرفع
-  const [selectedPackage, setSelectedPackage] = useState(initialData?.adPackage || null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState(null);
+  const [selectedPackage, setSelectedPackage] = useState(
+    initialData?.adPackage || null
+  );
   const [receiptImage, setReceiptImage] = useState(null);
+  const [coordinates, setCoordinates] = useState(null);
+  const [enableMapPick, setEnableMapPick] = useState(false);
+  const [isGeocodingLoading, setIsGeocodingLoading] = useState(false);
+  const [geocodingError, setGeocodingError] = useState("");
+  const prevAddressFromMap = React.useRef(null);
+
+  // التمرير إلى الأعلى عند تحميل الصفحة
+  React.useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  // استخدام useReverseGeocoding للحصول على العنوان
+  const addressFromMap = useReverseGeocoding(coordinates);
 
   // التحقق من حالة تسجيل الدخول عند تحميل المكون
   React.useEffect(() => {
@@ -95,7 +113,7 @@ const PropertyForm = ({
         setFormData({
           developer_name: initialData.developer_name || "",
           phone: initialData.phone || "",
-          location: initialData.location || { city: "", governorate: "" },
+          location: initialData.location || { city: "", governorate: "", detailedAddress: "" },
           description: initialData.description || "",
           price_start_from: initialData.price_start_from?.toString() || "",
           price_end_to: initialData.price_end_to?.toString() || "",
@@ -214,6 +232,54 @@ const PropertyForm = ({
     }
   };
 
+  // التعامل مع اختيار الموقع من MapPicker
+  const handleLocationSelect = (location) => {
+    console.log("[DEBUG] إحداثيات الموقع المختار:", location);
+    if (location && location.lat && location.lng) {
+      setCoordinates(location);
+    }
+  };
+
+  // تحديث حقول العنوان بناءً على addressFromMap
+  React.useEffect(() => {
+    console.log("[DEBUG] addressFromMap in PropertyForm:", addressFromMap);
+    if (!enableMapPick || !addressFromMap || !coordinates) return;
+    if (
+      prevAddressFromMap.current &&
+      prevAddressFromMap.current.full === addressFromMap.full &&
+      prevAddressFromMap.current.city === addressFromMap.city &&
+      prevAddressFromMap.current.governorate === addressFromMap.governorate
+    )
+      return;
+
+    setIsGeocodingLoading(true);
+    const timer = setTimeout(() => {
+      if (
+        addressFromMap.full &&
+        addressFromMap.city &&
+        addressFromMap.governorate
+      ) {
+        dispatch(
+          setFormData({
+            ...formData,
+            location: {
+              ...formData.location,
+              city: addressFromMap.city,
+              governorate: addressFromMap.governorate,
+              detailedAddress: addressFromMap.full,
+            },
+          })
+        );
+        setGeocodingError("");
+      } else {
+        setGeocodingError("فشل جلب العنوان من الخريطة. حاولي مرة أخرى.");
+      }
+      setIsGeocodingLoading(false);
+      prevAddressFromMap.current = addressFromMap;
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [addressFromMap, enableMapPick, coordinates, dispatch, formData]);
+
   const validateForm = () => {
     const newErrors = {};
     if (
@@ -281,10 +347,6 @@ const PropertyForm = ({
     if (!formData.paymentMethod || formData.paymentMethod.trim() === "") {
       newErrors.paymentMethod = "يرجى تحديد طريقة الدفع";
     }
-    // deliveryTerms ليس مطلوبًا دائمًا، لكن لو كان ظاهرًا في النموذج أضف تحققًا عليه
-    // if (!formData.deliveryTerms || formData.deliveryTerms.trim() === "") {
-    //   newErrors.deliveryTerms = "يرجى إدخال شروط التسليم";
-    // }
     // تحقق من الصور
     if (!isEditMode && images.length === 0) {
       newErrors.images = "يجب إضافة صورة واحدة على الأقل";
@@ -381,6 +443,7 @@ const PropertyForm = ({
         }
 
         // إرسال البيانات مع روابط الصور
+        console.log("Submitting form with receiptImage:", receiptImage);
         await onSubmit({
           ...formData,
           price_start_from: Number(formData.price_start_from),
@@ -392,8 +455,8 @@ const PropertyForm = ({
           furnished: formData.furnished === "نعم",
           negotiable: formData.negotiable === "نعم",
           adPackage: selectedPackage,
-          images: imageUrls, // تمرير روابط الصور بدلاً من الملفات
-          receiptImage: receiptImage, // أضف هذا
+          images: imageUrls,
+          receiptImage: receiptImage,
         });
 
         if (!isEditMode) {
@@ -413,7 +476,7 @@ const PropertyForm = ({
   return (
     <Paper
       elevation={3}
-      sx={{ p: 3, borderRadius: 2, width: "90%", mx: "auto" }}
+      sx={{ p: 3, borderRadius: 2, mt: 5, maxWidth: 1200, mx: "auto" }}
     >
       <Typography
         variant="h4"
@@ -426,7 +489,7 @@ const PropertyForm = ({
       </Typography>
 
       {isEditMode && (
-        <Alert dir='rtl' severity="info" sx={{ mb: 3 }}>
+        <Alert dir="rtl" severity="info" sx={{ mb: 0 }}>
           أنت في وضع التعديل. يمكنك تعديل البيانات واضغط "حفظ التعديلات" لتطبيق
           التغييرات.
         </Alert>
@@ -450,7 +513,7 @@ const PropertyForm = ({
             </Typography>
           </Grid>
 
-          <Grid size={{ xs: 6, md: 6, lg: 4 }}>
+          <Grid size={{ xs: 6, md: 6, lg: 6 }}>
             <TextField
               fullWidth
               label="اسم المطور"
@@ -463,7 +526,7 @@ const PropertyForm = ({
             />
           </Grid>
 
-          <Grid size={{ xs: 6, md: 6, lg: 4 }}>
+          <Grid size={{ xs: 6, md: 6, lg: 6 }}>
             <TextField
               fullWidth
               label="رقم الهاتف"
@@ -483,30 +546,27 @@ const PropertyForm = ({
             />
           </Grid>
 
-          <Grid size={{ xs: 6, md: 6, lg: 4 }}>
-            <FormControl fullWidth error={!!errors.governorate}>
-              <InputLabel>المحافظة</InputLabel>
-              <Select
-                name="governorate"
-                value={formData.location.governorate}
-                onChange={handleLocationChange}
-                disabled={loading || loadingEditData}
-              >
-                {governorates.map((gov) => (
-                  <MenuItem key={gov} value={gov}>
-                    {gov}
-                  </MenuItem>
-                ))}
-              </Select>
-              {errors.governorate && (
-                <Typography variant="caption" color="error">
-                  {errors.governorate}
-                </Typography>
-              )}
-            </FormControl>
+          <Grid size={{ xs: 12, md: 6, lg: 6 }}>
+            <TextField
+              fullWidth
+              label="المحافظة"
+              name="governorate"
+              value={formData.location.governorate}
+              onChange={handleLocationChange}
+              error={!!errors.governorate}
+              helperText={errors.governorate}
+              disabled={loading}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <LocationOnIcon />
+                  </InputAdornment>
+                ),
+              }}
+            />
           </Grid>
 
-          <Grid size={{ xs: 6, md: 6, lg: 4 }}>
+          <Grid size={{ xs: 12, md: 6, lg: 6 }}>
             <TextField
               fullWidth
               label="المدينة"
@@ -524,6 +584,89 @@ const PropertyForm = ({
                 ),
               }}
             />
+          </Grid>
+
+          <Grid size={{ xs: 12, md: 12, lg: 12 }}>
+            <TextField
+              fullWidth
+              label="العنوان بالتفصيل"
+              name="detailedAddress"
+              value={formData.location.detailedAddress || addressFromMap.full || ""}
+              InputProps={{
+                readOnly: true,
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <LocationOnIcon />
+                  </InputAdornment>
+                ),
+              }}
+              disabled={loading || !enableMapPick}
+              helperText={enableMapPick ? "تم جلب العنوان من الخريطة" : ""}
+            />
+          </Grid>
+
+          <Grid size={{ xs: 12, md: 6, lg: 12 }}>
+            <Button
+              variant="outlined"
+              startIcon={<MapIcon sx={{ marginLeft: "10px" }} />}
+              fullWidth
+              sx={{ borderRadius: "12px", py: 1.5, mb: 2 }}
+              onClick={() => setEnableMapPick((prev) => !prev)}
+              type="button"
+              disabled={loading}
+            >
+              {enableMapPick
+                ? "إلغاء اختيار الموقع من الخريطة"
+                : "تفعيل اختيار الموقع على الخريطة"}
+            </Button>
+
+            {enableMapPick && (
+              <Box
+                sx={{
+                  height: "400px",
+                  width: "60%",
+                  borderRadius: "12px",
+                  overflow: "hidden",
+                  boxShadow: 3,
+                  border: "none",
+                  display: "flex",
+                  justifyContent: "center",
+                  textAlign: "center",
+                  margin: "auto",
+                  mt: 4,
+                  mb: 4,
+                }}
+              >
+                <MapPicker onLocationSelect={handleLocationSelect} />
+              </Box>
+            )}
+
+            {isGeocodingLoading && (
+              <Typography
+                variant="body2"
+                sx={{
+                  color: "#666",
+                  fontSize: "0.75rem",
+                  mt: 1,
+                  textAlign: "right",
+                }}
+              >
+                جارٍ جلب العنوان...
+              </Typography>
+            )}
+            {geocodingError && (
+              <Typography
+                variant="body2"
+                sx={{
+                  color: "#d32f2f",
+                  fontSize: "0.75rem",
+                  mt: 1,
+                  textAlign: "right",
+                }}
+              >
+                {geocodingError}
+              </Typography>
+            )}
           </Grid>
 
           <Divider sx={{ mb: 2, mt: 2 }} />
@@ -748,7 +891,7 @@ const PropertyForm = ({
               صور العقار (حد أقصى 4 صور)
             </Typography>
             <input
-              accept="image/jpeg,image/"
+              accept="image/jpeg,image/png"
               type="file"
               multiple
               onChange={handleImageChange}
@@ -990,22 +1133,55 @@ const PropertyForm = ({
           )}
 
           {/* أضف مكون الباقات أسفل الفورم */}
-          
-          <AdPackages selectedPackageId={selectedPackage} setSelectedPackageId={setSelectedPackage} onReceiptImageChange={setReceiptImage} />
-
-          <Grid size={{ xs: 12, md: 6, lg: 4 }}>
+          <Box
+            sx={{ display: "flex", justifyContent: "center", width: "100%" }}
+          >
+            <AdPackages
+              selectedPackageId={selectedPackage}
+              setSelectedPackageId={setSelectedPackage}
+              onReceiptImageChange={setReceiptImage}
+            />
+          </Box>
+          <PaymentMethods />
+          <Box
+            sx={{
+              mt: 4,
+              display: "flex",
+              gap: 2,
+              justifyContent: "center",
+              mb: "16px",
+            }}
+          >
+          </Box>
+        </Grid>
+        <Box sx={{ width: "100%", display: "flex", justifyContent: "center" }}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <StyledButton
               type="submit"
               variant="contained"
               size="large"
               fullWidth
-              disabled={loading ||loadingEditData || uploading}
-              sx={{ mt: 2, py: 2, fontSize: "1.3rem", display: 'flex', justifyContent: 'center', alignItems: 'center', borderRadius: '15px' }}
+              disabled={loading || loadingEditData || uploading}
+              sx={{
+                py: 2,
+                fontSize: "1.3rem",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                borderRadius: "15px",
+              }}
             >
               {uploading ? (
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    gap: 1,
+                  }}
+                >
                   <CircularProgress size={20} color="inherit" />
-                  جاري إضافة العقار ...{" "}
+                  جاري إضافة العقار ...
                 </Box>
               ) : loading ? (
                 isEditMode ? (
@@ -1045,7 +1221,7 @@ const PropertyForm = ({
               </Button>
             </Grid>
           )}
-        </Grid>
+        </Box>
       </form>
     </Paper>
   );

@@ -171,7 +171,22 @@ function DetailsForDevelopment() {
       </Box>
     );
   }
-
+ const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: clientAds?.title || 'إعلان عقاري',
+          text: clientAds?.description || 'تحقق من هذا الإعلان العقاري!',
+          url: window.location.href,
+        });
+        console.log('[DEBUG] تمت المشاركة بنجاح');
+      } catch (error) {
+        console.error('[DEBUG] حدث خطأ أثناء المشاركة:', error);
+      }
+    } else {
+      alert('المتصفح لا يدعم خاصية المشاركة.');
+    }
+  };
   if (!clientAds) {
     return (
       <Box
@@ -282,7 +297,7 @@ function DetailsForDevelopment() {
           >
             مفضلة
           </Button>
-          <Button
+          {/* <Button
             variant="outlined"
             startIcon={<OutlinedFlagIcon />}
             sx={{
@@ -298,7 +313,7 @@ function DetailsForDevelopment() {
             }}
           >
             إبلاغ
-          </Button>
+          </Button> */}
           <Button
             variant="outlined"
             startIcon={<ShareOutlinedIcon />}
@@ -313,6 +328,7 @@ function DetailsForDevelopment() {
                 marginRight: 0,
               },
             }}
+            onClick={ handleShare }
           >
             مشاركة
           </Button>
@@ -845,6 +861,7 @@ function DetailsForDevelopment() {
                     },
                     fontWeight: "bold",
                   }}
+                  onClick={() => window.open(`tel:${clientAds.phone}`, '_self')}
                 >
                   اتصل الآن
                 </Button>
@@ -865,6 +882,11 @@ function DetailsForDevelopment() {
                     fontSize: "16px",
                     fontWeight: "bold",
                   }}
+                  onClick={() => {
+                const message = 'مرحبًا، أريد الاستفسار عن الإعلان الخاص بك';
+                const url = `https://wa.me/${clientAds.phone}?text=${encodeURIComponent(message)}`;
+                window.open(url, '_blank');
+              }}
                 >
                   واتساب
                 </Button>
@@ -887,14 +909,7 @@ function DetailsForDevelopment() {
             </CardContent>
           </Paper>
         </Grid>
-
-
-
-
       </Grid>
-
-
-
       {/* زر التعديل للمالك */}
       {isOwner && (
         <Box
@@ -929,16 +944,7 @@ function DetailsForDevelopment() {
           </Button>
         </Box>
       )}
-
-
-
-
-
-
     </Container>
-
-
-
   );
 }
 
