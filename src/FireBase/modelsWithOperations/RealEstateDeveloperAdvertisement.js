@@ -927,12 +927,42 @@ class RealEstateDeveloperAdvertisement {
       where('reviewStatus', '==', status)
     );
     return onSnapshot(q, (snap) => {
-      const ads = snap.docs.map(
-        (d) => new RealEstateDeveloperAdvertisement({
-          ...d.data(),
-          id: d.id
-        })
-      );
+      const ads = snap.docs.map((d) => {
+        const data = d.data();
+        return {
+          id: d.id,
+          developer_name: data.developer_name,
+          description: data.description,
+          project_types: data.project_types,
+          images: data.images || [],
+          phone: data.phone,
+          location: data.location,
+          price_start_from: data.price_start_from,
+          price_end_to: data.price_end_to,
+          userId: data.userId,
+          type_of_user: data.type_of_user,
+          rooms: data.rooms,
+          bathrooms: data.bathrooms,
+          floor: data.floor,
+          furnished: data.furnished,
+          status: data.status,
+          paymentMethod: data.paymentMethod,
+          negotiable: data.negotiable,
+          deliveryTerms: data.deliveryTerms,
+          features: data.features || [],
+          area: data.area,
+          ads: data.ads !== undefined ? data.ads : false,
+          adExpiryTime: data.adExpiryTime,
+          receipt_image: data.receipt_image,
+          reviewStatus: data.reviewStatus || 'pending',
+          reviewed_by: data.reviewed_by,
+          review_note: data.review_note,
+          adPackage: data.adPackage,
+          adPackageName: data.adPackageName,
+          adPackagePrice: data.adPackagePrice,
+          adPackageDuration: data.adPackageDuration,
+        };
+      });
       callback(ads);
     });
   }
@@ -950,12 +980,42 @@ class RealEstateDeveloperAdvertisement {
       where('ads', '==', true)
     );
     return onSnapshot(q, (snap) => {
-      const ads = snap.docs.map(
-        (d) => new RealEstateDeveloperAdvertisement({
-          ...d.data(),
-          id: d.id
-        })
-      );
+      const ads = snap.docs.map((d) => {
+        const data = d.data();
+        return {
+          id: d.id,
+          developer_name: data.developer_name,
+          description: data.description,
+          project_types: data.project_types,
+          images: data.images || [],
+          phone: data.phone,
+          location: data.location,
+          price_start_from: data.price_start_from,
+          price_end_to: data.price_end_to,
+          userId: data.userId,
+          type_of_user: data.type_of_user,
+          rooms: data.rooms,
+          bathrooms: data.bathrooms,
+          floor: data.floor,
+          furnished: data.furnished,
+          status: data.status,
+          paymentMethod: data.paymentMethod,
+          negotiable: data.negotiable,
+          deliveryTerms: data.deliveryTerms,
+          features: data.features || [],
+          area: data.area,
+          ads: data.ads !== undefined ? data.ads : false,
+          adExpiryTime: data.adExpiryTime,
+          receipt_image: data.receipt_image,
+          reviewStatus: data.reviewStatus || 'pending',
+          reviewed_by: data.reviewed_by,
+          review_note: data.review_note,
+          adPackage: data.adPackage,
+          adPackageName: data.adPackageName,
+          adPackagePrice: data.adPackagePrice,
+          adPackageDuration: data.adPackageDuration,
+        };
+      });
       callback(ads);
     });
   }
@@ -969,12 +1029,94 @@ class RealEstateDeveloperAdvertisement {
     }
     const q = collection(db, 'RealEstateDeveloperAdvertisements');
     return onSnapshot(q, (snap) => {
-      const ads = snap.docs.map(
-        (d) => new RealEstateDeveloperAdvertisement({
-          ...d.data(),
-          id: d.id
-        })
-      );
+      const ads = snap.docs.map((d) => {
+        const data = d.data();
+        return {
+          id: d.id,
+          developer_name: data.developer_name,
+          description: data.description,
+          project_types: data.project_types,
+          images: data.images || [],
+          phone: data.phone,
+          location: data.location,
+          price_start_from: data.price_start_from,
+          price_end_to: data.price_end_to,
+          userId: data.userId,
+          type_of_user: data.type_of_user,
+          rooms: data.rooms,
+          bathrooms: data.bathrooms,
+          floor: data.floor,
+          furnished: data.furnished,
+          status: data.status,
+          paymentMethod: data.paymentMethod,
+          negotiable: data.negotiable,
+          deliveryTerms: data.deliveryTerms,
+          features: data.features || [],
+          area: data.area,
+          ads: data.ads !== undefined ? data.ads : false,
+          adExpiryTime: data.adExpiryTime,
+          receipt_image: data.receipt_image,
+          reviewStatus: data.reviewStatus || 'pending',
+          reviewed_by: data.reviewed_by,
+          review_note: data.review_note,
+          adPackage: data.adPackage,
+          adPackageName: data.adPackageName,
+          adPackagePrice: data.adPackagePrice,
+          adPackageDuration: data.adPackageDuration,
+        };
+      });
+      callback(ads);
+    });
+  }
+
+  // 🔁 استماع لحظي لإعلانات مستخدم معين
+  static subscribeByUserId(userId, callback) {
+    // التحقق من حالة تسجيل الدخول
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      throw new Error("يجب تسجيل الدخول أولاً قبل الاشتراك في العقارات");
+    }
+    const q = query(
+      collection(db, 'RealEstateDeveloperAdvertisements'),
+      where('userId', '==', userId)
+    );
+    return onSnapshot(q, (snap) => {
+      const ads = snap.docs.map((d) => {
+        const data = d.data();
+        return {
+          id: d.id,
+          developer_name: data.developer_name,
+          description: data.description,
+          project_types: data.project_types,
+          images: data.images || [],
+          phone: data.phone,
+          location: data.location,
+          price_start_from: data.price_start_from,
+          price_end_to: data.price_end_to,
+          userId: data.userId,
+          type_of_user: data.type_of_user,
+          rooms: data.rooms,
+          bathrooms: data.bathrooms,
+          floor: data.floor,
+          furnished: data.furnished,
+          status: data.status,
+          paymentMethod: data.paymentMethod,
+          negotiable: data.negotiable,
+          deliveryTerms: data.deliveryTerms,
+          features: data.features || [],
+          area: data.area,
+          ads: data.ads !== undefined ? data.ads : false,
+          adExpiryTime: data.adExpiryTime,
+          receipt_image: data.receipt_image,
+          reviewStatus: data.reviewStatus || 'pending',
+          reviewed_by: data.reviewed_by,
+          review_note: data.review_note,
+          adPackage: data.adPackage,
+          adPackageName: data.adPackageName,
+          adPackagePrice: data.adPackagePrice,
+          adPackageDuration: data.adPackageDuration,
+        };
+      });
       callback(ads);
     });
   }

@@ -204,9 +204,29 @@ const ModernRealEstateForm = () => {
   const [geocodingError, setGeocodingError] = useState(''); // أضف هذا
   const navigate = useNavigate();
   const location = useLocation();
-  const editData = location.state?.adData || null;
-  const isEditMode = location.state?.editMode || false;
+  
+  // Debug the location state
+  console.log('[DEBUG] Location state received:', location.state);
+  console.log('[DEBUG] Location state adData:', location.state?.adData);
+  console.log('[DEBUG] Location state editMode:', location.state?.editMode);
+  
+  // Extract data with proper destructuring
+  const { adData, editMode } = location.state || {};
+  const editData = adData || null;
+  const isEditMode = editMode || false;
+  
+  // Extract and store the advertisement ID separately
+  const adId = adData?.id || editData?.id;
+  
+  // Debug the extracted data
+  console.log('[DEBUG] Extracted editData:', editData);
+  console.log('[DEBUG] Extracted isEditMode:', isEditMode);
+  console.log('[DEBUG] Extracted adId:', adId);
+  console.log('[DEBUG] EditData ID:', editData?.id);
+  console.log('[DEBUG] adData ID:', adData?.id);
+  
   const prevAddressFromMap = useRef(null);
+  const userId = auth.currentUser?.uid;
 
   // استخدام useReverseGeocoding للحصول على العنوان
   const addressFromMap = useReverseGeocoding(coordinates);
@@ -214,39 +234,86 @@ const ModernRealEstateForm = () => {
   const {
     control,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isValid },
     reset,
     watch,
     setValue
   } = useForm({
     resolver: yupResolver(validationSchema),
     defaultValues: {
-      title: editData?.title || '',
-      propertyType: editData?.type || '',
-      price: editData?.price || '',
-      area: editData?.area || '',
-      buildingDate: editData?.date_of_building || '',
-      fullAddress: editData?.address || '',
-      city: editData?.city || '',
-      governorate: editData?.governorate || '',
-      phone: editData?.phone || '',
-      username: editData?.user_name || '',
-      adType: editData?.ad_type || '',
-      adStatus: editData?.ad_status || '',
-      description: editData?.description || '',
-      adsActivation: editData?.ads || false,
-      activationDays: editData?.adExpiryTime ? Math.round((editData.adExpiryTime - Date.now()) / (24 * 60 * 60 * 1000)) : 7,
+      title: '',
+      propertyType: '',
+      price: '',
+      area: '',
+      buildingDate: '',
+      fullAddress: '',
+      city: '',
+      governorate: '',
+      phone: '',
+      username: '',
+      adType: '',
+      adStatus: '',
+      description: '',
+      adsActivation: false,
+      activationDays: 7,
     }
   });
 
+  // Reset form when editData changes (for edit mode)
+  useEffect(() => {
+    console.log('[DEBUG] useEffect triggered - isEditMode:', isEditMode, 'editData:', editData);
+    console.log('[DEBUG] adId in useEffect:', adId);
+    
+    if (isEditMode && editData) {
+      console.log('[DEBUG] Resetting form with edit data');
+      console.log('[DEBUG] EditData ID in reset:', editData.id);
+      console.log('[DEBUG] adId in reset:', adId);
+      console.log('[DEBUG] EditData title:', editData.title);
+      
+      // Validate that we have a valid ID
+      if (!adId) {
+        console.error('[DEBUG] No valid ID found for edit mode');
+        console.error('[DEBUG] adData:', adData);
+        console.error('[DEBUG] editData:', editData);
+        return;
+      }
+      
+      reset({
+        title: editData.title || '',
+        propertyType: editData.type || '',
+        price: editData.price || '',
+        area: editData.area || '',
+        buildingDate: editData.date_of_building || '',
+        fullAddress: editData.address || '',
+        city: editData.city || '',
+        governorate: editData.governorate || '',
+        phone: editData.phone || '',
+        username: editData.user_name || '',
+        adType: editData.ad_type || '',
+        adStatus: editData.ad_status || '',
+        description: editData.description || '',
+        adsActivation: editData.ads || false,
+        activationDays: editData.adExpiryTime ? Math.round((editData.adExpiryTime - Date.now()) / (24 * 60 * 60 * 1000)) : 7,
+      });
+    }
+  }, [isEditMode, editData, adId, reset]);
+
   // عند التعديل، عرّض الصور القديمة للمعاينة
   useEffect(() => {
-    if (isEditMode && editData && Array.isArray(editData.images)) {
-      setImages([]);
-      setImageError('');
+    if (isEditMode && editData) {
+      console.log('[DEBUG] Initializing edit mode with data:', editData);
+      console.log('[DEBUG] Advertisement ID:', editData.id);
+      
+      // Set coordinates if available
       if (editData.location?.lat && editData.location?.lng) {
         setCoordinates({ lat: editData.location.lat, lng: editData.location.lng });
       }
+      
+      // Clear any existing image errors
+      setImageError('');
+      
+      // Note: We don't set images here as they are handled by the form's default values
+      // and the user can add new images if needed
     }
   }, [isEditMode, editData]);
 
@@ -256,6 +323,8 @@ const ModernRealEstateForm = () => {
       setSelectedPackage(editData.adPackage);
     }
   }, [isEditMode, editData]);
+
+
 
   // تحديث حقول العنوان بناءً على addressFromMap
   useEffect(() => {
@@ -330,8 +399,16 @@ const ModernRealEstateForm = () => {
 
   const handleImageUpload = (event) => {
     const files = Array.from(event.target.files);
-    if (!isEditMode && (images.length + files.length > 4)) {
-      setImageError('يمكنك إضافة 4 صور كحد أقصى');
+    
+    // For edit mode, allow up to 4 total images (existing + new)
+    // For new mode, allow up to 4 new images
+    const maxImages = 4;
+    const currentImageCount = isEditMode ? 
+      (editData?.images?.length || 0) + images.length : 
+      images.length;
+    
+    if (currentImageCount + files.length > maxImages) {
+      setImageError(`يمكنك إضافة ${maxImages} صور كحد أقصى`);
       return;
     }
 
@@ -352,7 +429,15 @@ const ModernRealEstateForm = () => {
   };
 
   const onSubmit = async (data) => {
+    console.log('[DEBUG] onSubmit called');
+    console.log('[DEBUG] isEditMode:', isEditMode);
+    console.log('[DEBUG] adId:', adId);
+    console.log('[DEBUG] editData:', editData);
+    console.log('[DEBUG] form data:', data);
+    
     setSubmitError('');
+    
+    // Validate images for new advertisements
     if (!isEditMode && images.length === 0) {
       setImageError('الصور مطلوبة، أضف 4 صور على الأكثر');
       return;
@@ -364,41 +449,93 @@ const ModernRealEstateForm = () => {
       return;
     }
 
+    // Additional validation for edit mode
+    if (isEditMode) {
+      if (!editData) {
+        setSubmitError('بيانات الإعلان غير متوفرة للتعديل.');
+        return;
+      }
+      
+      if (!adId) {
+        console.error('[DEBUG] adId is missing:', adId);
+        setSubmitError('معرف الإعلان غير صالح للتعديل.');
+        return;
+      }
+    }
+
     // لوجات التشخيص
     console.log('Selected package:', selectedPackage);
     console.log('Receipt image before save:', receiptImage);
+    console.log('[DEBUG] Edit mode:', isEditMode);
+    console.log('[DEBUG] Edit data:', editData);
 
     try {
-      if (isEditMode && (!editData.id || editData.id === undefined || editData.id === null)) {
+      if (isEditMode && (!adId || adId === undefined || adId === null)) {
+        console.error('[DEBUG] Missing advertisement ID for edit mode');
+        console.error('[DEBUG] adId value:', adId);
         setSubmitError('لا يمكن تعديل إعلان بدون معرف (ID).');
         return;
       }
 
       if (isEditMode && editData) {
-        const ad = new ClientAdvertisement({ ...editData, id: editData.id });
+        console.log('[DEBUG] Starting advertisement update with ID:', adId);
+        console.log('[DEBUG] Using adId:', adId);
+        
+        const adObject = { ...editData, id: adId };
+        console.log('[DEBUG] Ad object being passed to ClientAdvertisement constructor:', JSON.stringify(adObject, null, 2));
+        
+        const ad = new ClientAdvertisement(adObject);
         const oldImages = Array.isArray(editData.images) ? editData.images : [];
         const newImageFiles = images;
-        let finalImageUrls = oldImages;
         let filesToUpload = null;
+        
         if (newImageFiles.length > 0) {
           filesToUpload = newImageFiles;
         }
 
-        await ad.update({
-          ...editData,
-          ...data,
+        // Prepare update data
+        const updateData = {
+          title: data.title,
           type: data.propertyType,
+          price: data.price,
+          area: data.area,
+          date_of_building: data.buildingDate,
+          location: {
+            lat: coordinates?.lat || editData.location?.lat || 0,
+            lng: coordinates?.lng || editData.location?.lng || 0,
+          },
+          address: data.fullAddress,
+          city: data.city,
+          governorate: data.governorate,
+          phone: data.phone,
           user_name: data.username,
           ad_type: data.adType,
           ad_status: data.adStatus,
-          images: oldImages,
+          description: data.description,
+          ads: data.adsActivation,
+          adExpiryTime: data.adsActivation
+            ? Date.now() + data.activationDays * 24 * 60 * 60 * 1000
+            : null,
           adPackage: selectedPackage ? Number(selectedPackage) : null,
-        }, filesToUpload);
-        console.log('[DEBUG] تم تحديث الإعلان:', editData.id);
+          // Reset status to pending after edit
+          reviewStatus: 'pending',
+          reviewed_by: null,
+          review_note: null,
+        };
+
+        console.log('[DEBUG] Update data:', updateData);
+        console.log('[DEBUG] Files to upload:', filesToUpload);
+        console.log('[DEBUG] Ad instance ID:', ad.id);
+
+        await ad.update(updateData, filesToUpload);
+        console.log('[DEBUG] Advertisement updated successfully:', adId);
+        
         setShowSuccess(true);
         handleReset();
+        
+        // Navigate to details page or back to dashboard
         setTimeout(() => {
-          navigate(`/detailsForClient/${ad.id}`);
+          navigate(`/detailsForClient/${adId}`);
         }, 1500);
       } else {
         const adData = {
@@ -457,6 +594,7 @@ const ModernRealEstateForm = () => {
   const adStatuses = ['تحت العرض', 'تحت التفاوض', 'منتهي'];
 
   return (
+     <>
     <Box
       className="modern-form-container"
       sx={{
@@ -498,14 +636,21 @@ const ModernRealEstateForm = () => {
           أضف تفاصيل عقارك وابدأ في التواصل مع العملاء المحتملين
         </Typography>
 
-        <Box component="form" onSubmit={handleSubmit(onSubmit)} width={'100%'} sx={{ direction: 'rtl' }}>
+        <Box 
+          component="form" 
+          onSubmit={(e) => {
+            handleSubmit(onSubmit)(e);
+          }} 
+          width={'100%'} 
+          sx={{ direction: 'rtl' }}
+        >
           <StyledCard>
             <CardContent>
-              <Container maxWidth='lg' sx={{ display: 'flex' }}>
+              <Container maxWidth='lg' sx={{ display: 'flex', flexDirection: 'column' }}>
                 {/* <Grid container spacing={2} dir="rtl"> */}
 
                 {/* Basic Information */}
-                <Grid item width={'100%'}>
+                <Box width={'100%'}>
                   <Typography variant="h6" sx={{ mb: 3, color: '#6E00FE', fontWeight: 600 }}>
                     <Home sx={{ mr: 1, verticalAlign: 'middle', ml: '6px', mt: '-6px' }} />
                     المعلومات الأساسية
@@ -626,12 +771,12 @@ const ModernRealEstateForm = () => {
                       />
                     )}
                   />
-                </Grid>
+                </Box>
 
                 <Divider sx={{ my: 3, borderColor: '#e0e0e0' }} />
 
                 {/* Images and Location */}
-                <Grid item xs={12} md={12} lg={12} width={'100%'}>
+                <Box width={'100%'}>
                   <Typography variant="h6" sx={{ mb: 3, color: '#6E00FE', fontWeight: 600 }}>
                     <Image sx={{ mr: 1, verticalAlign: 'middle', ml: '6px', mt: '-6px' }} />
                     الصور والموقع
@@ -640,6 +785,24 @@ const ModernRealEstateForm = () => {
                   <Typography variant="body2" sx={{ color: '#666', fontSize: '20px', mt: '40px' }}>
                     الصور مطلوبة (1-4 صور) *
                   </Typography>
+                  
+                  {isEditMode && (
+                    <Typography 
+                      variant="body2" 
+                      sx={{ 
+                        mb: 2, 
+                        color: '#666', 
+                        fontSize: '0.9rem',
+                        backgroundColor: '#f5f5f5',
+                        padding: '8px 12px',
+                        borderRadius: '6px',
+                        border: '1px solid #e0e0e0',
+                        mt: 2
+                      }}
+                    >
+                      💡 في وضع التعديل: الصور الموجودة ستبقى كما هي. يمكنك إضافة صور جديدة أو الاحتفاظ بالصور الحالية.
+                    </Typography>
+                  )}
                   <Box sx={{ display: 'flex', gap: '10px', marginBottom: '30px', flexDirection: 'column' }}>
                     <Button
                       variant="outlined"
@@ -684,11 +847,37 @@ const ModernRealEstateForm = () => {
                     )}
 
                     <ImagePreviewBox>
+                      {/* Show existing images in edit mode */}
+                      {isEditMode && editData?.images && editData.images.map((imageUrl, index) => (
+                        <ImagePreview key={`existing-${index}`}>
+                          <img
+                            src={imageUrl}
+                            alt={`صورة موجودة ${index + 1}`}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          />
+                          <Box
+                            sx={{
+                              position: 'absolute',
+                              top: 4,
+                              right: 4,
+                              backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                              color: 'white',
+                              padding: '2px 6px',
+                              borderRadius: '4px',
+                              fontSize: '0.7rem',
+                            }}
+                          >
+                            موجودة
+                          </Box>
+                        </ImagePreview>
+                      ))}
+                      
+                      {/* Show new uploaded images */}
                       {images.map((image, index) => (
-                        <ImagePreview key={index}>
+                        <ImagePreview key={`new-${index}`}>
                           <img
                             src={URL.createObjectURL(image)}
-                            alt={`صورة ${index + 1}`}
+                            alt={`صورة جديدة ${index + 1}`}
                             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                           />
                           <IconButton
@@ -704,21 +893,43 @@ const ModernRealEstateForm = () => {
                           >
                             <Delete fontSize="small" />
                           </IconButton>
+                          <Box
+                            sx={{
+                              position: 'absolute',
+                              top: 4,
+                              left: 4,
+                              backgroundColor: 'rgba(76, 175, 80, 0.9)',
+                              color: 'white',
+                              padding: '2px 6px',
+                              borderRadius: '4px',
+                              fontSize: '0.7rem',
+                            }}
+                          >
+                            جديدة
+                          </Box>
                         </ImagePreview>
                       ))}
                     </ImagePreviewBox>
 
-                    {images.length > 0 && (
+                    {(images.length > 0 || (isEditMode && editData?.images?.length > 0)) && (
                       <Typography
                         variant="body2"
                         sx={{
                           mt: 1,
-                          color: images.length >= 1 ? '#2e7d32' : '#d32f2f',
+                          color: '#2e7d32',
                           fontSize: '0.75rem',
                           textAlign: 'right'
                         }}
                       >
-                        تم رفع {images.length} من 4 صور
+                        {isEditMode ? (
+                          <>
+                            الصور الموجودة: {editData?.images?.length || 0} | 
+                            الصور الجديدة: {images.length} | 
+                            المجموع: {(editData?.images?.length || 0) + images.length} من 4
+                          </>
+                        ) : (
+                          `تم رفع ${images.length} من 4 صور`
+                        )}
                       </Typography>
                     )}
 
@@ -800,12 +1011,12 @@ const ModernRealEstateForm = () => {
                       />
                     )}
                   />
-                </Grid>
+                </Box>
 
                 <Divider sx={{ my: 3, borderColor: '#e0e0e0' }} />
 
                 {/* Location Details */}
-                <Grid item xs={12} md={12} lg={12} width={'100%'} mt={'20px'}>
+                <Box width={'100%'} mt={'20px'}>
                   <Typography variant="h6" sx={{ mb: 3, color: '#6E00FE', fontWeight: 600 }}>
                     <LocationOn sx={{ mr: 1, verticalAlign: 'middle', ml: '6px', mt: '-6px' }} />
                     تفاصيل الموقع
@@ -846,12 +1057,12 @@ const ModernRealEstateForm = () => {
                       />
                     )}
                   />
-                </Grid>
+                </Box>
 
                 <Divider sx={{ my: 3, borderColor: '#e0e0e0' }} />
 
                 {/* Contact Information */}
-                <Grid item xs={12} md={6} width={'100%'}>
+                <Box width={'100%'}>
                   <Typography variant="h6" sx={{ mb: 3, color: '#6E00FE', fontWeight: 600 }}>
                     <Person sx={{ mr: 1, verticalAlign: 'middle', ml: '6px', mt: '-6px' }} />
                     معلومات التواصل
@@ -903,12 +1114,12 @@ const ModernRealEstateForm = () => {
                       />
                     </Box>
                   </Box>
-                </Grid>
+                </Box>
 
                 <Divider sx={{ my: 3, borderColor: '#e0e0e0' }} />
 
                 {/* Ad Details */}
-                <Grid item xs={12} md={6} width={'100%'}>
+                <Box width={'100%'}>
                   <Typography variant="h6" sx={{ mb: 3, color: '#6E00FE', fontWeight: 600 }}>
                     <Visibility sx={{ mr: 1, verticalAlign: 'middle', ml: '6px', mt: '-6px' }} />
                     تفاصيل الإعلان
@@ -993,106 +1204,70 @@ const ModernRealEstateForm = () => {
                       />
                     )}
                   />
-                </Grid>
+                </Box>
 
                 <Divider sx={{ my: 3, borderColor: '#e0e0e0' }} />
 
                 {/* Activation Settings */}
-
-
-
-                {/* تعديل شغل الباكدجات  بداية  */}
-
-
-
-                {/* نهاية تعديل شغل الباكدجات */}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                {/* <Grid >
-
-
-
+                <Box width={'100%'}>
                   
-                  <Box width="100%" display="flex" justifyContent="center" my={4}>
-                    <Box display="flex" justifyContent="center" flexDirection={{ xs: 'column', md: 'row' }} width={{ xs: '100%', md: '80%', lg: '40%' }}>
+                </Box>
+                
+                {/* Submit Buttons */}
+                <Box sx={{ mt: 4, display: 'flex', gap: 2, justifyContent: 'center', mb: '16px' }}>
+                  <Button
+                    type="submit"
+                    variant="contained"
+                    size="large"
+                    onClick={() => console.log('🔘 Submit button clicked')}
+                    sx={{
+                      borderRadius: '12px',
+                      px: 4,
+                      py: 1.5,
+                      fontSize: '1.1rem',
+                      fontWeight: 600,
+                      backgroundColor: '#6E00FE',
+                      '&:hover': {
+                        backgroundColor: '#5a00d4',
+                      },
+                    }}
+                  >
+                    {isEditMode ? 'تحديث الإعلان' : 'أضف الإعلان'}
+                  </Button>
 
-                  </Box>
-                  </Box>
-
-
-                 
-
-                </Grid> */}
-                {/* </Grid> */}
+                  <Button
+                    type="button"
+                    variant="outlined"
+                    size="large"
+                    onClick={handleReset}
+                    sx={{
+                      borderRadius: '12px',
+                      px: 4,
+                      py: 1.5,
+                      fontSize: '1.1rem',
+                      fontWeight: 600,
+                      borderColor: '#6E00FE',
+                      color: '#6E00FE',
+                      '&:hover': {
+                        borderColor: '#5a00d4',
+                        backgroundColor: 'rgba(110, 0, 254, 0.04)',
+                      },
+                    }}
+                  >
+                    إعادة تعيين
+                  </Button>
+                </Box>
+                
+                {submitError && (
+                  <Alert severity="error" sx={{ mt: 2 }}>{submitError}</Alert>
+                )}
+                
               </Container>
+              
             </CardContent>
+            
           </StyledCard>
-
-
-
-          <Box sx={{ mt: 4, display: 'flex', gap: 2, justifyContent: 'center' }}>
-            <Button
-              type="submit"
-              variant="contained"
-              size="large"
-              sx={{
-                borderRadius: '12px',
-                px: 4,
-                py: 1.5,
-                fontSize: '1.1rem',
-                fontWeight: 600,
-                backgroundColor: '#6E00FE',
-                '&:hover': {
-                  backgroundColor: '#5a00d4',
-                },
-              }}
-            >
-              {isEditMode ? 'تحديث الإعلان' : 'أضف الإعلان'}
-            </Button>
-
-            <Button
-              type="button"
-              variant="outlined"
-              size="large"
-              onClick={handleReset}
-              sx={{
-                borderRadius: '12px',
-                px: 4,
-                py: 1.5,
-                fontSize: '1.1rem',
-                fontWeight: 600,
-                borderColor: '#6E00FE',
-                color: '#6E00FE',
-                '&:hover': {
-                  borderColor: '#5a00d4',
-                  backgroundColor: 'rgba(110, 0, 254, 0.04)',
-                },
-              }}
-            >
-              إعادة تعيين
-            </Button>
-          </Box>
-          {submitError && (
-            <Alert severity="error" sx={{ mt: 2 }}>{submitError}</Alert>
-          )}
+          
         </Box>
 
         <Snackbar
@@ -1104,25 +1279,17 @@ const ModernRealEstateForm = () => {
             تم {isEditMode ? 'تحديث' : 'إضافة'} الإعلان بنجاح!
           </Alert>
         </Snackbar>
+    
+          
       </Container>
-      <Box
-        // display="flex"
-        flexDirection={{ xs: 'column', md: 'row', lg: 'row' }}
-        gap={2}
-        // justifyContent="center"
-        // alignItems="stretch"
-        width="40%"
-        my={3}
-      >
-        <AdPackagesClient
+      
+    </Box>
+       <AdPackagesClient
           selectedPackageId={selectedPackage}
           setSelectedPackageId={setSelectedPackage}
           onReceiptImageChange={setReceiptImage}
         />
-      </Box>
-      
-    </Box>
-
+   </>
   );
 };
 

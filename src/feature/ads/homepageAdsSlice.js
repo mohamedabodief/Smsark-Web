@@ -43,7 +43,60 @@ export const fetchHomepageAdsByStatus = createAsyncThunk(
     }
   }
 );
+// Subscribe to real-time updates for all ads
+export const subscribeToAllHomepageAds = createAsyncThunk(
+  "homepageAds/subscribeToAll",
+  async (_, { dispatch }) => {
+    try {
+      const unsubscribe = HomepageAdvertisement.subscribeToAll((ads) => {
+        console.log("HomepageAds subscription callback - received ads:", ads.length);
+        dispatch(setAllHomepageAds(ads));
+      });
+      return unsubscribe;
+    } catch (error) {
+      console.error("Error subscribing to all homepage ads:", error);
+      throw error;
+    }
+  }
+);
 
+// Subscribe to real-time updates for user's ads
+export const subscribeToUserHomepageAds = createAsyncThunk(
+  "homepageAds/subscribeToUser",
+  async (userId, { dispatch }) => {
+    try {
+      console.log("subscribeToUserHomepageAds - Setting up subscription for user:", userId);
+      const unsubscribe = HomepageAdvertisement.subscribeByUserId(userId, (ads) => {
+        console.log("subscribeToUserHomepageAds - Received ads for user:", userId, "Count:", ads.length);
+        dispatch(setUserHomepageAds(ads));
+      });
+      
+      // Store the subscription for cleanup
+      dispatch(setSubscription({ type: 'byUser', unsubscribe }));
+      
+      return unsubscribe;
+    } catch (error) {
+      console.error("Error subscribing to user homepage ads:", error);
+      throw error;
+    }
+  }
+);
+
+// Subscribe to real-time updates for ads by status
+export const subscribeToHomepageAdsByStatus = createAsyncThunk(
+  "homepageAds/subscribeByStatus",
+  async (status, { dispatch }) => {
+    try {
+      const unsubscribe = HomepageAdvertisement.subscribeByStatus(status, (ads) => {
+        dispatch(setHomepageAdsByStatus(ads));
+      });
+      return unsubscribe;
+    } catch (error) {
+      console.error("Error subscribing to homepage ads by status:", error);
+      throw error;
+    }
+  }
+);
 // Create new homepage ad
 export const createHomepageAd = createAsyncThunk(
   "homepageAds/create",
@@ -99,11 +152,10 @@ export const approveHomepageAd = createAsyncThunk(
   "homepageAds/approve",
   async (id, { rejectWithValue }) => {
     try {
-      const ad = new HomepageAdvertisement({ id });
-      await ad.approve();
-      // Fetch the updated ad to get the reviewed_by info
-      const updatedAd = await HomepageAdvertisement.getById(id);
-      return updatedAd; // Now returns the full plain object
+      const ad = await HomepageAdvertisement.getById(id);
+      const updatedAd = new HomepageAdvertisement(ad);
+      await updatedAd.approve();
+      return updatedAd;
     } catch (error) {
       console.error("Error approving homepage ad in thunk:", error);
       return rejectWithValue(error.message || "Failed to approve homepage ad.");
@@ -116,11 +168,10 @@ export const rejectHomepageAd = createAsyncThunk(
   "homepageAds/reject",
   async ({ id, reason }, { rejectWithValue }) => {
     try {
-      const ad = new HomepageAdvertisement({ id });
-      await ad.reject(reason);
-      // Fetch the updated ad to get the reviewed_by info
-      const updatedAd = await HomepageAdvertisement.getById(id);
-      return updatedAd; // Now returns the full plain object
+      const ad = await HomepageAdvertisement.getById(id);
+      const updatedAd = new HomepageAdvertisement(ad);
+      await updatedAd.reject(reason);
+      return updatedAd;
     } catch (error) {
       console.error("Error rejecting homepage ad in thunk:", error);
       return rejectWithValue(error.message || "Failed to reject homepage ad.");
@@ -135,7 +186,6 @@ export const returnHomepageAdToPending = createAsyncThunk(
     try {
       const ad = new HomepageAdvertisement({ id });
       await ad.returnToPending();
-      // Fetch the updated ad to get the reviewed_by info
       const updatedAd = await HomepageAdvertisement.getById(id);
       return updatedAd; // Now returns the full plain object
     } catch (error) {
@@ -152,7 +202,6 @@ export const activateHomepageAd = createAsyncThunk(
     try {
       const ad = new HomepageAdvertisement({ id });
       await ad.adsActivation(days);
-      // Fetch the updated ad to get the correct adExpiryTime
       const updatedAd = await HomepageAdvertisement.getById(id);
       return updatedAd; // Now returns the full plain object
     } catch (error) {
@@ -169,9 +218,8 @@ export const deactivateHomepageAd = createAsyncThunk(
     try {
       const ad = new HomepageAdvertisement({ id });
       await ad.removeAds();
-      // Fetch the updated ad to get the correct ads and adExpiryTime
       const updatedAd = await HomepageAdvertisement.getById(id);
-      return updatedAd; // Now returns the full plain object
+      return updatedAd;
     } catch (error) {
       console.error("Error deactivating homepage ad in thunk:", error);
       return rejectWithValue(error.message || "Failed to deactivate homepage ad.");
@@ -187,12 +235,41 @@ const homepageAdsSlice = createSlice({
     byStatus: [],
     loading: false,
     error: null,
+    subscriptions: {
+      all: null,
+      byUser: null,
+      byStatus: null,
+  },
   },
   reducers: {
     clearHomepageAds: (state) => {
       state.all = [];
       state.byUser = [];
       state.byStatus = [];
+    },
+    setAllHomepageAds: (state, action) => {
+      console.log("setAllHomepageAds reducer - setting ads:", action.payload.length);
+      state.all = action.payload;
+    },
+    setUserHomepageAds: (state, action) => {
+      state.byUser = action.payload;
+    },
+    setHomepageAdsByStatus: (state, action) => {
+      state.byStatus = action.payload;
+    },
+    setSubscription: (state, action) => {
+      const { type, unsubscribe } = action.payload;
+      state.subscriptions[type] = unsubscribe;
+    },
+    clearSubscriptions: (state) => {
+      Object.values(state.subscriptions).forEach(unsubscribe => {
+        if (unsubscribe) unsubscribe();
+      });
+      state.subscriptions = {
+        all: null,
+        byUser: null,
+        byStatus: null,
+      };
     },
   },
   extraReducers: (builder) => {
@@ -241,16 +318,7 @@ const homepageAdsSlice = createSlice({
 
       // Create ad
       .addCase(createHomepageAd.fulfilled, (state, action) => {
-        state.all.push(action.payload);
-        // Add to byUser and byStatus if applicable, assuming payload is the full ad object
-        // You might need to adjust this logic based on how you want these derived states to behave
-        // For example, if byUser should only contain ads by the *currently logged in* user:
-        // if (action.payload.userId === auth.currentUser?.uid) { // Requires auth to be accessible here
-        //   state.byUser.push(action.payload);
-        // }
-        // if (action.payload.reviewStatus === 'pending') {
-        //   state.byStatus.push(action.payload);
-        // }
+        // No manual state update - let onSnapshot handle it
       })
       .addCase(createHomepageAd.rejected, (state, action) => {
         state.error = action.payload || action.error.message;
@@ -258,11 +326,7 @@ const homepageAdsSlice = createSlice({
 
       // Update ad
       .addCase(updateHomepageAd.fulfilled, (state, action) => {
-        const updatedAd = action.payload; // payload is now the full updated plain object
-        const updateAdInArray = (adsArray) => adsArray.map(ad => ad.id === updatedAd.id ? updatedAd : ad);
-        state.all = updateAdInArray(state.all);
-        state.byUser = updateAdInArray(state.byUser);
-        state.byStatus = updateAdInArray(state.byStatus);
+        // No manual state update - let onSnapshot handle it
       })
       .addCase(updateHomepageAd.rejected, (state, action) => {
         state.error = action.payload || action.error.message;
@@ -270,10 +334,7 @@ const homepageAdsSlice = createSlice({
 
       // Delete ad
       .addCase(deleteHomepageAd.fulfilled, (state, action) => {
-        const id = action.payload;
-        state.all = state.all.filter(ad => ad.id !== id);
-        state.byUser = state.byUser.filter(ad => ad.id !== id);
-        state.byStatus = state.byStatus.filter(ad => ad.id !== id);
+        // No manual state update - let onSnapshot handle it
       })
       .addCase(deleteHomepageAd.rejected, (state, action) => {
         state.error = action.payload || action.error.message;
@@ -281,13 +342,7 @@ const homepageAdsSlice = createSlice({
 
       // Approve ad
       .addCase(approveHomepageAd.fulfilled, (state, action) => {
-        const updatedAd = action.payload;
-        const updateAdInArray = (adsArray) => adsArray.map(ad =>
-          ad.id === updatedAd.id ? updatedAd : ad
-        );
-        state.all = updateAdInArray(state.all);
-        state.byUser = updateAdInArray(state.byUser);
-        state.byStatus = updateAdInArray(state.byStatus);
+        // No manual state update - let onSnapshot handle it
       })
       .addCase(approveHomepageAd.rejected, (state, action) => {
         state.error = action.payload || action.error.message;
@@ -295,13 +350,7 @@ const homepageAdsSlice = createSlice({
 
       // Reject ad
       .addCase(rejectHomepageAd.fulfilled, (state, action) => {
-        const updatedAd = action.payload;
-        const updateAdInArray = (adsArray) => adsArray.map(ad =>
-          ad.id === updatedAd.id ? updatedAd : ad
-        );
-        state.all = updateAdInArray(state.all);
-        state.byUser = updateAdInArray(state.byUser);
-        state.byStatus = updateAdInArray(state.byStatus);
+        // No manual state update - let onSnapshot handle it
       })
       .addCase(rejectHomepageAd.rejected, (state, action) => {
         state.error = action.payload || action.error.message;
@@ -309,13 +358,7 @@ const homepageAdsSlice = createSlice({
 
       // Return to pending
       .addCase(returnHomepageAdToPending.fulfilled, (state, action) => {
-        const updatedAd = action.payload;
-        const updateAdInArray = (adsArray) => adsArray.map(ad =>
-          ad.id === updatedAd.id ? updatedAd : ad
-        );
-        state.all = updateAdInArray(state.all);
-        state.byUser = updateAdInArray(state.byUser);
-        state.byStatus = updateAdInArray(state.byStatus);
+        // No manual state update - let onSnapshot handle it
       })
       .addCase(returnHomepageAdToPending.rejected, (state, action) => {
         state.error = action.payload || action.error.message;
@@ -323,13 +366,7 @@ const homepageAdsSlice = createSlice({
 
       // Activate ad
       .addCase(activateHomepageAd.fulfilled, (state, action) => {
-        const updatedAd = action.payload;
-        const updateAdInArray = (adsArray) => adsArray.map(ad =>
-          ad.id === updatedAd.id ? updatedAd : ad
-        );
-        state.all = updateAdInArray(state.all);
-        state.byUser = updateAdInArray(state.byUser);
-        state.byStatus = updateAdInArray(state.byStatus);
+        // No manual state update - let onSnapshot handle it
       })
       .addCase(activateHomepageAd.rejected, (state, action) => {
         state.error = action.payload || action.error.message;
@@ -337,19 +374,29 @@ const homepageAdsSlice = createSlice({
 
       // Deactivate ad
       .addCase(deactivateHomepageAd.fulfilled, (state, action) => {
-        const updatedAd = action.payload;
-        const updateAdInArray = (adsArray) => adsArray.map(ad =>
-          ad.id === updatedAd.id ? updatedAd : ad
-        );
-        state.all = updateAdInArray(state.all);
-        state.byUser = updateAdInArray(state.byUser);
-        state.byStatus = updateAdInArray(state.byStatus);
+        // No manual state update - let onSnapshot handle it
       })
       .addCase(deactivateHomepageAd.rejected, (state, action) => {
+        state.error = action.payload || action.error.message;
+      })
+
+      // Subscribe to all ads
+      .addCase(subscribeToAllHomepageAds.fulfilled, (state, action) => {
+        // Store the unsubscribe function
+        state.subscriptions.all = action.payload;
+      })
+      .addCase(subscribeToAllHomepageAds.rejected, (state, action) => {
         state.error = action.payload || action.error.message;
       });
   },
 });
 
-export const { clearHomepageAds } = homepageAdsSlice.actions;
+export const { 
+  clearHomepageAds, 
+  setAllHomepageAds, 
+  setUserHomepageAds, 
+  setHomepageAdsByStatus,
+  setSubscription,
+  clearSubscriptions
+} = homepageAdsSlice.actions;
 export default homepageAdsSlice.reducer;

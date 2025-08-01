@@ -63,6 +63,7 @@ const PropertyForm = ({
   loading,
   initialData = null,
   isEditMode = false,
+  loadingEditData = false,
 }) => {
   const dispatch = useDispatch();
   const formData = useSelector((state) => state.property.formData);
@@ -425,7 +426,7 @@ const PropertyForm = ({
       </Typography>
 
       {isEditMode && (
-        <Alert severity="info" sx={{ mb: 3 }}>
+        <Alert dir='rtl' severity="info" sx={{ mb: 3 }}>
           أنت في وضع التعديل. يمكنك تعديل البيانات واضغط "حفظ التعديلات" لتطبيق
           التغييرات.
         </Alert>
@@ -458,7 +459,7 @@ const PropertyForm = ({
               onChange={handleChange}
               error={!!errors.developer_name}
               helperText={errors.developer_name}
-              disabled={loading}
+              disabled={loading || loadingEditData}
             />
           </Grid>
 
@@ -471,7 +472,7 @@ const PropertyForm = ({
               onChange={handleChange}
               error={!!errors.phone}
               helperText={errors.phone}
-              disabled={loading}
+              disabled={loading|| loadingEditData}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -489,7 +490,7 @@ const PropertyForm = ({
                 name="governorate"
                 value={formData.location.governorate}
                 onChange={handleLocationChange}
-                disabled={loading}
+                disabled={loading || loadingEditData}
               >
                 {governorates.map((gov) => (
                   <MenuItem key={gov} value={gov}>
@@ -514,7 +515,7 @@ const PropertyForm = ({
               onChange={handleLocationChange}
               error={!!errors.city}
               helperText={errors.city}
-              disabled={loading}
+              disabled={loading || loadingEditData}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -547,7 +548,7 @@ const PropertyForm = ({
               type="number"
               error={!!errors.rooms}
               helperText={errors.rooms}
-              disabled={loading}
+              disabled={loading || loadingEditData}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -568,7 +569,7 @@ const PropertyForm = ({
               type="number"
               error={!!errors.bathrooms}
               helperText={errors.bathrooms}
-              disabled={loading}
+              disabled={loading || loadingEditData}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -589,7 +590,7 @@ const PropertyForm = ({
               type="number"
               error={!!errors.floor}
               helperText={errors.floor}
-              disabled={loading}
+              disabled={loading || loadingEditData}
             />
           </Grid>
 
@@ -603,7 +604,7 @@ const PropertyForm = ({
               type="number"
               error={!!errors.area}
               helperText={errors.area}
-              disabled={loading}
+              disabled={loading || loadingEditData}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -621,7 +622,7 @@ const PropertyForm = ({
               name="deliveryTerms"
               value={formData.deliveryTerms}
               onChange={handleChange}
-              disabled={loading}
+              disabled={loading || loadingEditData}
             />
           </Grid>
 
@@ -711,7 +712,7 @@ const PropertyForm = ({
                   variant={
                     formData.features.includes(feature) ? "filled" : "outlined"
                   }
-                  disabled={loading}
+                  disabled={loading || loadingEditData}
                 />
               ))}
             </Box>
@@ -734,7 +735,7 @@ const PropertyForm = ({
               helperText={errors.description}
               multiline
               rows={4}
-              disabled={loading}
+              disabled={loading || loadingEditData}
             />
           </Grid>
 
@@ -751,7 +752,7 @@ const PropertyForm = ({
               type="file"
               multiple
               onChange={handleImageChange}
-              disabled={loading || uploading}
+              disabled={loading || loadingEditData ||  uploading}
               style={{ marginBottom: "16px" }}
             />
             {errors.images && (
@@ -796,7 +797,7 @@ const PropertyForm = ({
                         "&:hover": { bgcolor: "grey.200" },
                       }}
                       onClick={() => removeImage(index)}
-                      disabled={loading || uploading}
+                      disabled={loading || loadingEditData || uploading}
                     >
                       <DeleteIcon color="error" />
                     </IconButton>
@@ -998,7 +999,7 @@ const PropertyForm = ({
               variant="contained"
               size="large"
               fullWidth
-              disabled={loading || uploading}
+              disabled={loading ||loadingEditData || uploading}
               sx={{ mt: 2, py: 2, fontSize: "1.3rem", display: 'flex', justifyContent: 'center', alignItems: 'center', borderRadius: '15px' }}
             >
               {uploading ? (
@@ -1026,7 +1027,7 @@ const PropertyForm = ({
                 variant="outlined"
                 size="large"
                 fullWidth
-                disabled={loading || uploading}
+                disabled={loading || loadingEditData || uploading}
                 onClick={() => window.history.back()}
                 sx={{
                   mt: 2,

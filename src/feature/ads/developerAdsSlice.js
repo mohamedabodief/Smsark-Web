@@ -40,6 +40,34 @@ const developerAdsSlice = createSlice({
       state.activeByUser = [];
     },
   },
+  setDeveloperAdsByUser: (state, action) => {
+    // Convert class instances to plain objects to ensure id is accessible
+    state.byUser = action.payload.map(ad => ({
+      id: ad.id,
+      title: ad.title,
+      description: ad.description,
+      images: ad.images,
+      phone: ad.phone,
+      userId: ad.userId,
+      ads: ad.ads,
+      adExpiryTime: ad.adExpiryTime,
+      reviewStatus: ad.reviewStatus,
+      reviewed_by: ad.reviewed_by,
+      review_note: ad.review_note,
+      status: ad.status,
+      receipt_image: ad.receipt_image,
+      developer_name: ad.developer_name,
+      price_start_from: ad.price_start_from,
+      price_end_to: ad.price_end_to,
+      location: ad.location,
+      rooms: ad.rooms,
+      bathrooms: ad.bathrooms,
+      floor: ad.floor,
+      furnished: ad.furnished,
+      type_of_user: ad.type_of_user,
+      project_types: ad.project_types,
+    }));
+  },
   extraReducers: (builder) => {
     builder
       .addCase(fetchAllDeveloperAds.pending, (state) => {
@@ -83,6 +111,6 @@ const developerAdsSlice = createSlice({
   },
 });
 
-export const { clearDeveloperAds } = developerAdsSlice.actions;
+export const { clearDeveloperAds ,setDeveloperAdsByUser } = developerAdsSlice.actions;
 
 export default developerAdsSlice.reducer;

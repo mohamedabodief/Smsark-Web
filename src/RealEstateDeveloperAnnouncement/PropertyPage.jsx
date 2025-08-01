@@ -28,15 +28,18 @@ const PropertyPage = () => {
   const location = useLocation();
 
   // التحقق من وجود بيانات التعديل
-  const isEditMode = location.state?.editMode || false;
-  const editData = location.state?.adData || null;
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editData, setEditData] = useState(null);
+  const [loadingEditData, setLoadingEditData] = useState(false);
+
+  // Get URL parameters
+  const urlParams = new URLSearchParams(window.location.search);
+  const editModeParam = urlParams.get('editMode');
+  const adIdParam = urlParams.get('adId');
 
   // طباعة بيانات التعديل للتأكد
-  console.log('Edit mode:', isEditMode);
-  console.log('Edit data:', editData);
-  if (editData) {
-    console.log('Edit data ID:', editData.id);
-  }
+  console.log('Edit mode param:', editModeParam);
+  console.log('Ad ID param:', adIdParam);
 
   // التحقق من حالة تسجيل الدخول عند تحميل الصفحة
   useEffect(() => {
@@ -47,13 +50,41 @@ const PropertyPage = () => {
     } else {
       console.log('User logged in:', currentUser.uid);
     }
+  }, [navigate]);
 
-    // إذا كان في وضع التعديل، تعيين نوع العقار من البيانات
-    if (isEditMode && editData) {
-      const propertyType = editData.project_types?.[0] || "شقق للبيع";
-      setSelectedItem(propertyType);
-    }
-  }, [navigate, isEditMode, editData]);
+  // Fetch ad data for editing
+  useEffect(() => {
+    const fetchEditData = async () => {
+      if (editModeParam === 'true' && adIdParam) {
+        setLoadingEditData(true);
+        setIsEditMode(true);
+        
+        try {
+          console.log('Fetching ad data for ID:', adIdParam);
+          const adData = await RealEstateDeveloperAdvertisement.getById(adIdParam);
+          
+          if (adData) {
+            console.log('Fetched ad data:', adData);
+            setEditData(adData);
+            
+            // Set property type from data
+            const propertyType = adData.project_types?.[0] || "شقق للبيع";
+            setSelectedItem(propertyType);
+          } else {
+            console.error('Ad not found');
+            setError('الإعلان غير موجود');
+          }
+        } catch (error) {
+          console.error('Error fetching ad data:', error);
+          setError('حدث خطأ أثناء تحميل بيانات الإعلان');
+        } finally {
+          setLoadingEditData(false);
+        }
+      }
+    };
+
+    fetchEditData();
+  }, [editModeParam, adIdParam]);
 
   const handleSubmit = async (formData) => {
     // التحقق من حالة تسجيل الدخول قبل الإرسال
@@ -91,6 +122,16 @@ const PropertyPage = () => {
         console.log('Updated data with ID:', updatedData.id);
         const advertisement = new RealEstateDeveloperAdvertisement(updatedData);
         await advertisement.update({ ...updatedData }, newImagesFiles);
+        
+        // Update status to pending for admin review
+        try {
+          await advertisement.returnToPending();
+          console.log('Status updated to pending successfully');
+        } catch (statusError) {
+          console.error('Error updating status to pending:', statusError);
+          // Don't fail the entire operation if status update fails
+        }
+        
         setSuccess(true);
         setTimeout(() => {
           navigate(`/detailsForDevelopment/${editData.id}`);
@@ -186,13 +227,13 @@ const PropertyPage = () => {
             onClose={handleCloseSnackbar}
           >
             {isEditMode ?
-              "تم تحديث العقار بنجاح! سيتم الانتقال لصفحة التفاصيل خلال ثانيتين..." :
+              "تم تحديث العقار بنجاح! سيتم إعادة مراجعته من قبل الإدارة. سيتم الانتقال لصفحة التفاصيل خلال ثانيتين..." :
               "تم حفظ العقار بنجاح! سيتم الانتقال لصفحة التفاصيل خلال ثانيتين..."
             }
           </Alert>
         </Snackbar>
 
-        {loading && (
+        {(loading || loadingEditData) && (
           <Box
             sx={{
               display: "flex",
@@ -202,6 +243,9 @@ const PropertyPage = () => {
             }}
           >
             <CircularProgress color="secondary" />
+            <Typography sx={{ ml: 2, mt: 1 }}>
+              {loadingEditData ? "جاري تحميل بيانات الإعلان..." : "جاري حفظ البيانات..."}
+            </Typography>
           </Box>
         )}
 
@@ -210,6 +254,7 @@ const PropertyPage = () => {
           loading={loading}
           initialData={editData}
           isEditMode={isEditMode}
+          loadingEditData={loadingEditData}
         />
 
         {isEditMode && (

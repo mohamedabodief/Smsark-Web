@@ -16,6 +16,7 @@ import {
     Card,
     CardContent,
     Chip,
+    Popover
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
@@ -36,6 +37,7 @@ import BroadcastOnPersonalIcon from '@mui/icons-material/BroadcastOnPersonal';
 import BroadcastOnHomeIcon from '@mui/icons-material/BroadcastOnHome';
 import PaymentsTwoToneIcon from '@mui/icons-material/PaymentsTwoTone';
 import NotificationsIcon from '@mui/icons-material/Notifications';
+import NotificationList from '../pages/notificationList';
 import CloseIcon from '@mui/icons-material/Close';
 
 import Brightness4Icon from '@mui/icons-material/Brightness4';
@@ -44,7 +46,7 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import { logout } from '../LoginAndRegister/featuresLR/authSlice';
 import SettingsIcon from '@mui/icons-material/Settings';
 import FavoriteIcon from '@mui/icons-material/Favorite';
-import { fetchFinancialRequestsByUser } from '../reduxToolkit/slice/financialRequestSlice';
+
 import { addUser, editUser, deleteUser } from '../reduxToolkit/slice/usersSlice';
 import { addOrganization, editOrganization, deleteOrganization } from '../reduxToolkit/slice/organizationsSlice';
 import { addAdmin, editAdmin, deleteAdmin } from '../reduxToolkit/slice/adminsSlice';
@@ -62,7 +64,6 @@ import { StyledEngineProvider } from '@mui/material/styles';
 import { DataGrid } from '@mui/x-data-grid';
 // import { useDemoData } from '@mui/x-data-grid-generator';
 
-import { MOCK_ADVERTISEMENTS } from './mockAds';
 import { Link, Stack } from '@mui/material';
 import { Timestamp } from 'firebase/firestore';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
@@ -81,7 +82,10 @@ import Notification from '../FireBase/MessageAndNotification/Notification';
 import { useNavigate } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
 import deleteUserAccount from '../FireBase/authService/deleteUserAccount';
-
+import FinancingRequest from '../FireBase/modelsWithOperations/FinancingRequest';
+import FinancingAdvertisement from '../FireBase/modelsWithOperations/FinancingAdvertisement';
+import ClientAdvertisement from '../FireBase/modelsWithOperations/ClientAdvertisemen';
+import PageHeader from '../componenents/PageHeader';
 // Define shared data of users profile
 const governorates = [
     "القاهرة", "الإسكندرية", "الجيزة", "الشرقية", "الدقهلية", "البحيرة", "المنيا", "أسيوط",
@@ -179,530 +183,15 @@ const NAVIGATION = [
 
 const ColorModeContext = React.createContext({ toggleColorMode: () => { } });
 
-function AddUserModal({ open, onClose, onAdd }) {
-    const [name, setName] = React.useState('');
-    const [email, setEmail] = React.useState('');
-    const [nameError, setNameError] = React.useState(false);
-    const [emailError, setEmailError] = React.useState(false);
-    const [emailHelperText, setEmailHelperText] = React.useState('');
-
-    React.useEffect(() => {
-        if (open) {
-            setName('');
-            setEmail('');
-            setNameError(false);
-            setEmailError(false);
-            setEmailHelperText('');
-        }
-    }, [open]);
-
-    const handleAdd = () => {
-        let hasError = false;
-        if (!name.trim()) {
-            setNameError(true);
-            hasError = true;
-        } else {
-            setNameError(false);
-        }
-
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!email.trim()) {
-            setEmailError(true);
-            setEmailHelperText('البريد الألكتروني مطلوب');
-            hasError = true;
-        } else if (!emailRegex.test(email)) {
-            setEmailError(true);
-            setEmailHelperText('صيغة البريد الألكتروني غير صحيحة');
-            hasError = true;
-        } else {
-            setEmailError(false);
-            setEmailHelperText('');
-        }
-
-        if (!hasError) {
-            onAdd({ name, email });
-            onClose();
-        }
-    };
-
-    return (
-        <Dialog open={open} onClose={onClose}>
-            <DialogTitle sx={{ textAlign: 'left' }}>إضافة عميل</DialogTitle>
-            <DialogContent sx={{ textAlign: 'right' }}>
-                <TextField
-                    autoFocus
-                    margin="dense"
-                    label="الإسم"
-                    type="text"
-                    fullWidth
-                    variant="outlined"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    error={nameError}
-                    helperText={nameError ? 'Name is required' : ''}
-                    sx={{ mb: 2 }}
-                />
-                <TextField
-                    margin="dense"
-                    label="البريد الألكتروني"
-                    type="email"
-                    fullWidth
-                    variant="outlined"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    error={emailError}
-                    helperText={emailHelperText}
-                />
-            </DialogContent>
-            <DialogActions sx={{ flexDirection: 'row-reverse' }}>
-                <Button onClick={handleAdd} variant="contained" sx={{ bgcolor: 'purple' }}>
-                    إضافة
-                </Button>
-                <Button onClick={onClose}>إلغاء</Button>
-            </DialogActions>
-        </Dialog>
-    );
-}
-
-function EditUserModal({ open, onClose, onSave, user }) {
-    const [name, setName] = React.useState(user ? user.name : '');
-    const [email, setEmail] = React.useState(user ? user.email : '');
-    const [nameError, setNameError] = React.useState(false);
-    const [emailError, setEmailError] = React.useState(false);
-    const [emailHelperText, setEmailHelperText] = React.useState('');
-
-    React.useEffect(() => {
-        if (user) {
-            setName(user.name);
-            setEmail(user.email);
-            setNameError(false);
-            setEmailError(false);
-            setEmailHelperText('');
-        }
-    }, [user, open]);
-
-    const handleSave = () => {
-        let hasError = false;
-        if (!name.trim()) {
-            setNameError(true);
-            hasError = true;
-        } else {
-            setNameError(false);
-        }
-
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!email.trim()) {
-            setEmailError(true);
-            setEmailHelperText('البريد الألكتروني مطلوب');
-            hasError = true;
-        } else if (!emailRegex.test(email)) {
-            setEmailError(true);
-            setEmailHelperText('صيغة البريد الألكتروني غير صحيحة');
-            hasError = true;
-        } else {
-            setEmailError(false);
-            setEmailHelperText('');
-        }
-
-        if (!hasError) {
-            onSave({ ...user, name, email });
-            onClose();
-        }
-    };
-
-    return (
-        <Dialog open={open} onClose={onClose}>
-            <DialogTitle sx={{ textAlign: 'left' }}>تعديل العميل</DialogTitle>
-            <DialogContent sx={{ textAlign: 'right' }}>
-                <TextField
-                    autoFocus
-                    margin="dense"
-                    label="الإسم"
-                    type="text"
-                    fullWidth
-                    variant="outlined"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    error={nameError}
-                    helperText={nameError ? 'Name is required' : ''}
-                    sx={{ mb: 2 }}
-                />
-                <TextField
-                    margin="dense"
-                    label="البريد الألكتروني"
-                    type="email"
-                    fullWidth
-                    variant="outlined"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    error={emailError}
-                    helperText={emailHelperText}
-                />
-            </DialogContent>
-            <DialogActions sx={{ flexDirection: 'row-reverse' }}>
-                <Button onClick={handleSave} variant="contained" sx={{ bgcolor: 'purple' }}>
-                    حفظ
-                </Button>
-                <Button onClick={onClose}>إلغاء</Button>
-            </DialogActions>
-        </Dialog>
-    );
-}
-
-function ConfirmDeleteModal({ open, onClose, onConfirm, itemType, itemId, itemName }) {
-    return (
-        <Dialog open={open} onClose={onClose}>
-            <DialogTitle sx={{ textAlign: 'left' }}>تأكيد الحذف</DialogTitle>
-            <DialogContent sx={{ textAlign: 'right' }}>
-                <Typography>
-                    هل أنت متأكد من حذف {itemType}: <strong>{itemName} (ID: {itemId})</strong>?
-                </Typography>
-                <Typography color="error">لا يمكن التراجع عن هذه الإجراء.</Typography>
-            </DialogContent>
-            <DialogActions sx={{ flexDirection: 'row-reverse' }}>
-                <Button onClick={onConfirm} variant="contained" color="error">
-                    حذف
-                </Button>
-                <Button onClick={onClose}>إلغاء</Button>
-            </DialogActions>
-        </Dialog>
-    );
-}
-
-function AddOrgModal({ open, onClose, onAdd, orgType }) {
-    const [name, setName] = React.useState('');
-    const [contact, setContact] = useState('');
-
-    useEffect(() => {
-        if (open) {
-            setName('');
-            setContact('');
-        }
-    }, [open, orgType]); // Reset when modal opens or type changes
-
-    const handleSubmit = () => {
-        if (name.trim() === '' || contact.trim() === '') {
-            alert('الرجاء تعبئة جميع الحقول المطلوبة.'); // Please fill in all required fields.
-            return;
-        }
-        onAdd({ name, contact }); // 'type' is added in UsersPage's handleAddOrgConfirm
-        onClose();
-    };
-
-    const getTitle = () => {
-        if (orgType === 'developer') {
-            return 'إضافة مطور عقاري جديد';
-        } else if (orgType === 'funder') {
-            return 'إضافة ممول عقاري جديد';
-        }
-        return 'إضافة مؤسسة جديدة'; // Fallback
-    };
-
-    const getAddButtonText = () => {
-        if (orgType === 'developer') {
-            return 'إضافة مطور';
-        } else if (orgType === 'funder') {
-            return 'إضافة ممول';
-        }
-        return 'إضافة'; // Fallback
-    };
-
-    return (
-        <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-            <DialogTitle sx={{ textAlign: 'left' }}>{getTitle()}</DialogTitle>
-            <DialogContent sx={{ textAlign: 'right' }}>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
-                    <TextField
-                        autoFocus
-                        margin="dense"
-                        id="name"
-                        label="الاسم"
-                        type="text"
-                        fullWidth
-                        variant="outlined"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        required
-                    />
-                    <TextField
-                        margin="dense"
-                        id="contact"
-                        label="جهة الاتصال"
-                        type="text"
-                        fullWidth
-                        variant="outlined"
-                        value={contact}
-                        onChange={(e) => setContact(e.target.value)}
-                        required
-                    />
-                    {/* Add any conditional fields here based on orgType */}
-                </Box>
-            </DialogContent>
-            <DialogActions sx={{ flexDirection: 'row-reverse', justifyContent: 'flex-end', pr: 3, pb: 2 }}>
-                <Button onClick={handleSubmit} variant='contained' sx={{ bgcolor: 'purple' }}>
-                    {getAddButtonText()}
-                </Button>
-                <Button onClick={onClose} >
-                    إلغاء
-                </Button>
-            </DialogActions>
-        </Dialog>
-    );
-}
-
-function EditOrgModal({ open, onClose, onSave, organization, orgType }) {
-    const [name, setName] = useState('');
-    const [contact, setContact] = useState('');
-
-    useEffect(() => {
-        if (open && organization) {
-            setName(organization.name || '');
-            setContact(organization.contact || '');
-        }
-    }, [open, organization]); // Repopulate when modal opens or organization changes
-
-    const handleSave = () => {
-        if (name.trim() === '' || contact.trim() === '') {
-            alert('الرجاء تعبئة جميع الحقول المطلوبة.'); // Please fill in all required fields.
-            return;
-        }
-        const updatedOrg = {
-            ...organization, // Keep existing ID and other properties
-            name,
-            contact,
-            // Ensure the type is preserved from the original organization
-            type: organization.type // Explicitly keep the original type
-        };
-        onSave(updatedOrg);
-        onClose();
-    };
-
-    const getTitle = () => {
-        if (orgType === 'developer') {
-            return `تعديل المطور العقاري: ${organization?.name}`;
-        } else if (orgType === 'funder') {
-            return `تعديل الممول العقاري: ${organization?.name}`;
-        }
-        return `تعديل المؤسسة: ${organization?.name}`; // Fallback
-    };
-
-    return (
-        <Dialog open={open} onClose={onClose}>
-            <DialogTitle sx={{ textAlign: 'left' }}>{getTitle()}</DialogTitle>
-            <DialogContent sx={{ textAlign: 'right' }}>
-                <TextField
-                    autoFocus
-                    margin="dense"
-                    id="name"
-                    label="الاسم"
-                    type="text"
-                    fullWidth
-                    variant="outlined"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    required
-                />
-                <TextField
-                    margin="dense"
-                    id="contact"
-                    label="جهة الاتصال"
-                    type="text"
-                    fullWidth
-                    variant="outlined"
-                    value={contact}
-                    onChange={(e) => setContact(e.target.value)}
-                    required
-                />
-                {/* Add any conditional fields here based on orgType */}
-                {/* </Box> */}
-            </DialogContent>
-            <DialogActions sx={{ justifyContent: 'flex-end', pr: 3, pb: 2 }}>
-                <Button onClick={handleSave} variant="contained" sx={{ bgcolor: 'purple' }}>
-                    حفظ التغييرات
-                </Button>
-                <Button onClick={onClose} >
-                    إلغاء
-                </Button>
-            </DialogActions>
-        </Dialog>
-    );
-}
-
-function AddAdminModal({ open, onClose, onAdd }) {
-    const [name, setName] = React.useState('');
-    const [email, setEmail] = React.useState('');
-    const [nameError, setNameError] = React.useState(false);
-    const [emailError, setEmailError] = React.useState(false);
-    const [emailHelperText, setEmailHelperText] = React.useState('');
-
-    React.useEffect(() => {
-        if (open) {
-            setName('');
-            setEmail('');
-            setNameError(false);
-            setEmailError(false);
-            setEmailHelperText('');
-        }
-    }, [open]);
-
-    const handleAdd = () => {
-        let hasError = false;
-        if (!name.trim()) {
-            setNameError(true);
-            hasError = true;
-        } else {
-            setNameError(false);
-        }
-
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!email.trim()) {
-            setEmailError(true);
-            setEmailHelperText('البريد الألكتروني مطلوب');
-            hasError = true;
-        } else if (!emailRegex.test(email)) {
-            setEmailError(true);
-            setEmailHelperText('صيغة البريد الألكتروني غير صحيحة');
-            hasError = true;
-        } else {
-            setEmailError(false);
-            setEmailHelperText('');
-        }
-
-        if (!hasError) {
-            onAdd({ name, email });
-            onClose();
-        }
-    };
-
-    return (
-        <Dialog open={open} onClose={onClose}>
-            <DialogTitle sx={{ textAlign: 'left' }}>إضافة مدير جديد</DialogTitle>
-            <DialogContent sx={{ textAlign: 'right' }}>
-                <TextField
-                    autoFocus
-                    margin="dense"
-                    label="الإسم"
-                    type="text"
-                    fullWidth
-                    variant="outlined"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    error={nameError}
-                    helperText={nameError ? 'الإسم مطلوب' : ''}
-                    sx={{ mb: 2 }}
-                />
-                <TextField
-                    margin="dense"
-                    label="البريد الألكتروني"
-                    type="email"
-                    fullWidth
-                    variant="outlined"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    error={emailError}
-                    helperText={emailHelperText}
-                />
-            </DialogContent>
-            <DialogActions sx={{ flexDirection: 'row-reverse' }}>
-                <Button onClick={handleAdd} variant="contained" sx={{ bgcolor: 'purple' }}>
-                    إضافة
-                </Button>
-                <Button onClick={onClose}>إلغاء</Button>
-            </DialogActions>
-        </Dialog>
-    );
-}
-
-function EditAdminModal({ open, onClose, onSave, admin }) {
-    const [name, setName] = React.useState(admin?.name || '');
-    const [email, setEmail] = React.useState(admin?.email || '');
-    const [nameError, setNameError] = React.useState(false);
-    const [emailError, setEmailError] = React.useState(false);
-    const [emailHelperText, setEmailHelperText] = React.useState('');
-
-    React.useEffect(() => {
-        if (admin) {
-            setName(admin.name);
-            setEmail(admin.email);
-            setNameError(false);
-            setEmailError(false);
-            setEmailHelperText('');
-        }
-    }, [admin, open]);
-
-    const handleSave = () => {
-        let hasError = false;
-        if (!name.trim()) {
-            setNameError(true);
-            hasError = true;
-        } else {
-            setNameError(false);
-        }
-
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!email.trim()) {
-            setEmailError(true);
-            setEmailHelperText('البريد الألكتروني مطلوب');
-            hasError = true;
-        } else if (!emailRegex.test(email)) {
-            setEmailError(true);
-            setEmailHelperText('صيغة البريد الألكتروني غير صحيحة');
-            hasError = true;
-        } else {
-            setEmailError(false);
-            setEmailHelperText('');
-        }
-
-        if (!hasError) {
-            onSave({ id: admin.id, name, email });
-            onClose();
-        }
-    };
-
-    return (
-        <Dialog open={open} onClose={onClose}>
-            <DialogTitle sx={{ textAlign: 'left' }}>تعديل المدير</DialogTitle>
-            <DialogContent sx={{ textAlign: 'right' }}>
-                <TextField
-                    autoFocus
-                    margin="dense"
-                    label="الإسم"
-                    type="text"
-                    fullWidth
-                    variant="outlined"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    error={nameError}
-                    helperText={nameError ? 'الإسم مطلوب' : ''}
-                    sx={{ mb: 2 }}
-                />
-                <TextField
-                    margin="dense"
-                    label="البريد الألكتروني"
-                    type="email"
-                    fullWidth
-                    variant="outlined"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    error={emailError}
-                    helperText={emailHelperText}
-                />
-            </DialogContent>
-            <DialogActions sx={{ flexDirection: 'row-reverse' }}>
-                <Button onClick={handleSave} variant="contained" sx={{ bgcolor: 'purple' }}>
-                    حفظ
-                </Button>
-                <Button onClick={onClose}>إلغاء</Button>
-            </DialogActions>
-        </Dialog>
-    );
-}
-
 
 function DashboardPage() {
     return (
         <Box sx={{ p: 2, textAlign: 'right' }}>
-            <Typography variant="h4" display={'flex'} flexDirection={'row-reverse'} gutterBottom>لوحة التحكم</Typography>
+            <PageHeader
+                title="لوحة التحكم"
+                icon={DashboardIcon}
+                showCount={false}
+            />
             <Grid container spacing={3} direction="row-reverse">
                 <Grid item xs={12} sm={6} md={4}>
                     <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', height: 140, borderRadius: 2, textAlign: 'right' }}>
@@ -752,8 +241,19 @@ function ProfilePage() {
 
 
 
-    // Local state for form inputs, initialized from Redux userProfile
-    const [formData, setFormData] = useState({});
+    // Local state for form inputs, initialized with default values to prevent controlled/uncontrolled issues
+    const [formData, setFormData] = useState({
+        cli_name: "",
+        org_name: "",
+        phone: "",
+        email: "",
+        gender: "",
+        age: "",
+        type_of_organization: "",
+        governorate: "",
+        city: "",
+        address: "",
+    });
     const [snackbarOpen, setSnackbarOpen] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState("");
     const [snackbarSeverity, setSnackbarSeverity] = useState("success");
@@ -790,7 +290,21 @@ function ProfilePage() {
             }
         };
         loadProfile();
-    }, [actualUid, userProfileStatus, userProfile, dispatch]);
+    }, [actualUid, userProfileStatus, userProfile]);// Removed dispatch from dependencies to prevent unnecessary refetches
+
+    // Helper function to map gender values from database to form values
+    const mapGenderValue = (dbGender) => {
+        if (!dbGender) return "";
+        const genderMap = {
+            "male": "ذكر",
+            "female": "أنثى",
+            "other": "غير محدد",
+            "ذكر": "ذكر",
+            "أنثى": "أنثى",
+            "غير محدد": "غير محدد"
+        };
+        return genderMap[dbGender] || "";
+    };
 
     // Effect to update local form data when Redux userProfile changes
     const initialized = useRef(false);
@@ -801,7 +315,7 @@ function ProfilePage() {
                 org_name: userProfile.org_name || "",
                 phone: userProfile.phone || "",
                 email: auth.currentUser?.email || userProfile.email || "", // Get email from auth first, then fallback to profile
-                gender: userProfile.gender || "",
+                gender: mapGenderValue(userProfile.gender),
                 age: userProfile.age || "",
                 type_of_organization: userProfile.type_of_organization || "",
                 governorate: userProfile.governorate || "",
@@ -810,7 +324,18 @@ function ProfilePage() {
             });
             initialized.current = true;
         } else if (!userProfile) {
-            setFormData({});
+            setFormData({
+                cli_name: "",
+                org_name: "",
+                phone: "",
+                email: "",
+                gender: "",
+                age: "",
+                type_of_organization: "",
+                governorate: "",
+                city: "",
+                address: "",
+            });
             initialized.current = false;
         }
     }, [userProfile]);
@@ -824,6 +349,17 @@ function ProfilePage() {
             ...prevData,
             [name]: value,
         }));
+    };
+
+    // Helper function to map gender values from form to database values
+    const mapGenderToDatabase = (formGender) => {
+        if (!formGender) return "";
+        const reverseGenderMap = {
+            "ذكر": "male",
+            "أنثى": "female",
+            "غير محدد": "other"
+        };
+        return reverseGenderMap[formGender] || formGender;
     };
 
     // Handle saving changes
@@ -847,7 +383,7 @@ function ProfilePage() {
 
         if (userProfile.type_of_user === "client") {
             updates.cli_name = formData.cli_name;
-            updates.gender = formData.gender;
+            updates.gender = mapGenderToDatabase(formData.gender);
             updates.age = formData.age;
         } else if (userProfile.type_of_user === "organization") {
             updates.org_name = formData.org_name;
@@ -1161,7 +697,7 @@ function ProfilePage() {
                                 fullWidth
                                 margin="normal"
                                 name="governorate"
-                                value={typeof formData.governorate === 'object' ? formData.governorate.full || '' : formData.governorate}
+                                value={formData.governorate || ""}
                                 onChange={handleChange}
                                 select // Use select for dropdown
                                 InputProps={{ style: { direction: 'rtl' } }}
@@ -1176,7 +712,7 @@ function ProfilePage() {
                                 fullWidth
                                 margin="normal"
                                 name="city"
-                                value={typeof formData.city === 'object' ? formData.city.full || '' : formData.city}
+                                value={formData.city || ""}
                                 onChange={handleChange}
                                 InputProps={{ style: { direction: 'rtl' } }}
                             />
@@ -1186,7 +722,7 @@ function ProfilePage() {
                                 fullWidth
                                 margin="normal"
                                 name="address"
-                                value={typeof formData.address === 'object' ? formData.address.full || '' : formData.address}
+                                value={formData.address || ""}
                                 onChange={handleChange}
                                 multiline
                                 rows={3}
@@ -1228,361 +764,361 @@ function ProfilePage() {
     );
 }
 
-function UsersPage() {
-    const dispatch = useDispatch();
-    const users = useSelector((state) => state.users.users);
-    // Use useSelector to get organizations from the Redux store
-    const organizations = useSelector((state) => state.organizations.organizations);
-    const admins = useSelector((state) => state.admins.admins);
+// function UsersPage() {
+//     const dispatch = useDispatch();
+//     const users = useSelector((state) => state.users.users);
+//     // Use useSelector to get organizations from the Redux store
+//     const organizations = useSelector((state) => state.organizations.organizations);
+//     const admins = useSelector((state) => state.admins.admins);
 
-    const [activeTab, setActiveTab] = React.useState('users');
-    const [activeOrgSubTab, setActiveOrgSubTab] = React.useState('developers'); // State for organization sub-tabs
+//     const [activeTab, setActiveTab] = React.useState('users');
+//     const [activeOrgSubTab, setActiveOrgSubTab] = React.useState('developers'); // State for organization sub-tabs
 
-    const [isAddUserModalOpen, setIsAddUserModalOpen] = React.useState(false);
-    const [isEditUserModalOpen, setIsEditUserModalOpen] = React.useState(false);
-    const [userToEdit, setUserToEdit] = React.useState(null);
+//     const [isAddUserModalOpen, setIsAddUserModalOpen] = React.useState(false);
+//     const [isEditUserModalOpen, setIsEditUserModalOpen] = React.useState(false);
+//     const [userToEdit, setUserToEdit] = React.useState(null);
 
-    const [isDeleteConfirmModalOpen, setIsDeleteConfirmModalOpen] = React.useState(false);
-    const [itemToDelete, setItemToDelete] = React.useState(null);
+//     const [isDeleteConfirmModalOpen, setIsDeleteConfirmModalOpen] = React.useState(false);
+//     const [itemToDelete, setItemToDelete] = React.useState(null);
 
-    const [isAddOrgModalOpen, setIsAddOrgModalOpen] = React.useState(false);
-    const [isEditOrgModalOpen, setIsEditOrgModalOpen] = React.useState(false);
-    const [orgToEdit, setOrgToEdit] = React.useState(null);
+//     const [isAddOrgModalOpen, setIsAddOrgModalOpen] = React.useState(false);
+//     const [isEditOrgModalOpen, setIsEditOrgModalOpen] = React.useState(false);
+//     const [orgToEdit, setOrgToEdit] = React.useState(null);
 
-    const [isAddAdminModalOpen, setIsAddAdminModalOpen] = React.useState(false);
-    const [isEditAdminModalOpen, setIsEditAdminModalOpen] = React.useState(false);
-    const [adminToEdit, setAdminToEdit] = React.useState(null);
+//     const [isAddAdminModalOpen, setIsAddAdminModalOpen] = React.useState(false);
+//     const [isEditAdminModalOpen, setIsEditAdminModalOpen] = React.useState(false);
+//     const [adminToEdit, setAdminToEdit] = React.useState(null);
 
-    // --- User Handlers ---
-    const handleAddUser = () => {
-        setIsAddUserModalOpen(true);
-    };
+//     // --- User Handlers ---
+//     const handleAddUser = () => {
+//         setIsAddUserModalOpen(true);
+//     };
 
-    const handleAddUserConfirm = ({ name, email }) => {
-        const newId = (Math.random() * 100000).toFixed(0);
-        dispatch(addUser({ id: newId, name, email }));
-    };
+//     const handleAddUserConfirm = ({ name, email }) => {
+//         const newId = (Math.random() * 100000).toFixed(0);
+//         dispatch(addUser({ id: newId, name, email }));
+//     };
 
-    const handleEditUser = (user) => {
-        setUserToEdit(user);
-        setIsEditUserModalOpen(true);
-    };
+//     const handleEditUser = (user) => {
+//         setUserToEdit(user);
+//         setIsEditUserModalOpen(true);
+//     };
 
-    const handleEditUserSave = (updatedUser) => {
-        dispatch(editUser(updatedUser));
-    };
+//     const handleEditUserSave = (updatedUser) => {
+//         dispatch(editUser(updatedUser));
+//     };
 
-    // --- Organization (Developers and Funders) Handlers ---
-    const handleAddOrg = () => {
-        setIsAddOrgModalOpen(true);
-    };
+//     // --- Organization (Developers and Funders) Handlers ---
+//     const handleAddOrg = () => {
+//         setIsAddOrgModalOpen(true);
+//     };
 
-    const handleAddOrgConfirm = ({ name, contact, type }) => {
-        const prefix = type === 'developer' ? 'DEV' : 'FUND';
-        // Generate a unique ID, ensuring it includes the type prefix
-        const newId = `${prefix}${Math.floor(Math.random() * 10000).toString().padStart(3, '0')}`;
-        // Dispatch the addOrganization action with the new organization including its type
-        dispatch(addOrganization({ id: newId, name, contact, type }));
-    };
+//     const handleAddOrgConfirm = ({ name, contact, type }) => {
+//         const prefix = type === 'developer' ? 'DEV' : 'FUND';
+//         // Generate a unique ID, ensuring it includes the type prefix
+//         const newId = `${prefix}${Math.floor(Math.random() * 10000).toString().padStart(3, '0')}`;
+//         // Dispatch the addOrganization action with the new organization including its type
+//         dispatch(addOrganization({ id: newId, name, contact, type }));
+//     };
 
-    const handleEditOrg = (org) => {
-        setOrgToEdit(org);
-        setIsEditOrgModalOpen(true);
-    };
+//     const handleEditOrg = (org) => {
+//         setOrgToEdit(org);
+//         setIsEditOrgModalOpen(true);
+//     };
 
-    const handleEditOrgSave = (updatedOrg) => {
-        // Dispatch the editOrganization action with the updated organization
-        dispatch(editOrganization(updatedOrg));
-    };
+//     const handleEditOrgSave = (updatedOrg) => {
+//         // Dispatch the editOrganization action with the updated organization
+//         dispatch(editOrganization(updatedOrg));
+//     };
 
-    // Filter organizations for developers and funders based on the 'type' property
-    const realEstateDevelopers = organizations.filter(org => org.type === 'developer');
-    const realEstateFunders = organizations.filter(org => org.type === 'funder');
+//     // Filter organizations for developers and funders based on the 'type' property
+//     const realEstateDevelopers = organizations.filter(org => org.type === 'developer');
+//     const realEstateFunders = organizations.filter(org => org.type === 'funder');
 
-    // --- Admin Handlers ---
-    const handleAddAdmin = () => {
-        setIsAddAdminModalOpen(true);
-    };
+//     // --- Admin Handlers ---
+//     const handleAddAdmin = () => {
+//         setIsAddAdminModalOpen(true);
+//     };
 
-    const handleAddAdminConfirm = ({ name, email }) => {
-        const newId = (Math.random() * 100000).toFixed(0);
-        dispatch(addAdmin({ id: newId, name, email }));
-    };
+//     const handleAddAdminConfirm = ({ name, email }) => {
+//         const newId = (Math.random() * 100000).toFixed(0);
+//         dispatch(addAdmin({ id: newId, name, email }));
+//     };
 
-    const handleEditAdmin = (admin) => {
-        setAdminToEdit(admin);
-        setIsEditAdminModalOpen(true);
-    };
+//     const handleEditAdmin = (admin) => {
+//         setAdminToEdit(admin);
+//         setIsEditAdminModalOpen(true);
+//     };
 
-    const handleEditAdminSave = (updatedAdmin) => {
-        dispatch(editAdmin(updatedAdmin));
-    };
+//     const handleEditAdminSave = (updatedAdmin) => {
+//         dispatch(editAdmin(updatedAdmin));
+//     };
 
-    // --- General Delete Handler ---
-    const handleDeleteItem = (id, type, name) => {
-        setItemToDelete({ id, type, name });
-        setIsDeleteConfirmModalOpen(true);
-    };
+//     // --- General Delete Handler ---
+//     const handleDeleteItem = (id, type, name) => {
+//         setItemToDelete({ id, type, name });
+//         setIsDeleteConfirmModalOpen(true);
+//     };
 
-    const handleDeleteConfirm = () => {
-        if (itemToDelete.type === 'user') {
-            dispatch(deleteUser(itemToDelete.id));
-        } else if (itemToDelete.type === 'organization') {
-            // Dispatch deleteOrganization action for both developers and funders
-            dispatch(deleteOrganization(itemToDelete.id));
-        } else if (itemToDelete.type === 'admin') {
-            dispatch(deleteAdmin(itemToDelete.id));
-        }
-        setIsDeleteConfirmModalOpen(false);
-        setItemToDelete(null);
-    };
+//     const handleDeleteConfirm = () => {
+//         if (itemToDelete.type === 'user') {
+//             dispatch(deleteUser(itemToDelete.id));
+//         } else if (itemToDelete.type === 'organization') {
+//             // Dispatch deleteOrganization action for both developers and funders
+//             dispatch(deleteOrganization(itemToDelete.id));
+//         } else if (itemToDelete.type === 'admin') {
+//             dispatch(deleteAdmin(itemToDelete.id));
+//         }
+//         setIsDeleteConfirmModalOpen(false);
+//         setItemToDelete(null);
+//     };
 
-    return (
-        <Box sx={{ p: 2, textAlign: 'right' }}>
-            <Typography variant="h4" display={'flex'} flexDirection={'row-reverse'} gutterBottom>المستخدمين</Typography>
-            <Box sx={{ mb: 2, display: 'flex', gap: 1, flexDirection: 'row-reverse' }}>
-                <Button
-                    variant={activeTab === 'users' ? 'contained' : 'outlined'}
-                    onClick={() => setActiveTab('users')}
-                    sx={{ borderRadius: 2, fontSize: '17px' }}
-                >
-                    العملاء
-                </Button>
-                <Button
-                    variant={activeTab === 'organizations' ? 'contained' : 'outlined'}
-                    onClick={() => {
-                        setActiveTab('organizations');
-                        // Reset sub-tab to default when main tab changes
-                        setActiveOrgSubTab('developers');
-                    }}
-                    sx={{ borderRadius: 2, fontSize: '17px' }}
-                >
-                    المؤسسات
-                </Button>
-                <Button
-                    variant={activeTab === 'admins' ? 'contained' : 'outlined'}
-                    onClick={() => setActiveTab('admins')}
-                    sx={{ borderRadius: 2, fontSize: '17px' }}
-                >
-                    المدراء
-                </Button>
-            </Box>
+//     return (
+//         <Box sx={{ p: 2, textAlign: 'right' }}>
+//             <Typography variant="h4" display={'flex'} flexDirection={'row-reverse'} gutterBottom>المستخدمين</Typography>
+//             <Box sx={{ mb: 2, display: 'flex', gap: 1, flexDirection: 'row-reverse' }}>
+//                 <Button
+//                     variant={activeTab === 'users' ? 'contained' : 'outlined'}
+//                     onClick={() => setActiveTab('users')}
+//                     sx={{ borderRadius: 2, fontSize: '17px' }}
+//                 >
+//                     العملاء
+//                 </Button>
+//                 <Button
+//                     variant={activeTab === 'organizations' ? 'contained' : 'outlined'}
+//                     onClick={() => {
+//                         setActiveTab('organizations');
+//                         // Reset sub-tab to default when main tab changes
+//                         setActiveOrgSubTab('developers');
+//                     }}
+//                     sx={{ borderRadius: 2, fontSize: '17px' }}
+//                 >
+//                     المؤسسات
+//                 </Button>
+//                 <Button
+//                     variant={activeTab === 'admins' ? 'contained' : 'outlined'}
+//                     onClick={() => setActiveTab('admins')}
+//                     sx={{ borderRadius: 2, fontSize: '17px' }}
+//                 >
+//                     المدراء
+//                 </Button>
+//             </Box>
 
-            <Paper sx={{ p: 2, borderRadius: 2, minHeight: 400, textAlign: 'right' }}>
-                {activeTab === 'users' && (
-                    <>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexDirection: 'row-reverse' }}>
-                            <Typography variant="h6" sx={{ fontWeight: 'bold' }} color="text.secondary">قائمة المستخدمين</Typography>
-                            <Button variant="outlined" startIcon={<AddIcon />} onClick={handleAddUser}>
-                                إضافة مستخدم
-                            </Button>
-                        </Box>
-                        <List>
-                            {users.map((user) => (
-                                <ListItem
-                                    key={user.id}
-                                    disablePadding
-                                    secondaryAction={
-                                        <Box sx={{ display: 'flex', gap: 1, flexDirection: 'row-reverse' }}>
-                                            <IconButton edge="start" aria-label="edit" onClick={() => handleEditUser(user)}>
-                                                <EditIcon sx={{ color: 'purple' }} />
-                                            </IconButton>
-                                            <IconButton edge="start" aria-label="delete" onClick={() => handleDeleteItem(user.id, 'user', user.name)}>
-                                                <DeleteIcon sx={{ color: 'red' }} />
-                                            </IconButton>
-                                        </Box>
-                                    }
-                                >
-                                    <ListItemText
-                                        primary={user.name}
-                                        secondary={`ID: ${user.id} | Email: ${user.email}`}
-                                    />
-                                </ListItem>
-                            ))}
-                        </List>
-                    </>
-                )}
+//             <Paper sx={{ p: 2, borderRadius: 2, minHeight: 400, textAlign: 'right' }}>
+//                 {activeTab === 'users' && (
+//                     <>
+//                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexDirection: 'row-reverse' }}>
+//                             <Typography variant="h6" sx={{ fontWeight: 'bold' }} color="text.secondary">قائمة المستخدمين</Typography>
+//                             <Button variant="outlined" startIcon={<AddIcon />} onClick={handleAddUser}>
+//                                 إضافة مستخدم
+//                             </Button>
+//                         </Box>
+//                         <List>
+//                             {users.map((user) => (
+//                                 <ListItem
+//                                     key={user.id}
+//                                     disablePadding
+//                                     secondaryAction={
+//                                         <Box sx={{ display: 'flex', gap: 1, flexDirection: 'row-reverse' }}>
+//                                             <IconButton edge="start" aria-label="edit" onClick={() => handleEditUser(user)}>
+//                                                 <EditIcon sx={{ color: 'purple' }} />
+//                                             </IconButton>
+//                                             <IconButton edge="start" aria-label="delete" onClick={() => handleDeleteItem(user.id, 'user', user.name)}>
+//                                                 <DeleteIcon sx={{ color: 'red' }} />
+//                                             </IconButton>
+//                                         </Box>
+//                                     }
+//                                 >
+//                                     <ListItemText
+//                                         primary={user.name}
+//                                         secondary={`ID: ${user.id} | Email: ${user.email}`}
+//                                     />
+//                                 </ListItem>
+//                             ))}
+//                         </List>
+//                     </>
+//                 )}
 
-                {activeTab === 'organizations' && (
-                    <>
-                        {/* Sub-tabs for Organizations */}
-                        <Box sx={{ mb: 2, display: 'flex', gap: 1, flexDirection: 'row-reverse' }}>
-                            <Button
-                                variant={activeOrgSubTab === 'developers' ? 'contained' : 'outlined'}
-                                onClick={() => setActiveOrgSubTab('developers')}
-                                sx={{ borderRadius: 2, fontSize: '17px' }}
-                            >
-                                مطورين عقاريين
-                            </Button>
-                            <Button
-                                variant={activeOrgSubTab === 'funders' ? 'contained' : 'outlined'}
-                                onClick={() => setActiveOrgSubTab('funders')}
-                                sx={{ borderRadius: 2, fontSize: '17px' }}
-                            >
-                                ممولين عقاريين
-                            </Button>
-                        </Box>
+//                 {activeTab === 'organizations' && (
+//                     <>
+//                         {/* Sub-tabs for Organizations */}
+//                         <Box sx={{ mb: 2, display: 'flex', gap: 1, flexDirection: 'row-reverse' }}>
+//                             <Button
+//                                 variant={activeOrgSubTab === 'developers' ? 'contained' : 'outlined'}
+//                                 onClick={() => setActiveOrgSubTab('developers')}
+//                                 sx={{ borderRadius: 2, fontSize: '17px' }}
+//                             >
+//                                 مطورين عقاريين
+//                             </Button>
+//                             <Button
+//                                 variant={activeOrgSubTab === 'funders' ? 'contained' : 'outlined'}
+//                                 onClick={() => setActiveOrgSubTab('funders')}
+//                                 sx={{ borderRadius: 2, fontSize: '17px' }}
+//                             >
+//                                 ممولين عقاريين
+//                             </Button>
+//                         </Box>
 
-                        {activeOrgSubTab === 'developers' && (
-                            <>
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexDirection: 'row-reverse' }}>
-                                    <Typography variant="h6" color="text.secondary">قائمة المطورين العقاريين</Typography>
-                                    <Button variant="outlined" startIcon={<AddIcon />} onClick={handleAddOrg}>
-                                        إضافة مطور عقاري
-                                    </Button>
-                                </Box>
-                                <List>
-                                    {realEstateDevelopers.map((org) => (
-                                        <ListItem
-                                            key={org.id}
-                                            disablePadding
-                                            secondaryAction={
-                                                <Box sx={{ display: 'flex', gap: 1, flexDirection: 'row-reverse' }}>
-                                                    <IconButton edge="start" aria-label="edit" onClick={() => handleEditOrg(org)}>
-                                                        <EditIcon sx={{ color: 'purple' }} />
-                                                    </IconButton>
-                                                    <IconButton edge="start" aria-label="delete" onClick={() => handleDeleteItem(org.id, 'organization', org.name)}>
-                                                        <DeleteIcon sx={{ color: 'red' }} />
-                                                    </IconButton>
-                                                </Box>
-                                            }
-                                        >
-                                            <ListItemText
-                                                primary={org.name}
-                                                secondary={`ID: ${org.id} | Contact: ${org.contact}`}
-                                            />
-                                        </ListItem>
-                                    ))}
-                                </List>
-                            </>
-                        )}
+//                         {activeOrgSubTab === 'developers' && (
+//                             <>
+//                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexDirection: 'row-reverse' }}>
+//                                     <Typography variant="h6" color="text.secondary">قائمة المطورين العقاريين</Typography>
+//                                     <Button variant="outlined" startIcon={<AddIcon />} onClick={handleAddOrg}>
+//                                         إضافة مطور عقاري
+//                                     </Button>
+//                                 </Box>
+//                                 <List>
+//                                     {realEstateDevelopers.map((org) => (
+//                                         <ListItem
+//                                             key={org.id}
+//                                             disablePadding
+//                                             secondaryAction={
+//                                                 <Box sx={{ display: 'flex', gap: 1, flexDirection: 'row-reverse' }}>
+//                                                     <IconButton edge="start" aria-label="edit" onClick={() => handleEditOrg(org)}>
+//                                                         <EditIcon sx={{ color: 'purple' }} />
+//                                                     </IconButton>
+//                                                     <IconButton edge="start" aria-label="delete" onClick={() => handleDeleteItem(org.id, 'organization', org.name)}>
+//                                                         <DeleteIcon sx={{ color: 'red' }} />
+//                                                     </IconButton>
+//                                                 </Box>
+//                                             }
+//                                         >
+//                                             <ListItemText
+//                                                 primary={org.name}
+//                                                 secondary={`ID: ${org.id} | Contact: ${org.contact}`}
+//                                             />
+//                                         </ListItem>
+//                                     ))}
+//                                 </List>
+//                             </>
+//                         )}
 
-                        {activeOrgSubTab === 'funders' && (
-                            <Box sx={{ mt: 2 }}>
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexDirection: 'row-reverse' }}>
-                                    <Typography variant="h6" color="text.secondary">قائمة الممولين العقاريين</Typography>
-                                    <Button variant="outlined" startIcon={<AddIcon />} onClick={handleAddOrg}>
-                                        إضافة ممول عقاري
-                                    </Button>
-                                </Box>
-                                <List>
-                                    {realEstateFunders.map((funder) => (
-                                        <ListItem
-                                            key={funder.id}
-                                            disablePadding
-                                            secondaryAction={
-                                                <Box sx={{ display: 'flex', gap: 1, flexDirection: 'row-reverse' }}>
-                                                    <IconButton edge="start" aria-label="edit" onClick={() => handleEditOrg(funder)}>
-                                                        <EditIcon sx={{ color: 'purple' }} />
-                                                    </IconButton>
-                                                    <IconButton edge="start" aria-label="delete" onClick={() => handleDeleteItem(funder.id, 'organization', funder.name)}>
-                                                        <DeleteIcon sx={{ color: 'red' }} />
-                                                    </IconButton>
-                                                </Box>
-                                            }
-                                        >
-                                            <ListItemText
-                                                primary={funder.name}
-                                                secondary={`ID: ${funder.id} | Contact: ${funder.contact}`}
-                                            />
-                                        </ListItem>
-                                    ))}
-                                </List>
-                            </Box>
-                        )}
-                    </>
-                )}
+//                         {activeOrgSubTab === 'funders' && (
+//                             <Box sx={{ mt: 2 }}>
+//                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexDirection: 'row-reverse' }}>
+//                                     <Typography variant="h6" color="text.secondary">قائمة الممولين العقاريين</Typography>
+//                                     <Button variant="outlined" startIcon={<AddIcon />} onClick={handleAddOrg}>
+//                                         إضافة ممول عقاري
+//                                     </Button>
+//                                 </Box>
+//                                 <List>
+//                                     {realEstateFunders.map((funder) => (
+//                                         <ListItem
+//                                             key={funder.id}
+//                                             disablePadding
+//                                             secondaryAction={
+//                                                 <Box sx={{ display: 'flex', gap: 1, flexDirection: 'row-reverse' }}>
+//                                                     <IconButton edge="start" aria-label="edit" onClick={() => handleEditOrg(funder)}>
+//                                                         <EditIcon sx={{ color: 'purple' }} />
+//                                                     </IconButton>
+//                                                     <IconButton edge="start" aria-label="delete" onClick={() => handleDeleteItem(funder.id, 'organization', funder.name)}>
+//                                                         <DeleteIcon sx={{ color: 'red' }} />
+//                                                     </IconButton>
+//                                                 </Box>
+//                                             }
+//                                         >
+//                                             <ListItemText
+//                                                 primary={funder.name}
+//                                                 secondary={`ID: ${funder.id} | Contact: ${funder.contact}`}
+//                                             />
+//                                         </ListItem>
+//                                     ))}
+//                                 </List>
+//                             </Box>
+//                         )}
+//                     </>
+//                 )}
 
-                {activeTab === 'admins' && (
-                    <>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexDirection: 'row-reverse' }}>
-                            <Typography variant="h6" color="text.secondary">قائمة المدراء</Typography>
-                            <Button variant="outlined" startIcon={<AddIcon />} onClick={handleAddAdmin}>
-                                إضافة مدير
-                            </Button>
-                        </Box>
-                        <List>
-                            {admins.map((admin) => (
-                                <ListItem
-                                    key={admin.id}
-                                    disablePadding
-                                    secondaryAction={
-                                        <Box sx={{ display: 'flex', gap: 1, flexDirection: 'row-reverse' }}>
-                                            <IconButton edge="start" aria-label="edit" onClick={() => handleEditAdmin(admin)}>
-                                                <EditIcon sx={{ color: 'purple' }} />
-                                            </IconButton>
-                                            <IconButton edge="start" aria-label="delete" onClick={() => handleDeleteItem(admin.id, 'admin', admin.name)}>
-                                                <DeleteIcon sx={{ color: 'red' }} />
-                                            </IconButton>
-                                        </Box>
-                                    }
-                                >
-                                    <ListItemText
-                                        primary={admin.name}
-                                        secondary={`ID: ${admin.id} | Email: ${admin.email}`}
-                                    />
-                                </ListItem>
-                            ))}
-                        </List>
-                    </>
-                )}
-            </Paper>
+//                 {activeTab === 'admins' && (
+//                     <>
+//                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexDirection: 'row-reverse' }}>
+//                             <Typography variant="h6" color="text.secondary">قائمة المدراء</Typography>
+//                             <Button variant="outlined" startIcon={<AddIcon />} onClick={handleAddAdmin}>
+//                                 إضافة مدير
+//                             </Button>
+//                         </Box>
+//                         <List>
+//                             {admins.map((admin) => (
+//                                 <ListItem
+//                                     key={admin.id}
+//                                     disablePadding
+//                                     secondaryAction={
+//                                         <Box sx={{ display: 'flex', gap: 1, flexDirection: 'row-reverse' }}>
+//                                             <IconButton edge="start" aria-label="edit" onClick={() => handleEditAdmin(admin)}>
+//                                                 <EditIcon sx={{ color: 'purple' }} />
+//                                             </IconButton>
+//                                             <IconButton edge="start" aria-label="delete" onClick={() => handleDeleteItem(admin.id, 'admin', admin.name)}>
+//                                                 <DeleteIcon sx={{ color: 'red' }} />
+//                                             </IconButton>
+//                                         </Box>
+//                                     }
+//                                 >
+//                                     <ListItemText
+//                                         primary={admin.name}
+//                                         secondary={`ID: ${admin.id} | Email: ${admin.email}`}
+//                                     />
+//                                 </ListItem>
+//                             ))}
+//                         </List>
+//                     </>
+//                 )}
+//             </Paper>
 
-            <AddUserModal
-                open={isAddUserModalOpen}
-                onClose={() => setIsAddUserModalOpen(false)}
-                onAdd={handleAddUserConfirm}
-            />
-            {userToEdit && (
-                <EditUserModal
-                    open={isEditUserModalOpen}
-                    onClose={() => setIsEditUserModalOpen(false)}
-                    onSave={handleEditUserSave}
-                    user={userToEdit}
-                />
-            )}
-            <ConfirmDeleteModal
-                open={isDeleteConfirmModalOpen}
-                onClose={() => setIsDeleteConfirmModalOpen(false)}
-                onConfirm={handleDeleteConfirm}
-                itemType={itemToDelete?.type}
-                itemId={itemToDelete?.id}
-                itemName={itemToDelete?.name}
-            />
-            {/* Pass activeOrgSubTab as 'orgType' prop to AddOrgModal and EditOrgModal */}
-            <AddOrgModal
-                open={isAddOrgModalOpen}
-                onClose={() => setIsAddOrgModalOpen(false)}
-                // When adding, infer the type from the active sub-tab
-                onAdd={(data) => handleAddOrgConfirm({ ...data, type: activeOrgSubTab === 'developers' ? 'developer' : 'funder' })}
-                orgType={activeOrgSubTab === 'developers' ? 'developer' : 'funder'}
-            />
-            {orgToEdit && (
-                <EditOrgModal
-                    open={isEditOrgModalOpen}
-                    onClose={() => setIsEditOrgModalOpen(false)}
-                    onSave={handleEditOrgSave}
-                    organization={orgToEdit}
-                    orgType={orgToEdit.type}
-                />
-            )}
+//             <AddUserModal
+//                 open={isAddUserModalOpen}
+//                 onClose={() => setIsAddUserModalOpen(false)}
+//                 onAdd={handleAddUserConfirm}
+//             />
+//             {userToEdit && (
+//                 <EditUserModal
+//                     open={isEditUserModalOpen}
+//                     onClose={() => setIsEditUserModalOpen(false)}
+//                     onSave={handleEditUserSave}
+//                     user={userToEdit}
+//                 />
+//             )}
+//             <ConfirmDeleteModal
+//                 open={isDeleteConfirmModalOpen}
+//                 onClose={() => setIsDeleteConfirmModalOpen(false)}
+//                 onConfirm={handleDeleteConfirm}
+//                 itemType={itemToDelete?.type}
+//                 itemId={itemToDelete?.id}
+//                 itemName={itemToDelete?.name}
+//             />
+//             {/* Pass activeOrgSubTab as 'orgType' prop to AddOrgModal and EditOrgModal */}
+//             <AddOrgModal
+//                 open={isAddOrgModalOpen}
+//                 onClose={() => setIsAddOrgModalOpen(false)}
+//                 // When adding, infer the type from the active sub-tab
+//                 onAdd={(data) => handleAddOrgConfirm({ ...data, type: activeOrgSubTab === 'developers' ? 'developer' : 'funder' })}
+//                 orgType={activeOrgSubTab === 'developers' ? 'developer' : 'funder'}
+//             />
+//             {orgToEdit && (
+//                 <EditOrgModal
+//                     open={isEditOrgModalOpen}
+//                     onClose={() => setIsEditOrgModalOpen(false)}
+//                     onSave={handleEditOrgSave}
+//                     organization={orgToEdit}
+//                     orgType={orgToEdit.type}
+//                 />
+//             )}
 
-            <AddAdminModal
-                open={isAddAdminModalOpen}
-                onClose={() => setIsAddAdminModalOpen(false)}
-                onAdd={handleAddAdminConfirm}
-            />
-            {adminToEdit && (
-                <EditAdminModal
-                    open={isEditAdminModalOpen}
-                    onClose={() => setIsEditAdminModalOpen(false)}
-                    onSave={handleEditAdminSave}
-                    admin={adminToEdit}
-                />
-            )}
-        </Box>
-    );
-}
+//             <AddAdminModal
+//                 open={isAddAdminModalOpen}
+//                 onClose={() => setIsAddAdminModalOpen(false)}
+//                 onAdd={handleAddAdminConfirm}
+//             />
+//             {adminToEdit && (
+//                 <EditAdminModal
+//                     open={isEditAdminModalOpen}
+//                     onClose={() => setIsEditAdminModalOpen(false)}
+//                     onSave={handleEditAdminSave}
+//                     admin={adminToEdit}
+//                 />
+//             )}
+//         </Box>
+//     );
+// }
 
 
 // function FavPropertiesPage() {
@@ -1718,66 +1254,66 @@ function UsersPage() {
 //     );
 // }
 
-function Mainadvertisment() {
-    const adverts = [
-        { id: 1, title: 'Advert 1', description: 'Description for Advert 1' },
-        { id: 2, title: 'Advert 2', description: 'Description for Advert 2' },
-        { id: 3, title: 'Advert 3', description: 'Description for Advert 3' },
-    ]
-    return (
-        <Box>
-            <Typography variant="h4" sx={{ display: 'flex', flexDirection: 'row-reverse' }} gutterBottom>إعلانات القسم الرئيسي</Typography>
-            <Paper sx={{ p: 2, borderRadius: 2, minHeight: 400, textAlign: 'right' }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexDirection: 'row-reverse' }}>
-                    <Typography variant="h6" sx={{ fontWeight: 'bold', fontSize: 18 }} color="text.secondary">قائمة الإعلانات</Typography>
-                    <Tooltip title="إضافة" >
-                        <Button sx={{ fontWeight: 'bold', fontSize: 16 }} variant="outlined" startIcon={<AddIcon sx={{ ml: 1 }} />} >
-                            إضافة إعلان
-                        </Button>
-                    </Tooltip>
-                </Box>
-                <List>
-                    {adverts.map((advert) =>
-                        <ListItem
-                            key={advert.id}
-                            disablePadding
-                            secondaryAction={
-                                <Box sx={{ display: 'flex', gap: 1, flexDirection: 'row-reverse' }}>
-                                    <Tooltip title="تعديل">
-                                        <IconButton edge="start" aria-label="edit">
-                                            <EditIcon sx={{ color: 'purple' }} />
-                                        </IconButton>
-                                    </Tooltip>
-                                    <Tooltip title="حذف">
-                                        <IconButton edge="start" aria-label="delete" >
-                                            <DeleteIcon sx={{ color: 'red' }} />
-                                        </IconButton>
-                                    </Tooltip>
-                                </Box>
-                            }
-                            sx={{ mb: 1.5, p: 1 }}
-                        >
+// function Mainadvertisment() {
+//     const adverts = [
+//         { id: 1, title: 'Advert 1', description: 'Description for Advert 1' },
+//         { id: 2, title: 'Advert 2', description: 'Description for Advert 2' },
+//         { id: 3, title: 'Advert 3', description: 'Description for Advert 3' },
+//     ]
+//     return (
+//         <Box>
+//             <Typography variant="h4" sx={{ display: 'flex', flexDirection: 'row-reverse' }} gutterBottom>إعلانات القسم الرئيسي</Typography>
+//             <Paper sx={{ p: 2, borderRadius: 2, minHeight: 400, textAlign: 'right' }}>
+//                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexDirection: 'row-reverse' }}>
+//                     <Typography variant="h6" sx={{ fontWeight: 'bold', fontSize: 18 }} color="text.secondary">قائمة الإعلانات</Typography>
+//                     <Tooltip title="إضافة" >
+//                         <Button sx={{ fontWeight: 'bold', fontSize: 16 }} variant="outlined" startIcon={<AddIcon sx={{ ml: 1 }} />} >
+//                             إضافة إعلان
+//                         </Button>
+//                     </Tooltip>
+//                 </Box>
+//                 <List>
+//                     {adverts.map((advert) =>
+//                         <ListItem
+//                             key={advert.id}
+//                             disablePadding
+//                             secondaryAction={
+//                                 <Box sx={{ display: 'flex', gap: 1, flexDirection: 'row-reverse' }}>
+//                                     <Tooltip title="تعديل">
+//                                         <IconButton edge="start" aria-label="edit">
+//                                             <EditIcon sx={{ color: 'purple' }} />
+//                                         </IconButton>
+//                                     </Tooltip>
+//                                     <Tooltip title="حذف">
+//                                         <IconButton edge="start" aria-label="delete" >
+//                                             <DeleteIcon sx={{ color: 'red' }} />
+//                                         </IconButton>
+//                                     </Tooltip>
+//                                 </Box>
+//                             }
+//                             sx={{ mb: 1.5, p: 1 }}
+//                         >
 
-                            <ListItemText
-                                primary={advert.title}
-                                secondary={advert.description}
+//                             <ListItemText
+//                                 primary={advert.title}
+//                                 secondary={advert.description}
 
-                            />
-                            <ListItemAvatar sx={{ display: 'flex', flexDirection: 'row-reverse' }}>
-                                <img
-                                    src='./home.jpg'
-                                    style={{ height: 20, marginRight: 8, scale: 2 }}
-                                />
+//                             />
+//                             <ListItemAvatar sx={{ display: 'flex', flexDirection: 'row-reverse' }}>
+//                                 <img
+//                                     src='./home.jpg'
+//                                     style={{ height: 20, marginRight: 8, scale: 2 }}
+//                                 />
 
-                            </ListItemAvatar>
-                        </ListItem>
-                    )
-                    }
-                </List>
-            </Paper>
-        </Box>
-    )
-}
+//                             </ListItemAvatar>
+//                         </ListItem>
+//                     )
+//                     }
+//                 </List>
+//             </Paper>
+//         </Box>
+//     )
+// }
 
 // function PaidAdvertismentPage() {
 //     // State to manage the active tab
@@ -1874,26 +1410,55 @@ function Mainadvertisment() {
 // }
 
 function ClientAdvertismentPage() {
-    const dispatch = useDispatch();
     const authUid = useSelector((state) => state.auth.uid);
-    const advertisements = useSelector((state) => state.advertisements.list);
-    const loading = useSelector((state) => state.advertisements.loading);
-    const error = useSelector((state) => state.advertisements.error);
+    const navigate = useNavigate();
+    
+    // Local state for real-time advertisements
+    const [advertisements, setAdvertisements] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
     const [openReturnDialog, setOpenReturnDialog] = useState(false);
     const [adToReturn, setAdToReturn] = useState(null);
+    
+    // State for delete confirmation
+    const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+    const [adToDelete, setAdToDelete] = useState(null);
+    const [deleteLoading, setDeleteLoading] = useState(false);
     
     // State for filtering
     const [statusFilter, setStatusFilter] = useState('all');
     const [activationFilter, setActivationFilter] = useState('all');
     const [adTypeFilter, setAdTypeFilter] = useState('all');
 
-    // Use ref to track if we've already fetched advertisements
-    const hasFetchedAds = React.useRef(false);
+    // Real-time subscription to user's advertisements
+    useEffect(() => {
+        if (!authUid) {
+            setLoading(false);
+            return;
+        }
 
-    // Filter advertisements to show only the current user's ads
-    const userAdvertisements = advertisements.filter(ad => ad.userId === authUid);
+        setLoading(true);
+        setError(null);
+
+        console.log("ClientAdvertismentPage: Setting up real-time subscription for user:", authUid);
+        
+        const unsubscribe = ClientAdvertisement.subscribeByUserId(authUid, (ads) => {
+            console.log("ClientAdvertismentPage: Received real-time advertisements:", ads);
+            setAdvertisements(ads);
+            setLoading(false);
+        });
+
+        // Cleanup function to unsubscribe when component unmounts or authUid changes
+        return () => {
+            console.log("ClientAdvertismentPage: Cleaning up real-time subscription");
+            unsubscribe();
+        };
+    }, [authUid]);
+
+    // Filter advertisements to show only the current user's ads (already filtered by onSnapshot)
+    const userAdvertisements = advertisements;
     
     // Apply additional filters
     const filteredAdvertisements = userAdvertisements.filter(ad => {
@@ -1905,29 +1470,6 @@ function ClientAdvertismentPage() {
         return statusMatch && activationMatch && adTypeMatch;
     });
 
-    useEffect(() => {
-        console.log("ClientAdvertismentPage: useEffect triggered, authUid:", authUid);
-        if (authUid && !hasFetchedAds.current) {
-            console.log("ClientAdvertismentPage: Dispatching fetchAdvertisementsByUserId for UID:", authUid);
-            dispatch(fetchAdvertisementsByUserId(authUid));
-            hasFetchedAds.current = true;
-        } else if (authUid && hasFetchedAds.current) {
-            console.log("ClientAdvertismentPage: Advertisements already fetched for UID:", authUid);
-        }
-    }, [dispatch, authUid]); // Simplified dependencies
-
-    // Debug effect to log advertisements and userAdvertisements (only when they actually change)
-    useEffect(() => {
-        console.log("ClientAdvertismentPage: advertisements updated:", advertisements);
-        console.log("ClientAdvertismentPage: userAdvertisements filtered:", userAdvertisements);
-        console.log("ClientAdvertismentPage: authUid for filtering:", authUid);
-    }, [advertisements, userAdvertisements, authUid]);
-
-    // Reset fetch flag when UID changes
-    useEffect(() => {
-        hasFetchedAds.current = false;
-    }, [authUid]);
-
     const handleReturnToPending = (ad) => {
         setAdToReturn(ad);
         setOpenReturnDialog(true);
@@ -1936,7 +1478,10 @@ function ClientAdvertismentPage() {
     const handleConfirmReturn = async () => {
         if (adToReturn) {
             try {
-                await dispatch(clientReturnAdvertisementToPending(adToReturn.id)).unwrap();
+                // Get the advertisement instance and call the method directly
+                const adInstance = await ClientAdvertisement.getById(adToReturn.id);
+                await adInstance.clientReturnToPending();
+                
                 setSnackbar({ 
                     open: true, 
                     message: "تم إعادة الإعلان إلى حالة المراجعة بنجاح! سيتم إشعار الإدارة.", 
@@ -1961,7 +1506,93 @@ function ClientAdvertismentPage() {
             return;
         }
         setSnackbar({ ...snackbar, open: false });
-        dispatch(clearAdvertisementsError());
+        setError(null);
+    };
+
+    // Edit advertisement handler
+    const handleEditAd = (ad) => {
+        console.log('[DEBUG] Edit advertisement clicked:', ad);
+        console.log('[DEBUG] Advertisement ID:', ad.id);
+        console.log('[DEBUG] Full advertisement object:', JSON.stringify(ad, null, 2));
+        
+        if (!ad.id) {
+            setSnackbar({ 
+                open: true, 
+                message: 'خطأ: لا يمكن تعديل إعلان بدون معرف صالح', 
+                severity: 'error' 
+            });
+            return;
+        }
+
+        const navigationState = { 
+            adData: { ...ad, id: ad.id }, // Explicitly ensure ID is included
+            editMode: true 
+        };
+        
+        console.log('[DEBUG] Navigation state being passed:', JSON.stringify(navigationState, null, 2));
+        console.log('[DEBUG] Advertisement ID in navigation state:', navigationState.adData.id);
+
+        // Navigate to AddAdvertisement route with ad data
+        navigate('/AddAdvertisement', { 
+            state: navigationState
+        });
+    };
+
+    // Delete advertisement handlers
+    const handleDeleteAd = (ad) => {
+        console.log('[DEBUG] Delete advertisement clicked:', ad);
+        console.log('[DEBUG] Advertisement ID:', ad.id);
+        
+        if (!ad.id) {
+            setSnackbar({ 
+                open: true, 
+                message: 'خطأ: لا يمكن حذف إعلان بدون معرف صالح', 
+                severity: 'error' 
+            });
+            return;
+        }
+
+        setAdToDelete(ad);
+        setOpenDeleteDialog(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!adToDelete) return;
+
+        setDeleteLoading(true);
+        try {
+            console.log('[DEBUG] Deleting advertisement with ID:', adToDelete.id);
+            
+            // Validate that we have a valid ID
+            if (!adToDelete.id) {
+                throw new Error('معرف الإعلان غير صالح');
+            }
+            
+            // Get the advertisement instance and delete it
+            const adInstance = await ClientAdvertisement.getById(adToDelete.id);
+            if (!adInstance) {
+                throw new Error('الإعلان غير موجود');
+            }
+            
+            await adInstance.delete();
+            
+            setSnackbar({ 
+                open: true, 
+                message: 'تم حذف الإعلان بنجاح!', 
+                severity: 'success' 
+            });
+        } catch (err) {
+            console.error('[DEBUG] Error deleting advertisement:', err);
+            setSnackbar({ 
+                open: true, 
+                message: `فشل حذف الإعلان: ${err.message || 'خطأ غير معروف'}`, 
+                severity: 'error' 
+            });
+        } finally {
+            setDeleteLoading(false);
+            setOpenDeleteDialog(false);
+            setAdToDelete(null);
+        }
     };
 
     const getStatusColor = (status) => {
@@ -2068,12 +1699,35 @@ function ClientAdvertismentPage() {
         {
             field: 'actions',
             headerName: 'الإجراءات',
-            width: 200,
+            width: 300,
             editable: false,
             renderCell: (params) => {
                 const ad = params.row;
                 return (
                     <Stack direction="row" spacing={1}>
+                        {/* Edit button - always visible */}
+                        <Button
+                            variant="outlined"
+                            size="small"
+                            color="primary"
+                            onClick={() => handleEditAd(ad)}
+                            startIcon={<EditIcon />}
+                        >
+                            تعديل
+                        </Button>
+                        
+                        {/* Delete button - always visible */}
+                        <Button
+                            variant="outlined"
+                            size="small"
+                            color="error"
+                            onClick={() => handleDeleteAd(ad)}
+                            startIcon={<DeleteIcon />}
+                        >
+                            حذف
+                        </Button>
+                        
+                        {/* Return to pending button - only for rejected ads */}
                         {ad.reviewStatus === 'rejected' && (
                             <Button
                                 variant="outlined"
@@ -2085,6 +1739,8 @@ function ClientAdvertismentPage() {
                                 إعادة إرسال
                             </Button>
                         )}
+                        
+                        {/* Activation needed chip - only for approved but inactive ads */}
                         {ad.reviewStatus === 'approved' && !ad.ads && (
                             <Chip
                                 label="تحتاج تفعيل"
@@ -2100,7 +1756,7 @@ function ClientAdvertismentPage() {
         { field: 'date_of_building', headerName: 'تاريخ الإنشاء', width: 150, editable: false },
     ];
 
-    if (loading === 'pending') {
+    if (loading) {
         return (
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
                 <CircularProgress />
@@ -2265,6 +1921,29 @@ function ClientAdvertismentPage() {
                 </DialogActions>
             </Dialog>
 
+            {/* Delete Confirmation Dialog */}
+            <Dialog open={openDeleteDialog} onClose={() => setOpenDeleteDialog(false)}>
+                <DialogTitle>حذف الإعلان</DialogTitle>
+                <DialogContent>
+                    <Typography>
+                        هل أنت متأكد من حذف الإعلان "{adToDelete?.title}"؟ هذا الإجراء لا يمكن التراجع عنه.
+                    </Typography>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setOpenDeleteDialog(false)} disabled={deleteLoading}>
+                        إلغاء
+                    </Button>
+                    <Button 
+                        onClick={handleConfirmDelete} 
+                        color="error" 
+                        variant="contained"
+                        disabled={deleteLoading}
+                    >
+                        {deleteLoading ? 'جاري الحذف...' : 'حذف'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
             {/* Snackbar for notifications */}
             <Snackbar
                 open={snackbar.open}
@@ -2304,66 +1983,60 @@ function PaidClientAdvertismentPage() {
     );
 }
 function OrdersPage() {
-    const dispatch = useDispatch();
+    const navigate = useNavigate();
     const authUid = useSelector((state) => state.auth.uid);
-    const { list: fundingRequests, loading, error } = useSelector((state) => state.financialRequests);
-    const [activeSubTab, setActiveSubTab] = useState('rental'); // Default to 'rental'
+    
+    // Local state for real-time data
+    const [fundingRequests, setFundingRequests] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    
+    // New state for modals and actions
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [requestToDelete, setRequestToDelete] = useState(null);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [requestToEdit, setRequestToEdit] = useState(null);
+    const [adForEdit, setAdForEdit] = useState(null);
+    const [actionLoading, setActionLoading] = useState({});
+    const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
+    // Real-time listener for user's financial requests
     useEffect(() => {
-        if (activeSubTab === 'funding' && authUid) {
-            dispatch(fetchFinancialRequestsByUser(authUid));
+        if (!authUid) return;
+
+        setLoading(true);
+        setError(null);
+
+        // Subscribe to user's financial requests
+        const unsubscribeRequests = FinancingRequest.subscribeByUser(authUid, (requestsData) => {
+            setFundingRequests(requestsData);
+            setLoading(false);
+        });
+
+        // Cleanup function to unsubscribe when component unmounts
+        return () => {
+            unsubscribeRequests();
+        };
+    }, [authUid]);
+
+    // Helper functions for review status
+    const getReviewStatusLabel = (status) => {
+        switch (status) {
+            case 'pending': return 'قيد المراجعة';
+            case 'approved': return 'مقبول';
+            case 'rejected': return 'مرفوض';
+            default: return status;
         }
-    }, [activeSubTab, authUid, dispatch]);
+    };
 
-    // Mock data for each activity type (replace with actual data or Redux state)
-    const rentalActivity = [
-        {
-            id: 'RENT001',
-            property: 'شقة سكنية بالدقي', // Residential apartment in Dokki
-            details: 'غرفتين نوم، حمام واحد، مفروش بالكامل', // 2 bedrooms, 1 bathroom, fully furnished
-            startDate: '2024-01-01',
-            endDate: '2025-01-01',
-            status: 'نشط', // Active
-            amount: '15,000 ج.م/شهر' // 15,000 EGP/month
-        },
-        {
-            id: 'RENT002',
-            property: 'فيلا بمدينة الشيخ زايد', // Villa in Sheikh Zayed City
-            details: '5 غرف نوم، 3 حمامات، حديقة خاصة', // 5 bedrooms, 3 bathrooms, private garden
-            startDate: '2023-07-15',
-            endDate: '2024-07-14',
-            status: 'منتهي', // Expired
-            amount: '30,000 ج.م/شهر'
-        },
-        {
-            id: 'RENT003',
-            property: 'مكتب إداري بالمعادي', // Administrative office in Maadi
-            details: 'مساحة 120 متر مربع، إطلالة على النيل', // 120 sqm, Nile view
-            startDate: '2024-03-20',
-            endDate: '2025-03-19',
-            status: 'معلق', // Pending
-            amount: '10,000 ج.م/شهر'
-        },
-    ];
-
-    const purchaseActivity = [
-        {
-            id: 'BUY001',
-            property: 'قطعة أرض بالتجمع الخامس', // Plot of land in New Cairo
-            details: 'مساحة 500 متر مربع، جاهزة للبناء', // 500 sqm, ready for construction
-            purchaseDate: '2024-05-10',
-            amount: '5,000,000 ج.م', // 5,000,000 EGP
-            status: 'مكتمل', // Completed
-        },
-        {
-            id: 'BUY002',
-            property: 'شقة استثمارية بالساحل الشمالي', // Investment apartment in North Coast
-            details: 'غرفتين نوم، شرفة مطلة على البحر', // 2 bedrooms, sea view balcony
-            purchaseDate: '2024-02-28',
-            amount: '2,200,000 ج.م', // 2,200,000 EGP
-            status: 'تحت المراجعة', // Under Review
-        },
-    ];
+    const getReviewStatusColor = (status) => {
+        switch (status) {
+            case 'pending': return 'warning';
+            case 'approved': return 'success';
+            case 'rejected': return 'error';
+            default: return 'default';
+        }
+    };
 
     // Helper to get status color
     const getStatusColor = (status) => {
@@ -2384,287 +2057,437 @@ function OrdersPage() {
         }
     };
 
-    // Function to render content based on active tab
-    const renderContent = () => {
-        switch (activeSubTab) {
-            case 'rental':
-                return (
-                    <Box>
-                        <Typography variant="h6" color="text.secondary" sx={{ mb: 2, textAlign: 'left' }}>
-                            نشاط الإيجار الخاص بي
-                        </Typography>
-                        {rentalActivity.length === 0 ? (
-                            <Typography variant="body1" color="text.secondary" sx={{ textAlign: 'center', mt: 4 }}>
-                                لا يوجد نشاط إيجار حتى الآن.
-                            </Typography>
-                        ) : (
-                            <List>
-                                {rentalActivity.map((activity, index) => (
-                                    <React.Fragment key={activity.id}>
-                                        <ListItem
-                                            disablePadding
-                                            sx={{ flexDirection: 'row-reverse', py: 1 }}
-                                        // Fix hydration error: Ensure primary and secondary props use component="div"
-                                        // if they contain block-level elements like Grid or Stack.
-                                        // ListItemText defaults secondary to <p>, primary to <span>
-                                        >
-                                            <ListItemText
-                                                primary={
-                                                    <Grid container alignItems="center" spacing={1} direction="row-reverse">
-                                                        <Grid item>
-                                                            <HomeWorkIcon fontSize="small" color="primary" />
-                                                        </Grid>
-                                                        <Grid item>
-                                                            <Typography variant="body1" component="span" sx={{ fontWeight: 'bold' }}>
-                                                                {activity.property}
-                                                            </Typography>
-                                                        </Grid>
-                                                        <Grid item>
-                                                            <Chip
-                                                                label={activity.status}
-                                                                size="small"
-                                                                color={getStatusColor(activity.status)}
-                                                                sx={{ mr: 1 }}
-                                                            />
-                                                        </Grid>
-                                                    </Grid>
-                                                }
-                                                secondary={
-                                                    <Stack direction="column" spacing={0.5} sx={{ mt: 0.5 }}>
-                                                        <Typography variant="body2" color="text.primary">
-                                                            {activity.details}
-                                                        </Typography>
-                                                        <Typography variant="caption" color="text.secondary">
-                                                            الفترة: {activity.startDate} - {activity.endDate} | المبلغ: {activity.amount}
-                                                        </Typography>
-                                                        <Typography variant="caption" color="text.disabled">
-                                                            ID: {activity.id}
-                                                        </Typography>
-                                                    </Stack>
-                                                }
-                                                primaryTypographyProps={{ component: 'div' }}
-                                                secondaryTypographyProps={{ component: 'div' }}
-                                            />
-                                        </ListItem>
-                                        {index < rentalActivity.length - 1 && <Divider component="li" sx={{ my: 1 }} />}
-                                    </React.Fragment>
-                                ))}
-                            </List>
-                        )}
-                    </Box>
-                );
-            case 'purchase':
-                return (
-                    <Box>
-                        <Typography variant="h6" color="text.secondary" sx={{ mb: 2, textAlign: 'left' }}>
-                            نشاط الشراء الخاص بي
-                        </Typography>
-                        {purchaseActivity.length === 0 ? (
-                            <Typography variant="body1" color="text.secondary" sx={{ textAlign: 'center', mt: 4 }}>
-                                لا يوجد نشاط شراء حتى الآن.
-                            </Typography>
-                        ) : (
-                            <List>
-                                {purchaseActivity.map((activity, index) => (
-                                    <React.Fragment key={activity.id}>
-                                        <ListItem
-                                            disablePadding
-                                            sx={{ flexDirection: 'row-reverse', py: 1 }}
-                                        >
-                                            <ListItemText
-                                                primary={
-                                                    <Grid container alignItems="center" spacing={1} direction="row-reverse">
-                                                        <Grid item>
-                                                            <ShoppingCartIcon fontSize="small" color="primary" />
-                                                        </Grid>
-                                                        <Grid item>
-                                                            <Typography variant="body1" component="span" sx={{ fontWeight: 'bold' }}>
-                                                                {activity.property}
-                                                            </Typography>
-                                                        </Grid>
-                                                        <Grid item>
-                                                            <Chip
-                                                                label={activity.status}
-                                                                size="small"
-                                                                color={getStatusColor(activity.status)}
-                                                                sx={{ mr: 1 }}
-                                                            />
-                                                        </Grid>
-                                                    </Grid>
-                                                }
-                                                secondary={
-                                                    <Stack direction="column" spacing={0.5} sx={{ mt: 0.5 }}>
-                                                        <Typography variant="body2" color="text.primary">
-                                                            {activity.details}
-                                                        </Typography>
-                                                        <Typography variant="caption" color="text.secondary">
-                                                            تاريخ الشراء: {activity.purchaseDate} | المبلغ: {activity.amount}
-                                                        </Typography>
-                                                        <Typography variant="caption" color="text.disabled">
-                                                            ID: {activity.id}
-                                                        </Typography>
-                                                    </Stack>
-                                                }
-                                                primaryTypographyProps={{ component: 'div' }}
-                                                secondaryTypographyProps={{ component: 'div' }}
-                                            />
-                                        </ListItem>
-                                        {index < purchaseActivity.length - 1 && <Divider component="li" sx={{ my: 1 }} />}
-                                    </React.Fragment>
-                                ))}
-                            </List>
-                        )}
-                    </Box>
-                );
-            case 'funding':
-                return (
-                    <Box>
-                        <Typography variant="h6" color="text.secondary" sx={{ mb: 2, textAlign: 'left' }}>
-                            طلبات التمويل
-                        </Typography>
-                        {loading && (
-                            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mt: 4 }}>
-                                <CircularProgress />
-                                <Typography sx={{ ml: 2 }}>جاري تحميل طلبات التمويل...</Typography>
-                            </Box>
-                        )}
-                        {error && (
-                            <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>
-                        )}
-                        {!loading && (!fundingRequests || fundingRequests.length === 0) ? (
-                            <Typography variant="body1" color="text.secondary" sx={{ textAlign: 'center', mt: 4 }}>
-                                لا توجد طلبات تمويل حتى الآن.
-                            </Typography>
-                        ) : (
-                            <List>
-                                {fundingRequests.map((request, index) => (
-                                    <React.Fragment key={request.id}>
-                                        <ListItem
-                                            disablePadding
-                                            sx={{ flexDirection: 'row-reverse', py: 1 }}
-                                        >
-                                            <ListItemText
-                                                primary={
-                                                    <Grid container alignItems="center" spacing={1} direction="row-reverse">
-                                                        <Grid item>
-                                                            <AccountBalanceWalletIcon fontSize="small" color="primary" />
-                                                        </Grid>
-                                                        <Grid item>
-                                                            <Typography variant="body1" component="span" sx={{ fontWeight: 'bold' }}>
-                                                                مبلغ التمويل: {request.financing_amount} ج.م
-                                                            </Typography>
-                                                        </Grid>
-                                                        <Grid item>
-                                                            <Chip
-                                                                label={getReviewStatusLabel(request.reviewStatus)}
-                                                                size="small"
-                                                                color={getReviewStatusColor(request.reviewStatus)}
-                                                                sx={{ mr: 1 }}
-                                                            />
-                                                        </Grid>
-                                                        {request.status && (
-                                                        <Grid item>
-                                                            <Chip
-                                                                label={request.status}
-                                                                size="small"
-                                                                color={getStatusColor(request.status)}
-                                                                sx={{ mr: 1 }}
-                                                            />
-                                                        </Grid>
-                                                        )}
-                                                    </Grid>
-                                                }
-                                                secondary={
-                                                    <Stack direction="column" spacing={0.5} sx={{ mt: 0.5 }}>
-                                                        <Typography variant="body2" color="text.primary">
-                                                            معرّف الإعلان: {request.advertisement_id}
-                                                        </Typography>
-                                                        <Typography variant="body2" color="text.primary">
-                                                            الدخل الشهري: {request.monthly_income}
-                                                        </Typography>
-                                                        <Typography variant="body2" color="text.primary">
-                                                            الوظيفة: {request.job_title}
-                                                        </Typography>
-                                                        <Typography variant="body2" color="text.primary">
-                                                            السن: {request.age}
-                                                        </Typography>
-                                                        <Typography variant="body2" color="text.primary">
-                                                            جهة العمل: {request.employer}
-                                                        </Typography>
-                                                        <Typography variant="body2" color="text.primary">
-                                                            الحالة الاجتماعية: {request.marital_status}
-                                                        </Typography>
-                                                        <Typography variant="body2" color="text.primary">
-                                                            عدد المعالين: {request.dependents}
-                                                        </Typography>
-                                                        <Typography variant="body2" color="text.primary">
-                                                            مدة السداد: {request.repayment_years} سنة
-                                                        </Typography>
-                                                        <Typography variant="caption" color="text.secondary">
-                                                            تاريخ التقديم: {request.submitted_at && request.submitted_at.toDate ? request.submitted_at.toDate().toLocaleDateString('ar-EG') : ''}
-                                                        </Typography>
-                                                        {request.notes && (
-                                                            <Typography variant="caption" color="text.disabled">
-                                                                ملاحظات: {request.notes}
-                                                            </Typography>
-                                                        )}
-                                                        <Typography variant="caption" color="text.disabled">
-                                                            ID: {request.id}
-                                                        </Typography>
-                                                    </Stack>
-                                                }
-                                                primaryTypographyProps={{ component: 'div' }}
-                                                secondaryTypographyProps={{ component: 'div' }}
-                                            />
-                                        </ListItem>
-                                        {index < fundingRequests.length - 1 && <Divider component="li" sx={{ my: 1 }} />}
-                                    </React.Fragment>
-                                ))}
-                            </List>
-                        )}
-                    </Box>
-                );
-            default:
-                return null;
+    // Handle delete request
+    const handleDeleteRequest = async (request) => {
+        setRequestToDelete(request);
+        setIsDeleteModalOpen(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!requestToDelete) return;
+        
+        setActionLoading(prev => ({ ...prev, [requestToDelete.id]: true }));
+        try {
+            // Delete the request directly using the FinancingRequest model
+            const requestInstance = await FinancingRequest.getById(requestToDelete.id);
+            if (requestInstance) {
+                await requestInstance.delete();
+            setSnackbar({ open: true, message: 'تم حذف الطلب بنجاح', severity: 'success' });
+            } else {
+                throw new Error('الطلب غير موجود');
+            }
+        } catch (error) {
+            setSnackbar({ open: true, message: error.message || 'فشل حذف الطلب', severity: 'error' });
+        } finally {
+            setActionLoading(prev => ({ ...prev, [requestToDelete.id]: false }));
+            setIsDeleteModalOpen(false);
+            setRequestToDelete(null);
         }
+    };
+
+    // Handle edit request (return to pending)
+    const handleEditRequest = async (request) => {
+        setActionLoading(prev => ({ ...prev, [request.id]: true }));
+        try {
+            // Get the advertisement data
+            const ad = await FinancingAdvertisement.getById(request.advertisement_id);
+            if (!ad) {
+                throw new Error('الإعلان غير موجود');
+            }
+            
+            // Navigate to the financing request form with the ad data and request data
+            navigate('/financing-request', { 
+                state: { 
+                    advertisementId: request.advertisement_id,
+                    editRequestId: request.id,
+                    editRequestData: request,
+                    advertisementData: ad
+                } 
+            });
+        } catch (error) {
+            setSnackbar({ open: true, message: error.message || 'فشل تحميل بيانات الإعلان', severity: 'error' });
+        } finally {
+            setActionLoading(prev => ({ ...prev, [request.id]: false }));
+        }
+    };
+
+    // Handle submit edited request
+    const handleSubmitEditedRequest = async (updatedData) => {
+        if (!requestToEdit) return;
+        
+        setActionLoading(prev => ({ ...prev, [requestToEdit.id]: true }));
+        try {
+            // Update the request with new data and set status to pending
+            const updates = {
+                ...updatedData,
+                reviewStatus: 'pending',
+                review_note: null, // Clear any previous rejection notes
+                submitted_at: new Date() // Update submission time
+            };
+            
+            // Update the request directly using the FinancingRequest model
+            const requestInstance = await FinancingRequest.getById(requestToEdit.id);
+            if (requestInstance) {
+                await requestInstance.update(updates);
+            
+            // Send notification to the organization
+            const notif = new Notification({
+                receiver_id: adForEdit.userId, // Organization owner
+                title: 'طلب تمويل معدل بانتظار المراجعة',
+                body: `تم تعديل طلب التمويل على إعلانك: ${adForEdit.title}`,
+                type: 'system',
+                link: `/admin/financing-requests/${requestToEdit.id}`,
+            });
+            await notif.send();
+            
+            setSnackbar({ open: true, message: 'تم إرسال الطلب المعدل للمراجعة', severity: 'success' });
+            setIsEditModalOpen(false);
+            setRequestToEdit(null);
+            setAdForEdit(null);
+            } else {
+                throw new Error('الطلب غير موجود');
+            }
+        } catch (error) {
+            setSnackbar({ open: true, message: error.message || 'فشل إرسال الطلب المعدل', severity: 'error' });
+        } finally {
+            setActionLoading(prev => ({ ...prev, [requestToEdit.id]: false }));
+        }
+    };
+
+    const handleSnackbarClose = (event, reason) => {
+        if (reason === 'clickaway') return;
+        setSnackbar(prev => ({ ...prev, open: false }));
     };
 
     return (
         <Box sx={{ p: 2, textAlign: 'right' }}>
             <Typography variant="h4" sx={{ display: 'flex', flexDirection: 'row-reverse' }} gutterBottom>
-                سجل الأنشطة والطلبات
+                طلبات التمويل
             </Typography>
-
-            {/* Navigation Buttons */}
-            <Box sx={{ mb: 2, display: 'flex', gap: 1, flexDirection: 'row-reverse' }}>
-                <Button
-                    variant={activeSubTab === 'rental' ? 'contained' : 'outlined'}
-                    onClick={() => setActiveSubTab('rental')}
-                    sx={{ borderRadius: 2, fontSize: '17px' }}
-                >
-                    نشاط الإيجار الخاص بي
-                </Button>
-                <Button
-                    variant={activeSubTab === 'purchase' ? 'contained' : 'outlined'}
-                    onClick={() => setActiveSubTab('purchase')}
-                    sx={{ borderRadius: 2, fontSize: '17px' }}
-                >
-                    نشاط الشراء الخاص بي
-                </Button>
-                <Button
-                    variant={activeSubTab === 'funding' ? 'contained' : 'outlined'}
-                    onClick={() => setActiveSubTab('funding')}
-                    sx={{ borderRadius: 2, fontSize: '17px' }}
-                >
-                    طلبات التمويل
-                </Button>
-            </Box>
 
             {/* Main Content Area */}
             <Paper sx={{ p: 2, borderRadius: 2, minHeight: 400, textAlign: 'right', direction: 'rtl' }}>
-                {renderContent()}
+                {loading && (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mt: 4 }}>
+                        <CircularProgress />
+                        <Typography sx={{ ml: 2 }}>جاري تحميل طلبات التمويل...</Typography>
+                    </Box>
+                )}
+                {error && (
+                    <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>
+                )}
+                {!loading && (!fundingRequests || fundingRequests.length === 0) ? (
+                    <Typography variant="body1" color="text.secondary" sx={{ textAlign: 'center', mt: 4 }}>
+                        لا توجد طلبات تمويل حتى الآن.
+                    </Typography>
+                ) : (
+                    <List>
+                        {fundingRequests.map((request, index) => (
+                            <React.Fragment key={request.id}>
+                                <ListItem
+                                    disablePadding
+                                    sx={{ flexDirection: 'row-reverse', py: 1 }}
+                                >
+                                    <ListItemText
+                                        primary={
+                                            <Grid container alignItems="center" spacing={1} direction="row-reverse">
+                                                <Grid item>
+                                                    <AccountBalanceWalletIcon fontSize="small" color="primary" />
+                                                </Grid>
+                                                <Grid item>
+                                                    <Typography variant="body1" component="span" sx={{ fontWeight: 'bold' }}>
+                                                        مبلغ التمويل: {request.financing_amount} ج.م
+                                                    </Typography>
+                                                </Grid>
+                                                <Grid item>
+                                                    <Chip
+                                                        label={getReviewStatusLabel(request.reviewStatus)}
+                                                        size="small"
+                                                        color={getReviewStatusColor(request.reviewStatus)}
+                                                        sx={{ mr: 1 }}
+                                                    />
+                                                </Grid>
+                                                {request.status && (
+                                                <Grid item>
+                                                    <Chip
+                                                        label={request.status}
+                                                        size="small"
+                                                        color={getStatusColor(request.status)}
+                                                        sx={{ mr: 1 }}
+                                                    />
+                                                </Grid>
+                                                )}
+                                            </Grid>
+                                        }
+                                        secondary={
+                                            <Stack direction="column" spacing={0.5} sx={{ mt: 0.5 }}>
+                                                <Typography variant="body2" color="text.primary">
+                                                    معرّف الإعلان: {request.advertisement_id}
+                                                </Typography>
+                                                <Typography variant="body2" color="text.primary">
+                                                    الدخل الشهري: {request.monthly_income}
+                                                </Typography>
+                                                <Typography variant="body2" color="text.primary">
+                                                    الوظيفة: {request.job_title}
+                                                </Typography>
+                                                <Typography variant="body2" color="text.primary">
+                                                    السن: {request.age}
+                                                </Typography>
+                                                <Typography variant="body2" color="text.primary">
+                                                    جهة العمل: {request.employer}
+                                                </Typography>
+                                                <Typography variant="body2" color="text.primary">
+                                                    الحالة الاجتماعية: {request.marital_status}
+                                                </Typography>
+                                                <Typography variant="body2" color="text.primary">
+                                                    عدد المعالين: {request.dependents}
+                                                </Typography>
+                                                <Typography variant="body2" color="text.primary">
+                                                    مدة السداد: {request.repayment_years} سنة
+                                                </Typography>
+                                                <Typography variant="caption" color="text.secondary">
+                                                    تاريخ التقديم: {request.submitted_at && request.submitted_at.toDate ? request.submitted_at.toDate().toLocaleDateString('ar-EG') : ''}
+                                                </Typography>
+                                                {request.review_note && (
+                                                    <Typography variant="caption" color="error">
+                                                        ملاحظة الرفض: {request.review_note}
+                                                    </Typography>
+                                                )}
+                                                <Typography variant="caption" color="text.disabled">
+                                                    ID: {request.id}
+                                                </Typography>
+                                            </Stack>
+                                        }
+                                        primaryTypographyProps={{ component: 'div' }}
+                                        secondaryTypographyProps={{ component: 'div' }}
+                                    />
+                                    {/* Action buttons */}
+                                    <Stack direction="row" spacing={1} sx={{ mr: 2 }}>
+                                        {/* Edit button for rejected requests */}
+                                        {request.reviewStatus === 'rejected' && (
+                                            <Button
+                                                variant="outlined"
+                                                color="primary"
+                                                size="small"
+                                                disabled={actionLoading[request.id]}
+                                                onClick={() => handleEditRequest(request)}
+                                                startIcon={<EditIcon />}
+                                            >
+                                                تعديل وإعادة إرسال
+                                            </Button>
+                                        )}
+                                        {/* Delete button */}
+                                        <Button
+                                            variant="outlined"
+                                            color="error"
+                                            size="small"
+                                            disabled={actionLoading[request.id]}
+                                            onClick={() => handleDeleteRequest(request)}
+                                            startIcon={<DeleteIcon />}
+                                        >
+                                            حذف
+                                        </Button>
+                                    </Stack>
+                                </ListItem>
+                                {index < fundingRequests.length - 1 && <Divider component="li" sx={{ my: 1 }} />}
+                            </React.Fragment>
+                        ))}
+                    </List>
+                )}
             </Paper>
+
+            {/* Delete Confirmation Modal */}
+            <Dialog
+                open={isDeleteModalOpen}
+                onClose={() => setIsDeleteModalOpen(false)}
+            >
+                <DialogTitle>تأكيد الحذف</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        هل أنت متأكد من حذف طلب التمويل هذا؟ لا يمكن التراجع عن هذا الإجراء.
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setIsDeleteModalOpen(false)}>إلغاء</Button>
+                    <Button onClick={handleConfirmDelete} color="error" variant="contained">
+                        حذف
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Edit Request Modal */}
+            {isEditModalOpen && requestToEdit && adForEdit && (
+                <EditFinancialRequestModal
+                    open={isEditModalOpen}
+                    onClose={() => {
+                        setIsEditModalOpen(false);
+                        setRequestToEdit(null);
+                        setAdForEdit(null);
+                    }}
+                    onSubmit={handleSubmitEditedRequest}
+                    request={requestToEdit}
+                    advertisement={adForEdit}
+                    loading={actionLoading[requestToEdit.id]}
+                />
+            )}
+
+            {/* Snackbar */}
+            <Snackbar
+                open={snackbar.open}
+                autoHideDuration={6000}
+                onClose={handleSnackbarClose}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+            >
+                <Alert onClose={handleSnackbarClose} severity={snackbar.severity} sx={{ width: '100%' }}>
+                    {snackbar.message}
+                </Alert>
+            </Snackbar>
         </Box>
+    );
+}
+
+// Edit Financial Request Modal Component
+function EditFinancialRequestModal({ open, onClose, onSubmit, request, advertisement, loading }) {
+    const [formData, setFormData] = useState({
+        monthly_income: request?.monthly_income || '',
+        job_title: request?.job_title || '',
+        employer: request?.employer || '',
+        age: request?.age || '',
+        marital_status: request?.marital_status || '',
+        dependents: request?.dependents || '',
+        financing_amount: request?.financing_amount || '',
+        repayment_years: request?.repayment_years || '',
+        phone_number: request?.phone_number || ''
+    });
+
+    const handleChange = (field, value) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
+    };
+
+    const handleSubmit = () => {
+        onSubmit(formData);
+    };
+
+    return (
+        <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+            <DialogTitle>تعديل طلب التمويل</DialogTitle>
+            <DialogContent>
+                <Box sx={{ mt: 2 }}>
+                    {/* Advertisement Info */}
+                    <Typography variant="h6" gutterBottom>معلومات الإعلان</Typography>
+                    <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1, mb: 3 }}>
+                        <Typography variant="body1" sx={{ fontWeight: 'bold' }}>{advertisement.title}</Typography>
+                        <Typography variant="body2" color="text.secondary">
+                            الحد الأدنى: {advertisement.start_limit} | الحد الأقصى: {advertisement.end_limit}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                            نسبة الفائدة: حتى 5 سنوات {advertisement.interest_rate_upto_5}% | 
+                            حتى 10 سنوات {advertisement.interest_rate_upto_10}% | 
+                            أكثر من 10 سنوات {advertisement.interest_rate_above_10}%
+                        </Typography>
+                    </Box>
+
+                    {/* Form Fields */}
+                    <Grid container spacing={2}>
+                        <Grid item xs={12} sm={6}>
+                            <TextField
+                                fullWidth
+                                label="الدخل الشهري"
+                                value={formData.monthly_income}
+                                onChange={(e) => handleChange('monthly_income', e.target.value)}
+                                type="number"
+                            />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                            <TextField
+                                fullWidth
+                                label="المسمى الوظيفي"
+                                value={formData.job_title}
+                                onChange={(e) => handleChange('job_title', e.target.value)}
+                            />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                            <TextField
+                                fullWidth
+                                label="جهة العمل"
+                                value={formData.employer}
+                                onChange={(e) => handleChange('employer', e.target.value)}
+                            />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                            <TextField
+                                fullWidth
+                                label="السن"
+                                value={formData.age}
+                                onChange={(e) => handleChange('age', e.target.value)}
+                                type="number"
+                            />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                            <FormControl fullWidth>
+                                <InputLabel>الحالة الاجتماعية</InputLabel>
+                                <Select
+                                    value={formData.marital_status}
+                                    label="الحالة الاجتماعية"
+                                    onChange={(e) => handleChange('marital_status', e.target.value)}
+                                >
+                                    <MenuItem value="أعزب">أعزب</MenuItem>
+                                    <MenuItem value="متزوج">متزوج</MenuItem>
+                                    <MenuItem value="مطلق">مطلق</MenuItem>
+                                    <MenuItem value="أرمل">أرمل</MenuItem>
+                                </Select>
+                            </FormControl>
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                            <TextField
+                                fullWidth
+                                label="عدد المعالين"
+                                value={formData.dependents}
+                                onChange={(e) => handleChange('dependents', e.target.value)}
+                                type="number"
+                            />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                            <TextField
+                                fullWidth
+                                label="مبلغ التمويل"
+                                value={formData.financing_amount}
+                                onChange={(e) => handleChange('financing_amount', e.target.value)}
+                                type="number"
+                                helperText={`يجب أن يكون بين ${advertisement.start_limit} و ${advertisement.end_limit}`}
+                            />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                            <TextField
+                                fullWidth
+                                label="مدة السداد (بالسنوات)"
+                                value={formData.repayment_years}
+                                onChange={(e) => handleChange('repayment_years', e.target.value)}
+                                type="number"
+                            />
+                        </Grid>
+                        <Grid item xs={12}>
+                            <TextField
+                                fullWidth
+                                label="رقم الهاتف"
+                                value={formData.phone_number}
+                                onChange={(e) => handleChange('phone_number', e.target.value)}
+                            />
+                        </Grid>
+                    </Grid>
+                </Box>
+            </DialogContent>
+            <DialogActions>
+                <Button onClick={onClose}>إلغاء</Button>
+                <Button 
+                    onClick={handleSubmit} 
+                    variant="contained" 
+                    disabled={loading}
+                >
+                    {loading ? 'جاري الإرسال...' : 'إرسال الطلب المعدل'}
+                </Button>
+            </DialogActions>
+        </Dialog>
     );
 }
 
@@ -2907,7 +2730,6 @@ export default function ClientDashboard(props) {
     const userProfileStatus = useSelector((state) => state.user.status);
     
     // Notification state
-    const [notifications, setNotifications] = React.useState([]);
     const [notificationAnchorEl, setNotificationAnchorEl] = React.useState(null);
     const [unreadCount, setUnreadCount] = React.useState(0);
     const [snackbarOpen, setSnackbarOpen] = React.useState(false);
@@ -2990,80 +2812,16 @@ export default function ClientDashboard(props) {
 
     const router = useDemoRouter('/profile');
 
-    // Notification handlers
-    const handleNotificationClick = (event) => {
+    // Notification handlers - memoized to prevent unnecessary re-renders
+    const handleNotificationClick = React.useCallback((event) => {
         event.preventDefault();
         event.stopPropagation();
-        console.log('Notification bell clicked, setting anchor element');
         setNotificationAnchorEl(event.currentTarget);
-    };
+    }, []);
 
-    const handleNotificationClose = () => {
+    const handleNotificationClose = React.useCallback(() => {
         setNotificationAnchorEl(null);
-    };
-
-    const handleMarkAsRead = async (notificationId) => {
-        try {
-            await Notification.markAsRead(notificationId);
-            // Update local state
-            setNotifications(prev => 
-                prev.map(notif => 
-                    notif.id === notificationId 
-                        ? { ...notif, is_read: true }
-                        : notif
-                )
-            );
-            setUnreadCount(prev => Math.max(0, prev - 1));
-        } catch (error) {
-            console.error('Error marking notification as read:', error);
-        }
-    };
-
-    const handleMarkAllAsRead = async () => {
-        if (!authUid) return;
-        try {
-            await Notification.markAllAsRead(authUid);
-            setNotifications(prev => prev.map(notif => ({ ...notif, is_read: true })));
-            setUnreadCount(0);
-        } catch (error) {
-            console.error('Error marking all notifications as read:', error);
-        }
-    };
-
-    const handleReturnToPending = async (notification) => {
-        try {
-            // Extract advertisement ID from notification link
-            const linkMatch = notification.link?.match(/\/client\/ads\/(.+)/);
-            if (!linkMatch) {
-                console.error('Could not extract advertisement ID from notification link');
-                return;
-            }
-            
-            const adId = linkMatch[1];
-            console.log('Returning advertisement to pending:', adId);
-            
-            // Dispatch the return to pending action
-            await dispatch(clientReturnAdvertisementToPending(adId));
-            
-            // Mark notification as read
-            await handleMarkAsRead(notification.id);
-            
-            // Close notification menu
-            handleNotificationClose();
-            
-            // Show success message
-            setSnackbarMessage('تم إعادة الإعلان إلى حالة المراجعة بنجاح');
-            setSnackbarSeverity('success');
-            setSnackbarOpen(true);
-            console.log('Advertisement returned to pending successfully');
-            
-        } catch (error) {
-            console.error('Error returning advertisement to pending:', error);
-            setSnackbarMessage('حدث خطأ أثناء إعادة الإعلان إلى المراجعة');
-            setSnackbarSeverity('error');
-            setSnackbarOpen(true);
-        }
-    };
+    }, []);
 
     // Effect to fetch user profile when dashboard mounts (only if not already loaded)
     useEffect(() => {
@@ -3073,38 +2831,14 @@ export default function ClientDashboard(props) {
         }
     }, [authUid, userProfileStatus, userProfile, dispatch]);
 
-    // Effect for real-time notifications
-    useEffect(() => {
-        if (!authUid) {
-            console.log('No authUid available for notifications');
-            return;
-        }
-
-        console.log('Setting up real-time notifications for user:', authUid);
-        
-        // Subscribe to notifications
-        const unsubscribeNotifications = Notification.subscribeByUser(authUid, (notifs) => {
-            console.log('Received notifications:', notifs);
-            console.log('Notification details:', notifs.map(n => ({
-                id: n.id,
-                title: n.title,
-                body: n.body,
-                type: n.type,
-                is_read: n.is_read
-            })));
-            setNotifications(notifs);
-        });
-
-        // Subscribe to unread count
-        const unsubscribeUnreadCount = Notification.subscribeUnreadCount(authUid, (count) => {
-            console.log('Unread count updated:', count);
+    // Real-time notification subscription
+    React.useEffect(() => {
+        if (authUid) {
+            const unsubscribe = Notification.subscribeUnreadCount(authUid, (count) => {
             setUnreadCount(count);
         });
-
-        return () => {
-            unsubscribeNotifications();
-            unsubscribeUnreadCount();
-        };
+            return () => unsubscribe();
+        }
     }, [authUid]);
 
     const handleDrawerToggle = () => {
@@ -3238,177 +2972,47 @@ export default function ClientDashboard(props) {
                                         onClick={handleNotificationClick} 
                                         color="inherit"
                                     >
-                                        <Badge badgeContent={unreadCount} color="error">
+                                        <Badge 
+                                            badgeContent={unreadCount} 
+                                            color="error"
+                                                                sx={{ 
+                                                "& .MuiBadge-badge": {
+                                                    top: "0px",
+                                                    right: "0px",
+                                                    backgroundColor: "#d1d1d1ff",
+                                                    color: "black",
+                                                    fontWeight: "bold",
+                                                    minWidth: "20px",
+                                                    height: "20px",
+                                                    borderRadius: "50%",
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    justifyContent: "center",
+                                                    fontSize: "14px",
+                                                    zIndex: "10000",
+                                                },
+                                            }}
+                                        >
                                             <NotificationsIcon />
                                         </Badge>
                                     </IconButton>
                                     
-                                    {/* Temporary notification display for testing */}
-                                    {notificationAnchorEl && (
-                                        <Box sx={{ 
-                                            position: 'absolute', 
-                                            top: 60, 
-                                            right: 20, 
-                                            width: 400, 
-                                            maxHeight: 500,
-                                            backgroundColor: 'white',
-                                            border: '1px solid #ccc',
-                                            borderRadius: 1,
-                                            zIndex: 1000,
-                                            p: 2
-                                        }}>
-                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                                                <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                                                    الإشعارات ({notifications.length})
-                                                </Typography>
-                                                <IconButton size="small" onClick={handleNotificationClose}>
-                                                    <CloseIcon />
-                                                </IconButton>
-                                            </Box>
-                                            
-                                            <Box sx={{ maxHeight: 400, overflow: 'auto' }}>
-                                                {notifications.length === 0 ? (
-                                                    <Box sx={{ p: 3, textAlign: 'center' }}>
-                                                        <Typography variant="body2" color="text.secondary">
-                                                            لا توجد إشعارات
-                                                        </Typography>
-                                                    </Box>
-                                                ) : (
-                                                    notifications.map((notification) => {
-                                                        const isRejectionNotification = notification.title === 'تم رفض إعلانك' || 
-                                                        notification.title.includes('رفض');
-                                                        
-                                                        return (
-                                                            <Card 
-                                                                key={notification.id} 
-                                                                sx={{ 
-                                                                    m: 1, 
-                                                                    cursor: 'pointer',
-                                                                    backgroundColor: notification.is_read ? 'transparent' : 'action.hover',
-                                                                    '&:hover': {
-                                                                        backgroundColor: 'action.selected',
-                                                                    },
-                                                                    border: isRejectionNotification ? '2px solid #ff6b6b' : '1px solid transparent',
-                                                                    borderLeft: isRejectionNotification ? '4px solid #ff6b6b' : '1px solid transparent',
-                                                                }}
-                                                                onClick={() => handleMarkAsRead(notification.id)}
-                                                            >
-                                                                <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                                                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-                                                                        <Typography 
-                                                                            variant="subtitle2" 
-                                                                            sx={{ 
-                                                                                fontWeight: notification.is_read ? 'normal' : 'bold',
-                                                                                color: notification.is_read ? 'text.secondary' : 'text.primary'
-                                                                            }}
-                                                                        >
-                                                                            {notification.title}
-                                                                        </Typography>
-                                                                        {!notification.is_read && (
-                                                                            <Chip 
-                                                                                label="جديد" 
-                                                                                size="small" 
-                                                                                color="error" 
-                                                                                sx={{ fontSize: '0.6rem', height: 20 }}
-                                                                            />
-                                                                        )}
-                                                                    </Box>
-                                                                    
-                                                                    <Typography 
-                                                                        variant="body2" 
-                                                                        color="text.secondary"
-                                                                        sx={{ mb: 1, lineHeight: 1.4 }}
-                                                                    >
-                                                                        {notification.body}
-                                                                    </Typography>
-                                                                    
-                                                                    {isRejectionNotification && (
-                                                                        <Box sx={{ 
-                                                                            mb: 2, 
-                                                                            p: 1.5, 
-                                                                            backgroundColor: '#fff3f3', 
-                                                                            border: '1px solid #ffcdd2',
-                                                                            borderRadius: 1,
-                                                                            borderLeft: '4px solid #f44336'
-                                                                        }}>
-                                                                            <Typography 
-                                                                                variant="subtitle2" 
-                                                                                color="error" 
-                                                                                sx={{ fontWeight: 'bold', mb: 0.5 }}
-                                                                            >
-                                                                                📝 سبب الرفض:
-                                                                            </Typography>
-                                                                            <Typography 
-                                                                                variant="body2" 
-                                                                                color="error.dark"
-                                                                                sx={{ lineHeight: 1.5 }}
-                                                                            >
-                                                                                {(() => {
-                                                                                    const body = notification.body;
-                                                                                    
-                                                                                    if (body.includes('السبب:')) {
-                                                                                        const reason = body.split('السبب:')[1]?.trim();
-                                                                                        return reason || 'غير مذكور';
-                                                                                    } else if (body.includes('سبب:')) {
-                                                                                        const reason = body.split('سبب:')[1]?.trim();
-                                                                                        return reason || 'غير مذكور';
-                                                                                    } else if (body.includes('السبب')) {
-                                                                                        const reason = body.split('السبب')[1]?.trim();
-                                                                                        return reason || 'غير مذكور';
-                                                                                    } else {
-                                                                                        return body;
-                                                                                    }
-                                                                                })()}
-                                                                            </Typography>
-                                                                        </Box>
-                                                                    )}
-                                                                    
-                                                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                                        <Typography variant="caption" color="text.secondary">
-                                                                            {notification.timestamp?.toDate ? 
-                                                                                notification.timestamp.toDate().toLocaleString('ar-EG') :
-                                                                                new Date(notification.timestamp).toLocaleString('ar-EG')
-                                                                            }
-                                                                        </Typography>
-                                                                        
-                                                                        {notification.type && (
-                                                                            <Chip 
-                                                                                label={notification.type === 'system' ? 'نظام' : notification.type} 
-                                                                                size="small" 
-                                                                                variant="outlined"
-                                                                                sx={{ fontSize: '0.6rem', height: 20 }}
-                                                                            />
-                                                                        )}
-                                                                    </Box>
-                                                                    
-                                                                    {isRejectionNotification && (
-                                                                        <Box sx={{ mt: 1, display: 'flex', justifyContent: 'flex-end' }}>
-                                                                            <Button
-                                                                                size="small"
-                                                                                variant="outlined"
-                                                                                color="primary"
-                                                                                onClick={(e) => {
-                                                                                    e.stopPropagation();
-                                                                                    handleReturnToPending(notification);
-                                                                                }}
-                                                                                sx={{ 
-                                                                                    fontSize: '0.7rem',
-                                                                                    textTransform: 'none',
-                                                                                    borderRadius: 1
-                                                                                }}
-                                                                            >
-                                                                                🔄 إعادة الإعلان للمراجعة
-                                                                            </Button>
-                                                                        </Box>
-                                                                    )}
-                                                                </CardContent>
-                                                            </Card>
-                                                        );
-                                                    })
-                                                )}
-                                            </Box>
-                                        </Box>
-                                    )}
+                                    {/* Notification Popover */}
+                                    <Popover
+                                        open={Boolean(notificationAnchorEl)}
+                                        anchorEl={notificationAnchorEl}
+                                        onClose={handleNotificationClose}
+                                        anchorOrigin={{
+                                            vertical: 'bottom',
+                                            horizontal: 'left',
+                                        }}
+                                        transformOrigin={{
+                                            vertical: 'top',
+                                            horizontal: 'right',
+                                        }}
+                                    >
+                                        <NotificationList userId={authUid} />
+                                    </Popover>
                                     <IconButton
                                         sx={{ ml: 1 }}
                                         color="inherit"

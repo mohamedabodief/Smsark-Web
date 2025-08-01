@@ -39,11 +39,17 @@ export default function Layout({ children }) {
     "/privateChat"
   ].some((path) => location.pathname.startsWith(path));
 
+  const isDashboardNav = [
+    "/admin-dashboard",
+    "/client-dashboard",
+    "/organization-dashboard",
+  ].some((path) => location.pathname.startsWith(path));
+
   return (
     <UnreadMessagesProvider>
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Nav toggleMode={toggleMode} />
+      {!isDashboardNav && <Nav toggleMode={toggleMode} />}
       <Box component="main" sx={{ mt: { xs: 5, md: 8 } }}>
         {children}
       </Box>
