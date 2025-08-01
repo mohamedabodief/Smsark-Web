@@ -297,7 +297,7 @@ function DetailsForDevelopment() {
           >
             مفضلة
           </Button>
-          <Button
+          {/* <Button
             variant="outlined"
             startIcon={<OutlinedFlagIcon />}
             sx={{
@@ -313,7 +313,7 @@ function DetailsForDevelopment() {
             }}
           >
             إبلاغ
-          </Button>
+          </Button> */}
           <Button
             variant="outlined"
             startIcon={<ShareOutlinedIcon />}

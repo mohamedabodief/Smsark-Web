@@ -135,7 +135,7 @@ function DetailsForFinaccingAds() {
           >
             مفضلة
           </Button>
-          <Button
+          {/* <Button
             variant="outlined"
             startIcon={<OutlinedFlagIcon />}
             sx={{
@@ -151,7 +151,7 @@ function DetailsForFinaccingAds() {
             }}
           >
             إبلاغ
-          </Button>
+          </Button> */}
           <Button
             variant="outlined"
             startIcon={<ShareOutlinedIcon />}

@@ -226,12 +226,12 @@ function DetailsForClient() {
               <FavoriteBorderIcon />
             </Button>
           </Box>
-          <Box sx={{ display: "flex", gap: 1, color: "#807AA6" }}>
+          {/* <Box sx={{ display: "flex", gap: 1, color: "#807AA6" }}>
             <Button>
               <Typography fontWeight="bold">إبلاغ</Typography>
               <OutlinedFlagIcon />
             </Button>
-          </Box>
+          </Box> */}
           <Box sx={{ display: "flex", gap: 1, color: "#807AA6" }}>
             <Button onClick={handleShare}>
               <Typography fontWeight="bold">مشاركة</Typography>
