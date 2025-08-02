@@ -17,8 +17,11 @@ import inquiriesReducer from "../reduxToolkit/slice/inquiriesSlice";
 import clientAdvertisementsReducer from "../reduxToolkit/slice/ClientAdvertismentSlice";
 import paidAdsReducer from "../reduxToolkit/slice/paidAdsSlice";
 import adminUsersReducer from "../reduxToolkit/slice/adminUsersSlice";
+import usersReducer from "../reduxToolkit/slice/usersSlice";
 import financialRequestsReducer from '../reduxToolkit/slice/financialRequestSlice';
 import homepageAdsReducer from "../feature/ads/homepageAdsSlice";
+import analyticsReducer from "../reduxToolkit/slice/analyticsSlice";
+
 export const store = configureStore({
   reducer: {
     auth: authReducer,
@@ -38,8 +41,10 @@ export const store = configureStore({
     advertisements: clientAdvertisementsReducer,
     paidAds: paidAdsReducer,
     adminUsers: adminUsersReducer,
+    users: usersReducer,
     financialRequests: financialRequestsReducer,
     homepageAds: homepageAdsReducer,
+    analytics: analyticsReducer,
   },
     middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

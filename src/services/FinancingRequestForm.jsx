@@ -5,23 +5,44 @@ import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import FinancingRequest from '../FireBase/modelsWithOperations/FinancingRequest';
 import FinancingAdvertisement from '../FireBase/modelsWithOperations/FinancingAdvertisement';
+import { auth } from '../FireBase/firebaseConfig';
 import React from 'react';
 
 export default function FinancingRequestForm() {
   const navigate = useNavigate();
   const location = useLocation();
   const advertisementId = location.state?.advertisementId;
+  const editRequestId = location.state?.editRequestId;
+  const editRequestData = location.state?.editRequestData;
+  const advertisementData = location.state?.advertisementData;
+  const isEditing = !!editRequestId;
+
   const [monthlyInstallment, setMonthlyInstallment] = useState('');
   const [isDisabled, setIsDisabled] = useState(false);
-  const [requestId, setRequestId] = useState(null);
+  const [requestId, setRequestId] = useState(editRequestId || null);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
-  const [minAmount, setMinAmount] = useState(500000);
-  const [maxAmount, setMaxAmount] = useState(1000000);
+  const [minAmount, setMinAmount] = useState(advertisementData?.start_limit || 500000);
+  const [maxAmount, setMaxAmount] = useState(advertisementData?.end_limit || 1000000);
+
+  // Get current user ID
+  const currentUser = auth.currentUser;
+  const userId = currentUser?.uid;
+
+  // Check authentication on component mount
+  React.useEffect(() => {
+    if (!currentUser) {
+      alert("يجب تسجيل الدخول أولاً لتقديم طلب التمويل");
+      navigate('/login');
+    }
+  }, [currentUser, navigate]);
 
   // جلب حدود مبلغ التمويل من الإعلان المرتبط
   React.useEffect(() => {
     async function fetchLimits() {
-      if (advertisementId) {
+      if (advertisementData) {
+        setMinAmount(advertisementData.start_limit);
+        setMaxAmount(advertisementData.end_limit);
+      } else if (advertisementId) {
         const ad = await FinancingAdvertisement.getById(advertisementId);
         if (ad) {
           setMinAmount(ad.start_limit);
@@ -30,21 +51,35 @@ export default function FinancingRequestForm() {
       }
     }
     fetchLimits();
-  }, [advertisementId]);
+  }, [advertisementId, advertisementData]);
+
+  // Calculate monthly installment when editing
+  React.useEffect(() => {
+    if (isEditing && form.financing_amount && form.repayment_years) {
+      updateInstallment(form);
+    }
+  }, [isEditing]);
 
   const [form, setForm] = useState({
-    user_id: 'user-id',
+    user_id: userId || '',
     advertisement_id: advertisementId || '',
-    monthly_income: '',
-    job_title: '',
-    employer: '',
-    age: '',
-    marital_status: '',
-    dependents: '',
-    financing_amount: '',
-    repayment_years: '',
-    phone_number: '', // أضف رقم الهاتف
+    monthly_income: editRequestData?.monthly_income || '',
+    job_title: editRequestData?.job_title || '',
+    employer: editRequestData?.employer || '',
+    age: editRequestData?.age || '',
+    marital_status: editRequestData?.marital_status || '',
+    dependents: editRequestData?.dependents || '',
+    financing_amount: editRequestData?.financing_amount || '',
+    repayment_years: editRequestData?.repayment_years || '',
+    phone_number: editRequestData?.phone_number || '',
   });
+
+  // Update user_id when userId changes
+  React.useEffect(() => {
+    if (userId) {
+      setForm(prev => ({ ...prev, user_id: userId }));
+    }
+  }, [userId]);
 
   const updateInstallment = async (updatedForm) => {
     const tempRequest = new FinancingRequest(updatedForm);
@@ -70,6 +105,13 @@ export default function FinancingRequestForm() {
   };
 
   const handleSubmit = async () => {
+    // Check if user is authenticated
+    if (!userId) {
+      alert("يجب تسجيل الدخول أولاً لتقديم طلب التمويل");
+      navigate('/login');
+      return;
+    }
+
     // تحقق من مبلغ التمويل قبل الإرسال بناءً على حدود الإعلان
     if (Number(form.financing_amount) < minAmount || Number(form.financing_amount) > maxAmount) {
       alert(`مبلغ التمويل يجب أن يكون بين ${minAmount} و ${maxAmount} جنيه مصري.`);
@@ -97,14 +139,41 @@ export default function FinancingRequestForm() {
 
   // زر الإرسال النهائي (يظهر رسالة النجاح ويعيد التوجيه)
   const handleFinalSubmit = async () => {
+    // Check if user is authenticated
+    if (!userId) {
+      alert("يجب تسجيل الدخول أولاً لتقديم طلب التمويل");
+      navigate('/login');
+      return;
+    }
+
     try {
       if (!requestId) {
         const request = new FinancingRequest(form);
         const id = await request.save();
         setRequestId(id);
       } else {
+        // If editing, update the request and set status to pending
+        const updates = {
+          ...form,
+          reviewStatus: 'pending',
+          review_note: null, // Clear any previous rejection notes
+          submitted_at: new Date() // Update submission time
+        };
         const request = new FinancingRequest({ ...form, id: requestId });
-        await request.update({ ...form });
+        await request.update(updates);
+
+        // Send notification to the organization
+        if (advertisementData?.userId) {
+          const Notification = (await import('../FireBase/MessageAndNotification/Notification')).default;
+          const notif = new Notification({
+            receiver_id: advertisementData.userId,
+            title: 'طلب تمويل معدل بانتظار المراجعة',
+            body: `تم تعديل طلب التمويل على إعلانك: ${advertisementData.title}`,
+            type: 'system',
+            link: `/admin/financing-requests/${requestId}`,
+          });
+          await notif.send();
+        }
       }
       setShowSuccessMessage(true);
       setTimeout(() => {
@@ -137,7 +206,7 @@ export default function FinancingRequestForm() {
         fontWeight="bold"
         mb={4}
       >
-        طلب تمويل عقاري
+        {isEditing ? 'تعديل طلب التمويل' : 'طلب تمويل عقاري'}
       </Typography>
 
       <Box component="form" display="flex" flexDirection="column" gap={3}>
@@ -209,7 +278,7 @@ export default function FinancingRequestForm() {
                 onClick={handleFinalSubmit}
                 sx={{ px: 4, py: 1.5, fontWeight: 'bold', borderRadius: 3 }}
               >
-                إرسال الطلب
+                {isEditing ? 'إرسال الطلب المعدل' : 'إرسال الطلب'}
               </Button>
               <Button
                 variant="outlined"
@@ -241,7 +310,7 @@ export default function FinancingRequestForm() {
         </Box>
         {showSuccessMessage && (
           <Typography color="success.main" textAlign="center" mt={2} fontWeight="bold">
-            تم إرسال أو تعديل الطلب بنجاح!
+            {isEditing ? 'تم إرسال الطلب المعدل بنجاح!' : 'تم إرسال الطلب بنجاح!'}
           </Typography>
         )}
       </Box>

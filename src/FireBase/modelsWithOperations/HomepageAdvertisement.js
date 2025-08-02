@@ -205,6 +205,7 @@ class HomepageAdvertisement {
   static async #handleExpiry(data) {
     const now = Date.now();
     if (data.ads === true && data.adExpiryTime && data.adExpiryTime <= now) {
+      console.log("HomepageAdvertisement.#handleExpiry - deactivating expired ad:", data.id);
       data.ads = false;
       data.adExpiryTime = null;
       const docRef = doc(db, 'HomepageAdvertisements', data.id);
@@ -258,6 +259,21 @@ class HomepageAdvertisement {
     });
   }
 
+  // ✅ الاشتراك اللحظي في جميع الإعلانات
+  static subscribeToAll(callback) {
+    const q = query(collection(db, 'HomepageAdvertisements'));
+    return onSnapshot(q, async (snap) => {
+      console.log("HomepageAdvertisement.subscribeToAll - received snapshots:", snap.docs.length);
+      const ads = [];
+      for (const doc of snap.docs) {
+        const ad = await HomepageAdvertisement.#handleExpiry(doc.data());
+        if (ad) ads.push(ad);
+      }
+      console.log("HomepageAdvertisement.subscribeToAll - processed ads:", ads.length);
+      callback(ads);
+    });
+  }
+
   // ✅ الاشتراك اللحظي في الإعلانات المفعلة
   static subscribeActiveAds(callback) {
     const q = query(
@@ -270,6 +286,24 @@ class HomepageAdvertisement {
         const ad = await HomepageAdvertisement.#handleExpiry(doc.data());
         if (ad) ads.push(ad);
       }
+      callback(ads);
+    });
+  }
+
+  // 🔁 استماع لحظي لإعلانات مستخدم معين
+  static subscribeByUserId(userId, callback) {
+    const q = query(
+      collection(db, 'HomepageAdvertisements'),
+      where('userId', '==', userId)
+    );
+    return onSnapshot(q, async (snap) => {
+      console.log(`HomepageAdvertisement.subscribeByUserId - received snapshots for user ${userId}:`, snap.docs.length);
+      const ads = [];
+      for (const doc of snap.docs) {
+        const ad = await HomepageAdvertisement.#handleExpiry(doc.data());
+        if (ad) ads.push(ad);
+      }
+      console.log(`HomepageAdvertisement.subscribeByUserId - processed ads for user ${userId}:`, ads.length);
       callback(ads);
     });
   }

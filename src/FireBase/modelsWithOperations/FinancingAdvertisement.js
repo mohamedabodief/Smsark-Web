@@ -288,9 +288,35 @@ class FinancingAdvertisement {
       where('reviewStatus', '==', status)
     );
     return onSnapshot(q, (snapshot) => {
-      const ads = snapshot.docs.map(
-        (docSnap) => new FinancingAdvertisement({ ...docSnap.data(), id: docSnap.id })
-      );
+      const ads = snapshot.docs.map((docSnap) => {
+        const data = docSnap.data();
+        return {
+          id: docSnap.id,
+          title: data.title,
+          description: data.description,
+          images: data.images || [],
+          phone: data.phone,
+          start_limit: data.start_limit,
+          end_limit: data.end_limit,
+          org_name: data.org_name,
+          type_of_user: data.type_of_user,
+          userId: data.userId,
+          ads: data.ads !== undefined ? data.ads : false,
+          adExpiryTime: data.adExpiryTime,
+          interest_rate_upto_5: data.interest_rate_upto_5,
+          interest_rate_upto_10: data.interest_rate_upto_10,
+          interest_rate_above_10: data.interest_rate_above_10,
+          receipt_image: data.receipt_image,
+          reviewStatus: data.reviewStatus || 'pending',
+          reviewed_by: data.reviewed_by,
+          review_note: data.review_note,
+          status: data.status,
+          adPackage: data.adPackage,
+          adPackageName: data.adPackageName,
+          adPackagePrice: data.adPackagePrice,
+          adPackageDuration: data.adPackageDuration,
+        };
+      });
       callback(ads);
     });
   }
@@ -312,7 +338,75 @@ class FinancingAdvertisement {
       where('ads', '==', true)
     );
     return onSnapshot(q, (snap) => {
-      const ads = snap.docs.map((d) => new FinancingAdvertisement({ ...d.data(), id: d.id }));
+      const ads = snap.docs.map((d) => {
+        const data = d.data();
+        return {
+          id: d.id,
+          title: data.title,
+          description: data.description,
+          images: data.images || [],
+          phone: data.phone,
+          start_limit: data.start_limit,
+          end_limit: data.end_limit,
+          org_name: data.org_name,
+          type_of_user: data.type_of_user,
+          userId: data.userId,
+          ads: data.ads !== undefined ? data.ads : false,
+          adExpiryTime: data.adExpiryTime,
+          interest_rate_upto_5: data.interest_rate_upto_5,
+          interest_rate_upto_10: data.interest_rate_upto_10,
+          interest_rate_above_10: data.interest_rate_above_10,
+          financing_model: data.financing_model,
+          receipt_image: data.receipt_image,
+          reviewStatus: data.reviewStatus || 'pending',
+          reviewed_by: data.reviewed_by,
+          review_note: data.review_note,
+          adPackage: data.adPackage,
+          adPackageName: data.adPackageName,
+          adPackagePrice: data.adPackagePrice,
+          adPackageDuration: data.adPackageDuration,
+        };
+      });
+      callback(ads);
+    });
+  }
+
+  // 🔁 استماع لحظي لإعلانات مستخدم معين
+  static subscribeByUserId(userId, callback) {
+    const q = query(
+      collection(db, 'FinancingAdvertisements'),
+      where('userId', '==', userId)
+    );
+    return onSnapshot(q, (snap) => {
+      const ads = snap.docs.map((d) => {
+        const data = d.data();
+        return {
+          id: d.id,
+          title: data.title,
+          description: data.description,
+          images: data.images || [],
+          phone: data.phone,
+          start_limit: data.start_limit,
+          end_limit: data.end_limit,
+          org_name: data.org_name,
+          type_of_user: data.type_of_user,
+          userId: data.userId,
+          ads: data.ads !== undefined ? data.ads : false,
+          adExpiryTime: data.adExpiryTime,
+          interest_rate_upto_5: data.interest_rate_upto_5,
+          interest_rate_upto_10: data.interest_rate_upto_10,
+          interest_rate_above_10: data.interest_rate_above_10,
+          financing_model: data.financing_model,
+          receipt_image: data.receipt_image,
+          reviewStatus: data.reviewStatus || 'pending',
+          reviewed_by: data.reviewed_by,
+          review_note: data.review_note,
+          adPackage: data.adPackage,
+          adPackageName: data.adPackageName,
+          adPackagePrice: data.adPackagePrice,
+          adPackageDuration: data.adPackageDuration,
+        };
+      });
       callback(ads);
     });
   }
@@ -321,9 +415,35 @@ class FinancingAdvertisement {
   static subscribeAllAds(callback) {
     const q = collection(db, 'FinancingAdvertisements');
     return onSnapshot(q, (snap) => {
-      const ads = snap.docs.map(
-        (d) => new FinancingAdvertisement({ ...d.data(), id: d.id })
-      );
+      const ads = snap.docs.map((d) => {
+        const data = d.data();
+        return {
+          id: d.id,
+          title: data.title,
+          description: data.description,
+          images: data.images || [],
+          phone: data.phone,
+          start_limit: data.start_limit,
+          end_limit: data.end_limit,
+          org_name: data.org_name,
+          type_of_user: data.type_of_user,
+          userId: data.userId,
+          ads: data.ads !== undefined ? data.ads : false,
+          adExpiryTime: data.adExpiryTime,
+          interest_rate_upto_5: data.interest_rate_upto_5,
+          interest_rate_upto_10: data.interest_rate_upto_10,
+          interest_rate_above_10: data.interest_rate_above_10,
+          receipt_image: data.receipt_image,
+          reviewStatus: data.reviewStatus || 'pending',
+          reviewed_by: data.reviewed_by,
+          review_note: data.review_note,
+          status: data.status,
+          adPackage: data.adPackage,
+          adPackageName: data.adPackageName,
+          adPackagePrice: data.adPackagePrice,
+          adPackageDuration: data.adPackageDuration,
+        };
+      });
       callback(ads);
     });
   }

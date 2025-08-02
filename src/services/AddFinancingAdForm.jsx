@@ -15,38 +15,77 @@ import PaymentMethods from './PaymentMethods';
 export default function AddFinancingAdForm() {
   const navigate = useNavigate();
   const location = useLocation();
+  
+  // Get URL parameters for edit mode
+  const urlParams = new URLSearchParams(window.location.search);
+  const editModeParam = urlParams.get('editMode');
+  const adIdParam = urlParams.get('adId');
+  
   const editData = location.state?.adData || null;
-  const isEditMode = location.state?.editMode || false;
+  const isEditMode = location.state?.editMode || editModeParam === 'true' || false;
 
   // --- تعديل: تهيئة الحقول والصور في وضع التعديل مثل PropertyForm.jsx ---
   React.useEffect(() => {
-    if (isEditMode && editData) {
-      setForm({
-        title: editData.title || '',
-        description: editData.description || '',
-        phone: editData.phone || '',
-        start_limit: editData.start_limit || '',
-        end_limit: editData.end_limit || '',
-        org_name: editData.org_name || '',
-        userId: editData.userId || 'admin',
-        type_of_user: editData.type_of_user || 'individual',
-        ads: true,
-        adExpiryTime: editData.adExpiryTime || Date.now() + 30 * 24 * 60 * 60 * 1000,
-        interest_rate_upto_5: editData.interest_rate_upto_5 || '',
-        interest_rate_upto_10: editData.interest_rate_upto_10 || '',
-        interest_rate_above_10: editData.interest_rate_above_10 || '',
-        id: editData.id || undefined,
-      });
-      // الصور القديمة فقط (روابط صحيحة)
-      if (editData.images && editData.images.length > 0) {
-        const validImages = editData.images.filter(
-          (img) => img && img.trim() !== '' && img !== 'null' && img !== 'undefined' && img.startsWith('http')
-        );
-        setPreviewUrls(validImages);
-        setImages([]); // الصور الجديدة فقط من input
+    const initializeEditData = async () => {
+      if (isEditMode) {
+        let adData = editData;
+        
+        // If we have adId from URL but no editData, fetch the ad
+        if (adIdParam && !editData) {
+          try {
+            console.log('Fetching ad data for ID:', adIdParam);
+            adData = await FinancingAdvertisement.getById(adIdParam);
+            if (!adData) {
+              setError('الإعلان غير موجود');
+              return;
+            }
+          } catch (error) {
+            console.error('Error fetching ad data:', error);
+            setError('حدث خطأ أثناء تحميل بيانات الإعلان');
+            return;
+          }
+        }
+        
+        if (adData) {
+          console.log('[DEBUG] Setting form data with adData:', adData);
+          console.log('[DEBUG] adData.userId:', adData.userId);
+          
+          setForm({
+            title: adData.title || '',
+            description: adData.description || '',
+            phone: adData.phone || '',
+            start_limit: adData.start_limit || '',
+            end_limit: adData.end_limit || '',
+            org_name: adData.org_name || '',
+            userId: adData.userId || auth.currentUser?.uid || 'admin',
+            type_of_user: adData.type_of_user || 'individual',
+            ads: adData.ads !== undefined ? adData.ads : false,
+            adExpiryTime: adData.adExpiryTime || Date.now() + 30 * 24 * 60 * 60 * 1000,
+            interest_rate_upto_5: adData.interest_rate_upto_5 || '',
+            interest_rate_upto_10: adData.interest_rate_upto_10 || '',
+            interest_rate_above_10: adData.interest_rate_above_10 || '',
+            id: adData.id || undefined,
+          });
+          
+          // الصور القديمة فقط (روابط صحيحة)
+          if (adData.images && adData.images.length > 0) {
+            const validImages = adData.images.filter(
+              (img) => img && img.trim() !== '' && img !== 'null' && img !== 'undefined' && img.startsWith('http')
+            );
+            setPreviewUrls(validImages);
+            setImages([]); // الصور الجديدة فقط من input
+          }
+          
+          // Set package if available
+          if (adData.adPackage) {
+            setSelectedPackage(adData.adPackage);
+          }
+        }
       }
-    }
-  }, [isEditMode, editData]);
+    };
+    
+    initializeEditData();
+  }, [isEditMode, editData, adIdParam]);
 
   const [form, setForm] = useState({
     title: editData?.title || '',
@@ -55,9 +94,9 @@ export default function AddFinancingAdForm() {
     start_limit: editData?.start_limit || '',
     end_limit: editData?.end_limit || '',
     org_name: editData?.org_name || '',
-    userId: editData?.userId || 'admin',
+    userId: editData?.userId || auth.currentUser?.uid || 'admin',
     type_of_user: editData?.type_of_user || 'individual',
-    ads: true,
+    ads: false,
     adExpiryTime: editData?.adExpiryTime || Date.now() + 30 * 24 * 60 * 60 * 1000,
     interest_rate_upto_5: editData?.interest_rate_upto_5 || '',
     interest_rate_upto_10: editData?.interest_rate_upto_10 || '',
@@ -177,11 +216,25 @@ export default function AddFinancingAdForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!isFormValid()) return;
+    
+    // Validate authentication
+    if (!auth.currentUser) {
+      setError('يجب تسجيل الدخول أولاً.');
+      return;
+    }
+    
     setLoading(true);
     setError(null);
     try {
       let ad;
       if (isEditMode && form.id) {
+        // Validate that we have a valid userId
+        const userId = editData?.userId || form.userId || auth.currentUser?.uid;
+        if (!userId) {
+          setError('معرف المستخدم غير صالح للتعديل.');
+          return;
+        }
+        
         // الصور القديمة (روابط فقط)
         const existingImageUrls = previewUrls.filter(url => !url.startsWith('blob:'));
         let finalImageUrls = existingImageUrls;
@@ -193,8 +246,21 @@ export default function AddFinancingAdForm() {
           updateImages = finalImageUrls;
         }
         // مرر userId وid من editData دائماً
-        ad = new FinancingAdvertisement({ ...form, adPackage: selectedPackage ? Number(selectedPackage) : null, images: finalImageUrls, id: form.id, userId: editData.userId });
-        await ad.update({ ...form, adPackage: selectedPackage ? Number(selectedPackage) : null, ...(updateImages ? { images: updateImages } : {}), id: form.id, userId: editData.userId }, images.length > 0 ? images : null, receiptImage);
+        console.log('[DEBUG] Creating FinancingAdvertisement with userId:', userId);
+        console.log('[DEBUG] Form data:', form);
+        console.log('[DEBUG] EditData:', editData);
+        
+        ad = new FinancingAdvertisement({ ...form, adPackage: selectedPackage ? Number(selectedPackage) : null, images: finalImageUrls, id: form.id, userId: userId });
+        await ad.update({ ...form, adPackage: selectedPackage ? Number(selectedPackage) : null, ...(updateImages ? { images: updateImages } : {}), id: form.id, userId: userId }, images.length > 0 ? images : null, receiptImage);
+        
+        // Update status to pending for admin review
+        try {
+          await ad.returnToPending();
+          console.log('Status updated to pending successfully');
+        } catch (statusError) {
+          console.error('Error updating status to pending:', statusError);
+          // Don't fail the entire operation if status update fails
+        }
       } else {
         // في حالة إضافة إعلان جديد
         const currentUser = auth.currentUser;
@@ -219,12 +285,7 @@ export default function AddFinancingAdForm() {
     }
   };
 
-  // عند التعديل، مرر adPackage من editData إلى selectedPackage
-  React.useEffect(() => {
-    if (isEditMode && editData && editData.adPackage) {
-      setSelectedPackage(editData.adPackage);
-    }
-  }, [isEditMode, editData]);
+
 
   return (
     <Paper elevation={3} sx={{ p: 3, borderRadius: 2, mt: 5, maxWidth: 1100, mx: "auto" ,mb:10}} >
@@ -239,7 +300,7 @@ export default function AddFinancingAdForm() {
       </Typography>
       {success && (
         <Alert severity="success" sx={{ mb: 2 }}>
-          {isEditMode ? "تم تحديث الإعلان بنجاح!" : "تم حفظ الإعلان بنجاح!"}
+          {isEditMode ? "تم تحديث الإعلان بنجاح! وحالة الإعلان الآن قيد المراجعة" : "تم حفظ الإعلان بنجاح!"}
         </Alert>
       )}
       {error && (

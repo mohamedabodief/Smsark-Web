@@ -477,6 +477,19 @@ class FinancingRequest {
       callback(requests);
     });
   }
+
+  /**
+   * الاشتراك اللحظي في جميع طلبات التمويل (Real-time listener)
+   * @param {function} callback - دالة تُستدعى عند التحديث
+   * @returns {function} unsubscribe - دالة لإلغاء الاشتراك
+   */
+  static subscribeAllRequests(callback) {
+    const q = collection(db, 'FinancingRequests');
+    return onSnapshot(q, (snap) => {
+      const requests = snap.docs.map((doc) => new FinancingRequest({ id: doc.id, ...doc.data() }));
+      callback(requests);
+    });
+  }
 }
 
 export default FinancingRequest;

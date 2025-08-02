@@ -34,6 +34,7 @@ import AdPackagesClient from "../packages/packagesClient";
 import AdminDashboard from "./Dashboard/adminDashboard";
 import ClientDashboard from "./Dashboard/clientDashboard";
 import OrganizationDashboard from "./Dashboard/organization/organizationDashboard";
+import Analytics from "./pages/Analytics";
 import PrivateRoute from "./PrivateRoute";
 import AuthSync from "./AuthSync";
 // import RequireNotAuth from "./LoginAndRegister/RequireNotAuth";
@@ -221,6 +222,7 @@ function App() {
             <Route path="/admin-dashboard" element={<AdminDashboard />} />
             <Route path="/client-dashboard" element={<ClientDashboard />} />
             <Route path="/organization-dashboard" element={<OrganizationDashboard />} />
+            <Route path="/analytics" element={<Analytics />} />
           </Route>
           {/* صفحات التفاصيل */}
           <Route path="/detailsForDevelopment/:id" element={<DetailsForDevelopment />} />

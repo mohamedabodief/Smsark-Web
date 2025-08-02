@@ -13,6 +13,7 @@ import financialRequestsReducer from './slice/financialRequestSlice';
 import developerAdsReducer from '../feature/ads/developerAdsSlice';
 import financingAdsReducer from '../feature/ads/financingAdsSlice';
 import homepageAdsReducer from '../feature/ads/homepageAdsSlice';
+import analyticsReducer from './slice/analyticsSlice';
 const store = configureStore({
   reducer: {
     users: usersReducer,
@@ -29,6 +30,7 @@ const store = configureStore({
     developerAds: developerAdsReducer,
     financingAds: financingAdsReducer,
     homepageAds: homepageAdsReducer,
+    analytics: analyticsReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

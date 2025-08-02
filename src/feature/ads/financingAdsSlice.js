@@ -42,6 +42,31 @@ const financingAdsSlice = createSlice({
       state.byUser = [];
       state.activeByUser = [];
     },
+    setFinancingAdsByUser: (state, action) => {
+      // Convert class instances to plain objects to ensure id is accessible
+      state.byUser = action.payload.map(ad => ({
+        id: ad.id,
+        title: ad.title,
+        description: ad.description,
+        images: ad.images,
+        phone: ad.phone,
+        userId: ad.userId,
+        ads: ad.ads,
+        adExpiryTime: ad.adExpiryTime,
+        reviewStatus: ad.reviewStatus,
+        reviewed_by: ad.reviewed_by,
+        review_note: ad.review_note,
+        status: ad.status,
+        receipt_image: ad.receipt_image,
+        financing_model: ad.financing_model,
+        start_limit: ad.start_limit,
+        end_limit: ad.end_limit,
+        org_name: ad.org_name,
+        interest_rate_upto_5: ad.interest_rate_upto_5,
+        interest_rate_upto_10: ad.interest_rate_upto_10,
+        interest_rate_above_10: ad.interest_rate_above_10,
+      }));
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -87,6 +112,6 @@ const financingAdsSlice = createSlice({
   },
 });
 
-export const { clearFinancingAds } = financingAdsSlice.actions;
+export const { clearFinancingAds ,setFinancingAdsByUser } = financingAdsSlice.actions;
 
 export default financingAdsSlice.reducer;

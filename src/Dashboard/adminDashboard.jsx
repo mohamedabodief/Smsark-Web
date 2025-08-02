@@ -18,7 +18,20 @@ import {
     Stack,
     Card,
     CardContent,
+    Popover,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    useTheme
 } from '@mui/material';
+import PeopleIcon from '@mui/icons-material/People'; // Icon for Users
+import CampaignIcon from '@mui/icons-material/Campaign'; // Icon for Ads
+import RequestQuoteIcon from '@mui/icons-material/RequestQuote'; // Icon for Financial Requests
+import AttachMoneyIcon from '@mui/icons-material/AttachMoney'; // Icon for Revenue
+import LocationOnIcon from '@mui/icons-material/LocationOn'; // Icon for Geographic
 import MenuIcon from '@mui/icons-material/Menu';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import DashboardIcon from '@mui/icons-material/Dashboard';
@@ -27,6 +40,7 @@ import HomeIcon from '@mui/icons-material/Home';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import SupervisedUserCircleIcon from '@mui/icons-material/SupervisedUserCircle';
 import BarChartIcon from '@mui/icons-material/BarChart';
+import AnalyticsIcon from '@mui/icons-material/Analytics';
 import DescriptionIcon from '@mui/icons-material/Description';
 import LayersIcon from '@mui/icons-material/Layers';
 import ExpandLess from '@mui/icons-material/ExpandLess';
@@ -57,10 +71,8 @@ import rtlPlugin from 'stylis-plugin-rtl';
 import { StyledEngineProvider } from '@mui/material/styles';
 
 import { DataGrid } from '@mui/x-data-grid';
-// import { useDemoData } from '@mui/x-data-grid-generator';
-import { MOCK_ADVERTISEMENTS } from './mockAds';
 import { Link } from '@mui/material';
-
+import { PieChart } from '@mui/x-charts/PieChart';
 
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import BlockIcon from '@mui/icons-material/Block';
@@ -86,6 +98,11 @@ import {
     clearFilters
 } from '../reduxToolkit/slice/ClientAdvertismentSlice';
 import AutorenewIcon from '@mui/icons-material/Autorenew';
+import ClientAdvertisement from '../FireBase/modelsWithOperations/ClientAdvertisemen';
+import NotificationList from '../pages/notificationList';
+import Notification from '../FireBase/MessageAndNotification/Notification';
+import NotificationsIcon from '@mui/icons-material/Notifications';
+import Badge from '@mui/material/Badge';
 
 import {
     setDeveloperAds, setFunderAds,
@@ -97,7 +114,11 @@ import {
 import FinancingAdvertisement from '../FireBase/modelsWithOperations/FinancingAdvertisement';
 import RealEstateDeveloperAdvertisement from '../FireBase/modelsWithOperations/RealEstateDeveloperAdvertisement';
 import { useNavigate } from 'react-router-dom';
-
+import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
+import SearchIcon from '@mui/icons-material/Search';
+import ClearIcon from '@mui/icons-material/Clear';
+import InputAdornment from '@mui/material/InputAdornment';
+import PageHeader from '../componenents/PageHeader';
 import {
     fetchClients,
     fetchOrganizations,
@@ -111,6 +132,8 @@ import {
     addAdmin,
     editAdmin,
     deleteAdmin,
+    deleteClientAsync,
+    deleteOrganizationAsync,
 } from '../reduxToolkit/slice/adminUsersSlice';
 
 import { fetchUserProfile, updateUserProfile, uploadAndSaveProfileImage } from "../LoginAndRegister/featuresLR/userSlice";
@@ -119,6 +142,7 @@ import { collection, doc, getDoc, getDocs } from "firebase/firestore";
 import { fetchFinancialRequests, deleteFinancialRequest, updateFinancialRequest } from '../reduxToolkit/slice/financialRequestSlice';
 import {
     fetchAllHomepageAds,
+    subscribeToAllHomepageAds,
     createHomepageAd,
     updateHomepageAd,
     deleteHomepageAd,
@@ -126,15 +150,13 @@ import {
     rejectHomepageAd,
     returnHomepageAdToPending,
     activateHomepageAd,
-    deactivateHomepageAd
+    deactivateHomepageAd,
+    clearSubscriptions
 } from '../feature/ads/homepageAdsSlice';
 import AddHomepageAdModal from './adminDashboard/AddHomepageAdModal';
 import EditHomepageAdModal from './adminDashboard/EditHomepageAdModal';
-import Notification from '../FireBase/MessageAndNotification/Notification';
-import ClientAdvertisement from '../FireBase/modelsWithOperations/ClientAdvertisemen';
-import NotificationsIcon from '@mui/icons-material/Notifications';
-import Badge from '@mui/material/Badge';
-
+import RejectionReasonModal from './organization/modals/RejectionReasonModal';
+import Analytics from '../pages/Analytics';
 // Create RTL cache for Emotion
 const cacheRtl = createCache({
     key: 'mui-rtl',
@@ -212,10 +234,16 @@ const NAVIGATION = [
         tooltip: 'التقارير',
         children: [
             {
-                segment: 'sales',
-                title: 'المبيعات',
+                segment: 'reports',
+                title: 'التقارير',
                 icon: <DescriptionIcon />,
-                tooltip: 'المبيعات',
+                tooltip: 'التقارير',
+            },
+            {
+                segment: 'analytics',
+                title: 'التحليلات والتقارير',
+                icon: <AnalyticsIcon />,
+                tooltip: 'التحليلات والتقارير',
             },
             {
                 segment: 'traffic',
@@ -225,12 +253,12 @@ const NAVIGATION = [
             },
         ],
     },
-    // {
-    //     segment: 'integrations',
-    //     title: 'إضافات',
-    //     icon: <LayersIcon />,
-    //     tooltip: 'إضافات',
-    // },
+    {
+        segment: 'integrations',
+        title: 'إضافات',
+        icon: <LayersIcon />,
+        tooltip: 'إضافات',
+    },
 ];
 
 const ColorModeContext = React.createContext({ toggleColorMode: () => { } });
@@ -320,90 +348,6 @@ function AddUserModal({ open, onClose, onAdd }) {
     );
 }
 
-// function EditUserModal({ open, onClose, onSave, user }) {
-//     const [name, setName] = React.useState(user ? user.name : '');
-//     const [email, setEmail] = React.useState(user ? user.email : '');
-//     const [nameError, setNameError] = React.useState(false);
-//     const [emailError, setEmailError] = React.useState(false);
-//     const [emailHelperText, setEmailHelperText] = React.useState('');
-
-//     React.useEffect(() => {
-//         if (user) {
-//             setName(user.name);
-//             setEmail(user.email);
-//             setNameError(false);
-//             setEmailError(false);
-//             setEmailHelperText('');
-//         }
-//     }, [user, open]);
-
-//     const handleSave = () => {
-//         let hasError = false;
-//         if (!name.trim()) {
-//             setNameError(true);
-//             hasError = true;
-//         } else {
-//             setNameError(false);
-//         }
-
-//         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-//         if (!email.trim()) {
-//             setEmailError(true);
-//             setEmailHelperText('البريد الألكتروني مطلوب');
-//             hasError = true;
-//         } else if (!emailRegex.test(email)) {
-//             setEmailError(true);
-//             setEmailHelperText('صيغة البريد الألكتروني غير صحيحة');
-//             hasError = true;
-//         } else {
-//             setEmailError(false);
-//             setEmailHelperText('');
-//         }
-
-//         if (!hasError) {
-//             onSave({ ...user, name, email });
-//             onClose();
-//         }
-//     };
-
-//     return (
-//         <Dialog open={open} onClose={onClose}>
-//             <DialogTitle sx={{ textAlign: 'left' }}>تعديل العميل</DialogTitle>
-//             <DialogContent sx={{ textAlign: 'right' }}>
-//                 <TextField
-//                     autoFocus
-//                     margin="dense"
-//                     label="الإسم"
-//                     type="text"
-//                     fullWidth
-//                     variant="outlined"
-//                     value={name}
-//                     onChange={(e) => setName(e.target.value)}
-//                     error={nameError}
-//                     helperText={nameError ? 'Name is required' : ''}
-//                     sx={{ mb: 2 }}
-//                 />
-//                 <TextField
-//                     margin="dense"
-//                     label="البريد الألكتروني"
-//                     type="email"
-//                     fullWidth
-//                     variant="outlined"
-//                     value={email}
-//                     onChange={(e) => setEmail(e.target.value)}
-//                     error={emailError}
-//                     helperText={emailHelperText}
-//                 />
-//             </DialogContent>
-//             <DialogActions sx={{ flexDirection: 'row-reverse' }}>
-//                 <Button onClick={handleSave} variant="contained" sx={{ bgcolor: 'purple' }}>
-//                     حفظ
-//                 </Button>
-//                 <Button onClick={onClose}>إلغاء</Button>
-//             </DialogActions>
-//         </Dialog>
-//     );
-// }
 
 function ConfirmDeleteModal({ open, onClose, onConfirm, itemType, itemId, itemName }) {
     return (
@@ -506,83 +450,7 @@ function AddOrgModal({ open, onClose, onAdd, orgType }) {
     );
 }
 
-// function EditOrgModal({ open, onClose, onSave, organization, orgType }) {
-//     const [name, setName] = useState('');
-//     const [contact, setContact] = useState('');
 
-//     useEffect(() => {
-//         if (open && organization) {
-//             setName(organization.name || '');
-//             setContact(organization.contact || '');
-//         }
-//     }, [open, organization]); // Repopulate when modal opens or organization changes
-
-//     const handleSave = () => {
-//         if (name.trim() === '' || contact.trim() === '') {
-//             alert('الرجاء تعبئة جميع الحقول المطلوبة.'); // Please fill in all required fields.
-//             return;
-//         }
-//         const updatedOrg = {
-//             ...organization, // Keep existing ID and other properties
-//             name,
-//             contact,
-//             // Ensure the type is preserved from the original organization
-//             type: organization.type // Explicitly keep the original type
-//         };
-//         onSave(updatedOrg);
-//         onClose();
-//     };
-
-//     const getTitle = () => {
-//         if (orgType === 'developer') {
-//             return `تعديل المطور العقاري: ${organization?.name}`;
-//         } else if (orgType === 'funder') {
-//             return `تعديل الممول العقاري: ${organization?.name}`;
-//         }
-//         return `تعديل المؤسسة: ${organization?.name}`; // Fallback
-//     };
-
-//     return (
-//         <Dialog open={open} onClose={onClose}>
-//             <DialogTitle sx={{ textAlign: 'left' }}>{getTitle()}</DialogTitle>
-//             <DialogContent sx={{ textAlign: 'right' }}>
-//                 <TextField
-//                     autoFocus
-//                     margin="dense"
-//                     id="name"
-//                     label="الاسم"
-//                     type="text"
-//                     fullWidth
-//                     variant="outlined"
-//                     value={name}
-//                     onChange={(e) => setName(e.target.value)}
-//                     required
-//                 />
-//                 <TextField
-//                     margin="dense"
-//                     id="contact"
-//                     label="جهة الاتصال"
-//                     type="text"
-//                     fullWidth
-//                     variant="outlined"
-//                     value={contact}
-//                     onChange={(e) => setContact(e.target.value)}
-//                     required
-//                 />
-//                 {/* Add any conditional fields here based on orgType */}
-//                 {/* </Box> */}
-//             </DialogContent>
-//             <DialogActions sx={{ justifyContent: 'flex-end', pr: 3, pb: 2 }}>
-//                 <Button onClick={handleSave} variant="contained" sx={{ bgcolor: 'purple' }}>
-//                     حفظ التغييرات
-//                 </Button>
-//                 <Button onClick={onClose} >
-//                     إلغاء
-//                 </Button>
-//             </DialogActions>
-//         </Dialog>
-//     );
-// }
 
 function AddAdminModal({ open, onClose, setSnackbar }) {
     const dispatch = useDispatch();
@@ -1056,7 +924,11 @@ function EditAdminModal({ open, onClose, admin, setSnackbar }) { // Added setSna
 function DashboardPage() {
     return (
         <Box sx={{ p: 2, textAlign: 'right' }}>
-            <Typography variant="h4" display={'flex'} flexDirection={'row-reverse'} gutterBottom>لوحة التحكم</Typography>
+            <PageHeader
+                title="لوحة التحكم"
+                icon={DashboardIcon}
+                showCount={false}
+            />
             <Grid container spacing={3} direction="row-reverse">
                 <Grid item xs={12} sm={6} md={4}>
                     <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', height: 140, borderRadius: 2, textAlign: 'right' }}>
@@ -1092,70 +964,6 @@ function DashboardPage() {
     );
 }
 
-
-// change pic func 
-// const UploadAvatars = () => {
-//     const [avatarSrc, setAvatarSrc] = React.useState(undefined); // State is now here
-
-//     const handleAvatarChange = (event) => {
-//         const file = event.target.files?.[0];
-//         if (file) {
-//             const reader = new FileReader();
-//             reader.onload = () => {
-//                 setAvatarSrc(reader.result);
-//             };
-//             reader.readAsDataURL(file);
-//         }
-//     }
-
-//     return (
-//         <Box sx={{ display: 'flex', flexDirection: 'row-reverse', position: 'relative' }}>
-//             <ButtonBase
-//                 component="label"
-//                 role={undefined}
-//                 tabIndex={-1}
-//                 aria-label="Avatar image"
-//                 sx={{
-//                     borderRadius: '40px',
-//                     '&:has(:focus-visible)': {
-//                         outline: '2px solid',
-//                         outlineOffset: '2px',
-//                     },
-//                 }}
-//             >
-//                 <Avatar alt="Upload new avatar" src={avatarSrc || './admin.jpg'} sx={{ width: 100, height: 100, mb: 1, boxShadow: '0px 0px 8px rgba(0,0,0,0.2)' }} />
-//             </ButtonBase>
-//             <div style={{ position: 'absolute', bottom: -15, right: 5 }}>
-//                 <Tooltip title="تغيير الصورة">
-//                     <Button
-//                         variant="contained"
-//                         color="primary"
-//                         component="label"
-//                         style={{ backgroundColor: '#6E00FE', color: 'white', border: 'none', cursor: 'pointer' }}
-//                     >
-//                         <input
-//                     type="file"
-//                     accept="image/*"
-//                     style={{
-//                         border: 0,
-//                         clip: 'rect(0 0 0 0)',
-//                         height: '1px',
-//                         margin: '-1px',
-//                         overflow: 'hidden',
-//                         padding: 0,
-//                         position: 'absolute',
-//                         whiteSpace: 'nowrap',
-//                         width: '1px',
-//                     }}
-//                     onChange={handleAvatarChange}
-//                 />
-//                 تغيير الصورة
-//                 </Button>
-//                 </Tooltip>
-//             </div>
-//         </Box>
-//     );
-// };
 
 const genders = ["ذكر", "أنثى", "غير محدد"];
 function ProfilePage() {
@@ -1714,13 +1522,13 @@ function UsersPage() {
     const handleDeleteConfirm = async () => {
         try {
             if (itemToDelete.type === 'user') {
-                await dispatch(deleteClient(itemToDelete.uid)).unwrap(); // Use uid for deletion
+                await dispatch(deleteClientAsync(itemToDelete.uid)).unwrap(); // Async thunk, use .unwrap()
                 setSnackbar({ open: true, message: "تم حذف العميل بنجاح!", severity: "success" });
             } else if (itemToDelete.type === 'organization') {
-                await dispatch(deleteOrganization(itemToDelete.uid)).unwrap(); // Use uid for deletion
+                await dispatch(deleteOrganizationAsync(itemToDelete.uid)).unwrap(); // Async thunk, use .unwrap()
                 setSnackbar({ open: true, message: "تم حذف المؤسسة بنجاح!", severity: "success" });
             } else if (itemToDelete.type === 'admin') {
-                await dispatch(deleteAdmin(itemToDelete.uid)).unwrap(); // Use uid for deletion
+                await dispatch(deleteAdmin(itemToDelete.uid)).unwrap(); // Async thunk, use .unwrap()
                 setSnackbar({ open: true, message: "تم حذف المدير بنجاح!", severity: "success" });
             }
         } catch (err) {
@@ -1760,7 +1568,7 @@ function UsersPage() {
                         key={item.uid} // Use uid as key
                         disablePadding
                         secondaryAction={
-                            <Box sx={{ display: 'flex', gap: 1, flexDirection: 'row-reverse' }}>
+                            <Box sx={{ display: 'flex', gap: 1, flexDirection: 'row' }}>
                                 <IconButton edge="start" aria-label="edit" onClick={() => {
                                     if (type === 'user') handleEditUser(item);
                                     else if (type === 'organization') handleEditOrg(item);
@@ -1785,9 +1593,14 @@ function UsersPage() {
     };
 
     return (
-        <Box sx={{ p: 2, textAlign: 'right' }}>
-            <Typography variant="h4" display={'flex'} flexDirection={'row-reverse'} gutterBottom>المستخدمين</Typography>
-            <Box sx={{ mb: 2, display: 'flex', gap: 1, flexDirection: 'row-reverse' }}>
+        <Box dir={'rtl'} sx={{ p: 3, textAlign: 'right' }}>
+            <PageHeader
+                title="المستخدمين"
+                icon={GroupIcon}
+                showCount={false}
+                
+            />
+            <Box sx={{ mb: 2, display: 'flex', gap: 1, flexDirection: 'row' }}>
                 <Button
                     variant={activeTab === 'users' ? 'contained' : 'outlined'}
                     onClick={() => setActiveTab('users')}
@@ -1817,7 +1630,7 @@ function UsersPage() {
             <Paper sx={{ p: 2, borderRadius: 2, minHeight: 400, textAlign: 'right' }}>
                 {activeTab === 'users' && (
                     <>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexDirection: 'row-reverse' }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexDirection: 'row' }}>
                             <Typography variant="h6" sx={{ fontWeight: 'bold' }} color="text.secondary">قائمة العملاء</Typography>
                             <Button variant="outlined" startIcon={<AddIcon />} onClick={handleAddUser}>
                                 إضافة عميل
@@ -1830,7 +1643,7 @@ function UsersPage() {
                 {activeTab === 'organizations' && (
                     <>
                         {/* Sub-tabs for Organizations */}
-                        <Box sx={{ mb: 2, display: 'flex', gap: 1, flexDirection: 'row-reverse' }}>
+                        <Box sx={{ mb: 2, display: 'flex', gap: 1, flexDirection: 'row' }}>
                             <Button
                                 variant={activeOrgSubTab === 'developers' ? 'contained' : 'outlined'}
                                 onClick={() => setActiveOrgSubTab('developers')}
@@ -1861,7 +1674,7 @@ function UsersPage() {
 
                         {activeOrgSubTab === 'funders' && (
                             <Box sx={{ mt: 2 }}>
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexDirection: 'row-reverse' }}>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexDirection: 'row' }}>
                                     <Typography variant="h6" color="text.secondary">قائمة الممولين العقاريين</Typography>
                                     <Button variant="outlined" startIcon={<AddIcon />} onClick={handleAddOrg}>
                                         إضافة ممول عقاري
@@ -1875,7 +1688,7 @@ function UsersPage() {
 
                 {activeTab === 'admins' && (
                     <>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexDirection: 'row-reverse' }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexDirection: 'row' }}>
                             <Typography variant="h6" color="text.secondary">قائمة المدراء</Typography>
                             <Button variant="outlined" startIcon={<AddIcon />} onClick={handleAddAdmin}>
                                 إضافة مدير
@@ -1958,7 +1771,11 @@ function UsersPage() {
 function PropertiesPage() {
     return (
         <Box sx={{ p: 2, textAlign: 'right' }} >
-            <Typography variant="h4" sx={{ display: 'flex', flexDirection: 'row-reverse' }} gutterBottom>قائمة العقارات</Typography>
+            <PageHeader
+                title="قائمة العقارات"
+                icon={HomeIcon}
+                showCount={false}
+            />
             <Paper sx={{ p: 2, borderRadius: 2, minHeight: 400, textAlign: 'right', direction: 'rtl' }}>
                 <Typography variant="h6" color="text.secondary">On sell | Financing | Rent</Typography>
                 <Box sx={{ mt: 2, p: 2, border: '1px dashed #ccc', borderRadius: 1, textAlign: 'right' }}>
@@ -2010,7 +1827,21 @@ function Mainadvertisment(props) {
         console.log("Mainadvertisment - Dispatching fetchAllHomepageAds...");
         dispatch(fetchAllHomepageAds());
     }, [dispatch]);
+    // State for rejection reason modal
+    const [isRejectionModalOpen, setIsRejectionModalOpen] = useState(false);
+    const [selectedAdForRejection, setSelectedAdForRejection] = useState(null);
 
+    // Subscribe to real-time updates for all homepage ads
+    useEffect(() => {
+        console.log("Mainadvertisment - Setting up real-time subscription...");
+        dispatch(subscribeToAllHomepageAds());
+        
+        // Cleanup subscription on unmount
+        return () => {
+            console.log("Mainadvertisment - Cleaning up subscription...");
+            dispatch(clearSubscriptions());
+        };
+    }, [dispatch]);
     // Handle add ad
     const handleAddAd = async (adData) => {
         try {
@@ -2063,6 +1894,19 @@ function Mainadvertisment(props) {
         } catch (error) {
             setSnackbar({ open: true, message: "فشل رفض الإعلان: " + (error.message || "خطأ غير معروف"), severity: "error" });
             console.error("Error rejecting ad:", error);
+        }
+    };
+    // Handle open rejection reason modal
+    const handleOpenRejectionModal = (ad) => {
+        setSelectedAdForRejection(ad);
+        setIsRejectionModalOpen(true);
+    };
+
+    // Handle confirm rejection with reason
+    const handleConfirmRejection = async (reason) => {
+        if (selectedAdForRejection) {
+            await handleRejectAd(selectedAdForRejection.id, reason);
+            setSelectedAdForRejection(null);
         }
     };
 
@@ -2144,7 +1988,33 @@ function Mainadvertisment(props) {
         const date = typeof timestamp === 'number' ? new Date(timestamp) : new Date(timestamp);
         return date.toLocaleDateString('ar-EG');
     };
+    // Calculate remaining days from expiry time
+    const calculateRemainingDays = (expiryTime) => {
+        if (!expiryTime) return null;
+        const now = Date.now();
+        const expiry = typeof expiryTime === 'number' ? expiryTime : new Date(expiryTime).getTime();
+        const remainingMs = expiry - now;
+        if (remainingMs <= 0) return 0;
+        return Math.ceil(remainingMs / (24 * 60 * 60 * 1000));
+    };
 
+    // Get activation days display text
+    const getActivationDaysText = (ad) => {
+        if (!ad.adExpiryTime) return null;
+        
+        const remainingDays = calculateRemainingDays(ad.adExpiryTime);
+        if (remainingDays === null) return null;
+        
+        if (remainingDays === 0) {
+            return 'منتهي الصلاحية';
+        } else if (remainingDays === 1) {
+            return 'ينتهي غداً';
+        } else if (remainingDays <= 7) {
+            return `متبقي ${remainingDays} أيام`;
+        } else {
+            return `متبقي ${remainingDays} يوم`;
+        }
+    };
     const handleSnackbarClose = (event, reason) => {
         if (reason === 'clickaway') {
             return;
@@ -2175,12 +2045,15 @@ function Mainadvertisment(props) {
         active: homepageAds.filter(ad => ad.ads).length,
         inactive: homepageAds.filter(ad => !ad.ads).length,
     }), [homepageAds]);
-
+    const [receiptImage, setReceiptImage] = useState(null);
     return (
-        <Box sx={{ p: 2, textAlign: 'right' }}>
-            <Typography variant="h4" sx={{ display: 'flex', flexDirection: 'row-reverse', mb: 3 }}>
-                إدارة إعلانات الصفحة الرئيسية
-            </Typography>
+        <Box dir='rtl' sx={{ p: 3, textAlign: 'right' }}>
+            <PageHeader
+                title="إدارة إعلانات الصفحة الرئيسية"
+                icon={BroadcastOnHomeIcon}
+                count={stats.total}
+                countLabel="إجمالي الإعلانات"
+            />
 
             <Paper sx={{ p: 3, borderRadius: 2, minHeight: 400, textAlign: 'right' }}>
                 {/* Statistics */}
@@ -2223,9 +2096,9 @@ function Mainadvertisment(props) {
                     </FormControl>
                 </Box>
 
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexDirection: 'row-reverse' }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexDirection: 'row' }}>
                     <Typography variant="h6" sx={{ fontWeight: 'bold', fontSize: 18 }} color="text.secondary">
-                        إعلانات الصفحة الرئيسية ({filteredAds.length})
+                        قائمة الإعلانات ({filteredAds.length})
                     </Typography>
                     <Tooltip title="إضافة إعلان جديد">
                         <Button
@@ -2293,7 +2166,7 @@ function Mainadvertisment(props) {
                                         </Box>
 
                                         <Typography variant="body2" color="text.secondary">
-                                            تاريخ الإنشاء: {formatDate(ad.id ? new Date(parseInt(ad.id.substring(0, 8), 16) * 1000) : null)}
+                                            تاريخ الإنشاء: {ad.createdAt ? formatDate(ad.createdAt) : 'غير محدد'}
                                         </Typography>
 
                                         {ad.adExpiryTime && (
@@ -2301,16 +2174,43 @@ function Mainadvertisment(props) {
                                                 ينتهي في: {formatDate(ad.adExpiryTime)}
                                             </Typography>
                                         )}
-
+                                         {/* Activation Days Display */}
+                                        {getActivationDaysText(ad) && (
+                                            <Chip
+                                                label={getActivationDaysText(ad)}
+                                                color={calculateRemainingDays(ad.adExpiryTime) <= 7 ? 'warning' : 'info'}
+                                                size="small"
+                                                sx={{ mt: 0.5 }}
+                                            />
+                                        )}
                                         {ad.review_note && (
                                             <Typography variant="body2" color="error">
                                                 ملاحظة: {ad.review_note}
                                             </Typography>
                                         )}
                                     </Box>
+                                    {/* Receipt and Package Info */}
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                        {/* Receipt Icon */}
+                                        {ad.receipt_image && (
+                                            <Tooltip title="عرض إيصال الدفع">
+                                                <IconButton onClick={() => setReceiptImage(ad.receipt_image)}>
+                                                    <VisibilityIcon />
+                                                </IconButton>
+                                            </Tooltip>
+                                        )}
+                                        {/* Show package info */}
+                                        {ad.packageDays && ad.packagePrice && (
+                                            <Chip
+                                                label={`باقة: ${ad.packageDays} يوم - ${ad.packagePrice} جنيه`}
+                                                color="info"
+                                                sx={{ fontWeight: 'bold' }}
+                                            />
+                                        )}
+                                    </Box>
 
                                     {/* Admin Actions */}
-                                <Box sx={{ display: 'flex', gap: 1, flexDirection: 'row-reverse' }}>
+                                <Box sx={{ display: 'flex', gap: 1, flexDirection: 'row' }}>
                                         {/* Approve/Reject buttons for pending ads */}
                                         {ad.reviewStatus === 'pending' && (
                                             <>
@@ -2324,7 +2224,7 @@ function Mainadvertisment(props) {
                                                 </Tooltip>
                                                 <Tooltip title="رفض">
                                                     <IconButton
-                                                        onClick={() => handleRejectAd(ad.id, 'تم الرفض من قبل الإدارة')}
+                                                        onClick={() => handleOpenRejectionModal(ad, 'تم الرفض من قبل الإدارة')}
                                                         sx={{ color: 'error.main' }}
                                                     >
                                                         <CancelIcon />
@@ -2355,19 +2255,16 @@ function Mainadvertisment(props) {
                                                         </IconButton>
                                                     </Tooltip>
                                                 )}
+                                                {/* Reject button for approved ads */}
+                                                <Tooltip title="رفض الإعلان">
+                                                    <IconButton
+                                                        onClick={() => handleOpenRejectionModal(ad)}
+                                                        sx={{ color: 'error.main' }}
+                                                    >
+                                                        <CancelIcon />
+                                                    </IconButton>
+                                                </Tooltip>
                                             </>
-                                        )}
-
-                                        {/* Return to pending button for rejected ads */}
-                                        {ad.reviewStatus === 'rejected' && (
-                                            <Tooltip title="إرجاع للمراجعة">
-                                                <IconButton
-                                                    onClick={() => handleReturnToPending(ad.id)}
-                                                    sx={{ color: 'info.main' }}
-                                                >
-                                                    <AutorenewIcon />
-                                                </IconButton>
-                                            </Tooltip>
                                         )}
 
                                         {/* Edit button */}
@@ -2484,6 +2381,24 @@ function Mainadvertisment(props) {
                     {snackbar.message}
                 </Alert>
             </Snackbar>
+            {/* Rejection Reason Modal */}
+            <RejectionReasonModal
+                open={isRejectionModalOpen}
+                onClose={() => {
+                    setIsRejectionModalOpen(false);
+                    setSelectedAdForRejection(null);
+                }}
+                onConfirm={handleConfirmRejection}
+                adTitle={selectedAdForRejection?.title || selectedAdForRejection?.id}
+            />
+
+            {/* Receipt Dialog */}
+            <Dialog open={!!receiptImage} onClose={() => setReceiptImage(null)} maxWidth="sm" fullWidth>
+              <DialogTitle>إيصال الدفع</DialogTitle>
+              <DialogContent>
+                <img src={receiptImage} alt="إيصال الدفع" style={{ maxWidth: '100%' }} />
+              </DialogContent>
+            </Dialog>
         </Box>
     );
 }
@@ -2859,6 +2774,24 @@ function PaidAdvertismentPage() {
                 />
             ),
         },
+        { 
+            field: 'adPackageName', 
+            headerName: 'الباقة المختارة', 
+            width: 100, 
+            renderCell: (params) => {
+                if (params.value) {
+                    return (
+                        <Chip
+                            label={params.value}
+                            color="primary"
+                            size="small"
+                            variant="outlined"
+                        />
+                    );
+                }
+                return '—';
+            }
+        },
         {
             field: 'actions',
             headerName: 'الإجراءات',
@@ -3145,6 +3078,24 @@ function PaidAdvertismentPage() {
                 </Box>
             ),
         },
+        { 
+            field: 'adPackageName', 
+            headerName: 'الباقة المختارة', 
+            width: 150, 
+            renderCell: (params) => {
+                if (params.value) {
+                    return (
+                        <Chip
+                            label={params.value}
+                            color="primary"
+                            size="small"
+                            variant="outlined"
+                        />
+                    );
+                }
+                return '—';
+            }
+        },
         { field: 'adExpiryTime', headerName: 'تاريخ الانتهاء', width: 150, renderCell: (params) => params.value ? new Date(params.value).toLocaleDateString('ar-EG') : '—' },
     ];
 
@@ -3155,7 +3106,7 @@ function PaidAdvertismentPage() {
                 <DataGrid
                     rows={filteredDeveloperAds.filter(ad => ad.id !== null && ad.id !== undefined)}
                     columns={developerColumns}
-                    pageSizeOptions={[5, 10, 20]}
+                    pageSizeOptions={[5, 10, 20, 30,50]}
                     initialState={{
                         pagination: {
                             paginationModel: { pageSize: 10 },
@@ -3172,7 +3123,7 @@ function PaidAdvertismentPage() {
                 <DataGrid
                     rows={filteredFunderAds.filter(ad => ad.id !== null && ad.id !== undefined)}
                     columns={funderColumns}
-                    pageSizeOptions={[5, 10, 20]}
+                    pageSizeOptions={[5, 10, 20 , 30 , 50]}
                     initialState={{
                         pagination: {
                             paginationModel: { pageSize: 10 },
@@ -3210,9 +3161,11 @@ function PaidAdvertismentPage() {
 
     return (
         <Box dir={'rtl'} sx={{ p: { xs: 1, md: 3 }, textAlign: 'right', display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
-            <Typography sx={{ display: 'flex', flexDirection: 'row', mb: 2 }} variant="h4" gutterBottom>
-                الإعلانات المدفوعة
-            </Typography>
+            <PageHeader
+                title="الإعلانات المدفوعة"
+                icon={BroadcastOnPersonalIcon}
+                showCount={false}
+            />
             <Paper dir={'rtl'} sx={{ p: { xs: 1, md: 3 }, borderRadius: 2, minHeight: 400, textAlign: 'right', flexGrow: 1 }}>
                 <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
                     <Tabs
@@ -3283,33 +3236,6 @@ function PaidAdvertismentPage() {
                     </Button>
                 </DialogActions>
             </Dialog>
-            {/* Rejection Dialog for both tabs */}
-            {/* <Dialog open={rejectDialogOpen} onClose={() => setRejectDialogOpen(false)} dir="rtl">
-                <DialogTitle>سبب الرفض</DialogTitle>
-                <DialogContent>
-                    <TextField
-                        autoFocus
-                        margin="dense"
-                        label="سبب الرفض"
-                        type="text"
-                        fullWidth
-                        value={rejectReason}
-                        onChange={e => setRejectReason(e.target.value)}
-                        helperText={rejectReason.trim() === '' ? 'الرجاء إدخال سبب لرفض الإعلان.' : ''}
-                        error={rejectReason.trim() === ''}
-                    />
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setRejectDialogOpen(false)}>إلغاء</Button>
-                    <Button
-                        onClick={activeTab === 'developerAds' ? handleDeveloperConfirmReject : handleConfirmReject}
-                        color="error"
-                        disabled={rejectReason.trim() === ''}
-                    >
-                        رفض
-                    </Button>
-                </DialogActions>
-            </Dialog> */}
             <Dialog open={rejectDialogOpen} onClose={() => setRejectDialogOpen(false)} dir="rtl">
   <DialogTitle>سبب الرفض</DialogTitle>
   <DialogContent>
@@ -3406,11 +3332,11 @@ function PaidAdvertismentPage() {
     );
 }
 function ClientAdvertismentPage() {
-    const dispatch = useDispatch();
-    const advertisements = useSelector((state) => state.advertisements.list);
-    const loading = useSelector((state) => state.advertisements.loading);
-    const error = useSelector((state) => state.advertisements.error);
-    const filters = useSelector((state) => state.advertisements.filters);
+    // Local state for real-time data
+    const [advertisements, setAdvertisements] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [filters, setFilters] = useState({ reviewStatus: 'all', adStatus: 'all' });
 
     const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
     const [adToDelete, setAdToDelete] = useState(null);
@@ -3429,9 +3355,20 @@ function ClientAdvertismentPage() {
     const [adToActivate, setAdToActivate] = useState(null);
     const [adToActivateType, setAdToActivateType] = useState(null);
 
+    // Real-time subscription to all client advertisements
     useEffect(() => {
-        dispatch(fetchAdvertisements());
-    }, [dispatch]);
+        setLoading(true);
+        setError(null);
+
+        const unsubscribe = ClientAdvertisement.subscribeAll((adsData) => {
+            setAdvertisements(adsData);
+            setLoading(false);
+        });
+
+        return () => {
+            unsubscribe();
+        };
+    }, []);
 
 
     // --- Operations ---
@@ -3443,7 +3380,8 @@ function ClientAdvertismentPage() {
     const handleConfirmDelete = async () => {
         if (adToDelete) {
             try {
-                await dispatch(deleteAdvertisement(adToDelete.id)).unwrap();
+                const adInstance = await ClientAdvertisement.getById(adToDelete.id);
+                await adInstance.delete();
                 setSnackbar({ open: true, message: "الإعلان تم حذفه بنجاح!", severity: "success" });
             } catch (err) {
                 console.error("Error deleting advertisement:", err);
@@ -3467,7 +3405,8 @@ function ClientAdvertismentPage() {
             } else {
                 newStatus = 'تحت العرض';
             }
-            await dispatch(updateAdvertisementStatus({ adId: ad.id, newStatus })).unwrap();
+            const adInstance = await ClientAdvertisement.getById(ad.id);
+            await adInstance.updateStatus(newStatus);
             setSnackbar({ open: true, message: `تم تغيير حالة الإعلان إلى: ${newStatus}`, severity: "success" });
         } catch (err) {
             console.error("Error updating ad status:", err);
@@ -3484,7 +3423,8 @@ function ClientAdvertismentPage() {
     const handleConfirmApprove = async () => {
         if (adToReview) {
             try {
-                await dispatch(approveAdvertisement(adToReview.id)).unwrap();
+                const adInstance = await ClientAdvertisement.getById(adToReview.id);
+                await adInstance.approveAd();
                 setSnackbar({ open: true, message: "تمت الموافقة على الإعلان بنجاح!", severity: "success" });
             } catch (err) {
                 console.error("Error approving advertisement:", err);
@@ -3505,7 +3445,8 @@ function ClientAdvertismentPage() {
     const handleConfirmReject = async () => {
         if (adToReview) {
             try {
-                await dispatch(rejectAdvertisement({ adId: adToReview.id, reason: rejectReason })).unwrap();
+                const adInstance = await ClientAdvertisement.getById(adToReview.id);
+                await adInstance.rejectAd(rejectReason);
                 setSnackbar({ open: true, message: "تم رفض الإعلان بنجاح!", severity: "success" });
             } catch (err) {
                 console.error("Error rejecting advertisement:", err);
@@ -3526,7 +3467,8 @@ function ClientAdvertismentPage() {
     const handleConfirmReturn = async () => {
         if (adToReview) {
             try {
-                await dispatch(returnAdvertisementToPending(adToReview.id)).unwrap();
+                const adInstance = await ClientAdvertisement.getById(adToReview.id);
+                await adInstance.returnToPending();
                 setSnackbar({ open: true, message: "تم إعادة الإعلان إلى المراجعة بنجاح!", severity: "success" });
             } catch (err) {
                 console.error("Error returning advertisement:", err);
@@ -3549,7 +3491,8 @@ function ClientAdvertismentPage() {
     const handleConfirmActivate = async () => {
         if (adToActivate) {
             try {
-                await dispatch(activateAdvertisement({ adId: adToActivate.id, days: activationDays })).unwrap();
+                const adInstance = await ClientAdvertisement.getById(adToActivate.id);
+                await adInstance.adsActivation(activationDays);
                 setSnackbar({ open: true, message: `تم تفعيل الإعلان لمدة ${activationDays} يوم بنجاح!`, severity: "success" });
             } catch (err) {
                 console.error("Error activating advertisement:", err);
@@ -3564,7 +3507,8 @@ function ClientAdvertismentPage() {
 
     const handleDeactivateClick = async (ad) => {
         try {
-            await dispatch(deactivateAdvertisement(ad.id)).unwrap();
+            const adInstance = await ClientAdvertisement.getById(ad.id);
+            await adInstance.removeAds();
             setSnackbar({ open: true, message: "تم إيقاف تفعيل الإعلان بنجاح!", severity: "success" });
         } catch (err) {
             console.error("Error deactivating advertisement:", err);
@@ -3572,25 +3516,13 @@ function ClientAdvertismentPage() {
         }
     };
 
-    // Filter Operations
+    // Filter Operations - using local state since we have all data from onSnapshot
     const handleFilterByReviewStatus = (status) => {
-        if (status === 'all') {
-            dispatch(clearFilters());
-            dispatch(fetchAdvertisements());
-        } else {
-            dispatch(setFilter({ type: 'reviewStatus', value: status }));
-            dispatch(fetchAdvertisementsByReviewStatus(status));
-        }
+        setFilters(prev => ({ ...prev, reviewStatus: status }));
     };
 
     const handleFilterByAdStatus = (status) => {
-        if (status === 'all') {
-            dispatch(clearFilters());
-            dispatch(fetchAdvertisements());
-        } else {
-            dispatch(setFilter({ type: 'adStatus', value: status }));
-            dispatch(fetchAdvertisementsByAdStatus(status));
-        }
+        setFilters(prev => ({ ...prev, adStatus: status }));
     };
 
     const handleEditClick = (ad) => {
@@ -3603,7 +3535,7 @@ function ClientAdvertismentPage() {
             return;
         }
         setSnackbar({ ...snackbar, open: false });
-        dispatch(clearAdvertisementsError());
+        setError(null);
     };
     // --- End Operations ---
 
@@ -3735,7 +3667,7 @@ function ClientAdvertismentPage() {
                             size="small"
                                         onClick={() => handleApproveClick(ad)}
                                         color="success"
-                            disabled={loading === 'pending'}
+                            disabled={loading}
                         >
                                         <CheckCircleOutlineIcon fontSize="small" />
                         </IconButton>
@@ -3746,7 +3678,7 @@ function ClientAdvertismentPage() {
                                         size="small"
                                         onClick={() => handleRejectClick(ad)}
                                         color="error"
-                                        disabled={loading === 'pending'}
+                                        disabled={loading}
                                     >
                                         <BlockIcon fontSize="small" />
                                     </IconButton>
@@ -3761,7 +3693,7 @@ function ClientAdvertismentPage() {
                                     size="small"
                                     onClick={() => handleReturnClick(ad)}
                                     color="info"
-                                    disabled={loading === 'pending'}
+                                    disabled={loading}
                                 >
                                     <AutorenewIcon fontSize="small" />
                                 </IconButton>
@@ -3778,7 +3710,7 @@ function ClientAdvertismentPage() {
                                             size="small"
                                             onClick={() => handleActivateClick(ad)}
                                             color="success"
-                                            disabled={loading === 'pending'}
+                                            disabled={loading}
                                         >
                                             <CheckCircleOutlineIcon fontSize="small" />
                                         </IconButton>
@@ -3790,7 +3722,7 @@ function ClientAdvertismentPage() {
                                             size="small"
                                             onClick={() => handleDeactivateClick(ad)}
                                             color="warning"
-                                            disabled={loading === 'pending'}
+                                            disabled={loading}
                                         >
                                             <BlockIcon fontSize="small" />
                                         </IconButton>
@@ -3820,7 +3752,7 @@ function ClientAdvertismentPage() {
                                         ? 'success'
                                             : 'info'
                             }
-                            disabled={loading === 'pending'}
+                            disabled={loading}
                         >
                                 {ad.status === 'تحت العرض' ? (
                                 <BlockIcon fontSize="small" />
@@ -3838,7 +3770,7 @@ function ClientAdvertismentPage() {
                                 aria-label="edit"
                                 size="small"
                                 onClick={() => handleEditClick(ad)}
-                                disabled={loading === 'pending'}
+                                disabled={loading}
                             >
                                 <EditIcon fontSize="small" />
                             </IconButton>
@@ -3851,7 +3783,7 @@ function ClientAdvertismentPage() {
                             size="small"
                                 onClick={() => handleDeleteClick(ad)}
                             color="error"
-                            disabled={loading === 'pending'}
+                            disabled={loading}
                         >
                             <DeleteIcon fontSize="small" />
                         </IconButton>
@@ -3874,9 +3806,11 @@ function ClientAdvertismentPage() {
                 minHeight: 'calc(100vh - 64px - 48px)',
             }}
         >
-            <Typography sx={{ display: 'flex', flexDirection: 'row' }} variant="h4" gutterBottom>
-                إعلانات العملاء
-            </Typography>
+            <PageHeader
+                title="إعلانات العملاء"
+                icon={SupervisedUserCircleIcon}
+                showCount={false}
+            />
 
             <Paper
                 dir={'rtl'}
@@ -3927,12 +3861,12 @@ function ClientAdvertismentPage() {
                     </Box>
                 </Box>
 
-                {loading === 'pending' ? (
+                {loading ? (
                     <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexGrow: 1 }}>
                         <CircularProgress />
                         <Typography variant="body1" sx={{ ml: 2 }}>جارٍ تحميل الإعلانات...</Typography>
                     </Box>
-                ) : loading === 'failed' ? (
+                ) : error ? (
                     <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexGrow: 1, color: 'error.main' }}>
                         <Typography variant="body1">خطأ: {error}</Typography>
                     </Box>
@@ -3954,10 +3888,14 @@ function ClientAdvertismentPage() {
                         }}
                     >
                         <DataGrid
-                            rows={advertisements.filter(ad => ad.id != null).map(ad => ({
-                                ...ad,
-                                id: ad.id || `temp-${Math.random().toString(36).substr(2, 9)}`
-                            }))}
+                            rows={advertisements
+                                .filter(ad => ad.id != null)
+                                .filter(ad => filters.reviewStatus === 'all' || ad.reviewStatus === filters.reviewStatus)
+                                .filter(ad => filters.adStatus === 'all' || ad.status === filters.adStatus)
+                                .map(ad => ({
+                                    ...ad,
+                                    id: ad.id || `temp-${Math.random().toString(36).substr(2, 9)}`
+                                }))}
                             columns={columns}
                             pageSizeOptions={[5, 10, 20, 30, 50]}
                             initialState={{
@@ -4017,10 +3955,10 @@ function ClientAdvertismentPage() {
                     </DialogContentText>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setOpenDeleteDialog(false)} color="primary" disabled={loading === 'pending'}>
+                    <Button onClick={() => setOpenDeleteDialog(false)} color="primary" disabled={loading}>
                         إلغاء
                     </Button>
-                    <Button onClick={handleConfirmDelete} color="error" autoFocus disabled={loading === 'pending'}>
+                    <Button onClick={handleConfirmDelete} color="error" autoFocus disabled={loading}>
                         حذف
                     </Button>
                 </DialogActions>
@@ -4041,10 +3979,10 @@ function ClientAdvertismentPage() {
                     </DialogContentText>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setOpenApproveDialog(false)} color="primary" disabled={loading === 'pending'}>
+                    <Button onClick={() => setOpenApproveDialog(false)} color="primary" disabled={loading}>
                         إلغاء
                     </Button>
-                    <Button onClick={handleConfirmApprove} color="success" autoFocus disabled={loading === 'pending'}>
+                    <Button onClick={handleConfirmApprove} color="success" autoFocus disabled={loading}>
                         موافقة
                     </Button>
                 </DialogActions>
@@ -4077,10 +4015,10 @@ function ClientAdvertismentPage() {
                     />
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setOpenRejectDialog(false)} color="primary" disabled={loading === 'pending'}>
+                    <Button onClick={() => setOpenRejectDialog(false)} color="primary" disabled={loading}>
                         إلغاء
                     </Button>
-                    <Button onClick={handleConfirmReject} color="error" autoFocus disabled={loading === 'pending'}>
+                    <Button onClick={handleConfirmReject} color="error" autoFocus disabled={loading}>
                         رفض
                     </Button>
                 </DialogActions>
@@ -4101,10 +4039,10 @@ function ClientAdvertismentPage() {
                     </DialogContentText>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setOpenReturnDialog(false)} color="primary" disabled={loading === 'pending'}>
+                    <Button onClick={() => setOpenReturnDialog(false)} color="primary" disabled={loading}>
                         إلغاء
                     </Button>
-                    <Button onClick={handleConfirmReturn} color="info" autoFocus disabled={loading === 'pending'}>
+                    <Button onClick={handleConfirmReturn} color="info" autoFocus disabled={loading}>
                         إعادة
                     </Button>
                 </DialogActions>
@@ -4139,7 +4077,7 @@ function ClientAdvertismentPage() {
                     </FormControl>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setOpenActivateDialog(false)} color="primary" disabled={loading === 'pending'}>
+                    <Button onClick={() => setOpenActivateDialog(false)} color="primary" disabled={loading}>
                         إلغاء
                     </Button>
                     <Button
@@ -4154,7 +4092,7 @@ function ClientAdvertismentPage() {
 
             {/* Snackbar for Notifications */}
             <Snackbar
-                open={snackbar.open || (loading === 'failed' && !!error)} // Show error Snackbar if fetch failed
+                open={snackbar.open || !!error} // Show error Snackbar if there's an error
                 autoHideDuration={6000}
                 onClose={handleSnackbarClose}
                 anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
@@ -4168,6 +4106,224 @@ function ClientAdvertismentPage() {
 }
 
 
+// function OrdersPage() {
+//     const dispatch = useDispatch();
+//     const { list: financingRequests, loading, error } = useSelector((state) => state.financialRequests);
+
+//     // Edit dialog state
+//     const [editDialogOpen, setEditDialogOpen] = useState(false);
+//     const [editRow, setEditRow] = useState(null);
+//     const [editAmount, setEditAmount] = useState("");
+//     const [editStatus, setEditStatus] = useState("");
+//     const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+//     const [rowToDelete, setRowToDelete] = useState(null);
+//     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+//     useEffect(() => {
+//         dispatch(fetchFinancialRequests());
+//     }, [dispatch]);
+
+//     const handleEditClick = (row) => {
+//         setEditRow(row);
+//         setEditAmount(row.financing_amount || "");
+//         setEditStatus(row.status || "");
+//         setEditDialogOpen(true);
+//     };
+
+//     const handleEditSave = () => {
+//         if (editRow) {
+//             dispatch(updateFinancialRequest({ id: editRow.id, updates: { financing_amount: editAmount, status: editStatus } }));
+//         }
+//         setEditDialogOpen(false);
+//         setEditRow(null);
+//     };
+
+//     const handleEditCancel = () => {
+//         setEditDialogOpen(false);
+//         setEditRow(null);
+//     };
+//     const handleDeleteClick = (row) => {
+//         setRowToDelete(row);
+//         setOpenDeleteDialog(true);
+//     };
+
+//     const handleConfirmDelete = async () => {
+//         if (rowToDelete) {
+//             try {
+//                 await dispatch(deleteFinancialRequest(rowToDelete.id)).unwrap();
+//                 setSnackbar({ open: true, message: "تم حذف الطلب بنجاح!", severity: "success" });
+//             } catch (err) {
+//                 setSnackbar({ open: true, message: `فشل حذف الطلب: ${err.message || 'خطأ غير معروف'}`, severity: "error" });
+//             } finally {
+//                 setOpenDeleteDialog(false);
+//                 setRowToDelete(null);
+//             }
+//         }
+//     };
+
+//     const handleSnackbarClose = (event, reason) => {
+//         if (reason === 'clickaway') return;
+//         setSnackbar({ ...snackbar, open: false });
+//     };
+//     // Define columns for DataGrid
+//     const columns = [
+//         { field: 'id', headerName: 'ID', width: 120 },
+//         { field: 'user_id', headerName: 'معرّف المستخدم', width: 180 },
+//         { field: 'status', headerName: 'الحالة', width: 120 },
+//         { field: 'financing_amount', headerName: 'المبلغ المطلوب', width: 150 },
+//         { field: 'job_title', headerName: 'الوظيفة', width: 150 },
+//         { field: 'monthly_income', headerName: 'الدخل الشهري', width: 150 },
+//         { field: 'age', headerName: 'العمر', width: 100 },
+//         { field: 'marital_status', headerName: 'الحالة الاجتماعية', width: 150 },
+//         { field: 'dependents', headerName: 'المعالون', width: 100 },
+//         { field: 'repayment_years', headerName: 'سنوات السداد', width: 120 },
+//         {
+//             field: 'submitted_at',
+//             headerName: 'تاريخ التقديم',
+//             width: 160,
+//             valueGetter: (params) =>
+//                 params.value && params.value.toDate ? params.value.toDate().toLocaleDateString() : '',
+//         },
+//         {
+//             field: 'actions',
+//             headerName: 'إجراءات',
+//             width: 150,
+//             renderCell: (params) => (
+//                 <Box sx={{ display: 'flex', gap: 0.5 }}>
+//                     <Tooltip title="تعديل الطلب">
+//                         <IconButton
+//                             aria-label="edit"
+//                             size="small"
+//                             onClick={() => handleEditClick(params.row)}
+//                         >
+//                             <EditIcon fontSize="small" />
+//                         </IconButton>
+//                     </Tooltip>
+//                     <Tooltip title="حذف الطلب">
+//                         <IconButton
+//                             aria-label="delete"
+//                             size="small"
+//                             onClick={() => dispatch(deleteFinancialRequest(params.row.id))}
+//                             color="error"
+//                         >
+//                             <DeleteIcon fontSize="small" />
+//                         </IconButton>
+//                     </Tooltip>
+//                 </Box>
+//             ),
+//             sortable: false,
+//             filterable: false,
+//         },
+//     ];
+
+//     return (
+//         <Box sx={{ p: 2, textAlign: "left" }}>
+//             <Typography variant="h4" gutterBottom>
+//                 طلبات التمويل
+//             </Typography>
+//             <Paper dir="rtl" sx={{ p: 2, borderRadius: 2, minHeight: 400, textAlign: "right" }}>
+//                 {error && <Alert severity="error">{error}</Alert>}
+//                 <div style={{ height: 500, width: '100%' }}>
+//                     <DataGrid
+//                         rows={financingRequests.filter(request => request.id !== null && request.id !== undefined)}
+//                         columns={columns}
+//                         loading={loading}
+//                         pageSizeOptions={[5, 10, 20 , 30 ,50]}
+//                         getRowId={(row) => row.id || `temp-${Math.random()}`}
+//                         disableRowSelectionOnClick
+//                         localeText={{
+//                             MuiTablePagination: {
+//                                 labelRowsPerPage: 'صفوف لكل صفحة:',
+//                                 labelDisplayedRows: ({ from, to, count }) =>
+//                                     `${from}-${to} من ${count !== -1 ? count : `أكثر من ${to}`}`,
+//                             },
+//                             columnMenuUnsort: "إلغاء الفرز",
+//                             columnMenuSortAsc: "الفرز تصاعديا",
+//                             columnMenuSortDesc: "الفرز تنازليا",
+//                             columnMenuFilter: "تصفية",
+//                             columnMenuHideColumn: "إخفاء العمود",
+//                             columnMenuShowColumns: "إظهار الأعمدة",
+//                             filterPanelOperators: "العوامل",
+//                             filterPanelColumns: "الأعمدة",
+//                             filterPanelInputLabel: "القيمة",
+//                             filterPanelLogicOperator: "المنطق",
+//                             filterPanelOperatorAnd: "و",
+//                             filterPanelOperatorOr: "أو",
+//                             filterPanelOperatorContains: "يحتوي على",
+//                             filterPanelOperatorEquals: "يساوي",
+//                             filterPanelOperatorStartsWith: "يبدأ بـ",
+//                             filterPanelOperatorEndsWith: "ينتهي بـ",
+//                             filterPanelOperatorIsEmpty: "فارغ",
+//                             filterPanelOperatorIsNotEmpty: "ليس فارغا",
+//                             filterPanelOperatorIsAnyOf: "أي من",
+//                             noRowsLabel: "لا توجد طلبات تمويل.",
+//                             noResultsOverlayLabel: "لم يتم العثور على نتائج.",
+//                         }}
+//                         showToolbar
+//                     />
+//                 </div>
+//                 {/* Edit Dialog */}
+//                 <Dialog open={editDialogOpen} onClose={handleEditCancel}>
+//                     <DialogTitle>تعديل الطلب</DialogTitle>
+//                     <DialogContent>
+//                         <TextField
+//                             label="المبلغ المطلوب"
+//                             fullWidth
+//                             margin="normal"
+//                             value={editAmount}
+//                             onChange={(e) => setEditAmount(e.target.value)}
+//                         />
+//                         <TextField
+//                             label="الحالة"
+//                             fullWidth
+//                             margin="normal"
+//                             value={editStatus}
+//                             onChange={(e) => setEditStatus(e.target.value)}
+//                         />
+//                     </DialogContent>
+//                     <DialogActions>
+//                         <Button onClick={handleEditCancel}>إلغاء</Button>
+//                         <Button onClick={handleEditSave} variant="contained" color="primary">حفظ</Button>
+//                     </DialogActions>
+//                 </Dialog>
+//                 {/* Delete Confirmation Dialog */}
+//                 <Dialog
+//                     open={openDeleteDialog}
+//                     onClose={() => setOpenDeleteDialog(false)}
+//                     aria-labelledby="delete-dialog-title"
+//                     aria-describedby="delete-dialog-description"
+//                     dir="rtl"
+//                 >
+//                     <DialogTitle id="delete-dialog-title">{"تأكيد الحذف"}</DialogTitle>
+//                     <DialogContent>
+//                         <DialogContentText id="delete-dialog-description">
+//                             هل أنت متأكد أنك تريد حذف الطلب: "{rowToDelete?.id}"؟
+//                             هذا الإجراء لا يمكن التراجع عنه.
+//                         </DialogContentText>
+//                     </DialogContent>
+//                     <DialogActions>
+//                         <Button onClick={() => setOpenDeleteDialog(false)} color="primary">
+//                             إلغاء
+//                         </Button>
+//                         <Button onClick={handleConfirmDelete} color="error" autoFocus>
+//                             حذف
+//                         </Button>
+//                     </DialogActions>
+//                 </Dialog>
+//                 {/* Snackbar for Notifications */}
+//                 <Snackbar
+//                     open={snackbar.open || (loading === 'failed' && !!error)} // Show error Snackbar if fetch failed
+//                     autoHideDuration={6000}
+//                     onClose={handleSnackbarClose}
+//                     anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+//                 >
+//                     <Alert onClose={handleSnackbarClose} severity={snackbar.severity || 'error'} sx={{ width: '100%' }}>
+//                         {snackbar.message || error}
+//                     </Alert>
+//                 </Snackbar>
+//             </Paper>
+//         </Box>
+//     );
+// }
 function OrdersPage() {
     const dispatch = useDispatch();
     const { list: financingRequests, loading, error } = useSelector((state) => state.financialRequests);
@@ -4180,9 +4336,54 @@ function OrdersPage() {
     const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
     const [rowToDelete, setRowToDelete] = useState(null);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+
+    // State for filters
+    const [statusFilter, setStatusFilter] = useState('all');
+    const [searchTerm, setSearchTerm] = useState('');
+
     useEffect(() => {
+        if (financingRequests.length === 0 && !loading) {
         dispatch(fetchFinancialRequests());
-    }, [dispatch]);
+        }
+    }, [dispatch, financingRequests.length, loading]);
+
+    // Helper functions for status
+    const getStatusColor = (status) => {
+        switch (status) {
+            case 'pending': return 'warning';
+            case 'approved': return 'success';
+            case 'rejected': return 'error';
+            default: return 'default';
+        }
+    };
+
+    const getStatusLabel = (status) => {
+        switch (status) {
+            case 'pending': return 'قيد المراجعة';
+            case 'approved': return 'مقبول';
+            case 'rejected': return 'مرفوض';
+            default: return status;
+        }
+    };
+
+    // Filter requests based on status and search term
+    const filteredRequests = financingRequests.filter(request => {
+        const statusMatch = statusFilter === 'all' || request.status === statusFilter;
+        const searchMatch = !searchTerm ||
+            request.id?.toString().includes(searchTerm) ||
+            request.user_id?.toString().includes(searchTerm) ||
+            request.job_title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            request.financing_amount?.toString().includes(searchTerm);
+        return statusMatch && searchMatch;
+    });
+
+    // Calculate stats
+    const stats = {
+        total: financingRequests.length,
+        pending: financingRequests.filter(req => req.status === 'pending').length,
+        approved: financingRequests.filter(req => req.status === 'approved').length,
+        rejected: financingRequests.filter(req => req.status === 'rejected').length,
+    };
 
     const handleEditClick = (row) => {
         setEditRow(row);
@@ -4191,18 +4392,30 @@ function OrdersPage() {
         setEditDialogOpen(true);
     };
 
-    const handleEditSave = () => {
+    const handleEditSave = async () => {
         if (editRow) {
-            dispatch(updateFinancialRequest({ id: editRow.id, updates: { financing_amount: editAmount, status: editStatus } }));
-        }
+            try {
+                await dispatch(updateFinancialRequest({
+                    id: editRow.id,
+                    updates: {
+                        financing_amount: editAmount,
+                        status: editStatus
+                    }
+                })).unwrap();
+                setSnackbar({ open: true, message: "تم تحديث الطلب بنجاح!", severity: "success" });
         setEditDialogOpen(false);
         setEditRow(null);
+            } catch (err) {
+                setSnackbar({ open: true, message: `فشل تحديث الطلب: ${err.message || 'خطأ غير معروف'}`, severity: "error" });
+            }
+        }
     };
 
     const handleEditCancel = () => {
         setEditDialogOpen(false);
         setEditRow(null);
     };
+
     const handleDeleteClick = (row) => {
         setRowToDelete(row);
         setOpenDeleteDialog(true);
@@ -4226,46 +4439,164 @@ function OrdersPage() {
         if (reason === 'clickaway') return;
         setSnackbar({ ...snackbar, open: false });
     };
+
     // Define columns for DataGrid
     const columns = [
-        { field: 'id', headerName: 'ID', width: 120 },
-        { field: 'user_id', headerName: 'معرّف المستخدم', width: 180 },
-        { field: 'status', headerName: 'الحالة', width: 120 },
-        { field: 'financing_amount', headerName: 'المبلغ المطلوب', width: 150 },
-        { field: 'job_title', headerName: 'الوظيفة', width: 150 },
-        { field: 'monthly_income', headerName: 'الدخل الشهري', width: 150 },
-        { field: 'age', headerName: 'العمر', width: 100 },
-        { field: 'marital_status', headerName: 'الحالة الاجتماعية', width: 150 },
-        { field: 'dependents', headerName: 'المعالون', width: 100 },
-        { field: 'repayment_years', headerName: 'سنوات السداد', width: 120 },
+        {
+            field: 'id',
+            headerName: 'معرف الطلب',
+            width: 120,
+            renderCell: (params) => (
+                <Chip
+                    label={params.value}
+                    size="small"
+                    variant="outlined"
+                    sx={{ fontWeight: 'bold' }}
+                />
+            )
+        },
+        {
+            field: 'user_id',
+            headerName: 'معرّف المستخدم',
+            width: 180,
+            renderCell: (params) => (
+                <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
+                    {params.value}
+                </Typography>
+            )
+        },
+        {
+            field: 'status',
+            headerName: 'الحالة',
+            width: 140,
+            renderCell: (params) => (
+                <Chip
+                    label={getStatusLabel(params.value)}
+                    color={getStatusColor(params.value)}
+                    size="small"
+                    sx={{ fontWeight: 'bold' }}
+                />
+            )
+        },
+        {
+            field: 'financing_amount',
+            headerName: 'المبلغ المطلوب',
+            width: 160,
+            renderCell: (params) => (
+                <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+                    {params.value?.toLocaleString()} ج.م
+                </Typography>
+            )
+        },
+        {
+            field: 'job_title',
+            headerName: 'الوظيفة',
+            width: 150,
+            renderCell: (params) => (
+                <Typography variant="body2">
+                    {params.value || 'غير محدد'}
+                </Typography>
+            )
+        },
+        {
+            field: 'monthly_income',
+            headerName: 'الدخل الشهري',
+            width: 160,
+            renderCell: (params) => (
+                <Typography variant="body2" sx={{ color: 'success.main', fontWeight: 'medium' }}>
+                    {params.value?.toLocaleString()} ج.م
+                </Typography>
+            )
+        },
+        {
+            field: 'age',
+            headerName: 'العمر',
+            width: 100,
+            renderCell: (params) => (
+                <Typography variant="body2">
+                    {params.value} سنة
+                </Typography>
+            )
+        },
+        {
+            field: 'marital_status',
+            headerName: 'الحالة الاجتماعية',
+            width: 150,
+            renderCell: (params) => (
+                <Chip
+                    label={params.value || 'غير محدد'}
+                    size="small"
+                    variant="outlined"
+                    color="info"
+                />
+            )
+        },
+        {
+            field: 'dependents',
+            headerName: 'المعالون',
+            width: 120,
+            renderCell: (params) => (
+                <Typography variant="body2">
+                    {params.value} شخص
+                </Typography>
+            )
+        },
+        {
+            field: 'repayment_years',
+            headerName: 'سنوات السداد',
+            width: 140,
+            renderCell: (params) => (
+                <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
+                    {params.value} سنة
+                </Typography>
+            )
+        },
         {
             field: 'submitted_at',
             headerName: 'تاريخ التقديم',
             width: 160,
             valueGetter: (params) =>
-                params.value && params.value.toDate ? params.value.toDate().toLocaleDateString() : '',
+                params.value && params.value.toDate ? params.value.toDate().toLocaleDateString('ar-EG') : '',
+            renderCell: (params) => (
+                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                    {params.value}
+                </Typography>
+            )
         },
         {
             field: 'actions',
-            headerName: 'إجراءات',
-            width: 150,
+            headerName: 'الإجراءات',
+            width: 180,
             renderCell: (params) => (
-                <Box sx={{ display: 'flex', gap: 0.5 }}>
-                    <Tooltip title="تعديل الطلب">
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Tooltip title="تعديل الطلب" arrow>
                         <IconButton
                             aria-label="edit"
                             size="small"
                             onClick={() => handleEditClick(params.row)}
+                            sx={{
+                                color: 'primary.main',
+                                '&:hover': {
+                                    backgroundColor: 'primary.light',
+                                    color: 'white'
+                                }
+                            }}
                         >
                             <EditIcon fontSize="small" />
                         </IconButton>
                     </Tooltip>
-                    <Tooltip title="حذف الطلب">
+                    <Tooltip title="حذف الطلب" arrow>
                         <IconButton
                             aria-label="delete"
                             size="small"
-                            onClick={() => dispatch(deleteFinancialRequest(params.row.id))}
-                            color="error"
+                            onClick={() => handleDeleteClick(params.row)}
+                            sx={{
+                                color: 'error.main',
+                                '&:hover': {
+                                    backgroundColor: 'error.light',
+                                    color: 'white'
+                                }
+                            }}
                         >
                             <DeleteIcon fontSize="small" />
                         </IconButton>
@@ -4278,20 +4609,224 @@ function OrdersPage() {
     ];
 
     return (
-        <Box sx={{ p: 2, textAlign: "left" }}>
-            <Typography variant="h4" gutterBottom>
-                طلبات التمويل
+        <Box dir="rtl" sx={{ p: 3 }}>
+            {/* Page Header */}
+            <PageHeader
+                title="إدارة طلبات التمويل"
+                icon={AccountBalanceWalletIcon}
+                count={stats.total}
+                countLabel="إجمالي الطلبات"
+            />
+
+            {/* Stats Cards */}
+            <Grid container spacing={2} sx={{ mb: 3 }}>
+                <Grid item xs={6} sm={3}>
+                    <Chip
+                        label={
+                            <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                                {stats.pending} - قيد المراجعة
             </Typography>
-            <Paper dir="rtl" sx={{ p: 2, borderRadius: 2, minHeight: 400, textAlign: "right" }}>
-                {error && <Alert severity="error">{error}</Alert>}
-                <div style={{ height: 500, width: '100%' }}>
+                        }
+                        sx={{
+                            bgcolor: 'warning.light',
+                            color: 'warning.contrastText',
+                            px: 2,
+                            py: 1,
+                            borderRadius: 2,
+                            width: '100%',
+                            justifyContent: 'center'
+                        }}
+                    />
+                </Grid>
+                <Grid item xs={6} sm={3}>
+                    <Chip
+                        label={
+                            <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                                {stats.approved} - مقبول
+                            </Typography>
+                        }
+                        sx={{
+                            bgcolor: 'success.light',
+                            color: 'success.contrastText',
+                            px: 2,
+                            py: 1,
+                            borderRadius: 2,
+                            width: '100%',
+                            justifyContent: 'center'
+                        }}
+                    />
+                </Grid>
+                <Grid item xs={6} sm={3}>
+                    <Chip
+                        label={
+                            <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                                {stats.rejected} - مرفوض
+                            </Typography>
+                        }
+                        sx={{
+                            bgcolor: 'error.light',
+                            color: 'error.contrastText',
+                            px: 2,
+                            py: 1,
+                            borderRadius: 2,
+                            width: '100%',
+                            justifyContent: 'center'
+                        }}
+                    />
+                </Grid>
+                <Grid item xs={6} sm={3}>
+                    <Chip
+                        label={
+                            <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                                {filteredRequests.length} - عرض النتائج
+                            </Typography>
+                        }
+                        sx={{
+                            bgcolor: 'info.light',
+                            color: 'info.contrastText',
+                            px: 2,
+                            py: 1,
+                            borderRadius: 2,
+                            width: '100%',
+                            justifyContent: 'center'
+                        }}
+                    />
+                </Grid>
+            </Grid>
+
+            {/* Filters Section */}
+            <Paper sx={{ p: 3, mb: 3, borderRadius: 2, boxShadow: 2 }}>
+                <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold' }}>
+                    فلاتر البحث
+                </Typography>
+                <Grid container spacing={2} alignItems="center">
+                    <Grid item xs={12} md={4}>
+                        <FormControl fullWidth size="small">
+                            <InputLabel>حالة الطلب</InputLabel>
+                            <Select
+                                value={statusFilter}
+                                onChange={(e) => setStatusFilter(e.target.value)}
+                                label="حالة الطلب"
+                            >
+                                <MenuItem value="all">جميع الحالات</MenuItem>
+                                <MenuItem value="pending">قيد المراجعة</MenuItem>
+                                <MenuItem value="approved">مقبول</MenuItem>
+                                <MenuItem value="rejected">مرفوض</MenuItem>
+                            </Select>
+                        </FormControl>
+                    </Grid>
+                    {/* <Grid item xs={12} md={6}>
+                        <TextField
+                            fullWidth
+                            size="small"
+                            label="بحث في المعرف، الوظيفة، أو المبلغ"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            InputProps={{
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <SearchIcon />
+                                    </InputAdornment>
+                                ),
+                            }}
+                        />
+                    </Grid> */}
+                    <Grid item xs={12} md={2}>
+                        <Button
+                            fullWidth
+                            variant="outlined"
+                            onClick={() => {
+                                setStatusFilter('all');
+                                setSearchTerm('');
+                            }}
+                            startIcon={<ClearIcon />}
+                        >
+                            مسح الفلاتر
+                        </Button>
+                    </Grid>
+                </Grid>
+            </Paper>
+
+            {/* Data Grid */}
+            <Paper dir="rtl" sx={{ p: 3, borderRadius: 3, boxShadow: 3, minHeight: 500 }}>
+                {error && (
+                    <Alert
+                        severity="error"
+                        sx={{ mb: 2, borderRadius: 2 }}
+                        action={
+                            <Button color="inherit" size="small" onClick={() => window.location.reload()}>
+                                إعادة المحاولة
+                            </Button>
+                        }
+                    >
+                        {error}
+                    </Alert>
+                )}
+
+                {loading ? (
+                    <Box sx={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        py: 8,
+                        gap: 2
+                    }}>
+                        <CircularProgress size={60} thickness={4} />
+                        <Typography variant="h6" color="text.secondary">
+                            جاري تحميل طلبات التمويل...
+                        </Typography>
+                        <Typography variant="body2" color="text.disabled">
+                            يرجى الانتظار قليلاً
+                        </Typography>
+                    </Box>
+                ) : filteredRequests.length === 0 ? (
+                    <Box sx={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        py: 8,
+                        gap: 2
+                    }}>
+                        <AccountBalanceWalletIcon sx={{ fontSize: 80, color: 'grey.400' }} />
+                        <Typography variant="h5" color="text.secondary" sx={{ fontWeight: 'bold' }}>
+                            لا توجد طلبات تمويل
+                        </Typography>
+                        <Typography variant="body1" color="text.disabled" sx={{ textAlign: 'center' }}>
+                            {searchTerm || statusFilter !== 'all'
+                                ? 'لا توجد نتائج تطابق معايير البحث المحددة'
+                                : 'لم يتم تقديم أي طلبات تمويل حتى الآن.'
+                            }
+                        </Typography>
+                    </Box>
+                ) : (
+                    <div style={{ height: 600, width: '100%' }}>
                     <DataGrid
-                        rows={financingRequests.filter(request => request.id !== null && request.id !== undefined)}
+                            rows={filteredRequests.filter(request => request.id !== null && request.id !== undefined)}
                         columns={columns}
                         loading={loading}
-                        pageSizeOptions={[5, 10, 20]}
+                            pageSizeOptions={[10, 20,30, 50]}
+                            initialState={{
+                                pagination: {
+                                    paginationModel: { pageSize: 25 },
+                                },
+                            }}
                         getRowId={(row) => row.id || `temp-${Math.random()}`}
                         disableRowSelectionOnClick
+                            sx={{
+                                '& .MuiDataGrid-cell': {
+                                    borderBottom: '1px solid #e0e0e0',
+                                },
+                                '& .MuiDataGrid-columnHeaders': {
+                                    backgroundColor: 'primary.main',
+                                    color: 'blsck',
+                                    fontWeight: 'bold',
+                                },
+                                '& .MuiDataGrid-row:hover': {
+                                    backgroundColor: 'action.hover',
+                                },
+                            }}
                         localeText={{
                             MuiTablePagination: {
                                 labelRowsPerPage: 'صفوف لكل صفحة:',
@@ -4323,6 +4858,7 @@ function OrdersPage() {
                         showToolbar
                     />
                 </div>
+                )}
                 {/* Edit Dialog */}
                 <Dialog open={editDialogOpen} onClose={handleEditCancel}>
                     <DialogTitle>تعديل الطلب</DialogTitle>
@@ -4386,7 +4922,499 @@ function OrdersPage() {
         </Box>
     );
 }
+function ReportsPage() {
+    const dispatch = useDispatch();
+    const theme = useTheme(); // Access theme for consistent styling
 
+    // Get data from Redux store
+    const clients = useSelector((state) => state.adminUsers.clients);
+    const organizations = useSelector((state) => state.adminUsers.organizations);
+    const admins = useSelector((state) => state.adminUsers.admins);
+    
+    // Get loading states
+    const clientsStatus = useSelector((state) => state.adminUsers.clientsStatus);
+    const organizationsStatus = useSelector((state) => state.adminUsers.organizationsStatus);
+    const adminsStatus = useSelector((state) => state.adminUsers.adminsStatus);
+    const homepageAds = useSelector((state) => state.homepageAds?.all || []);
+    const clientAds = useSelector((state) => state.advertisements.list);
+    const developerAds = useSelector((state) => state.paidAds.developerAds);
+    const funderAds = useSelector((state) => state.paidAds.funderAds);
+    const financialRequests = useSelector((state) => state.financialRequests.list);
+    const inquiries = useSelector((state) => state.inquiries.list);
+    const properties = useSelector((state) => state.properties.list);
+
+    // Load data on component mount
+    useEffect(() => {
+        // Fetch all user data when ReportsPage loads
+        if (clientsStatus === 'idle' || clientsStatus === 'failed') {
+            dispatch(fetchClients());
+        }
+        if (organizationsStatus === 'idle' || organizationsStatus === 'failed') {
+            dispatch(fetchOrganizations());
+        }
+        if (adminsStatus === 'idle' || adminsStatus === 'failed') {
+            dispatch(fetchAdmins());
+        }
+    }, [dispatch, clientsStatus, organizationsStatus, adminsStatus]);
+
+    // Calculate comprehensive analytics
+    const analytics = useMemo(() => {
+        // Debug logging
+        console.log('ReportsPage - Data loaded:', {
+            clients: clients.length,
+            organizations: organizations.length,
+            admins: admins.length,
+            clientsStatus,
+            organizationsStatus,
+            adminsStatus
+        });
+
+        // User Analytics
+        const totalUsers = clients.length + organizations.length + admins.length;
+        const userGrowth = {
+            clients: clients.length,
+            organizations: organizations.length,
+            admins: admins.length,
+            total: totalUsers
+        };
+
+        // Advertisement Analytics
+        const totalAds = homepageAds.length + clientAds.length + developerAds.length + funderAds.length;
+        const adStatusBreakdown = {
+            homepage: {
+                total: homepageAds.length,
+                pending: homepageAds.filter(ad => ad.reviewStatus === 'pending').length,
+                approved: homepageAds.filter(ad => ad.reviewStatus === 'approved').length,
+                rejected: homepageAds.filter(ad => ad.reviewStatus === 'rejected').length,
+                active: homepageAds.filter(ad => ad.ads).length,
+                inactive: homepageAds.filter(ad => !ad.ads).length
+            },
+            client: {
+                total: clientAds.length,
+                pending: clientAds.filter(ad => ad.reviewStatus === 'pending').length,
+                approved: clientAds.filter(ad => ad.reviewStatus === 'approved').length,
+                rejected: clientAds.filter(ad => ad.reviewStatus === 'rejected').length,
+                active: clientAds.filter(ad => ad.ads).length,
+                inactive: clientAds.filter(ad => !ad.ads).length
+            },
+            developer: {
+                total: developerAds.length,
+                pending: developerAds.filter(ad => ad.reviewStatus === 'pending').length,
+                approved: developerAds.filter(ad => ad.reviewStatus === 'approved').length,
+                rejected: developerAds.filter(ad => ad.reviewStatus === 'rejected').length,
+                active: developerAds.filter(ad => ad.ads).length,
+                inactive: developerAds.filter(ad => !ad.ads).length
+            },
+            funder: {
+                total: funderAds.length,
+                pending: funderAds.filter(ad => ad.reviewStatus === 'pending').length,
+                approved: funderAds.filter(ad => ad.reviewStatus === 'approved').length,
+                rejected: funderAds.filter(ad => ad.reviewStatus === 'rejected').length,
+                active: funderAds.filter(ad => ad.ads).length,
+                inactive: funderAds.filter(ad => !ad.ads).length
+            }
+        };
+
+        // Financial Analytics
+        const totalFinancialRequests = financialRequests.length;
+        const financialRequestStatus = {
+            pending: financialRequests.filter(req => req.status === 'pending').length,
+            approved: financialRequests.filter(req => req.status === 'approved').length,
+            rejected: financialRequests.filter(req => req.status === 'rejected').length
+        };
+
+        // Property Analytics
+        const propertyStatus = {
+            forSale: properties.filter(p => p.status === 'للبيع').length,
+            forRent: properties.filter(p => p.status === 'للإيجار').length,
+            sold: properties.filter(p => p.status === 'تم البيع').length,
+            pending: properties.filter(p => p.status === 'قيد المراجعة').length
+        };
+
+        // Inquiry Analytics
+        const inquiryStatus = {
+            pending: inquiries.filter(inq => inq.status === 'pending').length,
+            contacted: inquiries.filter(inq => inq.status === 'contacted').length,
+            closed: inquiries.filter(inq => inq.status === 'closed').length
+        };
+
+        // Revenue Analytics (Mock data - replace with actual revenue tracking)
+        const revenueData = {
+            total: 125000, // Mock total revenue
+            monthly: [15000, 18000, 22000, 19000, 25000, 28000, 32000, 29000, 35000, 31000, 38000, 42000],
+            byType: {
+                homepageAds: 45000,
+                developerAds: 35000,
+                funderAds: 25000,
+                clientAds: 20000
+            }
+        };
+
+        // Geographic Analytics
+        const geographicData = {
+            governorates: properties.reduce((acc, prop) => {
+                const gov = prop.governorate || 'غير محدد';
+                acc[gov] = (acc[gov] || 0) + 1;
+                return acc;
+            }, {}),
+            cities: properties.reduce((acc, prop) => {
+                const city = prop.city || 'غير محدد';
+                acc[city] = (acc[city] || 0) + 1;
+                return acc;
+            }, {})
+        };
+
+        // Time-based Analytics
+        const now = new Date();
+        const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+        const lastWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+        const recentActivity = {
+            newUsers: clients.filter(client => new Date(client.createdAt) > lastMonth).length +
+                organizations.filter(org => new Date(org.createdAt) > lastMonth).length,
+            newAds: homepageAds.filter(ad => new Date(ad.createdAt) > lastWeek).length +
+                clientAds.filter(ad => new Date(ad.createdAt) > lastWeek).length,
+            newRequests: financialRequests.filter(req => new Date(req.submitted_at) > lastWeek).length
+        };
+
+        return {
+            userGrowth,
+            adStatusBreakdown,
+            financialRequestStatus,
+            propertyStatus,
+            inquiryStatus,
+            revenueData,
+            geographicData,
+            recentActivity,
+            totalAds,
+            totalFinancialRequests
+        };
+    }, [clients, organizations, admins, homepageAds, clientAds, developerAds, funderAds, financialRequests, properties, inquiries]);
+
+    // Chart data preparation
+    const userChartData = [
+        { label: 'العملاء', value: analytics.userGrowth.clients, color: theme.palette.primary.main },
+        { label: 'المنظمات', value: analytics.userGrowth.organizations, color: theme.palette.success.main },
+        { label: 'المدراء', value: analytics.userGrowth.admins, color: theme.palette.warning.main }
+    ];
+
+    const adChartData = [
+        { label: 'إعلانات الصفحة الرئيسية', value: analytics.adStatusBreakdown.homepage.total, color: theme.palette.info.main },
+        { label: 'إعلانات العملاء', value: analytics.adStatusBreakdown.client.total, color: theme.palette.secondary.main },
+        { label: 'إعلانات المطورين', value: analytics.adStatusBreakdown.developer.total, color: theme.palette.error.main },
+        { label: 'إعلانات الممولين', value: analytics.adStatusBreakdown.funder.total, color: theme.palette.primary.dark }
+    ];
+
+    const statusChartData = [
+        { label: 'قيد المراجعة', value: analytics.adStatusBreakdown.homepage.pending + analytics.adStatusBreakdown.client.pending + analytics.adStatusBreakdown.developer.pending + analytics.adStatusBreakdown.funder.pending, color: theme.palette.warning.main },
+        { label: 'مقبول', value: analytics.adStatusBreakdown.homepage.approved + analytics.adStatusBreakdown.client.approved + analytics.adStatusBreakdown.developer.approved + analytics.adStatusBreakdown.funder.approved, color: theme.palette.success.main },
+        { label: 'مرفوض', value: analytics.adStatusBreakdown.homepage.rejected + analytics.adStatusBreakdown.client.rejected + analytics.adStatusBreakdown.developer.rejected + analytics.adStatusBreakdown.funder.rejected, color: theme.palette.error.main }
+    ];
+
+    // Check if any data is still loading
+    const isLoading = clientsStatus === 'loading' || organizationsStatus === 'loading' || adminsStatus === 'loading';
+
+    return (
+        <Box dir='rtl' sx={{ p: 3, textAlign: 'right' }}>
+            <PageHeader
+                title="التقارير والتحليلات الشاملة"
+                icon={DescriptionIcon}
+                showCount={false}
+            />
+
+            {/* Loading indicator */}
+            {isLoading && (
+                <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
+                    <CircularProgress />
+                    <Typography variant="body1" sx={{ ml: 2, mt: 1 }}>
+                        جاري تحميل البيانات...
+                    </Typography>
+                </Box>
+            )}
+
+            {/* Key Metrics Cards */}
+            <Grid dir='rtl' container spacing={3} sx={{ mb: 4 }}>
+                <Grid item xs={12} sm={6} md={3}>
+                    <Paper elevation={3} sx={{ p: 3, textAlign: 'center', borderRadius: 2, bgcolor: theme.palette.primary.main, color: 'white', transition: 'transform 0.2s', '&:hover': { transform: 'translateY(-5px)' } }}>
+                        <PeopleIcon sx={{ fontSize: 40, mb: 1 }} />
+                        <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 1 }}>
+                            {analytics.userGrowth.total}
+                        </Typography>
+                        <Typography variant="body1">إجمالي المستخدمين</Typography>
+                        <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                            +{analytics.recentActivity.newUsers} هذا الشهر
+                        </Typography>
+                    </Paper>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                    <Paper elevation={3} sx={{ p: 3, textAlign: 'center', borderRadius: 2, bgcolor: theme.palette.secondary.main, color: 'white', transition: 'transform 0.2s', '&:hover': { transform: 'translateY(-5px)' } }}>
+                        <CampaignIcon sx={{ fontSize: 40, mb: 1 }} />
+                        <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 1 }}>
+                            {analytics.totalAds}
+                        </Typography>
+                        <Typography variant="body1">إجمالي الإعلانات</Typography>
+                        <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                            +{analytics.recentActivity.newAds} هذا الأسبوع
+                        </Typography>
+                    </Paper>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                    <Paper elevation={3} sx={{ p: 3, textAlign: 'center', borderRadius: 2, bgcolor: theme.palette.success.main, color: 'white', transition: 'transform 0.2s', '&:hover': { transform: 'translateY(-5px)' } }}>
+                        <RequestQuoteIcon sx={{ fontSize: 40, mb: 1 }} />
+                        <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 1 }}>
+                            {analytics.totalFinancialRequests}
+                        </Typography>
+                        <Typography variant="body1">طلبات التمويل</Typography>
+                        <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                            +{analytics.recentActivity.newRequests} هذا الأسبوع
+                        </Typography>
+                    </Paper>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                    <Paper elevation={3} sx={{ p: 3, textAlign: 'center', borderRadius: 2, bgcolor: theme.palette.warning.main, color: 'white', transition: 'transform 0.2s', '&:hover': { transform: 'translateY(-5px)' } }}>
+                        <AttachMoneyIcon sx={{ fontSize: 40, mb: 1 }} />
+                        <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 1 }}>
+                            {analytics.revenueData.total.toLocaleString()} ج.م
+                        </Typography>
+                        <Typography variant="body1">إجمالي الإيرادات</Typography>
+                        <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                            +15% عن الشهر الماضي
+                        </Typography>
+                    </Paper>
+                </Grid>
+            </Grid>
+
+            {/* Charts Section */}
+            <Grid dir='rtl' container spacing={3}>
+                {/* User Distribution Chart */}
+                <Grid item xs={12} md={6}>
+                    <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
+                        <Typography variant="h6" sx={{ mb: 2, textAlign: 'left' }}>
+                            توزيع المستخدمين
+                        </Typography>
+                        <Box sx={{ height: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <PieChart
+                                series={[
+                                    {
+                                        data: userChartData,
+                                        highlightScope: { faded: 'global', highlighted: 'item' },
+                                        faded: { innerRadius: 30, additionalRadius: -30, color: 'gray' },
+                                        outerRadius: 120, // Slightly larger pie
+                                        innerRadius: 60, // Donut effect
+                                    },
+                                ]}
+                                height={300}
+                                width={400}
+                                slotProps={{ legend: { direction: 'rtl', position: { vertical: 'middle', horizontal: 'left' } } }} // RTL legend
+                            />
+                        </Box>
+                    </Paper>
+                </Grid>
+
+                {/* Advertisement Types Chart */}
+                <Grid item xs={12} md={6}>
+                    <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
+                        <Typography variant="h6" sx={{ mb: 2, textAlign: 'left' }}>
+                            أنواع الإعلانات
+                        </Typography>
+                        <Box sx={{ height: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <PieChart
+                                series={[
+                                    {
+                                        data: adChartData,
+                                        highlightScope: { faded: 'global', highlighted: 'item' },
+                                        faded: { innerRadius: 30, additionalRadius: -30, color: 'gray' },
+                                        outerRadius: 120,
+                                        innerRadius: 60,
+                                    },
+                                ]}
+                                height={300}
+                                width={400}
+                                slotProps={{ legend: { direction: 'rtl', position: { vertical: 'middle', horizontal: 'left' } } }}
+                            />
+                        </Box>
+                    </Paper>
+                </Grid>
+
+                {/* Status Distribution Chart */}
+                <Grid item xs={12} md={6}>
+                    <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
+                        <Typography variant="h6" sx={{ mb: 2, textAlign: 'left' }}>
+                            حالة الإعلانات
+                        </Typography>
+                        <Box sx={{ height: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <PieChart
+                                series={[
+                                    {
+                                        data: statusChartData,
+                                        highlightScope: { faded: 'global', highlighted: 'item' },
+                                        faded: { innerRadius: 30, additionalRadius: -30, color: 'gray' },
+                                        outerRadius: 120,
+                                        innerRadius: 60,
+                                    },
+                                ]}
+                                height={300}
+                                width={400}
+                                slotProps={{ legend: { direction: 'rtl', position: { vertical: 'middle', horizontal: 'left' } } }}
+                            />
+                        </Box>
+                    </Paper>
+                </Grid>
+
+                {/* Geographic Distribution */}
+                <Grid item xs={12} md={6}>
+                    <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
+                        <Typography variant="h6" sx={{ mb: 2, textAlign: 'left' }}>
+                            <LocationOnIcon sx={{ verticalAlign: 'middle', ml: 1 }} /> {/* Icon for geographic */}
+                            التوزيع الجغرافي للمعاملات
+                        </Typography>
+                        <Box sx={{ maxHeight: 300, overflow: 'auto' }}>
+                            {Object.entries(analytics.geographicData.governorates)
+                                .sort(([, a], [, b]) => b - a)
+                                .slice(0, 10)
+                                .map(([governorate, count]) => (
+                                    <Box key={governorate} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 1, borderBottom: '1px solid #eee' }}>
+                                        <Typography variant="body2">{governorate}</Typography>
+                                        <Chip label={count} size="small" color="primary" sx={{ bgcolor: theme.palette.info.light, color: 'white' }} />
+                                    </Box>
+                                ))}
+                        </Box>
+                    </Paper>
+                </Grid>
+            </Grid>
+
+            {/* Detailed Statistics Tables */}
+            <Grid dir='rtl' container spacing={3} sx={{ mt: 2 }}>
+                {/* Advertisement Status Details */}
+                <Grid item xs={12} md={6}>
+                    <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
+                        <Typography variant="h6" sx={{ mb: 2, textAlign: 'left' }}>
+                            تفاصيل حالة الإعلانات
+                        </Typography>
+                        <TableContainer>
+                            <Table size="small">
+                                <TableHead>
+                                    <TableRow>
+                                        <TableCell sx={{ textAlign: 'right', fontWeight: 'bold' }}>النوع</TableCell>
+                                        <TableCell sx={{ textAlign: 'center', fontWeight: 'bold' }}>قيد المراجعة</TableCell>
+                                        <TableCell sx={{ textAlign: 'center', fontWeight: 'bold' }}>مقبول</TableCell>
+                                        <TableCell sx={{ textAlign: 'center', fontWeight: 'bold' }}>مرفوض</TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    <TableRow>
+                                        <TableCell sx={{ textAlign: 'right' }}>الصفحة الرئيسية</TableCell>
+                                        <TableCell sx={{ textAlign: 'center' }}>
+                                            <Chip label={analytics.adStatusBreakdown.homepage.pending} size="small" color="warning" />
+                                        </TableCell>
+                                        <TableCell sx={{ textAlign: 'center' }}>
+                                            <Chip label={analytics.adStatusBreakdown.homepage.approved} size="small" color="success" />
+                                        </TableCell>
+                                        <TableCell sx={{ textAlign: 'center' }}>
+                                            <Chip label={analytics.adStatusBreakdown.homepage.rejected} size="small" color="error" />
+                                        </TableCell>
+                                    </TableRow>
+                                    <TableRow>
+                                        <TableCell sx={{ textAlign: 'right' }}>العملاء</TableCell>
+                                        <TableCell sx={{ textAlign: 'center' }}>
+                                            <Chip label={analytics.adStatusBreakdown.client.pending} size="small" color="warning" />
+                                        </TableCell>
+                                        <TableCell sx={{ textAlign: 'center' }}>
+                                            <Chip label={analytics.adStatusBreakdown.client.approved} size="small" color="success" />
+                                        </TableCell>
+                                        <TableCell sx={{ textAlign: 'center' }}>
+                                            <Chip label={analytics.adStatusBreakdown.client.rejected} size="small" color="error" />
+                                        </TableCell>
+                                    </TableRow>
+                                    <TableRow>
+                                        <TableCell sx={{ textAlign: 'right' }}>المطورين</TableCell>
+                                        <TableCell sx={{ textAlign: 'center' }}>
+                                            <Chip label={analytics.adStatusBreakdown.developer.pending} size="small" color="warning" />
+                                        </TableCell>
+                                        <TableCell sx={{ textAlign: 'center' }}>
+                                            <Chip label={analytics.adStatusBreakdown.developer.approved} size="small" color="success" />
+                                        </TableCell>
+                                        <TableCell sx={{ textAlign: 'center' }}>
+                                            <Chip label={analytics.adStatusBreakdown.developer.rejected} size="small" color="error" />
+                                        </TableCell>
+                                    </TableRow>
+                                    <TableRow>
+                                        <TableCell sx={{ textAlign: 'right' }}>الممولين</TableCell>
+                                        <TableCell sx={{ textAlign: 'center' }}>
+                                            <Chip label={analytics.adStatusBreakdown.funder.pending} size="small" color="warning" />
+                                        </TableCell>
+                                        <TableCell sx={{ textAlign: 'center' }}>
+                                            <Chip label={analytics.adStatusBreakdown.funder.approved} size="small" color="success" />
+                                        </TableCell>
+                                        <TableCell sx={{ textAlign: 'center' }}>
+                                            <Chip label={analytics.adStatusBreakdown.funder.rejected} size="small" color="error" />
+                                        </TableCell>
+                                    </TableRow>
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
+                    </Paper>
+                </Grid>
+
+                {/* Financial Requests Status */}
+                <Grid item xs={12} md={6}>
+                    <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
+                        <Typography variant="h6" sx={{ mb: 2, textAlign: 'left' }}>
+                            حالة طلبات التمويل
+                        </Typography>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <Typography variant="body2">قيد المراجعة</Typography>
+                                <Chip label={analytics.financialRequestStatus.pending} color="warning" />
+                            </Box>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <Typography variant="body2">مقبول</Typography>
+                                <Chip label={analytics.financialRequestStatus.approved} color="success" />
+                            </Box>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <Typography variant="body2">مرفوض</Typography>
+                                <Chip label={analytics.financialRequestStatus.rejected} color="error" />
+                            </Box>
+                        </Box>
+                    </Paper>
+                </Grid>
+            </Grid>
+
+            {/* Revenue Breakdown */}
+            <Paper dir='rtl' elevation={3} sx={{ p: 3, borderRadius: 2, mt: 3 }}>
+                <Typography variant="h6" sx={{ mb: 2, textAlign: 'left' }}>
+                    تفصيل الإيرادات حسب النوع
+                </Typography>
+                <Grid container spacing={2}>
+                    <Grid item xs={6} sm={3}>
+                        <Box sx={{ textAlign: 'center', p: 2, bgcolor: theme.palette.primary.light, borderRadius: 1, color: 'white' }}>
+                            <Typography variant="h6">{analytics.revenueData.byType.homepageAds.toLocaleString()} ج.م</Typography>
+                            <Typography variant="body2">إعلانات الصفحة الرئيسية</Typography>
+                        </Box>
+                    </Grid>
+                    <Grid item xs={6} sm={3}>
+                        <Box sx={{ textAlign: 'center', p: 2, bgcolor: theme.palette.secondary.light, borderRadius: 1, color: 'white' }}>
+                            <Typography variant="h6">{analytics.revenueData.byType.developerAds.toLocaleString()} ج.م</Typography>
+                            <Typography variant="body2">إعلانات المطورين</Typography>
+                        </Box>
+                    </Grid>
+                    <Grid item xs={6} sm={3}>
+                        <Box sx={{ textAlign: 'center', p: 2, bgcolor: theme.palette.success.light, borderRadius: 1, color: 'white' }}>
+                            <Typography variant="h6">{analytics.revenueData.byType.funderAds.toLocaleString()} ج.م</Typography>
+                            <Typography variant="body2">إعلانات الممولين</Typography>
+                        </Box>
+                    </Grid>
+                    <Grid item xs={6} sm={3}>
+                        <Box sx={{ textAlign: 'center', p: 2, bgcolor: theme.palette.warning.light, borderRadius: 1, color: 'white' }}>
+                            <Typography variant="h6">{analytics.revenueData.byType.clientAds.toLocaleString()} ج.م</Typography>
+                            <Typography variant="body2">إعلانات العملاء</Typography>
+                        </Box>
+                    </Grid>
+                </Grid>
+            </Paper>
+        </Box>
+    );
+}
 function SalesPage() {
     return (
         <Box sx={{ p: 2, textAlign: 'left' }}>
@@ -4452,6 +5480,558 @@ function useDemoRouter(initialPath) {
     return router;
 }
 
+// export default function AdminDashboard(props) {
+//     const { window } = props;
+//     const [open, setOpen] = React.useState(true);
+//     const [openReports, setOpenReports] = React.useState(false);
+//     const [mode, setMode] = React.useState('light');
+//     const userProfile = useSelector((state) => state.user.profile);
+//     const authUid = useSelector((state) => state.auth.uid);
+//     const userProfileStatus = useSelector((state) => state.user.status);
+
+//     const theme = React.useMemo(
+//         () =>
+//             createTheme({
+//                 direction: 'rtl',
+//                 palette: {
+//                     mode,
+//                     primary: {
+//                         main: '#6E00FE',
+//                     },
+//                     secondary: {
+//                         main: '#dc004e',
+//                     },
+//                     background: {
+//                         default: mode === 'light' ? '#f4f6f8' : '#121212',
+//                         paper: mode === 'light' ? '#ffffff' : '#1e1e1e',
+//                     },
+//                 },
+//                 typography: {
+//                     fontFamily: 'Inter, Arial, sans-serif',
+//                 },
+//                 shape: {
+//                     borderRadius: 8,
+//                 },
+//                 components: {
+//                     MuiPaper: {
+//                         styleOverrides: {
+//                             root: {
+//                                 boxShadow: mode === 'light' ? '0px 2px 10px rgba(0, 0, 0, 0.05)' : '0px 2px 10px rgba(0, 0, 0, 0.4)',
+//                             },
+//                         },
+//                     },
+//                     MuiButton: {
+//                         styleOverrides: {
+//                             root: {
+//                                 borderRadius: 8,
+//                             },
+//                         },
+//                     },
+//                 },
+//                 breakpoints: {
+//                     values: {
+//                         xs: 0,
+//                         sm: 600,
+//                         md: 900,
+//                         lg: 1200,
+//                         xl: 1536,
+//                     },
+//                 },
+//             }),
+//         [mode]
+//     );
+
+//     const colorMode = React.useMemo(
+//         () => ({
+//             toggleColorMode: () => {
+//                 setMode((prevMode) => (prevMode === 'light' ? 'dark' : 'light'));
+//             },
+//         }),
+//         []
+//     );
+
+//     const router = useDemoRouter('/profile');
+//     const dispatch = useDispatch();
+//     const navigate = useNavigate();
+
+//     // Effect to fetch user profile when component mounts or authUid changes
+//     useEffect(() => {
+//         const loadUserProfile = async () => {
+//             // Ensure authUid is a valid string before fetching
+//             const actualUid = typeof authUid === 'object' && authUid !== null
+//                 ? authUid.uid
+//                 : authUid;
+
+//             console.log("AdminDashboard: useEffect triggered. actualUid:", actualUid, "userProfileStatus:", userProfileStatus, "userProfile:", userProfile);
+
+//             // Fetch if UID is available AND (not already loading AND (profile is missing OR admin name is missing))
+//             if (
+//                 typeof actualUid === 'string' && actualUid.trim() !== '' &&
+//                 userProfileStatus !== 'loading' &&
+//                 (!userProfile || !userProfile.adm_name)
+//             ) {
+//                 try {
+//                     console.log("AdminDashboard: Dispatching fetchUserProfile for UID:", actualUid);
+//                     await dispatch(fetchUserProfile(actualUid));
+//                     console.log("AdminDashboard: fetchUserProfile dispatched successfully.");
+//                 } catch (error) {
+//                     console.error("AdminDashboard: Failed to fetch user profile (caught error):", error);
+//                     // Handle error, e.g., show a snackbar
+//                 }
+//             } else if (userProfileStatus === 'succeeded' && userProfile && userProfile.adm_name) {
+//                 console.log("AdminDashboard: User profile succeeded and admin name is present:", userProfile.adm_name);
+//             } else if (userProfileStatus === 'loading') {
+//                 console.log("AdminDashboard: User profile is currently loading...");
+//             }
+//         };
+//         loadUserProfile();
+//     }, [authUid, userProfile, userProfileStatus, dispatch]);
+//     const handleDrawerToggle = () => {
+//         setOpen(!open);
+//     };
+
+//     const handleReportsClick = () => {
+//         setOpenReports(!openReports);
+//     };
+
+//     const handleLogout = async () => {
+//         console.log('جارى تسجيل الخروج');
+//         try {
+//             await signOut(auth); // Sign out from Firebase
+//             dispatch(logout()); // Dispatch Redux logout action to clear state
+//             setTimeout(() => {
+//                 navigate('/login'); // Redirect to login page
+//             }, 2000);
+//             console.log('تم تسجيل الخروج بنجاح.');
+//         } catch (error) {
+//             console.error('خطأ في تسجيل الخروج:', error);
+//             // You might want to show a Snackbar or Alert here for the user
+//         }
+//     };
+
+//     const Main = styled('main', { shouldForwardProp: (prop) => prop !== 'open' })(
+//         ({ theme, open }) => ({
+//             flexGrow: 1,
+//             overflow: 'auto',
+//             padding: theme.spacing(2),
+//             transition: theme.transitions.create('margin', {
+//                 easing: theme.transitions.easing.sharp,
+//                 duration: theme.transitions.duration.leavingScreen,
+//             }),
+//             marginRight: open ? theme.spacing(2) + drawerWidth : closedDrawerWidth,
+//             [theme.breakpoints.down('sm')]: {
+//                 marginRight: 0,
+//                 paddingRight: theme.spacing(2),
+//                 paddingLeft: theme.spacing(2),
+//             },
+//         })
+//     );
+
+//     const AppBarStyled = styled(AppBar, { shouldForwardProp: (prop) => prop !== 'open' })(
+//         ({ theme, open }) => ({
+//             transition: theme.transitions.create(['margin', 'width'], {
+//                 easing: theme.transitions.easing.sharp,
+//                 duration: theme.transitions.duration.leavingScreen,
+//             }),
+//             width: `calc(100% - ${open ? theme.spacing(2) + drawerWidth : closedDrawerWidth}px)`,
+//             marginLeft: open ? theme.spacing(2) + drawerWidth : closedDrawerWidth,
+//             [theme.breakpoints.down('sm')]: {
+//                 width: '100%',
+//                 marginLeft: 0,
+//             },
+//         })
+//     );
+
+//     const DrawerHeader = styled('div')(({ theme }) => ({
+//         display: 'flex',
+//         alignItems: 'center',
+//         padding: theme.spacing(0, 1),
+//         ...theme.mixins.toolbar,
+//         justifyContent: 'flex-start',
+//     }));
+
+//     let currentPageContent;
+//     switch (router.pathname) {
+//         case '/dashboard':
+//             currentPageContent = <DashboardPage />;
+//             break;
+//         case '/profile':
+//             currentPageContent = <ProfilePage />;
+//             break;
+//         case '/users':
+//             currentPageContent = <UsersPage />;
+//             break;
+//         case '/properties':
+//             currentPageContent = <PropertiesPage />;
+//             break;
+//         case '/mainadvertisment':
+//             currentPageContent = <Mainadvertisment />;
+//             break;
+//         case '/paidadvertisment':
+//             currentPageContent = <PaidAdvertismentPage />;
+//             break;
+//         case '/clientadvertisment':
+//             currentPageContent = <ClientAdvertismentPage />;
+//             break;
+//         case '/orders':
+//             currentPageContent = <OrdersPage />;
+//             break;
+//         case '/reports/sales':
+//             currentPageContent = <SalesPage />;
+//             break;
+//         case '/reports/traffic':
+//             currentPageContent = <TrafficPage />;
+//             break;
+//         case '/integrations':
+//             currentPageContent = <IntegrationsPage />;
+//             break;
+//         default:
+//             currentPageContent = (
+//                 <Box sx={{ p: 2, textAlign: 'right' }}>
+//                     <Typography variant="h5" color="error">لا يوجد صفحة للعرض</Typography>
+//                     <Typography variant="body1">الصفحة المطلوبة  "{router.pathname}" غير موجودة</Typography>
+//                 </Box>
+//             );
+//             break;
+//     }
+//     const userName = userProfile?.adm_name || userProfile?.cli_name || userProfile?.org_name || 'Admin';
+//     console.log("AdminDashboard: userProfile in render:", userProfile);
+//     console.log("AdminDashboard: displayName in render:", userName);
+
+//     // Notification state
+//     const [notifications, setNotifications] = React.useState([]);
+//     const [notificationAnchorEl, setNotificationAnchorEl] = React.useState(null);
+//     const [unreadCount, setUnreadCount] = React.useState(0);
+//     const [snackbarOpen, setSnackbarOpen] = React.useState(false);
+//     const [snackbarMessage, setSnackbarMessage] = React.useState('');
+//     const [snackbarSeverity, setSnackbarSeverity] = React.useState('success');
+
+//     // Notification handlers
+//     const handleNotificationClick = (event) => {
+//         event.preventDefault();
+//         event.stopPropagation();
+//         setNotificationAnchorEl(event.currentTarget);
+//     };
+//     const handleNotificationClose = () => {
+//         setNotificationAnchorEl(null);
+//     };
+//     const handleMarkAsRead = async (notificationId) => {
+//         try {
+//             await Notification.markAsRead(notificationId);
+//             setNotifications(prev => prev.map(notif => notif.id === notificationId ? { ...notif, is_read: true } : notif));
+//             setUnreadCount(prev => Math.max(0, prev - 1));
+//         } catch (error) {
+//             console.error('Error marking notification as read:', error);
+//         }
+//     };
+//     const handleMarkAllAsRead = async () => {
+//         if (!authUid) return;
+//         try {
+//             await Notification.markAllAsRead(authUid);
+//             setNotifications(prev => prev.map(notif => ({ ...notif, is_read: true })));
+//             setUnreadCount(0);
+//         } catch (error) {
+//             console.error('Error marking all notifications as read:', error);
+//         }
+//     };
+//     // Real-time notification effect
+//     React.useEffect(() => {
+//         if (!authUid) return;
+//         const unsubscribeNotifications = Notification.subscribeByUser(authUid, (notifs) => {
+//             setNotifications(notifs);
+//         });
+//         const unsubscribeUnreadCount = Notification.subscribeUnreadCount(authUid, (count) => {
+//             setUnreadCount(count);
+//         });
+//         return () => {
+//             unsubscribeNotifications();
+//             unsubscribeUnreadCount();
+//         };
+//     }, [authUid]);
+
+//     return (
+//         <StyledEngineProvider injectFirst>
+//             <CacheProvider value={cacheRtl}>
+//                 <ColorModeContext.Provider value={colorMode}>
+//                     <ThemeProvider theme={theme}>
+//                         <Box sx={{ display: 'flex', flexDirection: 'row-reverse' }}>
+//                             <CssBaseline />
+//                             <AppBarStyled position="fixed" open={open}>
+//                                 <Toolbar sx={{ flexDirection: 'row-reverse' }}>
+//                                     {!open && (
+//                                         <img
+//                                             src="./logo.png"
+//                                             alt="App Logo"
+//                                             style={{ height: 60, marginRight: 8, scale: 3 }}
+//                                         />
+//                                     )}
+//                                     <Box sx={{ flexGrow: 1 }} />
+//                                     {/* Notification Bell Icon */}
+//                                     <IconButton 
+//                                         sx={{ mr: -1 }} 
+//                                         onClick={handleNotificationClick} 
+//                                         color="inherit"
+//                                     >
+//                                         <Badge badgeContent={unreadCount} color="error">
+//                                             <NotificationsIcon />
+//                                         </Badge>
+//                                     </IconButton>
+//                                     {/* Notification Menu */}
+//                                     {notificationAnchorEl && (
+//                                         <Box sx={{ 
+//                                             position: 'absolute', 
+//                                             top: 60, 
+//                                             right: 20, 
+//                                             width: 400, 
+//                                             maxHeight: 500,
+//                                             backgroundColor: 'white',
+//                                             border: '1px solid #ccc',
+//                                             borderRadius: 1,
+//                                             zIndex: 1000,
+//                                             p: 2
+//                                         }}>
+//                                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+//                                                 <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+//                                                     الإشعارات ({notifications.length})
+//                                                 </Typography>
+//                                                 <Button size="small" onClick={handleMarkAllAsRead} disabled={unreadCount === 0}>
+//                                                     تعليم الكل كمقروء
+//                                                 </Button>
+//                                                 <IconButton size="small" onClick={handleNotificationClose}>
+//                                                     <CloseIcon />
+//                                                 </IconButton>
+//                                             </Box>
+//                                             <Box sx={{ maxHeight: 400, overflow: 'auto' }}>
+//                                                 {notifications.length === 0 ? (
+//                                                     <Box sx={{ p: 3, textAlign: 'center' }}>
+//                                                         <Typography variant="body2" color="text.secondary">
+//                                                             لا توجد إشعارات
+//                                                         </Typography>
+//                                                     </Box>
+//                                                 ) : (
+//                                                     notifications.map((notification) => (
+//                                                         <Card 
+//                                                             key={notification.id}
+//                                                             sx={{ 
+//                                                                 m: 1, 
+//                                                                 cursor: 'pointer',
+//                                                                 backgroundColor: notification.is_read ? 'transparent' : 'action.hover',
+//                                                                 '&:hover': { backgroundColor: 'action.selected' },
+//                                                             }}
+//                                                             onClick={() => handleMarkAsRead(notification.id)}
+//                                                         >
+//                                                             <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+//                                                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+//                                                                     <Typography 
+//                                                                         variant="subtitle2" 
+//                                                                         sx={{ fontWeight: notification.is_read ? 'normal' : 'bold', color: notification.is_read ? 'text.secondary' : 'text.primary' }}
+//                                                                     >
+//                                                                         {notification.title}
+//                                                                     </Typography>
+//                                                                     {!notification.is_read && (
+//                                                                         <Chip label="جديد" size="small" color="error" sx={{ fontSize: '0.6rem', height: 20 }} />
+//                                                                     )}
+//                                                                 </Box>
+//                                                                 <Typography variant="body2" color="text.secondary" sx={{ mb: 1, lineHeight: 1.4 }}>
+//                                                                     {notification.body}
+//                                                                 </Typography>
+//                                                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+//                                                                     <Typography variant="caption" color="text.secondary">
+//                                                                         {notification.timestamp?.toDate ? notification.timestamp.toDate().toLocaleString('ar-EG') : new Date(notification.timestamp).toLocaleString('ar-EG')}
+//                                                                     </Typography>
+//                                                                     {notification.type && (
+//                                                                         <Chip label={notification.type === 'system' ? 'نظام' : notification.type} size="small" variant="outlined" sx={{ fontSize: '0.6rem', height: 20 }} />
+//                                                                     )}
+//                                                                 </Box>
+//                                                             </CardContent>
+//                                                         </Card>
+//                                                     ))
+//                                                 )}
+//                                             </Box>
+//                                         </Box>
+//                                     )}
+//                                     <IconButton
+//                                         sx={{ ml: 1 }}
+//                                         color="inherit"
+//                                         onClick={() => navigate('/home')}
+//                                         title="العودة للصفحة الرئيسية"
+//                                     >
+//                                         <HomeIcon />
+//                                     </IconButton>
+//                                     <IconButton sx={{ mr: 1 }} onClick={colorMode.toggleColorMode} color="inherit">
+//                                         {theme.palette.mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
+//                                     </IconButton>
+//                                     <Button
+//                                         variant="outlined"
+//                                         color="inherit"
+//                                         onClick={handleLogout}
+//                                         endIcon={<LogoutIcon />}
+//                                         sx={{ mr: 2, borderRadius: 2, direction: 'ltr' }}
+//                                     >
+//                                         تسجيل الخروج
+//                                     </Button>
+                                    
+//                                 </Toolbar>
+
+//                             </AppBarStyled>
+
+//                             <Drawer
+//                                 variant="permanent"
+//                                 sx={{
+//                                     width: open ? drawerWidth : closedDrawerWidth,
+//                                     flexShrink: 0,
+//                                     whiteSpace: 'nowrap',
+//                                     boxSizing: 'border-box',
+//                                     transition: theme.transitions.create('width', {
+//                                         easing: theme.transitions.easing.sharp,
+//                                         duration: theme.transitions.duration.enteringScreen,
+//                                     }),
+//                                     '& .MuiDrawer-paper': {
+//                                         width: open ? drawerWidth : closedDrawerWidth,
+//                                         boxSizing: 'border-box',
+//                                         borderRadius: '8px 0 0 8px',
+//                                         overflowX: 'hidden',
+//                                         transition: theme.transitions.create('width', {
+//                                             easing: theme.transitions.easing.sharp,
+//                                             duration: theme.transitions.duration.enteringScreen,
+//                                         }),
+//                                     },
+//                                 }}
+//                                 anchor="left"
+//                                 open={open}
+//                             >
+//                                 <DrawerHeader>
+//                                     {open && (
+//                                         <Box sx={{ flexGrow: 1, textAlign: 'center' }}>
+//                                             <img
+//                                                 src="./logo.png"
+//                                                 alt="App Logo"
+//                                                 style={{ height: 60, scale: 2 }}
+//                                             />
+//                                         </Box>
+//                                     )}
+//                                     <IconButton onClick={handleDrawerToggle}>
+//                                         {open ? <ChevronRightIcon /> : <MenuIcon />}
+//                                     </IconButton>
+//                                 </DrawerHeader>
+//                                 <Divider />
+//                                 {open && (
+//                                     <Box sx={{ my: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', p: 2 }}>
+//                                         <Avatar
+//                                             alt="Admin User"
+//                                             src={userProfile?.image || './admin.jpg'}
+//                                             sx={{ width: 80, height: 80, mb: 1, boxShadow: '0px 0px 8px rgba(0,0,0,0.2)' }}
+//                                         />
+//                                         <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+//                                             Hello, {userName}
+//                                         </Typography>
+//                                         <Typography variant="body2" color="text.secondary">
+//                                             مرحباً بك في لوحة التحكم
+//                                         </Typography>
+//                                     </Box>
+//                                 )}
+//                                 {open && <Divider sx={{ mb: 2 }} />}
+//                                 <List>
+//                                     {NAVIGATION.map((item) => {
+//                                         if (item.kind === 'header') {
+//                                             return open ? (
+//                                                 <List key={item.title} component="nav" sx={{ px: 2, pt: 2, display: 'flex', flexDirection: 'row-reverse' }}>
+//                                                     <Typography variant="overline" color="text.secondary" sx={{ textTransform: 'uppercase', fontWeight: 'bold', fontSize: 18, textAlign: 'right' }} >
+//                                                         {item.title}
+//                                                     </Typography>
+//                                                 </List>
+//                                             ) : null;
+//                                         }
+//                                         if (item.kind === 'divider') {
+//                                             return <Divider key={`divider-${item.kind}`} sx={{ my: 1 }} />;
+//                                         }
+//                                         if (item.children) {
+//                                             const isOpen = item.segment === 'reports' ? openReports : false;
+//                                             return (
+//                                                 <React.Fragment key={item.segment}>
+//                                                     <Tooltip title={item.tooltip} placment='top'>
+//                                                         <ListItemButton
+//                                                             dir='rtl'
+//                                                             onClick={open ? handleReportsClick : () => setOpen(true)}
+//                                                             sx={{
+//                                                                 borderRadius: 2,
+//                                                                 mx: 1,
+//                                                                 justifyContent: open ? 'initial' : 'center',
+//                                                                 px: 2.5,
+//                                                                 '&.Mui-selected': { backgroundColor: 'action.selected' },
+//                                                             }}
+//                                                         >
+//                                                             <ListItemIcon sx={{ minWidth: 0, ml: open ? 3 : 'auto', justifyContent: 'center' }}>
+//                                                                 {item.icon}
+//                                                             </ListItemIcon>
+//                                                             {open && <ListItemText primary={item.title} sx={{ opacity: open ? 1 : 0, textAlign: 'left', pl: 2 }} />}
+//                                                             {open && (isOpen ? <ExpandLess /> : <ExpandMore />)}
+//                                                         </ListItemButton>
+//                                                     </Tooltip>
+//                                                     <Collapse in={isOpen && open} timeout="auto" unmountOnExit>
+//                                                         <List component="div" disablePadding >
+//                                                             {item.children.map((child) => (
+//                                                                 <Tooltip title={child.tooltip} key={child.segment}>
+//                                                                     <ListItem key={child.segment} disablePadding>
+//                                                                         <ListItemButton
+//                                                                             selected={router.pathname === `/reports/${child.segment}`}
+//                                                                             onClick={() => router.navigate(`/reports/${child.segment}`)}
+//                                                                             sx={{
+//                                                                                 pr: open ? 4 : 2.5,
+//                                                                                 borderRadius: 2,
+//                                                                                 mx: 1,
+//                                                                                 justifyContent: open ? 'initial' : 'center',
+//                                                                             }}
+//                                                                         >
+//                                                                             <ListItemIcon sx={{ minWidth: 0, ml: open ? 3 : 'auto', justifyContent: 'center' }}>
+//                                                                                 {child.icon}
+//                                                                             </ListItemIcon>
+//                                                                             {open && <ListItemText primary={child.title} sx={{ opacity: open ? 1 : 0, textAlign: 'right' }} />}
+//                                                                         </ListItemButton>
+//                                                                     </ListItem>
+//                                                                 </Tooltip>
+//                                                             ))}
+//                                                         </List>
+//                                                     </Collapse>
+//                                                 </React.Fragment>
+//                                             );
+//                                         }
+//                                         return (
+//                                             <Tooltip title={item.tooltip} placement='right-end'>
+//                                                 <ListItem key={item.segment} disablePadding dir='rtl'>
+//                                                     <ListItemButton
+//                                                         selected={router.pathname === `/${item.segment}`}
+//                                                         onClick={() => router.navigate(`/${item.segment}`)}
+//                                                         sx={{
+//                                                             borderRadius: 2,
+//                                                             mx: 1,
+//                                                             justifyContent: open ? 'initial' : 'center',
+//                                                             px: 2.5,
+//                                                             '&.Mui-selected': { backgroundColor: 'action.selected' },
+//                                                         }}
+//                                                     >
+//                                                         <ListItemIcon sx={{ minWidth: 0, ml: open ? 3 : 'auto', justifyContent: 'center', }}>
+//                                                             {item.icon}
+//                                                         </ListItemIcon>
+//                                                         {open && <ListItemText primary={item.title} sx={{ opacity: open ? 1 : 0, textAlign: 'left', pl: 2 }} />}
+//                                                     </ListItemButton>
+//                                                 </ListItem>
+//                                             </Tooltip>
+//                                         );
+//                                     })}
+//                                 </List>
+//                             </Drawer>
+//                             <Main open={open}>
+//                                 <DrawerHeader />
+//                                 {currentPageContent}
+//                             </Main>
+//                         </Box>
+//                     </ThemeProvider>
+//                 </ColorModeContext.Provider>
+//             </CacheProvider>
+//         </StyledEngineProvider>
+//     );
+// }
 export default function AdminDashboard(props) {
     const { window } = props;
     const [open, setOpen] = React.useState(true);
@@ -4525,6 +6105,7 @@ export default function AdminDashboard(props) {
     const router = useDemoRouter('/profile');
     const dispatch = useDispatch();
     const navigate = useNavigate();
+    // const { unreadCount } = useNotifications();
 
     // Effect to fetch user profile when component mounts or authUid changes
     useEffect(() => {
@@ -4648,11 +6229,14 @@ export default function AdminDashboard(props) {
         case '/orders':
             currentPageContent = <OrdersPage />;
             break;
-        case '/reports/sales':
-            currentPageContent = <SalesPage />;
+        case '/reports/reports':
+            currentPageContent = <ReportsPage />;
             break;
         case '/reports/traffic':
             currentPageContent = <TrafficPage />;
+            break;
+        case '/reports/analytics':
+            currentPageContent = <Analytics />;
             break;
         case '/integrations':
             currentPageContent = <IntegrationsPage />;
@@ -4671,55 +6255,32 @@ export default function AdminDashboard(props) {
     console.log("AdminDashboard: displayName in render:", userName);
 
     // Notification state
-    const [notifications, setNotifications] = React.useState([]);
     const [notificationAnchorEl, setNotificationAnchorEl] = React.useState(null);
     const [unreadCount, setUnreadCount] = React.useState(0);
     const [snackbarOpen, setSnackbarOpen] = React.useState(false);
     const [snackbarMessage, setSnackbarMessage] = React.useState('');
     const [snackbarSeverity, setSnackbarSeverity] = React.useState('success');
 
-    // Notification handlers
-    const handleNotificationClick = (event) => {
+    // Real-time notification subscription
+    React.useEffect(() => {
+        if (authUid) {
+            const unsubscribe = Notification.subscribeUnreadCount(authUid, (count) => {
+                setUnreadCount(count);
+            });
+            return () => unsubscribe();
+        }
+    }, [authUid]);
+
+    // Notification handlers - memoized to prevent unnecessary re-renders
+    const handleNotificationClick = React.useCallback((event) => {
         event.preventDefault();
         event.stopPropagation();
         setNotificationAnchorEl(event.currentTarget);
-    };
-    const handleNotificationClose = () => {
+    }, []);
+
+    const handleNotificationClose = React.useCallback(() => {
         setNotificationAnchorEl(null);
-    };
-    const handleMarkAsRead = async (notificationId) => {
-        try {
-            await Notification.markAsRead(notificationId);
-            setNotifications(prev => prev.map(notif => notif.id === notificationId ? { ...notif, is_read: true } : notif));
-            setUnreadCount(prev => Math.max(0, prev - 1));
-        } catch (error) {
-            console.error('Error marking notification as read:', error);
-        }
-    };
-    const handleMarkAllAsRead = async () => {
-        if (!authUid) return;
-        try {
-            await Notification.markAllAsRead(authUid);
-            setNotifications(prev => prev.map(notif => ({ ...notif, is_read: true })));
-            setUnreadCount(0);
-        } catch (error) {
-            console.error('Error marking all notifications as read:', error);
-        }
-    };
-    // Real-time notification effect
-    React.useEffect(() => {
-        if (!authUid) return;
-        const unsubscribeNotifications = Notification.subscribeByUser(authUid, (notifs) => {
-            setNotifications(notifs);
-        });
-        const unsubscribeUnreadCount = Notification.subscribeUnreadCount(authUid, (count) => {
-            setUnreadCount(count);
-        });
-        return () => {
-            unsubscribeNotifications();
-            unsubscribeUnreadCount();
-        };
-    }, [authUid]);
+    }, []);
 
     return (
         <StyledEngineProvider injectFirst>
@@ -4744,84 +6305,46 @@ export default function AdminDashboard(props) {
                                         onClick={handleNotificationClick} 
                                         color="inherit"
                                     >
-                                        <Badge badgeContent={unreadCount} color="error">
+                                        <Badge 
+                                            badgeContent={unreadCount} 
+                                            color="error"
+                                            sx={{
+                                                "& .MuiBadge-badge": {
+                                                    top: "0px",
+                                                    right: "0px",
+                                                    backgroundColor: "#d1d1d1ff",
+                                                    color: "black",
+                                                    fontWeight: "bold",
+                                                    minWidth: "20px",
+                                                    height: "20px",
+                                                    borderRadius: "50%",
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    justifyContent: "center",
+                                                    fontSize: "14px",
+                                                    zIndex: "10000",
+                                                },
+                                            }}
+                                        >
                                             <NotificationsIcon />
                                         </Badge>
                                     </IconButton>
-                                    {/* Notification Menu */}
-                                    {notificationAnchorEl && (
-                                        <Box sx={{ 
-                                            position: 'absolute', 
-                                            top: 60, 
-                                            right: 20, 
-                                            width: 400, 
-                                            maxHeight: 500,
-                                            backgroundColor: 'white',
-                                            border: '1px solid #ccc',
-                                            borderRadius: 1,
-                                            zIndex: 1000,
-                                            p: 2
-                                        }}>
-                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                                                <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                                                    الإشعارات ({notifications.length})
-                                                </Typography>
-                                                <Button size="small" onClick={handleMarkAllAsRead} disabled={unreadCount === 0}>
-                                                    تعليم الكل كمقروء
-                                                </Button>
-                                                <IconButton size="small" onClick={handleNotificationClose}>
-                                                    <CloseIcon />
-                                                </IconButton>
-                                            </Box>
-                                            <Box sx={{ maxHeight: 400, overflow: 'auto' }}>
-                                                {notifications.length === 0 ? (
-                                                    <Box sx={{ p: 3, textAlign: 'center' }}>
-                                                        <Typography variant="body2" color="text.secondary">
-                                                            لا توجد إشعارات
-                                                        </Typography>
-                                                    </Box>
-                                                ) : (
-                                                    notifications.map((notification) => (
-                                                        <Card 
-                                                            key={notification.id}
-                                                            sx={{ 
-                                                                m: 1, 
-                                                                cursor: 'pointer',
-                                                                backgroundColor: notification.is_read ? 'transparent' : 'action.hover',
-                                                                '&:hover': { backgroundColor: 'action.selected' },
-                                                            }}
-                                                            onClick={() => handleMarkAsRead(notification.id)}
-                                                        >
-                                                            <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-                                                                    <Typography 
-                                                                        variant="subtitle2" 
-                                                                        sx={{ fontWeight: notification.is_read ? 'normal' : 'bold', color: notification.is_read ? 'text.secondary' : 'text.primary' }}
-                                                                    >
-                                                                        {notification.title}
-                                                                    </Typography>
-                                                                    {!notification.is_read && (
-                                                                        <Chip label="جديد" size="small" color="error" sx={{ fontSize: '0.6rem', height: 20 }} />
-                                                                    )}
-                                                                </Box>
-                                                                <Typography variant="body2" color="text.secondary" sx={{ mb: 1, lineHeight: 1.4 }}>
-                                                                    {notification.body}
-                                                                </Typography>
-                                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                                    <Typography variant="caption" color="text.secondary">
-                                                                        {notification.timestamp?.toDate ? notification.timestamp.toDate().toLocaleString('ar-EG') : new Date(notification.timestamp).toLocaleString('ar-EG')}
-                                                                    </Typography>
-                                                                    {notification.type && (
-                                                                        <Chip label={notification.type === 'system' ? 'نظام' : notification.type} size="small" variant="outlined" sx={{ fontSize: '0.6rem', height: 20 }} />
-                                                                    )}
-                                                                </Box>
-                                                            </CardContent>
-                                                        </Card>
-                                                    ))
-                                                )}
-                                            </Box>
-                                        </Box>
-                                    )}
+                                    {/* Notification Popover */}
+                                    <Popover
+                                        open={Boolean(notificationAnchorEl)}
+                                        anchorEl={notificationAnchorEl}
+                                        onClose={handleNotificationClose}
+                                        anchorOrigin={{
+                                            vertical: 'bottom',
+                                            horizontal: 'left',
+                                        }}
+                                        transformOrigin={{
+                                            vertical: 'top',
+                                            horizontal: 'right',
+                                        }}
+                                    >
+                                        <NotificationList userId={authUid} />
+                                    </Popover>
                                     <IconButton
                                         sx={{ ml: 1 }}
                                         color="inherit"

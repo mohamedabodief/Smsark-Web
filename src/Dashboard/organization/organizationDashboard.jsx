@@ -16,10 +16,14 @@ import {
     CardContent,
     Chip,
     Badge,
+    Popover,
 } from '@mui/material';
+import PageHeader from '../../componenents/PageHeader';
 import MenuIcon from '@mui/icons-material/Menu';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import DashboardIcon from '@mui/icons-material/Dashboard';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import GroupIcon from '@mui/icons-material/Group';
 import HomeIcon from '@mui/icons-material/Home';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
@@ -30,6 +34,7 @@ import LayersIcon from '@mui/icons-material/Layers';
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
 import AddIcon from '@mui/icons-material/Add';
+import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import EditIcon from '@mui/icons-material/Edit';
 import AccountBoxIcon from '@mui/icons-material/AccountBox';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -40,6 +45,7 @@ import Brightness7Icon from '@mui/icons-material/Brightness7';
 import MessageIcon from '@mui/icons-material/Message';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import LogoutIcon from '@mui/icons-material/Logout';
+import DownloadIcon from '@mui/icons-material/Download';
 import { logout } from '../../LoginAndRegister/featuresLR/authSlice';
 import { addUser, editUser, deleteUser } from '../../reduxToolkit/slice/usersSlice';
 import { addOrganization, editOrganization, deleteOrganization } from '../../reduxToolkit/slice/organizationsSlice';
@@ -51,7 +57,6 @@ import { StyledEngineProvider } from '@mui/material/styles';
 
 import { DataGrid } from '@mui/x-data-grid';
 import { setProfilePic } from '../../reduxToolkit/slice/profilePicSlice';
-import { MOCK_ADVERTISEMENTS } from '../mockAds';
 import { Link } from '@mui/material';
 
 import {
@@ -83,6 +88,8 @@ import PendingActionsOutlinedIcon from '@mui/icons-material/PendingActionsOutlin
 
 // chart
 import { PieChart, pieArcLabelClasses } from '@mui/x-charts/PieChart';
+import { BarChart } from '@mui/x-charts/BarChart';
+import { LineChart } from '@mui/x-charts/LineChart';
 import { desktopOS, valueFormatter } from './webUsageStats';
 //  msg 
 import MoreVertIcon from '@mui/icons-material/MoreVert'; // For dropdown menu on inquiry status
@@ -90,7 +97,10 @@ import DoneOutlineIcon from '@mui/icons-material/DoneOutline'; // For contacted
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty'; // For pending
 import CloseIcon from '@mui/icons-material/Close'; // For closed
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
-
+import AutorenewIcon from '@mui/icons-material/Autorenew';
+import RealEstateDeveloperAdvertisement from '../../FireBase/modelsWithOperations/RealEstateDeveloperAdvertisement';
+import FinancingAdvertisement from '../../FireBase/modelsWithOperations/FinancingAdvertisement';
+import { setDeveloperAds, setFunderAds } from '../../reduxToolkit/slice/paidAdsSlice';
 import {
     updateInquiry,
     deleteInquiry,
@@ -107,26 +117,31 @@ import { fetchDeveloperAdsByUser } from "../../feature/ads/developerAdsSlice";
 import { fetchFinancingAdsByUser } from "../../feature/ads/financingAdsSlice";
 import { 
     // fetchAllHomepageAds, 
-    fetchHomepageAdsByUser, 
+    fetchHomepageAdsByUser,
+    subscribeToUserHomepageAds, 
     createHomepageAd, 
     updateHomepageAd, 
     deleteHomepageAd,
+    returnHomepageAdToPending,
+    clearSubscriptions
     // approveHomepageAd,
     // rejectHomepageAd,
     // returnHomepageAdToPending,
     // activateHomepageAd,
     // deactivateHomepageAd
 } from "../../feature/ads/homepageAdsSlice";
+import { deleteAd, updateAd } from '../../reduxToolkit/slice/paidAdsSlice';
 import Notification from '../../FireBase/MessageAndNotification/Notification';
+import NotificationList from '../../pages/notificationList';
 // financing 
-import FinancingAdvertisement from '../../FireBase/modelsWithOperations/FinancingAdvertisement';
 import FinancingRequest from '../../FireBase/modelsWithOperations/FinancingRequest';
-import { fetchFinancialRequests, updateFinancialRequest, deleteFinancialRequest } from '../../reduxToolkit/slice/financialRequestSlice';
+// analytics
+import { fetchAnalyticsData } from '../../reduxToolkit/slice/analyticsSlice';
 // Define shared data (could be moved to a constants file)
 const governorates = [
     "القاهرة", "الإسكندرية", "الجيزة", "الشرقية", "الدقهلية", "البحيرة", "المنيا", "أسيوط",
 ];
-const organizationTypes = ["مطور عقاري", "ممول عقاري"];
+const organizationTypes = ["مطور عقاري", "مطور عقارى", "ممول عقاري", "ممول عقارى"];
 // Login Logout 
 // import { logoutUser } from '../../reduxToolkit/authSlice';
 import { useNavigate } from 'react-router-dom';
@@ -141,7 +156,10 @@ const cacheRtl = createCache({
 const drawerWidth = 240;
 const closedDrawerWidth = 70;
 
-const NAVIGATION = [
+// Function to get navigation items based on organization type
+// This function conditionally includes the 'orders' tab only for funder organizations
+const getNavigationItems = (organizationType) => {
+    const baseItems = [
     {
         kind: 'header',
         title: 'العناصر الرئيسية',
@@ -176,24 +194,38 @@ const NAVIGATION = [
     //     icon: <MessageIcon />,
     //     tooltip: 'المحادثات',
     // },
-    {
+    ];
+
+    // Add orders tab only for funder organizations
+    // This tab shows financing advertisements for funder organizations to review and approve
+    if (organizationType === 'ممول عقارى' || organizationType === 'ممول عقاري') {
+        baseItems.push({
         segment: 'orders',
         title: 'الطلبات',
         icon: <ShoppingCartIcon />,
         tooltip: 'الطلبات',
-    },
+        });
+    }
+
+    // Add remaining items
+    baseItems.push(
     {
         kind: 'divider',
     },
     {
         kind: 'header',
         title: 'التحليلات',
-
+    },
+    {
+        segment: 'analytics',
+        title: 'التحليلات',
+        icon: <BarChartIcon />,
+        tooltip: 'التحليلات والتقارير',
     },
     {
         segment: 'reports',
         title: 'التقارير',
-        icon: <BarChartIcon />,
+        icon: <DescriptionIcon />,
         tooltip: 'التقارير',
         children: [
             {
@@ -215,8 +247,11 @@ const NAVIGATION = [
         title: 'إضافات',
         icon: <LayersIcon />,
         tooltip: 'إضافات',
-    },
-];
+        }
+    );
+
+    return baseItems;
+};
 
 const ColorModeContext = React.createContext({ toggleColorMode: () => { } });
 
@@ -969,7 +1004,11 @@ function DashboardPage() {
     };
     return (
         <Box sx={{ p: 2, textAlign: 'right' }}>
-            <Typography variant="h4" display={'flex'} flexDirection={'row-reverse'} gutterBottom>لوحة التحكم</Typography>
+            <PageHeader
+                title="لوحة التحكم"
+                icon={DashboardIcon}
+                showCount={false}
+            />
 
             <Grid container spacing={3} direction="row-reverse">
 
@@ -1690,7 +1729,11 @@ function UsersPage() {
 
     return (
         <Box sx={{ p: 2, textAlign: 'right' }}>
-            <Typography variant="h4" display={'flex'} flexDirection={'row-reverse'} gutterBottom>المستخدمين</Typography>
+            <PageHeader
+                title="المستخدمين"
+                icon={SupervisedUserCircleIcon}
+                showCount={false}
+            />
             <Box sx={{ mb: 2, display: 'flex', gap: 1, flexDirection: 'row-reverse' }}>
                 <Button
                     variant={activeTab === 'users' ? 'contained' : 'outlined'}
@@ -2021,9 +2064,11 @@ function PropertiesPage() {
 
     return (
         <Box sx={{ p: 2, textAlign: 'right' }}>
-            <Typography variant="h4" sx={{ display: 'flex', flexDirection: 'row-reverse' }} gutterBottom>
-                إدارة العقارات
-            </Typography>
+            <PageHeader
+                title="إدارة العقارات"
+                icon={HomeIcon}
+                showCount={false}
+            />
 
             <Paper sx={{ p: 2, borderRadius: 2, minHeight: 400, textAlign: 'right', direction: 'rtl' }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexDirection: 'row-reverse', gap: 2 }}>
@@ -2213,20 +2258,27 @@ function Mainadvertisment(props) {
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [isReturnToPendingModalOpen, setIsReturnToPendingModalOpen] = useState(false);
     const [selectedAd, setSelectedAd] = useState(null);
     const [snackbarOpen, setSnackbarOpen] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState("");
     const [snackbarSeverity, setSnackbarSeverity] = useState("success");
 
-    // Fetch homepage ads by user when component mounts or userProfile.uid changes
+    // Subscribe to real-time updates for user's homepage ads
     useEffect(() => {
         if (userProfile?.uid) {
-            console.log("Mainadvertisment - Dispatching fetchHomepageAdsByUser for UID:", userProfile.uid);
-            dispatch(fetchHomepageAdsByUser(userProfile.uid));
+            console.log("Mainadvertisment - Setting up real-time subscription for UID:", userProfile.uid);
+            dispatch(subscribeToUserHomepageAds(userProfile.uid));
+            
+            // Cleanup subscription on unmount
+            return () => {
+                console.log("Mainadvertisment - Cleaning up subscription...");
+                dispatch(clearSubscriptions());
+            };
         } else {
-            console.log("Mainadvertisment - userProfile.uid not available, skipping fetchHomepageAdsByUser.");
+            console.log("Mainadvertisment - userProfile.uid not available, skipping subscription.");
         }
-    }, [dispatch, userProfile?.uid]); // Re-fetch if userProfile.uid changes
+    }, [dispatch, userProfile?.uid]); // Re-subscribe if userProfile.uid changes
 
     // Handle add ad
     const handleAddAd = async (adData) => {
@@ -2249,6 +2301,12 @@ function Mainadvertisment(props) {
     const handleEditAd = async (editData) => {
         try {
             await dispatch(updateHomepageAd(editData)).unwrap();
+            // Check if this was a resubmission of a rejected ad
+            if (editData.updates && editData.updates.reviewStatus === 'pending') {
+                setSnackbarMessage("تم تعديل الإعلان وإعادة إرساله للمراجعة بنجاح!");
+            } else {
+                setSnackbarMessage("تم تحديث الإعلان بنجاح!");
+            }
             setSnackbarMessage("تم تحديث الإعلان بنجاح!");
             setSnackbarSeverity("success");
             setSnackbarOpen(true);
@@ -2274,7 +2332,20 @@ function Mainadvertisment(props) {
             console.error("Error deleting ad:", error);
         }
     };
-
+// Handle return to pending
+    const handleReturnToPending = async (adId) => {
+        try {
+            await dispatch(returnHomepageAdToPending(adId)).unwrap();
+            setSnackbarMessage("تم إعادة إرسال الإعلان للمراجعة بنجاح!");
+            setSnackbarSeverity("success");
+            setSnackbarOpen(true);
+        } catch (error) {
+            setSnackbarMessage("فشل إعادة إرسال الإعلان: " + (error.message || "خطأ غير معروف"));
+            setSnackbarSeverity("error");
+            setSnackbarOpen(true);
+            console.error("Error returning ad to pending:", error);
+        }
+    };
     // Get status color
     const getStatusColor = (status) => {
         switch (status) {
@@ -2304,7 +2375,33 @@ function Mainadvertisment(props) {
         }
         return date.toLocaleDateString('ar-EG');
     };
+// Calculate remaining days from expiry time
+    const calculateRemainingDays = (expiryTime) => {
+        if (!expiryTime) return null;
+        const now = Date.now();
+        const expiry = typeof expiryTime === 'number' ? expiryTime : new Date(expiryTime).getTime();
+        const remainingMs = expiry - now;
+        if (remainingMs <= 0) return 0;
+        return Math.ceil(remainingMs / (24 * 60 * 60 * 1000));
+    };
 
+    // Get activation days display text
+    const getActivationDaysText = (ad) => {
+        if (!ad.adExpiryTime) return null;
+        
+        const remainingDays = calculateRemainingDays(ad.adExpiryTime);
+        if (remainingDays === null) return null;
+        
+        if (remainingDays === 0) {
+            return 'منتهي الصلاحية';
+        } else if (remainingDays === 1) {
+            return 'ينتهي غداً';
+        } else if (remainingDays <= 7) {
+            return `متبقي ${remainingDays} أيام`;
+        } else {
+            return `متبقي ${remainingDays} يوم`;
+        }
+    };
     const handleSnackbarClose = (event, reason) => {
         if (reason === 'clickaway') {
             return;
@@ -2313,10 +2410,13 @@ function Mainadvertisment(props) {
     };
 
     return (
-        <Box sx={{ p: 2, textAlign: 'right' }}>
-            <Typography variant="h4" sx={{ display: 'flex', flexDirection: 'row-reverse', mb: 3 }} gutterBottom>
-                إعلانات القسم الرئيسي
-            </Typography>
+        <Box dir='rtl' sx={{ p: 2, textAlign: 'left' }}>
+            <PageHeader
+                title="إعلانات القسم الرئيسي"
+                icon={BroadcastOnHomeIcon}
+                count={homepageAds.length}
+                countLabel="إجمالي الإعلانات"
+            />
 
             <Paper sx={{ p: 3, borderRadius: 2, minHeight: 400, textAlign: 'right' }}>
                 {/* Statistics */}
@@ -2330,7 +2430,7 @@ function Mainadvertisment(props) {
                 </Box>
 
                 {/* Filters */}
-                <Box sx={{ mb: 3, display: 'flex', gap: 2, flexDirection: 'row-reverse' }}>
+                <Box sx={{ mb: 3, display: 'flex', gap: 2, flexDirection: 'row' }}>
                     <FormControl size="small" sx={{ minWidth: 150 }}>
                         <InputLabel>حالة المراجعة</InputLabel>
                         <Select
@@ -2359,7 +2459,7 @@ function Mainadvertisment(props) {
                     </FormControl>
                 </Box>
 
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexDirection: 'row-reverse' }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexDirection: 'row' }}>
                     <Typography variant="h6" sx={{ fontWeight: 'bold', fontSize: 18 }} color="text.secondary">
                         إعلانات الصفحة الرئيسية ({filteredAds.length})
                     </Typography>
@@ -2437,7 +2537,16 @@ function Mainadvertisment(props) {
                                                 ينتهي في: {formatDate(ad.adExpiryTime)}
                                             </Typography>
                                         )}
-
+ {/* Activation Days Display */}
+                                        {getActivationDaysText(ad) && (
+                                            <Chip
+                                                label={getActivationDaysText(ad)}
+                                                color={calculateRemainingDays(ad.adExpiryTime) <= 7 ? 'warning' : 'info'}
+                                                size="small"
+                                                sx={{ mt: 0.5 }}
+                                            />
+                                        )}
+                                        
                                         {ad.review_note && (
                                             <Typography variant="body2" color="error">
                                                 ملاحظة: {ad.review_note}
@@ -2447,7 +2556,9 @@ function Mainadvertisment(props) {
 
                                     {/* Actions (simplified for organization view) */}
                                 <Box sx={{ display: 'flex', gap: 1, flexDirection: 'row-reverse' }}>
-                                    <Tooltip title="تعديل">
+{/* Show edit button for pending and rejected ads */}
+                                    {(ad.reviewStatus === 'pending' || ad.reviewStatus === 'rejected') && (
+                                        <Tooltip title="تعديل">
                                             <IconButton
                                                 onClick={() => {
                                                     setSelectedAd(ad);
@@ -2456,8 +2567,24 @@ function Mainadvertisment(props) {
                                                 sx={{ color: 'primary.main' }}
                                             >
                                                 <EditIcon />
-                                        </IconButton>
-                                    </Tooltip>
+                                            </IconButton>
+                                        </Tooltip>
+                                    )}
+
+                                    {/* Show return to pending button for rejected ads */}
+                                    {ad.reviewStatus === 'rejected' && (
+                                        <Tooltip title="إعادة إرسال للمراجعة">
+                                            <IconButton
+                                                onClick={() => {
+                                                    setSelectedAd(ad);
+                                                    setIsReturnToPendingModalOpen(true);
+                                                }}
+                                                sx={{ color: 'warning.main' }}
+                                            >
+                                                <AutorenewIcon />
+                                            </IconButton>
+                                        </Tooltip>
+                                    )}
 
                                     <Tooltip title="حذف">
                                             <IconButton
@@ -2516,7 +2643,24 @@ function Mainadvertisment(props) {
                 itemId={selectedAd?.id}
                 itemName="إعلان الصفحة الرئيسية"
             />
-
+{/* Return to Pending Confirmation Modal */}
+            <ConfirmDeleteModal
+                open={isReturnToPendingModalOpen}
+                onClose={() => {
+                    setIsReturnToPendingModalOpen(false);
+                    setSelectedAd(null);
+                }}
+                onConfirm={() => {
+                    if (selectedAd) {
+                        handleReturnToPending(selectedAd.id);
+                        setIsReturnToPendingModalOpen(false);
+                        setSelectedAd(null);
+                    }
+                }}
+                itemType="إعادة إرسال"
+                itemId={selectedAd?.id}
+                itemName="إعلان الصفحة الرئيسية للمراجعة"
+            />
             {/* Snackbar */}
             <Snackbar
                 open={snackbarOpen}
@@ -2540,36 +2684,72 @@ function PaidAdvertismentPage() {
     const developerAdsLoading = useSelector((state) => state.developerAds?.loading || false);
     const financingAdsLoading = useSelector((state) => state.financingAds?.loading || false);
 
-    // State to manage the active tab
-    const [activeTab, setActiveTab] = React.useState('developer'); // 'developer' or 'funder'
+    // State to manage the active tab - initialize based on user's organization type
+    const [activeTab, setActiveTab] = React.useState(() => {
+        if (userProfile?.type_of_organization === "ممول عقاري" || userProfile?.type_of_organization === "ممول عقارى") {
+            return 'funder';
+        }
+        return 'developer'; // Default to developer for "مطور عقاري" or any other type
+    });
+
+    // Ensure active tab matches organization type
+    React.useEffect(() => {
+        if (userProfile?.type_of_organization) {
+            const expectedTab = (userProfile.type_of_organization === "ممول عقاري" || userProfile.type_of_organization === "ممول عقارى") ? 'funder' : 'developer';
+            if (activeTab !== expectedTab) {
+                console.log('Updating active tab to match organization type:', expectedTab);
+                setActiveTab(expectedTab);
+            }
+        }
+    }, [userProfile?.type_of_organization, activeTab]);
+    
+    // Fetch paid ads based on organization type
+    useEffect(() => {
+            if (!userProfile?.uid) return;
+
+        const orgType = userProfile.type_of_organization;
+        console.log('Fetching ads for user:', userProfile.uid, 'with organization type:', orgType);
+        
+        if (orgType === "مطور عقاري" || orgType === "مطور عقارى") {
+            // Only fetch real estate ads for developers
+            console.log('Fetching real estate ads for developer organization');
+            dispatch(fetchDeveloperAdsByUser(userProfile.uid))
+                .then(() => console.log('Real estate ads fetched successfully'))
+                .catch(error => console.error('Error fetching real estate ads:', error));
+        } else if (orgType === "ممول عقاري" || orgType === "ممول عقارى") {
+            // Only fetch financing ads for funders
+            console.log('Fetching financing ads for funder organization');
+            dispatch(fetchFinancingAdsByUser(userProfile.uid))
+                .then(() => console.log('Financing ads fetched successfully'))
+                .catch(error => console.error('Error fetching financing ads:', error));
+        } else {
+            console.warn('Unknown organization type:', orgType);
+        }
+    }, [dispatch, userProfile?.uid, userProfile?.type_of_organization]);
 
     // Handler for tab changes
     const handleTabChange = (event, newValue) => {
         setActiveTab(newValue);
     };
 
-    // Fetch ads when component mounts or user profile changes
-    useEffect(() => {
-        if (userProfile?.uid) {
-            // Fetch both types of ads for the logged-in user
-            dispatch(fetchDeveloperAdsByUser(userProfile.uid));
-            dispatch(fetchFinancingAdsByUser(userProfile.uid));
-        }
-    }, [dispatch, userProfile?.uid]);
-
-    // Determine which ads to show based on organization type
+    // Determine which ads to show based on user's organization type
     const getAdsToShow = () => {
         if (!userProfile) return { ads: [], loading: false, type: null };
 
         const orgType = userProfile.type_of_organization;
+        console.log('Getting ads to show for organization type:', orgType);
         
-        if (orgType === "مطور عقاري") {
+        if (orgType === "مطور عقاري" || orgType === "مطور عقارى") {
+            // Developers only see their real estate ads
+            console.log('Showing real estate ads for developer, count:', developerAds.length);
             return {
                 ads: developerAds,
                 loading: developerAdsLoading,
                 type: "developer"
             };
-        } else if (orgType === "ممول عقاري") {
+        } else if (orgType === "ممول عقاري" || orgType === "ممول عقارى") {
+            // Funders only see their financing ads
+            console.log('Showing financing ads for funder, count:', financingAds.length);
             return {
                 ads: financingAds,
                 loading: financingAdsLoading,
@@ -2577,6 +2757,7 @@ function PaidAdvertismentPage() {
             };
         }
         
+        console.warn('Unknown organization type, showing no ads');
         return { ads: [], loading: false, type: null };
     };
 
@@ -2586,6 +2767,20 @@ function PaidAdvertismentPage() {
     const developerColumns = [
         { field: 'id', headerName: 'ID', width: 90 },
         { field: 'developer_name', headerName: 'اسم المطور', width: 200 },
+        {
+            field: 'images',
+            headerName: 'الصور',
+            width: 100,
+            renderCell: (params) => (
+                <Avatar
+                    src={(params.value && params.value[0]) || 'https://placehold.co/50x50/E0E0E0/FFFFFF?text=No+Image'}
+                    variant="rounded"
+                    sx={{ width: 60, height: 50 }}
+                />
+            ),
+            sortable: false,
+            filterable: false,
+        },
         { field: 'description', headerName: 'الوصف', width: 300 },
         { field: 'project_types', headerName: 'أنواع المشاريع', width: 150, 
             renderCell: (params) => Array.isArray(params.value) ? params.value.join(', ') : params.value },
@@ -2625,24 +2820,112 @@ function PaidAdvertismentPage() {
                     />
                 );
             }
-        }
+        },
+        { field: 'actions', headerName: 'الإجراءات', width: 180, sortable: false, filterable: false,
+            renderCell: (params) => (
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Tooltip title="تعديل الإعلان" arrow>
+                        <IconButton 
+                            size="small" 
+                            color="info" 
+                            onClick={() => handleEditClick(params.row, 'developer')}
+                            disabled={updatingAdId === params.row.id}
+                        >
+                            {updatingAdId === params.row.id ? (
+                                <CircularProgress size={16} />
+                            ) : (
+                                <EditIcon fontSize="small" />
+                            )}
+                        </IconButton>
+                    </Tooltip>
+                    <Tooltip title="حذف الإعلان" arrow>
+                        <IconButton 
+                            size="small" 
+                            color="error" 
+                            onClick={() => handleDeleteClick(params.row, 'developer')}
+                            disabled={updatingAdId === params.row.id}
+                        >
+                            <DeleteIcon fontSize="small" />
+                        </IconButton>
+                    </Tooltip>
+                </Box>
+            )
+        },
+        {
+            field: 'receipt_image',
+            headerName: 'إيصال الدفع',
+            width: 100,
+            renderCell: (params) => {
+                if (params.value) {
+                    return (
+                        <Avatar
+                            src={params.value}
+                            variant="rounded"
+                            sx={{ 
+                                width: 60, 
+                                height: 50, 
+                                cursor: 'pointer',
+                                '&:hover': {
+                                    opacity: 0.8,
+                                    transform: 'scale(1.05)'
+                                }
+                            }}
+                            onClick={() => handleReceiptClick(params.value)}
+                        />
+                    );
+                }
+                return (
+                    <Avatar
+                        src="https://placehold.co/50x50/E0E0E0/FFFFFF?text=No+Receipt"
+                        variant="rounded"
+                        sx={{ width: 60, height: 50 }}
+                    />
+                );
+            },
+            sortable: false,
+            filterable: false,
+        },
     ];
 
     // Define columns for financing ads
     const financingColumns = [
         { field: 'id', headerName: 'ID', width: 90 },
-        { field: 'funder_name', headerName: 'اسم الممول', width: 200 },
+        { field: 'title', headerName: 'عنوان الإعلان', width: 200 },
+        {
+            field: 'images',
+            headerName: 'الصور',
+            width: 100,
+            renderCell: (params) => (
+                <Avatar
+                    src={(params.value && params.value[0]) || 'https://placehold.co/50x50/E0E0E0/FFFFFF?text=No+Image'}
+                    variant="rounded"
+                    sx={{ width: 60, height: 50 }}
+                />
+            ),
+            sortable: false,
+            filterable: false,
+        },
+        { field: 'org_name', headerName: 'اسم المؤسسة', width: 200 },
         { field: 'description', headerName: 'الوصف', width: 300 },
-        { field: 'financing_types', headerName: 'أنواع التمويل', width: 150,
-            renderCell: (params) => Array.isArray(params.value) ? params.value.join(', ') : params.value },
-        { field: 'min_amount', headerName: 'الحد الأدنى', width: 120, type: 'number' },
-        { field: 'max_amount', headerName: 'الحد الأقصى', width: 120, type: 'number' },
-        { field: 'interest_rate', headerName: 'معدل الفائدة', width: 120 },
+        { field: 'start_limit', headerName: 'الحد الأدنى', width: 120, type: 'number',
+            renderCell: (params) => params?.value ? `${params.value.toLocaleString()} ج.م` : '-' },
+        { field: 'end_limit', headerName: 'الحد الأقصى', width: 120, type: 'number',
+            renderCell: (params) => params?.value ? `${params.value.toLocaleString()} ج.م` : '-' },
+        // { field: 'interest_rates', headerName: 'معدلات الفائدة', width: 200,
+        //     renderCell: (params) => {
+        //         const rates = [];
+        //         if (params.row.interest_rate_upto_5) rates.push(`حتى 5 سنوات: ${params.row.interest_rate_upto_5}%`);
+        //         if (params.row.interest_rate_upto_10) rates.push(`حتى 10 سنوات: ${params.row.interest_rate_upto_10}%`);
+        //         if (params.row.interest_rate_above_10) rates.push(`أكثر من 10 سنوات: ${params.row.interest_rate_above_10}%`);
+        //         return rates.length > 0 ? rates.join(', ') : '-';
+        //     }
+        // },
+        { field: 'phone', headerName: 'رقم الهاتف', width: 120 },
         { field: 'ads', headerName: 'مفعل', width: 100,
             renderCell: (params) => (
                 <Chip
-                    label={params.value ? 'نعم' : 'لا'}
-                    color={params.value ? 'success' : 'default'}
+                    label={params?.value ? 'نعم' : 'لا'}
+                    color={params?.value ? 'success' : 'default'}
                     size="small"
                 />
             )
@@ -2656,14 +2939,87 @@ function PaidAdvertismentPage() {
                 };
                 return (
                     <Chip
-                        label={params.value === 'pending' ? 'قيد المراجعة' : 
-                               params.value === 'approved' ? 'مقبول' : 'مرفوض'}
-                        color={statusColors[params.value] || 'default'}
+                        label={params?.value === 'pending' ? 'قيد المراجعة' : 
+                               params?.value === 'approved' ? 'مقبول' : 'مرفوض'}
+                        color={statusColors[params?.value] || 'default'}
                         size="small"
                     />
                 );
             }
-        }
+        },
+        { field: 'adExpiryTime', headerName: 'تاريخ انتهاء التفعيل', width: 150,
+            renderCell: (params) => {
+                if (!params.value) return '-';
+                const expiryDate = new Date(params.value);
+                const now = new Date();
+                const remainingDays = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
+                return remainingDays > 0 ? `${remainingDays} يوم` : 'منتهي';
+            }
+        },
+        { field: 'actions', headerName: 'الإجراءات', width: 180, sortable: false, filterable: false,
+            renderCell: (params) => (
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Tooltip title="تعديل الإعلان" arrow>
+                        <IconButton 
+                            size="small" 
+                            color="info" 
+                            onClick={() => handleEditClick(params.row, 'funder')}
+                            disabled={updatingAdId === params.row.id}
+                        >
+                            {updatingAdId === params.row.id ? (
+                                <CircularProgress size={16} />
+                            ) : (
+                                <EditIcon fontSize="small" />
+                            )}
+                        </IconButton>
+                    </Tooltip>
+                    <Tooltip title="حذف الإعلان" arrow>
+                        <IconButton 
+                            size="small" 
+                            color="error" 
+                            onClick={() => handleDeleteClick(params.row, 'funder')}
+                            disabled={updatingAdId === params.row.id}
+                        >
+                            <DeleteIcon fontSize="small" />
+                        </IconButton>
+                    </Tooltip>
+                </Box>
+            )
+        },
+        {
+            field: 'receipt_image',
+            headerName: 'إيصال الدفع',
+            width: 100,
+            renderCell: (params) => {
+                if (params.value) {
+                    return (
+                        <Avatar
+                            src={params.value}
+                            variant="rounded"
+                            sx={{ 
+                                width: 60, 
+                                height: 50, 
+                                cursor: 'pointer',
+                                '&:hover': {
+                                    opacity: 0.8,
+                                    transform: 'scale(1.05)'
+                                }
+                            }}
+                            onClick={() => handleReceiptClick(params.value)}
+                        />
+                    );
+                }
+                return (
+                    <Avatar
+                        src="https://placehold.co/50x50/E0E0E0/FFFFFF?text=No+Receipt"
+                        variant="rounded"
+                        sx={{ width: 60, height: 50 }}
+                    />
+                );
+            },
+            sortable: false,
+            filterable: false,
+        },
     ];
 
     // Function to get the DataGrid content based on the organization type
@@ -2676,8 +3032,14 @@ function PaidAdvertismentPage() {
             );
         }
 
+        // Use columns based on organization type, not active tab
         const orgType = userProfile.type_of_organization;
-        const columns = orgType === "مطور عقاري" ? developerColumns : financingColumns;
+        const columns = (orgType === "مطور عقاري" || orgType === "مطور عقارى") ? developerColumns : financingColumns;
+        const tabLabel = (orgType === "مطور عقاري" || orgType === "مطور عقارى") ? 'المطورين' : 'الممولين';
+        
+        console.log('Rendering DataGrid for organization type:', orgType);
+        console.log('Current ads count:', currentAds.length);
+        console.log('Using columns:', columns.length, 'columns');
 
             return (
                 <DataGrid
@@ -2691,8 +3053,10 @@ function PaidAdvertismentPage() {
                     },
                 }}
                     localeText={{
-                    toolbarQuickFilterPlaceholder: `البحث في إعلانات ${orgType === "مطور عقاري" ? "المطورين" : "الممولين"}`,
-                    noRowsLabel: `لا توجد إعلانات ${orgType === "مطور عقاري" ? "مطورين" : "ممولين"} لعرضها`,
+                    toolbarQuickFilterPlaceholder: `البحث في إعلانات ${tabLabel}`,
+                    noRowsLabel: (orgType === "مطور عقاري" || orgType === "مطور عقارى") 
+                        ? "لا توجد إعلانات عقارية لعرضها" 
+                        : "لا توجد إعلانات تمويل لعرضها",
                     loadingOverlay: 'جاري التحميل...',
                 }}
                 sx={{
@@ -2704,6 +3068,7 @@ function PaidAdvertismentPage() {
                         borderBottom: '2px solid #e0e0e0',
                     },
                 }}
+                showToolbar
             />
         );
     };
@@ -2713,25 +3078,201 @@ function PaidAdvertismentPage() {
         if (!userProfile) return "إعلاناتي المدفوعة";
         
         const orgType = userProfile.type_of_organization;
-        if (orgType === "مطور عقاري") {
-            return "إعلاناتي كمطور عقاري";
-        } else if (orgType === "ممول عقاري") {
-            return "إعلاناتي كممول عقاري";
+        if (orgType === "مطور عقاري" || orgType === "مطور عقارى") {
+            return "إعلانات مدفوعة - التطوير العقاراى";
+        } else if (orgType === "ممول عقاري" || orgType === "ممول عقارى") {
+            return "إعلانات مدفوعة -  التمويل العقارى";
         }
-        return "إعلاناتي المدفوعة";
+        return "إعلانات مدفوعة";
     };
+
+    // State for delete dialog and snackbar
+    const [openDeleteDialog, setOpenDeleteDialog] = React.useState(false);
+    const [adToDelete, setAdToDelete] = React.useState(null);
+    const [adToDeleteType, setAdToDeleteType] = React.useState(null);
+    const [snackbar, setSnackbar] = React.useState({ open: false, message: '', severity: 'success' });
+    const [updatingAdId, setUpdatingAdId] = React.useState(null); // Track which ad is being updated
+    
+    // Receipt image dialog state
+    const [receiptDialogOpen, setReceiptDialogOpen] = React.useState(false);
+    const [receiptDialogImage, setReceiptDialogImage] = React.useState(null);
+    
+    // Function to update ad status to pending using the proper methods
+    const updateAdStatusToPending = async (adId, type) => {
+        setUpdatingAdId(adId); // Set loading state
+        try {
+            console.log('Updating ad status to pending:', { adId, type });
+            
+            if (type === 'developer') {
+                const ad = await RealEstateDeveloperAdvertisement.getById(adId);
+                if (ad) {
+                    await ad.returnToPending();
+                    console.log('Developer ad status updated to pending');
+                }
+            } else if (type === 'funder') {
+                const ad = await FinancingAdvertisement.getById(adId);
+                if (ad) {
+                    await ad.returnToPending();
+                    console.log('Financing ad status updated to pending');
+                }
+            }
+            
+            // Refresh the data after status update
+            dispatch(fetchDeveloperAdsByUser(userProfile.uid));
+            dispatch(fetchFinancingAdsByUser(userProfile.uid));
+            
+            setSnackbar({ 
+                open: true, 
+                message: 'تم تحديث حالة الإعلان إلى قيد المراجعة', 
+                severity: 'info' 
+            });
+        } catch (error) {
+            console.error('Error updating ad status to pending:', error);
+            setSnackbar({ 
+                open: true, 
+                message: `فشل تحديث حالة الإعلان: ${error.message}`, 
+                severity: 'error' 
+            });
+        } finally {
+            setUpdatingAdId(null); // Clear loading state
+        }
+    };
+
+    // Global function that can be called from edit pages
+    const updateAdStatusToPendingGlobal = async (adId, type) => {
+        try {
+            console.log('Global function: Updating ad status to pending:', { adId, type });
+            
+            if (type === 'developer') {
+                const ad = await RealEstateDeveloperAdvertisement.getById(adId);
+                if (ad) {
+                    await ad.returnToPending();
+                    console.log('Developer ad status updated to pending');
+                }
+            } else if (type === 'funder') {
+                const ad = await FinancingAdvertisement.getById(adId);
+                if (ad) {
+                    await ad.returnToPending();
+                    console.log('Financing ad status updated to pending');
+                }
+            }
+            
+            return { success: true, message: 'تم تحديث حالة الإعلان إلى قيد المراجعة' };
+        } catch (error) {
+            console.error('Error updating ad status to pending:', error);
+            return { success: false, message: error.message };
+        }
+    };
+
+    // Make the global function available on window for edit pages to access
+    React.useEffect(() => {
+        window.updateAdStatusToPending = updateAdStatusToPendingGlobal;
+        return () => {
+            delete window.updateAdStatusToPending;
+        };
+    }, []);
+
+    // Handlers for actions
+    const handleEditClick = (ad, type) => {
+        console.log('handleEditClick called with:', { ad, type, adId: ad.id });
+        
+        // Navigate directly to the edit page
+        if (type === 'developer') {
+            // Navigate to PropertyPage with edit data
+            window.location.href = `/RealEstateDeveloperAnnouncement?editMode=true&adId=${ad.id}`;
+        } else if (type === 'funder') {
+            // Navigate to financing ad form with edit data
+            window.location.href = `/add-financing-ad?editMode=true&adId=${ad.id}`;
+        }
+    };
+    const handleDeleteClick = (ad, type) => {
+        setAdToDelete(ad);
+        setAdToDeleteType(type);
+        setOpenDeleteDialog(true);
+    };
+    const handleConfirmDelete = async () => {
+        setOpenDeleteDialog(false);
+        if (!adToDelete || !adToDeleteType) return;
+        
+        console.log('Attempting to delete ad:', { id: adToDelete.id, type: adToDeleteType });
+        console.log('deleteAd function:', typeof deleteAd);
+        
+        try {
+            await dispatch(deleteAd({ id: adToDelete.id, type: adToDeleteType })).unwrap();
+            setSnackbar({ open: true, message: `تم حذف الإعلان بنجاح!`, severity: 'success' });
+        } catch (err) {
+            console.error('Error deleting ad:', err);
+            setSnackbar({ open: true, message: `فشل حذف الإعلان: ${err.message || 'حدث خطأ غير معروف.'}`, severity: 'error' });
+        } finally {
+            setAdToDelete(null);
+            setAdToDeleteType(null);
+        }
+    };
+    const handleSnackbarClose = (event, reason) => {
+        if (reason === 'clickaway') return;
+        setSnackbar({ ...snackbar, open: false });
+    };
+
+    // Receipt image click handler
+    const handleReceiptClick = (imageUrl) => {
+        setReceiptDialogImage(imageUrl);
+        setReceiptDialogOpen(true);
+    };
+
+
 
     return (
         <Box dir={'rtl'} sx={{ p: 2, textAlign: 'right' }}>
-            <Typography sx={{ display: 'flex', flexDirection: 'row' }} variant="h4" gutterBottom>
-                {getPageTitle()}
-            </Typography>
+            <PageHeader
+                title={getPageTitle()}
+                icon={BroadcastOnPersonalIcon}
+                showCount={false}
+            />
             
-            {/* {userProfile && (
-                <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
-                    نوع المنظمة: {userProfile.type_of_organization}
-                </Typography>
-            )} */}
+            {/* Conditional tabs based on organization type */}
+            {userProfile?.type_of_organization && (
+                <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+                    <Tabs
+                        value={activeTab}
+                        onChange={handleTabChange}
+                        aria-label="ad type tabs"
+                        sx={{ 
+                            '& .MuiTab-root': {
+                                fontSize: '1rem',
+                                fontWeight: 500,
+                                minWidth: 120,
+                            }
+                        }}
+                    >
+                        {(userProfile.type_of_organization === "مطور عقاري" || userProfile.type_of_organization === "مطور عقارى") && (
+                            <Tab 
+                                label="إعلانات العقارات" 
+                                value="developer"
+                                sx={{ 
+                                    color: activeTab === 'developer' ? 'primary.main' : 'text.secondary',
+                                    '&.Mui-selected': {
+                                        color: 'primary.main',
+                                        fontWeight: 600,
+                                    }
+                                }}
+                            />
+                        )}
+                        {(userProfile.type_of_organization === "ممول عقاري" || userProfile.type_of_organization === "ممول عقارى") && (
+                            <Tab 
+                                label="إعلانات التمويل" 
+                                value="funder"
+                                sx={{ 
+                                    color: activeTab === 'funder' ? 'primary.main' : 'text.secondary',
+                                    '&.Mui-selected': {
+                                        color: 'primary.main',
+                                        fontWeight: 600,
+                                    }
+                                }}
+                            />
+                        )}
+                    </Tabs>
+                </Box>
+            )}
             
             <Paper dir={'rtl'} sx={{ p: 2, borderRadius: 2, minHeight: 400, textAlign: 'right' }}>
                 {/* DataGrid Container */}
@@ -2739,159 +3280,60 @@ function PaidAdvertismentPage() {
                     {renderDataGrid()}
                 </div>
             </Paper>
-        </Box>
-    );
-}
-
-function ClientAdvertismentPage() {
-    const columns = [
-        { field: 'title', headerName: 'العنوان', width: 250, editable: false },
-        {
-            field: 'images',
-            headerName: 'الصورة',
-            width: 100,
-            renderCell: (params) => (
-                <Avatar
-                    src={params.value && params.value.length > 0 ? params.value[0] : ''}
-                    variant="rounded"
-                    sx={{ width: 50, height: 50 }}
-                />
-            ),
-            editable: false,
-            sortable: false,
-            filterable: false,
-        },
-        { field: 'type', headerName: 'النوع', width: 120, editable: false },
-        { field: 'price', headerName: 'السعر (ج.م)', width: 150, type: 'number', editable: false },
-        { field: 'area', headerName: 'المساحة (م²)', width: 120, type: 'number', editable: false },
-        { field: 'city', headerName: 'المدينة', width: 150, editable: false },
-        { field: 'governorate', headerName: 'المحافظة', width: 150, editable: false },
-        {
-            field: 'phone',
-            headerName: 'رقم الهاتف',
-            width: 150,
-            editable: false,
-            renderCell: (params) => (
-                <Link href={`tel:${params.value}`} target="_blank" rel="noopener">
-                    {params.value}
-                </Link>
-            ),
-        },
-        { field: 'user_name', headerName: 'اسم المعلن', width: 150, editable: false },
-        {
-            field: 'ad_type',
-            headerName: 'نوع الإعلان',
-            width: 120,
-            editable: false,
-            renderCell: (params) => (
-                <Chip
-                    label={params.value}
-                    color={params.value === 'بيع' ? 'success' : 'info'}
-                    size="small"
-                />
-            ),
-        },
-        {
-            field: 'ad_status',
-            headerName: 'الحالة',
-            width: 120,
-            editable: false,
-            renderCell: (params) => (
-                <Chip
-                    label={params.value}
-                    color={params.value === 'تحت العرض' ? 'primary' : 'default'}
-                    size="small"
-                />
-            ),
-        },
-        { field: 'address', headerName: 'العنوان التفصيلي', width: 300, editable: false },
-        { field: 'date_of_building', headerName: 'تاريخ الإنشاء', width: 150, editable: false },
-    ];
-
-    return (
-        <Box
-            dir={'rtl'}
-            sx={{
-                p: 2,
-                textAlign: 'right',
-                display: 'flex',
-                flexDirection: 'column',
-                flexGrow: 1,
-                minHeight: 'calc(100% - 64px - 48px)',
-            }}
-        >
-            <Typography sx={{ display: 'flex', flexDirection: 'row' }} variant="h4" gutterBottom>
-                إعلانات العملاء
-            </Typography>
-
-            <Paper
-                dir={'rtl'}
-                sx={{
-                    p: 2,
-                    textAlign: 'left',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    flexGrow: 1,
-                    minHeight: 'calc(100vh - 64px - 48px)',
-                }}
+            {/* Delete Confirmation Dialog */}
+            <Dialog open={openDeleteDialog} onClose={() => setOpenDeleteDialog(false)}>
+                <DialogTitle>تأكيد الحذف</DialogTitle>
+                <DialogContent>هل أنت متأكد أنك تريد حذف الإعلان؟ لا يمكن التراجع عن هذا الإجراء.</DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setOpenDeleteDialog(false)}>إلغاء</Button>
+                    <Button onClick={handleConfirmDelete} color="error" variant="contained">حذف</Button>
+                </DialogActions>
+            </Dialog>
+            {/* Receipt Image Dialog */}
+            <Dialog 
+                open={receiptDialogOpen} 
+                onClose={() => setReceiptDialogOpen(false)}
+                maxWidth="md"
+                fullWidth
+                dir="rtl"
             >
-                <Typography variant="h6" color="text.secondary" sx={{ mb: 2 }}>
-                    قائمة الإعلانات الحالية
-                </Typography>
-
-                <Box
-                    sx={{
-                        flexGrow: 1,
-                        height: '100vh',
-                        width: '100%',
-                        minHeight: 0,
-                        overflow: 'auto',
-                    }}
-                >
-                    <DataGrid
-                        rows={MOCK_ADVERTISEMENTS}
-                        columns={columns}
-                        pageSizeOptions={[5, 10, 20, 30, 50]}
-                        initialState={{
-                            pagination: {
-                                paginationModel: { pageSize: 10, page: 0 },
-                            },
-                        }}
-                        disableRowSelectionOnClick
-                        localeText={{
-                            MuiTablePagination: {
-                                labelRowsPerPage: 'صفوف لكل صفحة:',
-                                labelDisplayedRows: ({ from, to, count }) =>
-                                    `${from}-${to} من ${count !== -1 ? count : `أكثر من ${to}`}`,
-                            },
-                            columnMenuUnsort: "إلغاء الفرز",
-                            columnMenuSortAsc: "الفرز تصاعديا",
-                            columnMenuSortDesc: "الفرز تنازليا",
-                            columnMenuFilter: "تصفية",
-                            columnMenuHideColumn: "إخفاء العمود",
-                            columnMenuShowColumns: "إظهار الأعمدة",
-                            filterPanelOperators: "العوامل",
-                            filterPanelColumns: "الأعمدة",
-                            filterPanelInputLabel: "القيمة",
-                            filterPanelLogicOperator: "المنطق",
-                            filterPanelOperatorAnd: "و",
-                            filterPanelOperatorOr: "أو",
-                            filterPanelOperatorContains: "يحتوي على",
-                            filterPanelOperatorEquals: "يساوي",
-                            filterPanelOperatorStartsWith: "يبدأ بـ",
-                            filterPanelOperatorEndsWith: "ينتهي بـ",
-                            filterPanelOperatorIsEmpty: "فارغ",
-                            filterPanelOperatorIsNotEmpty: "ليس فارغا",
-                            filterPanelOperatorIsAnyOf: "أي من",
-
-                        }}
-                        showToolbar
-                    />
-                </Box>
-            </Paper>
+                <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Typography variant="h6">إيصال الدفع</Typography>
+                    <IconButton onClick={() => setReceiptDialogOpen(false)}>
+                        <CloseIcon />
+                    </IconButton>
+                </DialogTitle>
+                <DialogContent>
+                    {receiptDialogImage && (
+                        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                            <img 
+                                src={receiptDialogImage} 
+                                alt="إيصال الدفع"
+                                style={{ 
+                                    maxWidth: '100%', 
+                                    maxHeight: '70vh', 
+                                    objectFit: 'contain' 
+                                }}
+                            />
+                        </Box>
+                    )}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setReceiptDialogOpen(false)}>إغلاق</Button>
+                </DialogActions>
+            </Dialog>
+            
+            {/* Snackbar for feedback */}
+            <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={handleSnackbarClose} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
+                <Alert onClose={handleSnackbarClose} severity={snackbar.severity} sx={{ width: '100%' }}>
+                    {snackbar.message}
+                </Alert>
+            </Snackbar>
         </Box>
     );
 }
+
+
 function InquiriesPage() {
     const dispatch = useDispatch();
 
@@ -3102,64 +3544,154 @@ function InquiriesPage() {
 
 function OrdersPage() {
     const userProfile = useSelector((state) => state.user.profile);
-    const dispatch = useDispatch();
     const [ads, setAds] = useState([]);
+    const [requests, setRequests] = useState([]);
     const [loadingAds, setLoadingAds] = useState(true);
+    const [loadingRequests, setLoadingRequests] = useState(true);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
-
-    // Redux slice state
-    const requests = useSelector((state) => state.financialRequests.list);
-    const requestsLoading = useSelector((state) => state.financialRequests.loading);
-    const requestsError = useSelector((state) => state.financialRequests.error);
     const [actionLoading, setActionLoading] = useState({});
+    // New state for filters and search
+    const [statusFilters, setStatusFilters] = useState({}); // { [adId]: 'all' }
+    const [searchTerm, setSearchTerm] = useState('');
 
-    // Fetch all financing ads for this org
+    // Real-time listeners for ads and requests
     useEffect(() => {
-        let isMounted = true;
         if (!userProfile?.uid) return;
+
         setLoadingAds(true);
-        FinancingAdvertisement.getByUserId(userProfile.uid)
-            .then((ads) => {
-                if (isMounted) setAds(ads);
-            })
-            .catch(() => {
-                setSnackbar({ open: true, message: 'فشل تحميل الإعلانات', severity: 'error' });
-            })
-            .finally(() => {
-                if (isMounted) setLoadingAds(false);
-            });
-        return () => { isMounted = false; };
+        setLoadingRequests(true);
+
+        // Subscribe to user's financing advertisements
+        const unsubscribeAds = FinancingAdvertisement.subscribeByUserId(userProfile.uid, (adsData) => {
+            setAds(adsData);
+            setLoadingAds(false);
+        });
+
+        // Subscribe to all financing requests (we'll filter by ad ID in the component)
+        const unsubscribeRequests = FinancingRequest.subscribeAllRequests((requestsData) => {
+            setRequests(requestsData);
+            setLoadingRequests(false);
+        });
+
+        // Cleanup function to unsubscribe from both listeners
+        return () => {
+            unsubscribeAds();
+            unsubscribeRequests();
+        };
     }, [userProfile?.uid]);
 
-    // Fetch all financing requests on mount
-    useEffect(() => {
-        dispatch(fetchFinancialRequests());
-    }, [dispatch]);
-
-    // Action handlers using Redux slice
-    const handleRequestAction = async (reqId, action, adId, ...args) => {
-        setActionLoading((prev) => ({ ...prev, [reqId]: true }));
+    // Approval action for requests (org approval, not admin)
+    const handleOrgApproveRequest = async (req, ad) => {
+        setActionLoading((prev) => ({ ...prev, [req.id]: true }));
         try {
-            if (action === 'pending') {
-                await dispatch(updateFinancialRequest({ id: reqId, updates: { reviewStatus: 'pending' } })).unwrap();
-                setSnackbar({ open: true, message: 'تمت إعادة الطلب للمراجعة', severity: 'info' });
-            } else if (action === 'reject') {
-                await dispatch(updateFinancialRequest({ id: reqId, updates: { reviewStatus: 'rejected', review_note: args[0] || '' } })).unwrap();
-                setSnackbar({ open: true, message: 'تم رفض الطلب', severity: 'error' });
-            } else if (action === 'delete') {
-                await dispatch(deleteFinancialRequest(reqId)).unwrap();
-                setSnackbar({ open: true, message: 'تم حذف الطلب', severity: 'success' });
-            }
+            // Update reviewStatus to approved
+            const reqInstance = await FinancingRequest.getById(req.id);
+            await reqInstance.update({ reviewStatus: 'approved' });
+            // Send notification to the user
+            const notif = new Notification({
+                receiver_id: req.user_id,
+                title: 'تمت الموافقة على طلب التمويل',
+                body: `تمت الموافقة على طلب التمويل الخاص بك على إعلان: ${ad.title}`,
+                type: 'system',
+                link: `/client/financing-requests/${req.id}`,
+            });
+            await notif.send();
+            setSnackbar({ open: true, message: 'تمت الموافقة على الطلب وإشعار العميل', severity: 'success' });
+            // No need to dispatch - onSnapshot will automatically update the state
         } catch (e) {
-            setSnackbar({ open: true, message: e.message || 'خطأ في تنفيذ العملية', severity: 'error' });
+            setSnackbar({ open: true, message: e.message || 'خطأ أثناء الاعتماد', severity: 'error' });
         } finally {
-            setActionLoading((prev) => ({ ...prev, [reqId]: false }));
+            setActionLoading((prev) => ({ ...prev, [req.id]: false }));
         }
     };
 
+    // Handle request actions (pending, reject, delete)
+    const handleRequestAction = async (requestId, action, adId, rejectionReason = '') => {
+        setActionLoading((prev) => ({ ...prev, [requestId]: true }));
+        try {
+            const reqInstance = await FinancingRequest.getById(requestId);
+            
+            switch (action) {
+                case 'pending':
+                    await reqInstance.update({ reviewStatus: 'pending', review_note: null });
+                    setSnackbar({ open: true, message: 'تم إعادة الطلب للمراجعة', severity: 'success' });
+                    break;
+                case 'reject':
+                    await reqInstance.update({ reviewStatus: 'rejected', review_note: rejectionReason });
+                    setSnackbar({ open: true, message: 'تم رفض الطلب', severity: 'success' });
+                    break;
+                case 'delete':
+                    await reqInstance.delete();
+                    setSnackbar({ open: true, message: 'تم حذف الطلب', severity: 'success' });
+                    break;
+                default:
+                    throw new Error('إجراء غير معروف');
+            }
+            
+            // No need to dispatch - onSnapshot will automatically update the state
+        } catch (e) {
+            setSnackbar({ open: true, message: e.message || 'خطأ أثناء تنفيذ الإجراء', severity: 'error' });
+        } finally {
+            setActionLoading((prev) => ({ ...prev, [requestId]: false }));
+        }
+    };
+
+    // Helper function to get ad status label
+    const getAdStatusLabel = (status) => {
+        switch (status) {
+            case 'pending': return 'قيد المراجعة';
+            case 'approved': return 'موافق عليه';
+            case 'rejected': return 'مرفوض';
+            default: return status;
+        }
+    };
+
+    // Helper function to get ad status color
+    const getAdStatusColor = (status) => {
+        switch (status) {
+            case 'pending': return 'warning';
+            case 'approved': return 'success';
+            case 'rejected': return 'error';
+            default: return 'default';
+        }
+    };
+
+    // Filtering and searching logic
+    const filterAndSearchRequests = (requestsForAd, adId) => {
+        let filtered = requestsForAd;
+        const status = statusFilters[adId] || 'all';
+        if (status !== 'all') {
+            filtered = filtered.filter(r => r.reviewStatus === status);
+        }
+        if (searchTerm.trim()) {
+            const term = searchTerm.trim().toLowerCase();
+            filtered = filtered.filter(r =>
+                (r.user_id && r.user_id.toLowerCase().includes(term)) ||
+                (r.financing_amount && String(r.financing_amount).includes(term)) ||
+                (r.repayment_years && String(r.repayment_years).includes(term))
+            );
+        }
+        return filtered;
+    };
+
     return (
-        <Box  sx={{ p: 2, textAlign: 'left' }}>
-            <Typography variant="h4" gutterBottom>طلبات التمويل على إعلاناتك</Typography>
+        <Box sx={{ p: 2, textAlign: 'left' }}>
+             <PageHeader
+                title="طلبات التمويل على إعلاناتك"
+                icon={AccountBalanceWalletIcon}
+                showCount={false}
+            />
+            {/* Search input */}
+            <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end' }}>
+                <TextField
+                    label="بحث عن طلبات التمويل (المستخدم، المبلغ، السنوات)"
+                    variant="outlined"
+                    size="small"
+                    value={searchTerm}
+                    onChange={e => setSearchTerm(e.target.value)}
+                    sx={{ minWidth: 300 }}
+                />
+            </Box>
             <Paper sx={{ p: 2, borderRadius: 2, minHeight: 400, textAlign: 'right' }}>
                 {loadingAds ? (
                     <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 200 }}>
@@ -3170,26 +3702,51 @@ function OrdersPage() {
                     <Typography variant="body1" color="text.secondary" sx={{ mt: 4, textAlign: 'center' }}>
                         لا توجد إعلانات تمويلية خاصة بك.
                     </Typography>
-                ) : requestsLoading ? (
+                ) : loadingRequests ? (
                     <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 200 }}>
                         <CircularProgress />
                         <Typography sx={{ ml: 2 }}>جاري تحميل الطلبات...</Typography>
                     </Box>
-                ) : requestsError ? (
-                    <Alert severity="error">{requestsError}</Alert>
                 ) : (
                     ads.map((ad) => {
                         const requestsForAd = requests.filter((r) => r.advertisement_id === ad.id);
+                        const filteredRequests = filterAndSearchRequests(requestsForAd, ad.id);
                         return (
-                            <Box key={ad.id}  sx={{ mb: 4, border: '1px solid #eee', borderRadius: 2, p: 2 }}>
-                                <Box dir='ltr' sx={{ textAlign: 'left' }}>
-                                <Typography variant="h6" color="primary" sx={{ mb: 1 }}>{ad.title}</Typography>
-                                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>الحد الأدنى: {ad.start_limit} | الحد الأقصى: {ad.end_limit}</Typography>
-                                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>نسبة الفائدة حتى 5 سنوات: {ad.interest_rate_upto_5}% | حتى 10 سنوات: {ad.interest_rate_upto_10}% | أكثر من 10 سنوات: {ad.interest_rate_above_10}%</Typography>
+                            <Box key={ad.id} sx={{ mb: 4, border: '1px solid #eee', borderRadius: 2, p: 2 }}>
+                                <Box dir='ltr' sx={{ textAlign: 'left', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                    <Box>
+                                        <Typography variant="h6" color="primary" sx={{ mb: 1 }}>{ad.title}</Typography>
+                                        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>الحد الأدنى: {ad.start_limit} | الحد الأقصى: {ad.end_limit}</Typography>
+                                        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>نسبة الفائدة حتى 5 سنوات: {ad.interest_rate_upto_5}% | حتى 10 سنوات: {ad.interest_rate_upto_10}% | أكثر من 10 سنوات: {ad.interest_rate_above_10}%</Typography>
+                                    </Box>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                        {/* Ad Status Chip */}
+                                        <Chip 
+                                            label={getAdStatusLabel(ad.reviewStatus)} 
+                                            color={getAdStatusColor(ad.reviewStatus)} 
+                                            sx={{ fontWeight: 'bold', fontSize: 14 }} 
+                                        />
+                                        {/* Counter for requests */}
+                                        <Chip label={`عدد الطلبات: ${requestsForAd.length}`} color="info" sx={{ fontWeight: 'bold', fontSize: 16 }} />
+                                        {/* Status filter for this ad */}
+                                        <FormControl size="small" sx={{ minWidth: 150 }}>
+                                            <InputLabel>تصفية حسب الحالة</InputLabel>
+                                            <Select
+                                                value={statusFilters[ad.id] || 'all'}
+                                                label="تصفية حسب الحالة"
+                                                onChange={e => setStatusFilters(f => ({ ...f, [ad.id]: e.target.value }))}
+                                            >
+                                                <MenuItem value="all">الكل</MenuItem>
+                                                <MenuItem value="approved">مقبول</MenuItem>
+                                                <MenuItem value="rejected">مرفوض</MenuItem>
+                                                <MenuItem value="pending">معلق</MenuItem>
+                                            </Select>
+                                        </FormControl>
+                                    </Box>
                                 </Box>
-                                {requestsForAd.length > 0 ? (
+                                {filteredRequests.length > 0 ? (
                                     <List>
-                                        {requestsForAd.map((req) => (
+                                        {filteredRequests.map((req) => (
                                             <ListItem key={req.id} sx={{ borderBottom: '1px solid #eee', flexDirection: 'row-reverse' }}>
                                                 <ListItemText
                                                     primary={<>
@@ -3202,33 +3759,49 @@ function OrdersPage() {
                                                     </>}
                                                 />
                                                 <Stack direction="row" spacing={1.5}>
-                                                    <Button
-                                                        variant="outlined"
-                                                        color="success"
+                                                    {/* Org Approval Button */}
+                                                    {req.reviewStatus !== 'approved' && (
+                                                       <IconButton
+                                                            color="success"
+                                                            size="small"
+                                                            disabled={actionLoading[req.id]}
+                                                            onClick={() => handleOrgApproveRequest(req, ad)}
+                                                        >
+                                                            <Tooltip title='موافقة'>
+                                                                <CheckCircleIcon sx={{border:'1px solid green' , borderRadius:'50%' }} />
+                                                            </Tooltip>
+                                                        </IconButton>
+                                                    )}
+                                                    <IconButton
+                                                        color="warning"
                                                         size="small"
                                                         disabled={actionLoading[req.id]}
                                                         onClick={() => handleRequestAction(req.id, 'pending', ad.id)}
                                                     >
-                                                        إعادة للمراجعة
-                                                    </Button>
-                                                    <Button
-                                                        variant="outlined"
+                                                        <Tooltip title='إعادة للمراجعة'>
+                                                            <MessageIcon />
+                                                        </Tooltip>
+                                                    </IconButton>
+                                                    <IconButton
                                                         color="error"
                                                         size="small"
                                                         disabled={actionLoading[req.id]}
                                                         onClick={() => handleRequestAction(req.id, 'reject', ad.id, 'تم الرفض من قبل المؤسسة')}
                                                     >
-                                                        رفض
-                                                    </Button>
-                                                    <Button
-                                                        variant="outlined"
+                                                        <Tooltip title='رفض'>
+                                                            <CloseIcon sx={{border:'1px solid red' , borderRadius:'50%' }} />
+                                                        </Tooltip>
+                                                    </IconButton>
+                                                    <IconButton
                                                         color="secondary"
                                                         size="small"
                                                         disabled={actionLoading[req.id]}
                                                         onClick={() => handleRequestAction(req.id, 'delete', ad.id)}
                                                     >
-                                                        حذف
-                                                    </Button>
+                                                        <Tooltip title='حذف'>
+                                                            <DeleteIcon />
+                                                        </Tooltip>
+                                                    </IconButton>
                                                 </Stack>
                                             </ListItem>
                                         ))}
@@ -3260,7 +3833,11 @@ function OrdersPage() {
 function SalesPage() {
     return (
         <Box sx={{ p: 2, textAlign: 'right' }}>
-            <Typography variant="h4" gutterBottom>Sales Reports</Typography>
+            <PageHeader
+                title="تقارير المبيعات"
+                icon={DescriptionIcon}
+                showCount={false}
+            />
             <Paper sx={{ p: 2, borderRadius: 2, minHeight: 300, textAlign: 'right' }}>
                 <Typography variant="h6" color="text.secondary">Sales data visualization (placeholder)</Typography>
                 <Box sx={{ mt: 2, p: 2, border: '1px dashed #ccc', borderRadius: 1, textAlign: 'right' }}>
@@ -3277,7 +3854,11 @@ function SalesPage() {
 function TrafficPage() {
     return (
         <Box sx={{ p: 2, textAlign: 'right' }}>
-            <Typography variant="h4" gutterBottom>Traffic Reports</Typography>
+            <PageHeader
+                title="تقارير حركة المرور"
+                icon={DescriptionIcon}
+                showCount={false}
+            />
             <Paper sx={{ p: 2, borderRadius: 2, minHeight: 300, textAlign: 'right' }}>
                 <Typography variant="h6" color="text.secondary">Website traffic analytics (placeholder)</Typography>
                 <Box sx={{ mt: 2, p: 2, border: '1px dashed #ccc', borderRadius: 1, textAlign: 'right' }}>
@@ -3294,7 +3875,11 @@ function TrafficPage() {
 function IntegrationsPage() {
     return (
         <Box sx={{ p: 2, textAlign: 'right' }}>
-            <Typography variant="h4" gutterBottom>Integrations</Typography>
+            <PageHeader
+                title="الإضافات والتكاملات"
+                icon={LayersIcon}
+                showCount={false}
+            />
             <Paper sx={{ p: 2, borderRadius: 2, minHeight: 200, textAlign: 'right' }}>
                 <Typography variant="h6" color="text.secondary">Manage external service integrations (placeholder)</Typography>
                 <Box sx={{ mt: 2, p: 2, border: '1px dashed #ccc', borderRadius: 1, textAlign: 'right' }}>
@@ -3330,6 +3915,21 @@ export default function OrganizationDashboard(props) {
     const profilePicInDrawer = useSelector((state) => state.profilePic.profilePicUrl);
     const userProfile = useSelector((state) => state.user.profile);
     const userName = userProfile?.adm_name || userProfile?.cli_name || userProfile?.org_name || 'Organization';
+    
+    // Get organization type for conditional navigation
+    const organizationType = userProfile?.type_of_organization;
+    
+    // Check if user profile is loaded to prevent UI flicker
+    const isProfileLoaded = !!userProfile;
+    
+    // Get navigation items based on organization type
+    const NAVIGATION = React.useMemo(() => {
+        // Return empty array if profile is not loaded yet to prevent rendering issues
+        if (!isProfileLoaded) {
+            return [];
+        }
+        return getNavigationItems(organizationType);
+    }, [organizationType, isProfileLoaded]);
     const theme = React.useMemo(
         () =>
             createTheme({
@@ -3490,13 +4090,33 @@ export default function OrganizationDashboard(props) {
             currentPageContent = <InquiriesPage />;
             break;
         case '/orders':
+            // Only show OrdersPage for funder organizations
+            if (!isProfileLoaded) {
+                // Show loading state while profile is being loaded
+                currentPageContent = (
+                    <Box sx={{ p: 2, textAlign: 'right' }}>
+                        <Typography variant="h5">جاري التحميل...</Typography>
+                    </Box>
+                );
+            } else if (organizationType === 'ممول عقارى' || organizationType === 'ممول عقاري') {
             currentPageContent = <OrdersPage />;
+            } else {
+                currentPageContent = (
+                    <Box sx={{ p: 2, textAlign: 'right' }}>
+                        <Typography variant="h5" color="error">لا يوجد صفحة للعرض</Typography>
+                        <Typography variant="body1">الصفحة المطلوبة  "{router.pathname}" غير موجودة</Typography>
+                    </Box>
+                );
+            }
             break;
         case '/reports/sales':
             currentPageContent = <SalesPage />;
             break;
         case '/reports/traffic':
             currentPageContent = <TrafficPage />;
+            break;
+        case '/analytics':
+            currentPageContent = <AnalyticsPage />;
             break;
         case '/integrations':
             currentPageContent = <IntegrationsPage />;
@@ -3512,55 +4132,34 @@ export default function OrganizationDashboard(props) {
     }
 
     // Notification state
-    const [notifications, setNotifications] = React.useState([]);
     const [notificationAnchorEl, setNotificationAnchorEl] = React.useState(null);
     const [unreadCount, setUnreadCount] = React.useState(0);
     const [snackbarOpen, setSnackbarOpen] = React.useState(false);
     const [snackbarMessage, setSnackbarMessage] = React.useState('');
     const [snackbarSeverity, setSnackbarSeverity] = React.useState('success');
     const authUid = useSelector((state) => state.auth.uid);
-    // Notification handlers
-    const handleNotificationClick = (event) => {
+
+    // Real-time notification subscription
+    React.useEffect(() => {
+        if (authUid) {
+            const unsubscribe = Notification.subscribeUnreadCount(authUid, (count) => {
+                setUnreadCount(count);
+            });
+            return () => unsubscribe();
+        }
+    }, [authUid]);
+
+    // Notification handlers - memoized to prevent unnecessary re-renders
+    const handleNotificationClick = React.useCallback((event) => {
         event.preventDefault();
         event.stopPropagation();
         setNotificationAnchorEl(event.currentTarget);
-    };
-    const handleNotificationClose = () => {
+    }, []);
+
+    const handleNotificationClose = React.useCallback(() => {
         setNotificationAnchorEl(null);
-    };
-    const handleMarkAsRead = async (notificationId) => {
-        try {
-            await Notification.markAsRead(notificationId);
-            setNotifications(prev => prev.map(notif => notif.id === notificationId ? { ...notif, is_read: true } : notif));
-            setUnreadCount(prev => Math.max(0, prev - 1));
-        } catch (error) {
-            console.error('Error marking notification as read:', error);
-        }
-    };
-    const handleMarkAllAsRead = async () => {
-        if (!authUid) return;
-        try {
-            await Notification.markAllAsRead(authUid);
-            setNotifications(prev => prev.map(notif => ({ ...notif, is_read: true })));
-            setUnreadCount(0);
-        } catch (error) {
-            console.error('Error marking all notifications as read:', error);
-        }
-    };
-    // Real-time notification effect
-    React.useEffect(() => {
-        if (!authUid) return;
-        const unsubscribeNotifications = Notification.subscribeByUser(authUid, (notifs) => {
-            setNotifications(notifs);
-        });
-        const unsubscribeUnreadCount = Notification.subscribeUnreadCount(authUid, (count) => {
-            setUnreadCount(count);
-        });
-        return () => {
-            unsubscribeNotifications();
-            unsubscribeUnreadCount();
-        };
-    }, [authUid]);
+    }, []);
+
 
     return (
         <StyledEngineProvider injectFirst>
@@ -3585,84 +4184,46 @@ export default function OrganizationDashboard(props) {
                                         onClick={handleNotificationClick} 
                                         color="inherit"
                                     >
-                                        <Badge badgeContent={unreadCount} color="error">
+                                        <Badge 
+                                            badgeContent={unreadCount} 
+                                            color="error"
+                                            sx={{
+                                                "& .MuiBadge-badge": {
+                                                    top: "0px",
+                                                    right: "0px",
+                                                    backgroundColor: "#d1d1d1ff",
+                                                    color: "black",
+                                                    fontWeight: "bold",
+                                                    minWidth: "20px",
+                                                    height: "20px",
+                                                    borderRadius: "50%",
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    justifyContent: "center",
+                                                    fontSize: "14px",
+                                                    zIndex: "10000",
+                                                },
+                                            }}
+                                        >
                                             <NotificationsIcon />
                                         </Badge>
                                     </IconButton>
-                                    {/* Notification Menu */}
-                                    {notificationAnchorEl && (
-                                        <Box sx={{ 
-                                            position: 'absolute', 
-                                            top: 60, 
-                                            right: 20, 
-                                            width: 400, 
-                                            maxHeight: 500,
-                                            backgroundColor: 'white',
-                                            border: '1px solid #ccc',
-                                            borderRadius: 1,
-                                            zIndex: 1000,
-                                            p: 2
-                                        }}>
-                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                                                <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                                                    الإشعارات ({notifications.length})
-                                                </Typography>
-                                                <Button size="small" onClick={handleMarkAllAsRead} disabled={unreadCount === 0}>
-                                                    تعليم الكل كمقروء
-                                                </Button>
-                                                <IconButton size="small" onClick={handleNotificationClose}>
-                                                    <CloseIcon />
-                                                </IconButton>
-                                            </Box>
-                                            <Box sx={{ maxHeight: 400, overflow: 'auto' }}>
-                                                {notifications.length === 0 ? (
-                                                    <Box sx={{ p: 3, textAlign: 'center' }}>
-                                                        <Typography variant="body2" color="text.secondary">
-                                                            لا توجد إشعارات
-                                                        </Typography>
-                                                    </Box>
-                                                ) : (
-                                                    notifications.map((notification) => (
-                                                        <Card 
-                                                            key={notification.id} 
-                                                            sx={{ 
-                                                                m: 1, 
-                                                                cursor: 'pointer',
-                                                                backgroundColor: notification.is_read ? 'transparent' : 'action.hover',
-                                                                '&:hover': { backgroundColor: 'action.selected' },
-                                                            }}
-                                                            onClick={() => handleMarkAsRead(notification.id)}
-                                                        >
-                                                            <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-                                                                    <Typography 
-                                                                        variant="subtitle2" 
-                                                                        sx={{ fontWeight: notification.is_read ? 'normal' : 'bold', color: notification.is_read ? 'text.secondary' : 'text.primary' }}
-                                                                    >
-                                                                        {notification.title}
-                                                                    </Typography>
-                                                                    {!notification.is_read && (
-                                                                        <Chip label="جديد" size="small" color="error" sx={{ fontSize: '0.6rem', height: 20 }} />
-                                                                    )}
-                                                                </Box>
-                                                                <Typography variant="body2" color="text.secondary" sx={{ mb: 1, lineHeight: 1.4 }}>
-                                                                    {notification.body}
-                                                                </Typography>
-                                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                                    <Typography variant="caption" color="text.secondary">
-                                                                        {notification.timestamp?.toDate ? notification.timestamp.toDate().toLocaleString('ar-EG') : new Date(notification.timestamp).toLocaleString('ar-EG')}
-                                                                    </Typography>
-                                                                    {notification.type && (
-                                                                        <Chip label={notification.type === 'system' ? 'نظام' : notification.type} size="small" variant="outlined" sx={{ fontSize: '0.6rem', height: 20 }} />
-                                                                    )}
-                                                                </Box>
-                                                            </CardContent>
-                                                        </Card>
-                                                    ))
-                                                )}
-                                            </Box>
-                                        </Box>
-                                    )}
+                                    {/* Notification Popover */}
+                                    <Popover
+                                        open={Boolean(notificationAnchorEl)}
+                                        anchorEl={notificationAnchorEl}
+                                        onClose={handleNotificationClose}
+                                        anchorOrigin={{
+                                            vertical: 'bottom',
+                                            horizontal: 'left',
+                                        }}
+                                        transformOrigin={{
+                                            vertical: 'top',
+                                            horizontal: 'right',
+                                        }}
+                                    >
+                                        <NotificationList userId={authUid} />
+                                    </Popover>
                                     <IconButton
                                         sx={{ ml: 1 }}
                                         color="inherit"
@@ -3751,7 +4312,15 @@ export default function OrganizationDashboard(props) {
                                 )}
                                 {open && <Divider sx={{ mb: 2 }} />}
                                 <List>
-                                    {NAVIGATION.map((item) => {
+                                    {!isProfileLoaded ? (
+                                        // Show loading state while profile is being loaded
+                                        <Box sx={{ p: 2, textAlign: 'center' }}>
+                                            <Typography variant="body2" color="text.secondary">
+                                                جاري التحميل...
+                                            </Typography>
+                                        </Box>
+                                    ) : (
+                                        NAVIGATION.map((item) => {
                                         if (item.kind === 'header') {
                                             return open ? (
                                                 <List key={item.title} component="nav" sx={{ px: 2, pt: 2, display: 'flex', flexDirection: 'row-reverse' }}>
@@ -3837,7 +4406,8 @@ export default function OrganizationDashboard(props) {
                                                 </ListItem>
                                             </Tooltip>
                                         );
-                                    })}
+                                    })
+                                    )}
                                 </List>
                             </Drawer>
                             <Main open={open}>
@@ -3849,5 +4419,939 @@ export default function OrganizationDashboard(props) {
                 </ColorModeContext.Provider>
             </CacheProvider>
         </StyledEngineProvider>
+    );
+}
+
+function AnalyticsPage() {
+    const dispatch = useDispatch();
+    const userProfile = useSelector((state) => state.user.profile);
+    const organizationType = userProfile?.type_of_organization;
+    const authUid = useSelector((state) => state.auth.uid);
+
+    // Get analytics data from Redux store (same as admin analytics)
+    const analyticsData = useSelector((state) => state.analytics?.data);
+    const analyticsLoading = useSelector((state) => state.analytics?.loading);
+    const analyticsError = useSelector((state) => state.analytics?.error);
+
+    // State for filters
+    const [filters, setFilters] = useState({
+        city: 'all',
+        dateRange: '30',
+        status: 'all',
+        adType: 'all'
+    });
+
+    // State for UI
+    const [activeTab, setActiveTab] = useState(0);
+    const [loading, setLoading] = useState(false);
+
+    // Fetch analytics data using Redux thunk (same as admin analytics)
+    useEffect(() => {
+        if (!userProfile?.uid || !organizationType) return;
+
+        console.log('Fetching analytics data for organization:', {
+            uid: userProfile.uid,
+            organizationType,
+            filters
+        });
+
+        // Use the same fetchAnalyticsData thunk as admin analytics
+        dispatch(fetchAnalyticsData({ 
+            userRole: 'organization', 
+            userId: userProfile.uid, 
+            filters 
+        }));
+    }, [dispatch, userProfile?.uid, organizationType, filters]);
+
+    // Debug logging for analytics data
+    useEffect(() => {
+        console.log('Organization Analytics Debug:', {
+            userProfile: userProfile?.uid,
+            organizationType,
+            analyticsDataAvailable: !!analyticsData,
+            analyticsLoading,
+            analyticsError,
+            dataKeys: analyticsData ? Object.keys(analyticsData) : [],
+            overview: analyticsData?.overview,
+            financialInsights: analyticsData?.financialInsights,
+            developerAds: analyticsData?.developerAds?.length,
+            financingAds: analyticsData?.financingAds?.length
+        });
+    }, [userProfile?.uid, organizationType, analyticsData, analyticsLoading, analyticsError]);
+
+    // Real-time data subscription is now handled by Redux store
+    // The fetchAnalyticsData thunk will handle real-time updates
+
+    // Helper functions for data processing
+    const processFunderAnalytics = () => {
+        // Use Redux analytics data
+        if (!analyticsData) return {
+            totalAds: 0,
+            totalRequests: 0,
+            averageRequestAmount: 0,
+            totalFinancingAmount: 0,
+            averageFinancingAmount: 0,
+            approvalRate: 0,
+            rejectionRate: 0,
+            interestRateDistribution: { 'upTo5': 0, 'upTo10': 0, 'above10': 0 },
+            locationDistribution: {},
+            statusBreakdown: { pending: 0, approved: 0, rejected: 0 }
+        };
+
+        // Get financing ads for this organization
+        const financingAds = analyticsData.financingAds?.filter(ad => ad.userId === userProfile.uid) || [];
+        
+        // Debug logging for financing ads
+        console.log('Funder Analytics Debug:', {
+            userProfileUid: userProfile.uid,
+            allFinancingAds: analyticsData.financingAds?.length || 0,
+            filteredFinancingAds: financingAds.length,
+            allFinancingAdsData: analyticsData.financingAds?.map(ad => ({ id: ad.id, userId: ad.userId, title: ad.title })) || [],
+            filteredFinancingAdsData: financingAds.map(ad => ({ id: ad.id, userId: ad.userId, title: ad.title })) || []
+        });
+        
+        // Calculate metrics
+        const totalAds = financingAds.length;
+        const totalRequests = Number(analyticsData.financialInsights?.totalFinancingRequests) || 0;
+        const totalFinancingAmount = Number(analyticsData.financialInsights?.totalRevenue) || 0;
+        const averageFinancingAmount = totalRequests > 0 ? totalFinancingAmount / totalRequests : 0;
+        const averageRequestAmount = averageFinancingAmount; // Same value for consistency
+        
+        // Interest rate distribution from analytics data
+        const interestRateDistribution = {
+            'upTo5': Number(analyticsData.financialInsights?.interestRateBreakdown?.['≤5%']) || 0,
+            'upTo10': Number(analyticsData.financialInsights?.interestRateBreakdown?.['≤10%']) || 0,
+            'above10': Number(analyticsData.financialInsights?.interestRateBreakdown?.['>10%']) || 0
+        };
+
+        // Approval and rejection rates
+        const approvedRequests = Number(analyticsData.financialInsights?.approvedRequests) || 0;
+        const rejectedRequests = Number(analyticsData.financialInsights?.rejectedRequests) || 0;
+        const approvalRate = Number(analyticsData.financialInsights?.approvalRate) || 0;
+        const rejectionRate = totalRequests > 0 ? (rejectedRequests / totalRequests) * 100 : 0;
+
+        // Location distribution (from overview)
+        const locationDistribution = analyticsData.overview?.cityBreakdown || {};
+
+        // Status breakdown
+        const statusBreakdown = {
+            pending: analyticsData.financialInsights?.pendingRequests || 0,
+            approved: approvedRequests,
+            rejected: rejectedRequests
+        };
+
+        return {
+            totalAds,
+            totalRequests,
+            averageRequestAmount,
+            totalFinancingAmount,
+            averageFinancingAmount,
+            approvalRate,
+            rejectionRate,
+            interestRateDistribution,
+            locationDistribution,
+            statusBreakdown
+        };
+    };
+
+    const processDeveloperAnalytics = () => {
+        // Use Redux analytics data
+        if (!analyticsData) return {
+            totalAds: 0,
+            activeAds: 0,
+            pendingAds: 0,
+            rejectedAds: 0,
+            propertyTypeDistribution: {},
+            averagePrice: 0,
+            averageArea: 0,
+            cityDistribution: {},
+            timeSincePublished: []
+        };
+
+        // Get real estate ads for this organization
+        const realEstateAds = analyticsData.developerAds?.filter(ad => ad.userId === userProfile.uid) || [];
+        
+        // Calculate metrics
+        const totalAds = realEstateAds.length;
+        const activeAds = realEstateAds.filter(ad => ad.reviewStatus === 'approved').length;
+        const pendingAds = realEstateAds.filter(ad => ad.reviewStatus === 'pending').length;
+        const rejectedAds = realEstateAds.filter(ad => ad.reviewStatus === 'rejected').length;
+
+        // Property type distribution
+        const propertyTypeDistribution = analyticsData.overview?.categoryBreakdown || {};
+
+        // Average price and area (calculate from actual ads)
+        const prices = realEstateAds.map(ad => parseFloat(ad.price) || 0).filter(price => price > 0);
+        const areas = realEstateAds.map(ad => parseFloat(ad.area) || 0).filter(area => area > 0);
+        
+        const averagePrice = prices.length > 0 ? prices.reduce((sum, price) => sum + price, 0) / prices.length : 0;
+        const averageArea = areas.length > 0 ? areas.reduce((sum, area) => sum + area, 0) / areas.length : 0;
+
+        // City distribution (from overview)
+        const cityDistribution = analyticsData.overview?.cityBreakdown || {};
+
+        // Time since published
+        const timeSincePublished = realEstateAds.map(ad => {
+            const publishedDate = ad.createdAt?.toDate?.() || new Date(ad.createdAt);
+            const now = new Date();
+            const diffTime = Math.abs(now - publishedDate);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            return { ad, daysSincePublished: diffDays };
+        });
+
+        return {
+            totalAds,
+            activeAds,
+            pendingAds,
+            rejectedAds,
+            propertyTypeDistribution,
+            averagePrice,
+            averageArea,
+            cityDistribution,
+            timeSincePublished
+        };
+    };
+
+    // Render funder analytics
+    const renderFunderAnalytics = () => {
+        // Show loading state
+        if (analyticsLoading) {
+            return (
+                <Box sx={{ p: 2, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+                    <CircularProgress />
+                </Box>
+            );
+        }
+
+        // Show error state
+        if (analyticsError) {
+            return (
+                <Box sx={{ p: 2 }}>
+                    <Alert severity="error" sx={{ mb: 2 }}>
+                        خطأ في تحميل البيانات: {analyticsError}
+                    </Alert>
+                </Box>
+            );
+        }
+
+        // Don't process data if analyticsData is not available
+        if (!analyticsData) {
+            return (
+                <Box sx={{ p: 2, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+                    <Typography>جاري تحميل البيانات...</Typography>
+                </Box>
+            );
+        }
+
+        // Check if no data available
+        if (!analyticsData.financingAds || analyticsData.financingAds.length === 0) {
+            return (
+                <Box sx={{ p: 2, textAlign: 'center' }}>
+                    <Typography variant="h6" color="text.secondary">
+                        لا توجد بيانات متاحة للإعلانات التمويلية
+                    </Typography>
+                </Box>
+            );
+        }
+
+        const data = processFunderAnalytics();
+        
+        return (
+            <Box dir='rtl' sx={{ p: 2 }}>
+                <Typography variant="h4" gutterBottom sx={{ textAlign: 'right', mb: 3 }}>
+                    تحليلات الممول العقاري
+                </Typography>
+
+                {/* Filters */}
+                <Paper sx={{ p: 2, mb: 3, borderRadius: 2 }}>
+                    <Typography variant="h6" gutterBottom sx={{ textAlign: 'right', mb: 2 }}>
+                        الفلاتر
+                    </Typography>
+                    <Grid container spacing={2} direction="row-reverse">
+                        <Grid item xs={12} sm={4}>
+                            <FormControl fullWidth size="small">
+                                <InputLabel>المدينة</InputLabel>
+                                <Select
+                                    value={filters.city}
+                                    onChange={(e) => setFilters(prev => ({ ...prev, city: e.target.value }))}
+                                    label="المدينة"
+                                >
+                                    <MenuItem value="all">الكل</MenuItem>
+                                    <MenuItem value="القاهرة">القاهرة</MenuItem>
+                                    <MenuItem value="الإسكندرية">الإسكندرية</MenuItem>
+                                    <MenuItem value="الجيزة">الجيزة</MenuItem>
+                                </Select>
+                            </FormControl>
+                        </Grid>
+                        <Grid item xs={12} sm={4}>
+                            <FormControl fullWidth size="small">
+                                <InputLabel>الفترة الزمنية</InputLabel>
+                                <Select
+                                    value={filters.dateRange}
+                                    onChange={(e) => setFilters(prev => ({ ...prev, dateRange: e.target.value }))}
+                                    label="الفترة الزمنية"
+                                >
+                                    <MenuItem value="all">الكل</MenuItem>
+                                    <MenuItem value="week">آخر أسبوع</MenuItem>
+                                    <MenuItem value="month">آخر شهر</MenuItem>
+                                    <MenuItem value="quarter">آخر 3 أشهر</MenuItem>
+                                </Select>
+                            </FormControl>
+                        </Grid>
+                        <Grid item xs={12} sm={4}>
+                            <FormControl fullWidth size="small">
+                                <InputLabel>الحالة</InputLabel>
+                                <Select
+                                    value={filters.status}
+                                    onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
+                                    label="الحالة"
+                                >
+                                    <MenuItem value="all">الكل</MenuItem>
+                                    <MenuItem value="pending">قيد المراجعة</MenuItem>
+                                    <MenuItem value="approved">مقبول</MenuItem>
+                                    <MenuItem value="rejected">مرفوض</MenuItem>
+                                </Select>
+                            </FormControl>
+                        </Grid>
+                    </Grid>
+                </Paper>
+
+                {/* Overview Cards */}
+                <Grid container spacing={3} sx={{ mb: 4 }}>
+                    <Grid item xs={12} sm={6} md={3}>
+                        <Paper sx={{ p: 3, textAlign: 'center', borderRadius: 2 }}>
+                            <Typography variant="h6" color="text.secondary">إجمالي الإعلانات</Typography>
+                            <Typography variant="h4" sx={{ color: 'primary.main', fontWeight: 'bold' }}>
+                                {data.totalAds}
+                            </Typography>
+                        </Paper>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                        <Paper sx={{ p: 3, textAlign: 'center', borderRadius: 2 }}>
+                            <Typography variant="h6" color="text.secondary">إجمالي الطلبات</Typography>
+                            <Typography variant="h4" sx={{ color: 'success.main', fontWeight: 'bold' }}>
+                                {data.totalRequests}
+                            </Typography>
+                        </Paper>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                        <Paper sx={{ p: 3, textAlign: 'center', borderRadius: 2 }}>
+                            <Typography variant="h6" color="text.secondary">إجمالي مبالغ التمويل</Typography>
+                            <Typography variant="h4" sx={{ color: 'info.main', fontWeight: 'bold' }}>
+                                {data.totalFinancingAmount.toLocaleString('ar-EG')} ج.م
+                            </Typography>
+                        </Paper>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                        <Paper sx={{ p: 3, textAlign: 'center', borderRadius: 2 }}>
+                            <Typography variant="h6" color="text.secondary">نسبة الموافقة</Typography>
+                            <Typography variant="h4" sx={{ color: 'warning.main', fontWeight: 'bold' }}>
+                                {typeof data.approvalRate === 'number' ? data.approvalRate.toFixed(1) : '0.0'}%
+                            </Typography>
+                        </Paper>
+                    </Grid>
+                </Grid>
+
+                {/* Additional Metrics */}
+                <Grid container spacing={3} sx={{ mb: 4 }}>
+                    <Grid item xs={12} sm={6} md={3}>
+                        <Paper sx={{ p: 3, textAlign: 'center', borderRadius: 2 }}>
+                            <Typography variant="h6" color="text.secondary">متوسط مبلغ الطلب</Typography>
+                            <Typography variant="h4" sx={{ color: 'secondary.main', fontWeight: 'bold' }}>
+                                {typeof data.averageFinancingAmount === 'number' ? data.averageFinancingAmount.toLocaleString('ar-EG') : '0'} ج.م
+                            </Typography>
+                        </Paper>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                        <Paper sx={{ p: 3, textAlign: 'center', borderRadius: 2 }}>
+                            <Typography variant="h6" color="text.secondary">نسبة الرفض</Typography>
+                            <Typography variant="h4" sx={{ color: 'error.main', fontWeight: 'bold' }}>
+                                {typeof data.rejectionRate === 'number' ? data.rejectionRate.toFixed(1) : '0.0'}%
+                            </Typography>
+                        </Paper>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                        <Paper sx={{ p: 3, textAlign: 'center', borderRadius: 2 }}>
+                            <Typography variant="h6" color="text.secondary">متوسط الطلبات/إعلان</Typography>
+                            <Typography variant="h4" sx={{ color: 'success.light', fontWeight: 'bold' }}>
+                                {data.totalAds > 0 && typeof data.totalRequests === 'number' && typeof data.totalAds === 'number' ? (data.totalRequests / data.totalAds).toFixed(1) : '0.0'}
+                            </Typography>
+                        </Paper>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                        <Paper sx={{ p: 3, textAlign: 'center', borderRadius: 2 }}>
+                            <Typography variant="h6" color="text.secondary">الطلبات المعلقة</Typography>
+                            <Typography variant="h4" sx={{ color: 'warning.light', fontWeight: 'bold' }}>
+                                {data.statusBreakdown.pending}
+                            </Typography>
+                        </Paper>
+                    </Grid>
+                </Grid>
+
+                {/* Charts */}
+                <Grid dir='rtl' container spacing={3}>
+                    {/* Status Distribution */}
+                    <Grid item xs={12} md={6}>
+                        <Paper sx={{ p: 3, borderRadius: 2 }}>
+                            <Typography variant="h6" gutterBottom sx={{ textAlign: 'right' }}>
+                                توزيع حالة الطلبات
+                            </Typography>
+                            <PieChart
+                                series={[
+                                    {
+                                        data: [
+                                            { id: 0, value: data.statusBreakdown.pending, label: 'قيد المراجعة', color: '#FF9800' },
+                                            { id: 1, value: data.statusBreakdown.approved, label: 'مقبول', color: '#4CAF50' },
+                                            { id: 2, value: data.statusBreakdown.rejected, label: 'مرفوض', color: '#F44336' }
+                                        ],
+                                        arcLabel: (item) => `${item.value}`,
+                                        arcLabelMinAngle: 35,
+                                    }
+                                ]}
+                                height={300}
+                            />
+                        </Paper>
+                    </Grid>
+
+                    {/* Interest Rate Distribution */}
+                    <Grid item xs={12} md={6}>
+                        <Paper sx={{ p: 3, borderRadius: 2 }}>
+                            <Typography variant="h6" gutterBottom sx={{ textAlign: 'right' }}>
+                                توزيع نسب الفائدة
+                            </Typography>
+                            <PieChart
+                                series={[
+                                    {
+                                        data: [
+                                            { id: 0, value: data.interestRateDistribution.upTo5, label: 'حتى 5%', color: '#2196F3' },
+                                            { id: 1, value: data.interestRateDistribution.upTo10, label: 'حتى 10%', color: '#9C27B0' },
+                                            { id: 2, value: data.interestRateDistribution.above10, label: 'أكثر من 10%', color: '#FF5722' }
+                                        ],
+                                        arcLabel: (item) => `${item.value}`,
+                                        arcLabelMinAngle: 35,
+                                    }
+                                ]}
+                                height={300}
+                            />
+                        </Paper>
+                    </Grid>
+
+                    {/* Requests Over Time */}
+                    <Grid item xs={12}>
+                        <Paper sx={{ p: 3, borderRadius: 2 }}>
+                            <Typography variant="h6" gutterBottom sx={{ textAlign: 'right' }}>
+                                الطلبات عبر الزمن
+                            </Typography>
+                            <LineChart
+                                xAxis={[
+                                    {
+                                        data: analyticsData.timeBasedData?.map((item, index) => index) || [],
+                                        valueFormatter: (value) => {
+                                            const item = analyticsData.timeBasedData?.[value];
+                                            return item ? new Date(item.date).toLocaleDateString('ar-EG') : '';
+                                        }
+                                    }
+                                ]}
+                                series={[
+                                    {
+                                        data: analyticsData.timeBasedData?.map(item => item.requests || 0) || [],
+                                        label: 'عدد الطلبات',
+                                        color: '#2196F3'
+                                    }
+                                ]}
+                                height={300}
+                            />
+                        </Paper>
+                    </Grid>
+                </Grid>
+
+                {/* Export and Actions */}
+                <Paper sx={{ p: 2, mt: 3, borderRadius: 2 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                        <Typography variant="h6" sx={{ textAlign: 'right' }}>
+                            تفاصيل الإعلانات والطلبات
+                        </Typography>
+                        <Button
+                            variant="outlined"
+                            startIcon={<DownloadIcon />}
+                            onClick={() => {
+                                // Export functionality for funder data
+                                const financingAds = analyticsData?.financingAds?.filter(ad => ad.userId === userProfile.uid) || [];
+                                const csvData = financingAds.map(ad => ({
+                                    title: ad.title,
+                                    totalRequests: data.totalRequests,
+                                    averageAmount: data.averageFinancingAmount,
+                                    status: ad.reviewStatus,
+                                    createdAt: ad.createdAt?.toDate?.() || new Date(ad.createdAt)
+                                }));
+                                console.log('Export funder data:', csvData);
+                                alert('تم تصدير البيانات بنجاح!');
+                            }}
+                        >
+                            تصدير البيانات
+                        </Button>
+                    </Box>
+                    <DataGrid
+                        rows={(analyticsData?.financialInsights?.perAdAnalytics || []).map(ad => ({
+                            id: ad.id || `fund-${Math.random().toString(36).substr(2, 9)}`,
+                            title: ad.title,
+                            totalRequests: ad.totalRequests,
+                            approvedRequests: ad.approvedRequests,
+                            averageAmount: ad.averageAmount,
+                            interestRate: ad.interestRate,
+                            location: ad.location,
+                            status: ad.status,
+                            createdAt: ad.createdAt?.toDate?.() || new Date(ad.createdAt)
+                        }))}
+                        columns={[
+                            { field: 'title', headerName: 'عنوان الإعلان', width: 200 },
+                            { field: 'totalRequests', headerName: 'إجمالي الطلبات', width: 120 },
+                            { field: 'approvedRequests', headerName: 'الطلبات المقبولة', width: 120 },
+                            { field: 'averageAmount', headerName: 'متوسط المبلغ', width: 150, 
+                                valueFormatter: (params) => params?.value ? `${params.value.toLocaleString('ar-EG')} ج.م` : '0 ج.م' },
+                            { field: 'interestRate', headerName: 'نسبة الفائدة', width: 120 },
+                            { field: 'location', headerName: 'الموقع', width: 120 },
+                            { field: 'status', headerName: 'الحالة', width: 120 },
+                            { field: 'createdAt', headerName: 'تاريخ الإنشاء', width: 150,
+                                valueFormatter: (params) => params?.value ? params.value.toLocaleDateString('ar-EG') : '' }
+                        ]}
+                        pageSize={5}
+                        rowsPerPageOptions={[5, 10, 25]}
+                        disableSelectionOnClick
+                        getRowId={(row) => row.id || `fund-${Math.random().toString(36).substr(2, 9)}`}
+                        sx={{ direction: 'rtl' }}
+                    />
+                </Paper>
+            </Box>
+        );
+    };
+
+    // Render developer analytics
+    const renderDeveloperAnalytics = () => {
+        // Show loading state
+        if (analyticsLoading) {
+            return (
+                <Box sx={{ p: 2, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+                    <CircularProgress />
+                </Box>
+            );
+        }
+
+        // Show error state
+        if (analyticsError) {
+            return (
+                <Box sx={{ p: 2 }}>
+                    <Alert severity="error" sx={{ mb: 2 }}>
+                        خطأ في تحميل البيانات: {analyticsError}
+                    </Alert>
+                </Box>
+            );
+        }
+
+        // Don't process data if analyticsData is not available
+        if (!analyticsData) {
+            return (
+                <Box sx={{ p: 2, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+                    <Typography>جاري تحميل البيانات...</Typography>
+                </Box>
+            );
+        }
+
+        // Check if no data available
+        if (!analyticsData.developerAds || analyticsData.developerAds.length === 0) {
+            return (
+                <Box sx={{ p: 2, textAlign: 'center' }}>
+                    <Typography variant="h6" color="text.secondary">
+                        لا توجد بيانات متاحة للإعلانات العقارية
+                    </Typography>
+                </Box>
+            );
+        }
+
+        const data = processDeveloperAnalytics();
+        
+        return (
+            <Box sx={{ p: 2 }}>
+                <Typography variant="h4" gutterBottom sx={{ textAlign: 'left', mb: 3 }}>
+                    تحليلات المطور العقاري
+                </Typography>
+
+                {/* Filters */}
+                <Paper dir='ltr' sx={{ p: 2, mb: 3, borderRadius: 2 }}>
+                    <Typography variant="h6" gutterBottom sx={{ textAlign: 'left', mb: 2 }}>
+                        الفلاتر
+                    </Typography>
+                    <Grid container spacing={2} direction="row-reverse">
+                        <Grid item xs={12} sm={4}>
+                            <FormControl fullWidth size="small">
+                                <InputLabel>المدينة</InputLabel>
+                                <Select
+                                    value={filters.city}
+                                    onChange={(e) => setFilters(prev => ({ ...prev, city: e.target.value }))}
+                                    label="المدينة"
+                                >
+                                    <MenuItem value="all">الكل</MenuItem>
+                                    <MenuItem value="القاهرة">القاهرة</MenuItem>
+                                    <MenuItem value="الإسكندرية">الإسكندرية</MenuItem>
+                                    <MenuItem value="الجيزة">الجيزة</MenuItem>
+                                </Select>
+                            </FormControl>
+                        </Grid>
+                        <Grid item xs={12} sm={4}>
+                            <FormControl fullWidth size="small">
+                                <InputLabel>نوع العقار</InputLabel>
+                                <Select
+                                    value={filters.status}
+                                    onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
+                                    label="نوع العقار"
+                                >
+                                    <MenuItem value="all">الكل</MenuItem>
+                                    <MenuItem value="فيلا">فيلا</MenuItem>
+                                    <MenuItem value="شقة">شقة</MenuItem>
+                                    <MenuItem value="محل">محل</MenuItem>
+                                    <MenuItem value="أرض">أرض</MenuItem>
+                                </Select>
+                            </FormControl>
+                        </Grid>
+                        <Grid item xs={12} sm={4}>
+                            <FormControl fullWidth size="small">
+                                <InputLabel>الحالة</InputLabel>
+                                <Select
+                                    value={filters.dateRange}
+                                    onChange={(e) => setFilters(prev => ({ ...prev, dateRange: e.target.value }))}
+                                    label="الحالة"
+                                >
+                                    <MenuItem value="all">الكل</MenuItem>
+                                    <MenuItem value="approved">مقبول</MenuItem>
+                                    <MenuItem value="pending">قيد المراجعة</MenuItem>
+                                    <MenuItem value="rejected">مرفوض</MenuItem>
+                                </Select>
+                            </FormControl>
+                        </Grid>
+                    </Grid>
+                </Paper>
+
+                {/* Overview Cards */}
+                <Grid container spacing={3} sx={{ mb: 4 }}>
+                    <Grid item xs={12} sm={6} md={3}>
+                        <Paper sx={{ p: 3, textAlign: 'center', borderRadius: 2 }}>
+                            <Typography variant="h6" color="text.secondary">إجمالي الإعلانات</Typography>
+                            <Typography variant="h4" sx={{ color: 'primary.main', fontWeight: 'bold' }}>
+                                {data.totalAds}
+                            </Typography>
+                        </Paper>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                        <Paper sx={{ p: 3, textAlign: 'center', borderRadius: 2 }}>
+                            <Typography variant="h6" color="text.secondary">الإعلانات النشطة</Typography>
+                            <Typography variant="h4" sx={{ color: 'success.main', fontWeight: 'bold' }}>
+                                {data.activeAds}
+                            </Typography>
+                        </Paper>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                        <Paper sx={{ p: 3, textAlign: 'center', borderRadius: 2 }}>
+                            <Typography variant="h6" color="text.secondary">متوسط السعر</Typography>
+                            <Typography variant="h4" sx={{ color: 'info.main', fontWeight: 'bold' }}>
+                                {data.averagePrice.toLocaleString('ar-EG')} ج.م
+                            </Typography>
+                        </Paper>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                        <Paper sx={{ p: 3, textAlign: 'center', borderRadius: 2 }}>
+                            <Typography variant="h6" color="text.secondary">متوسط المساحة</Typography>
+                            <Typography variant="h4" sx={{ color: 'warning.main', fontWeight: 'bold' }}>
+                                {typeof data.averageArea === 'number' ? data.averageArea.toFixed(0) : '0'} م²
+                            </Typography>
+                        </Paper>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                        <Paper sx={{ p: 3, textAlign: 'center', borderRadius: 2 }}>
+                            <Typography variant="h6" color="text.secondary">متوسط المشاهدات</Typography>
+                            <Typography variant="h4" sx={{ color: 'info.main', fontWeight: 'bold' }}>
+                                {analyticsData.developerAds?.reduce((sum, ad) => sum + (ad.views || 0), 0) / Math.max(analyticsData.developerAds?.length || 1, 1) || 0}
+                            </Typography>
+                        </Paper>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                        <Paper sx={{ p: 3, textAlign: 'center', borderRadius: 2 }}>
+                            <Typography variant="h6" color="text.secondary">متوسط التعديلات</Typography>
+                            <Typography variant="h4" sx={{ color: 'secondary.main', fontWeight: 'bold' }}>
+                                {analyticsData.developerAds?.reduce((sum, ad) => sum + (ad.edits || 0), 0) / Math.max(analyticsData.developerAds?.length || 1, 1) || 0}
+                            </Typography>
+                        </Paper>
+                    </Grid>
+                </Grid>
+
+                {/* Charts */}
+                <Grid container spacing={3}>
+                    {/* Property Type Distribution */}
+                    <Grid item xs={12} md={6}>
+                        <Paper sx={{ p: 3, borderRadius: 2 }}>
+                            <Typography variant="h6" gutterBottom sx={{ textAlign: 'left' }}>
+                                توزيع أنواع العقارات
+                            </Typography>
+                            <PieChart
+                                series={[
+                                    {
+                                        data: Object.entries(data.propertyTypeDistribution).map(([type, count], index) => ({
+                                            id: index,
+                                            value: count,
+                                            label: type,
+                                            color: ['#2196F3', '#4CAF50', '#FF9800', '#9C27B0', '#F44336'][index % 5]
+                                        })),
+                                        arcLabel: (item) => `${item.value}`,
+                                        arcLabelMinAngle: 35,
+                                    }
+                                ]}
+                                height={300}
+                            />
+                        </Paper>
+                    </Grid>
+
+                    {/* City Distribution */}
+                    <Grid item xs={12} md={6}>
+                        <Paper sx={{ p: 3, borderRadius: 2 }}>
+                            <Typography variant="h6" gutterBottom sx={{ textAlign: 'left' }}>
+                                توزيع المدن
+                            </Typography>
+                            <PieChart
+                                series={[
+                                    {
+                                        data: Object.entries(data.cityDistribution).map(([city, count], index) => ({
+                                            id: index,
+                                            value: count,
+                                            label: city,
+                                            color: ['#FF5722', '#607D8B', '#795548', '#9E9E9E', '#FFEB3B'][index % 5]
+                                        })),
+                                        arcLabel: (item) => `${item.value}`,
+                                        arcLabelMinAngle: 35,
+                                    }
+                                ]}
+                                height={300}
+                            />
+                        </Paper>
+                    </Grid>
+
+                    {/* Ad Performance Over Time */}
+                    <Grid item xs={12}>
+                        <Paper sx={{ p: 3, borderRadius: 2 }}>
+                            <Typography variant="h6" gutterBottom sx={{ textAlign: 'left' }}>
+                                أداء الإعلانات عبر الزمن
+                            </Typography>
+                            <LineChart
+                                xAxis={[
+                                    {
+                                        data: analyticsData.developerAds?.map((ad, index) => index) || [],
+                                        valueFormatter: (value) => {
+                                            const ad = analyticsData.developerAds?.[value];
+                                            return ad ? new Date(ad.createdAt?.toDate?.() || ad.createdAt).toLocaleDateString('ar-EG') : '';
+                                        }
+                                    }
+                                ]}
+                                series={[
+                                    {
+                                        data: analyticsData.developerAds?.map(ad => ad.views || 0) || [],
+                                        label: 'المشاهدات',
+                                        color: '#2196F3'
+                                    },
+                                    {
+                                        data: analyticsData.developerAds?.map(ad => ad.edits || 0) || [],
+                                        label: 'التعديلات',
+                                        color: '#FF9800'
+                                    }
+                                ]}
+                                height={300}
+                            />
+                        </Paper>
+                    </Grid>
+                </Grid>
+
+                {/* Export and Actions */}
+                <Paper sx={{ p: 2, mt: 3, borderRadius: 2 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                        <Typography variant="h6" sx={{ textAlign: 'right' }}>
+                            تفاصيل الإعلانات
+                        </Typography>
+                        <Button
+                            variant="outlined"
+                            startIcon={<DownloadIcon />}
+                            onClick={() => {
+                                // Export functionality for developer data
+                                const developerAds = analyticsData?.developerAds?.filter(ad => ad.userId === userProfile.uid) || [];
+                                const csvData = developerAds.map(ad => ({
+                                    title: ad.title,
+                                    propertyType: ad.propertyType || 'غير محدد',
+                                    price: ad.price,
+                                    area: ad.area,
+                                    city: ad.location?.city || 'غير محدد',
+                                    status: ad.reviewStatus,
+                                    daysSincePublished: data.timeSincePublished.find(t => t.ad.id === ad.id)?.daysSincePublished || 0
+                                }));
+                                console.log('Export developer data:', csvData);
+                                alert('تم تصدير البيانات بنجاح!');
+                            }}
+                        >
+                            تصدير البيانات
+                        </Button>
+                    </Box>
+                    <DataGrid
+                        rows={(analyticsData?.developerAds?.filter(ad => ad.userId === userProfile.uid) || []).map(ad => ({
+                            id: ad.id || `dev-${Math.random().toString(36).substr(2, 9)}`,
+                            title: ad.title,
+                            propertyType: ad.propertyType || 'غير محدد',
+                            price: ad.price,
+                            area: ad.area,
+                            city: ad.location?.city || 'غير محدد',
+                            status: ad.reviewStatus,
+                            views: ad.views || 0,
+                            edits: ad.edits || 0,
+                            daysSincePublished: ad.daysSincePublished || 0,
+                            lastEdited: ad.lastEdited
+                        }))}
+                        columns={[
+                            { field: 'title', headerName: 'عنوان الإعلان', width: 200 },
+                            { field: 'propertyType', headerName: 'نوع العقار', width: 120 },
+                            { field: 'price', headerName: 'السعر', width: 120 },
+                            { field: 'area', headerName: 'المساحة', width: 100 },
+                            { field: 'city', headerName: 'المدينة', width: 120 },
+                            { field: 'status', headerName: 'الحالة', width: 120 },
+                            { field: 'views', headerName: 'المشاهدات', width: 100 },
+                            { field: 'edits', headerName: 'التعديلات', width: 100 },
+                            { field: 'daysSincePublished', headerName: 'أيام منذ النشر', width: 150 },
+                            { field: 'lastEdited', headerName: 'آخر تعديل', width: 150,
+                                valueFormatter: (params) => params?.value ? new Date(params.value).toLocaleDateString('ar-EG') : '' }
+                        ]}
+                        pageSize={5}
+                        rowsPerPageOptions={[5, 10, 25]}
+                        disableSelectionOnClick
+                        getRowId={(row) => row.id || `dev-${Math.random().toString(36).substr(2, 9)}`}
+                        sx={{ direction: 'ltr' }}
+
+                        showToolbar
+                    />
+                </Paper>
+            </Box>
+        );
+    };
+
+    if (loading) {
+        return (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
+                <CircularProgress />
+                <Typography sx={{ ml: 2 }}>جاري تحميل البيانات...</Typography>
+            </Box>
+        );
+    }
+
+    if (!organizationType) {
+        return (
+            <Box sx={{ p: 3, textAlign: 'center' }}>
+                <Typography variant="h6" color="error">
+                    لم يتم تحديد نوع المنظمة
+                </Typography>
+            </Box>
+        );
+    }
+
+    // Error handling - use Redux analytics error
+    if (analyticsError) {
+        return (
+            <Box sx={{ p: 3, textAlign: 'center' }}>
+                <Typography variant="h6" color="error">
+                    خطأ في تحميل البيانات: {analyticsError}
+                </Typography>
+            </Box>
+        );
+    }
+
+    return (
+        <Box dir='rtl' sx={{ p: 2 }}>
+            <PageHeader
+                title="التحليلات والتقارير"
+                icon={BarChartIcon}
+                showCount={false}
+            />
+            
+            {/* Filter Controls */}
+            <Paper sx={{ p: 2, mb: 3, borderRadius: 2 }}>
+                <Typography variant="h6" sx={{ mb: 2, textAlign: 'left' }}>
+                    أدوات الفلترة
+                </Typography>
+                <Grid container spacing={2} alignItems="center">
+                    <Grid item>
+                        <FormControl size="small" sx={{ minWidth: 120 }}>
+                            <InputLabel>المدة الزمنية</InputLabel>
+                            <Select
+                                value={analyticsData?.filters?.dateRange || 'month'}
+                                onChange={(e) => {
+                                    // Dispatch filter change
+                                    console.log('Filter changed:', e.target.value);
+                                }}
+                                label="المدة الزمنية"
+                            >
+                                <MenuItem value="week">أسبوع</MenuItem>
+                                <MenuItem value="month">شهر</MenuItem>
+                                <MenuItem value="quarter">ربع سنة</MenuItem>
+                                <MenuItem value="all">الكل</MenuItem>
+                            </Select>
+                        </FormControl>
+                    </Grid>
+                    <Grid item>
+                        <FormControl size="small" sx={{ minWidth: 120 }}>
+                            <InputLabel>المدينة</InputLabel>
+                            <Select
+                                value={analyticsData?.filters?.selectedCity || 'all'}
+                                onChange={(e) => {
+                                    console.log('City filter changed:', e.target.value);
+                                }}
+                                label="المدينة"
+                            >
+                                <MenuItem value="all">جميع المدن</MenuItem>
+                                <MenuItem value="القاهرة">القاهرة</MenuItem>
+                                <MenuItem value="الإسكندرية">الإسكندرية</MenuItem>
+                                <MenuItem value="الجيزة">الجيزة</MenuItem>
+                                <MenuItem value="المنوفية">المنوفية</MenuItem>
+                            </Select>
+                        </FormControl>
+                    </Grid>
+                    <Grid item>
+                        <FormControl size="small" sx={{ minWidth: 120 }}>
+                            <InputLabel>الحالة</InputLabel>
+                            <Select
+                                value={analyticsData?.filters?.selectedStatus || 'all'}
+                                onChange={(e) => {
+                                    console.log('Status filter changed:', e.target.value);
+                                }}
+                                label="الحالة"
+                            >
+                                <MenuItem value="all">جميع الحالات</MenuItem>
+                                <MenuItem value="pending">قيد المراجعة</MenuItem>
+                                <MenuItem value="approved">مُوافق عليه</MenuItem>
+                                <MenuItem value="rejected">مرفوض</MenuItem>
+                            </Select>
+                        </FormControl>
+                    </Grid>
+                    <Grid item>
+                        <Button
+                            variant="outlined"
+                            startIcon={<RefreshIcon />}
+                            onClick={() => {
+                                // Refresh data
+                                dispatch(fetchAnalyticsData({ 
+                                    userRole: 'organization', 
+                                    userId: userProfile.uid, 
+                                    filters: analyticsData?.filters || {}
+                                }));
+                            }}
+                        >
+                            تحديث البيانات
+                        </Button>
+                    </Grid>
+                </Grid>
+            </Paper>
+            
+            {(organizationType === 'ممول عقارى' || organizationType === 'ممول عقاري') ? renderFunderAnalytics() : renderDeveloperAnalytics()}
+        </Box>
     );
 }

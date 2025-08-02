@@ -49,6 +49,7 @@ import MapPicker from "../LocationComponents/MapPicker";
 import { useNavigate, useLocation } from "react-router-dom";
 import AdPackagesClient from "../../packages/packagesClient";
 import { getAuth } from "firebase/auth";
+import { auth } from '../FireBase/firebaseConfig';
 import useReverseGeocoding from "../LocationComponents/useReverseGeocoding";
 
 // Custom styled components
@@ -240,9 +241,29 @@ const ModernRealEstateForm = () => {
   const [geocodingError, setGeocodingError] = useState("");
   const navigate = useNavigate();
   const location = useLocation();
-  const editData = location.state?.adData || null;
-  const isEditMode = location.state?.editMode || false;
+  
+  // Debug the location state
+  console.log('[DEBUG] Location state received:', location.state);
+  console.log('[DEBUG] Location state adData:', location.state?.adData);
+  console.log('[DEBUG] Location state editMode:', location.state?.editMode);
+  
+  // Extract data with proper destructuring
+  const { adData, editMode } = location.state || {};
+  const editData = adData || null;
+  const isEditMode = editMode || false;
+  
+  // Extract and store the advertisement ID separately
+  const adId = adData?.id || editData?.id;
+  
+  // Debug the extracted data
+  console.log('[DEBUG] Extracted editData:', editData);
+  console.log('[DEBUG] Extracted isEditMode:', isEditMode);
+  console.log('[DEBUG] Extracted adId:', adId);
+  console.log('[DEBUG] EditData ID:', editData?.id);
+  console.log('[DEBUG] adData ID:', adData?.id);
+  
   const prevAddressFromMap = useRef(null);
+  const userId = auth.currentUser?.uid;
 
   // Use reverse geocoding to get address
   const addressFromMap = useReverseGeocoding(coordinates);
@@ -250,46 +271,91 @@ const ModernRealEstateForm = () => {
   const {
     control,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isValid },
     reset,
     watch,
     setValue,
   } = useForm({
     resolver: yupResolver(validationSchema),
     defaultValues: {
-      title: editData?.title || "",
-      propertyType: editData?.type || "",
-      price: editData?.price || "",
-      area: editData?.area || "",
-      buildingDate: editData?.date_of_building || "",
-      fullAddress: editData?.address || "",
-      city: editData?.city || "",
-      governorate: editData?.governorate || "",
-      phone: editData?.phone || "",
-      username: editData?.user_name || "",
-      adType: editData?.ad_type || "",
-      adStatus: editData?.ad_status || "",
-      description: editData?.description || "",
-      adsActivation: editData?.ads || false,
-      activationDays: editData?.adExpiryTime
-        ? Math.round(
-            (editData.adExpiryTime - Date.now()) / (24 * 60 * 60 * 1000)
-          )
-        : 7,
-    },
+      title: '',
+      propertyType: '',
+      price: '',
+      area: '',
+      buildingDate: '',
+      fullAddress: '',
+      city: '',
+      governorate: '',
+      phone: '',
+      username: '',
+      adType: '',
+      adStatus: '',
+      description: '',
+      adsActivation: false,
+      activationDays: 7,
+    }
   });
 
-  // Initialize images for edit mode
+  // Reset form when editData changes (for edit mode)
+  useEffect(() => {
+    console.log('[DEBUG] useEffect triggered - isEditMode:', isEditMode, 'editData:', editData);
+    console.log('[DEBUG] adId in useEffect:', adId);
+    
+    if (isEditMode && editData) {
+      console.log('[DEBUG] Resetting form with edit data');
+      console.log('[DEBUG] EditData ID in reset:', editData.id);
+      console.log('[DEBUG] adId in reset:', adId);
+      console.log('[DEBUG] EditData title:', editData.title);
+      
+      // Validate that we have a valid ID
+      if (!adId) {
+        console.error('[DEBUG] No valid ID found for edit mode');
+        console.error('[DEBUG] adData:', adData);
+        console.error('[DEBUG] editData:', editData);
+        return;
+      }
+      
+      reset({
+        title: editData.title || '',
+        propertyType: editData.type || '',
+        price: editData.price || '',
+        area: editData.area || '',
+        buildingDate: editData.date_of_building || '',
+        fullAddress: editData.address || '',
+        city: editData.city || '',
+        governorate: editData.governorate || '',
+        phone: editData.phone || '',
+        username: editData.user_name || '',
+        adType: editData.ad_type || '',
+        adStatus: editData.ad_status || '',
+        description: editData.description || '',
+        adsActivation: editData.ads || false,
+        activationDays: editData.adExpiryTime ? Math.round((editData.adExpiryTime - Date.now()) / (24 * 60 * 60 * 1000)) : 7,
+      });
+    }
+  }, [isEditMode, editData, adId, reset]);
+
+  // عند التعديل، عرّض الصور القديمة للمعاينة
   useEffect(() => {
     if (isEditMode && editData && Array.isArray(editData.images)) {
       setImages([]);
       setImageError("");
+      console.log('[DEBUG] Initializing edit mode with data:', editData);
+      console.log('[DEBUG] Advertisement ID:', editData.id);
+      
+      // Set coordinates if available
       if (editData.location?.lat && editData.location?.lng) {
         setCoordinates({
           lat: editData.location.lat,
           lng: editData.location.lng,
         });
       }
+      
+      // Clear any existing image errors
+      setImageError('');
+      
+      // Note: We don't set images here as they are handled by the form's default values
+      // and the user can add new images if needed
     }
   }, [isEditMode, editData]);
 
@@ -300,6 +366,9 @@ const ModernRealEstateForm = () => {
     }
   }, [isEditMode, editData]);
 
+
+
+  // تحديث حقول العنوان بناءً على addressFromMap
   // Update address fields based on map selection
   useEffect(() => {
     console.log(
@@ -391,8 +460,16 @@ const ModernRealEstateForm = () => {
 
   const handleImageUpload = (event) => {
     const files = Array.from(event.target.files);
-    if (images.length + files.length > 4) {
-      setImageError("يمكنك إضافة 4 صور كحد أقصى");
+    
+    // For edit mode, allow up to 4 total images (existing + new)
+    // For new mode, allow up to 4 new images
+    const maxImages = 4;
+    const currentImageCount = isEditMode ? 
+      (editData?.images?.length || 0) + images.length : 
+      images.length;
+    
+    if (currentImageCount + files.length > maxImages) {
+      setImageError(`يمكنك إضافة ${maxImages} صور كحد أقصى`);
       return;
     }
 
@@ -415,6 +492,14 @@ const ModernRealEstateForm = () => {
   };
 
   const onSubmit = async (data) => {
+    console.log('[DEBUG] onSubmit called');
+    console.log('[DEBUG] isEditMode:', isEditMode);
+    console.log('[DEBUG] adId:', adId);
+    console.log('[DEBUG] editData:', editData);
+    console.log('[DEBUG] form data:', data);
+    
+    
+    // Validate images for new advertisements
     setSubmitError("");
     if (!isEditMode && images.length === 0) {
       setImageError("الصور مطلوبة، أضف 4 صور على الأكثر");
@@ -430,8 +515,28 @@ const ModernRealEstateForm = () => {
     console.log("[DEBUG] Current user UID:", auth.currentUser?.uid);
     console.log("[DEBUG] Selected package:", selectedPackage);
     console.log("[DEBUG] Receipt image before save:", receiptImage);
-
-    try {
+    if (isEditMode) {
+      if (!editData) {
+        setSubmitError('بيانات الإعلان غير متوفرة للتعديل.');
+        return;
+      }
+      
+      if (!adId) {
+        console.error('[DEBUG] adId is missing:', adId);
+        setSubmitError('معرف الإعلان غير صالح للتعديل.');
+        return;
+      }
+    }
+    if (
+      isEditMode &&
+      (!adId || adId === undefined || adId === null)
+    ) {
+      console.error('[DEBUG] Missing advertisement ID for edit mode');
+      console.error('[DEBUG] adId value:', adId);
+      setSubmitError("لا يمكن تعديل إعلان بدون معرف (ID).");
+      return;
+    }
+    try  {
       // Upload property images if any
       let imageUrls = [];
       if (images.length > 0) {
@@ -446,64 +551,151 @@ const ModernRealEstateForm = () => {
           setSubmitError("فشل رفع الصور. تأكد من صلاحيات التخزين.");
           return;
         }
-      }
-
-      if (
-        isEditMode &&
-        (!editData.id || editData.id === undefined || editData.id === null)
-      ) {
-        setSubmitError("لا يمكن تعديل إعلان بدون معرف (ID).");
-        return;
-      }
+      }      
 
       let adId;
       if (isEditMode && editData) {
-        const ad = new ClientAdvertisement({ ...editData, id: editData.id });
+        adId = editData.id; // Set adId from editData
+        console.log('[DEBUG] Starting advertisement update with ID:', adId);
+        console.log('[DEBUG] Using adId:', adId);
+        
+        const adObject = { ...editData, id: adId };
+        console.log('[DEBUG] Ad object being passed to ClientAdvertisement constructor:', JSON.stringify(adObject, null, 2));
+        console.log('[DEBUG] adId value in adObject:', adObject.id);
+        
+        const ad = new ClientAdvertisement(adObject);
+        console.log('[DEBUG] ClientAdvertisement instance created with ID:', ad.id);
+        
+        // Validate that the advertisement has a valid ID
+        if (!ad.id) {
+          console.error('[DEBUG] Advertisement instance has no ID:', ad);
+          setSubmitError('معرف الإعلان غير صالح للتعديل.');
+          return;
+        }
+        
         const oldImages = Array.isArray(editData.images) ? editData.images : [];
+        // const newImageFiles = images;
+        // let filesToUpload = null;
+        
+        // if (newImageFiles.length > 0) {
+        //   filesToUpload = newImageFiles;
+        // }
         const updatedImages = [...oldImages, ...imageUrls];
 
-        // Upload receipt if provided
-        let receiptUrl = editData.receipt_image;
-        if (receiptImage) {
-          try {
-            receiptUrl = await uploadReceiptAndGetUrl(
-              receiptImage,
-              auth.currentUser.uid,
-              editData.id
-            );
-          } catch (error) {
-            console.error("[DEBUG] Error uploading receipt image:", error);
-            if (error.code === "storage/unauthorized") {
-              setSubmitError(
-                "ليس لديك إذن لرفع صورة الإيصال. تحقق من إعدادات التخزين في Firebase."
-              );
-            } else {
-              setSubmitError("فشل رفع صورة الإيصال: " + error.message);
-            }
-            return;
-          }
-        }
-
-        await ad.update(
-          {
-            ...editData,
-            ...data,
-            type: data.propertyType,
-            user_name: data.username,
-            ad_type: data.adType,
-            ad_status: data.adStatus,
-            images: updatedImages,
-            adPackage: selectedPackage ? Number(selectedPackage) : null,
-            ads: data.adsActivation,
-            adExpiryTime: data.adsActivation
-              ? Date.now() + data.activationDays * 24 * 60 * 60 * 1000
-              : null,
+        // Prepare update data
+        const updateData = {
+          title: data.title,
+          type: data.propertyType,
+          price: data.price,
+          area: data.area,
+          date_of_building: data.buildingDate,
+          location: {
+            lat: coordinates?.lat || editData.location?.lat || 0,
+            lng: coordinates?.lng || editData.location?.lng || 0,
           },
-          receiptUrl
-        );
-        adId = editData.id;
-        console.log("[DEBUG] تم تحديث الإعلان:", adId);
-      } else {
+          address: data.fullAddress,
+          city: data.city,
+          governorate: data.governorate,
+          images:updatedImages,
+          phone: data.phone,
+          user_name: data.username,
+          ad_type: data.adType,
+          ad_status: data.adStatus,
+          description: data.description,
+          ads: data.adsActivation,
+          adExpiryTime: data.adsActivation
+            ? Date.now() + data.activationDays * 24 * 60 * 60 * 1000
+            : null,
+          adPackage: selectedPackage ? Number(selectedPackage) : null,
+          // Reset status to pending after edit
+          reviewStatus: 'pending',
+          reviewed_by: null,
+          review_note: null,
+        };
+        
+         // Upload receipt if provided
+         let receiptUrl = editData.receipt_image;
+         if (receiptImage) {
+           try {
+             receiptUrl = await uploadReceiptAndGetUrl(
+               receiptImage,
+               auth.currentUser.uid,
+               editData.id
+             );
+           } catch (error) {
+             console.error("[DEBUG] Error uploading receipt image:", error);
+             if (error.code === "storage/unauthorized") {
+               setSubmitError(
+                 "ليس لديك إذن لرفع صورة الإيصال. تحقق من إعدادات التخزين في Firebase."
+               );
+             } else {
+               setSubmitError("فشل رفع صورة الإيصال: " + error.message);
+             }
+             return;
+           }
+         }
+
+        console.log('[DEBUG] Update data:', updateData);
+        console.log('[DEBUG] Files to upload:', updatedImages);
+        console.log('[DEBUG] Ad instance ID:', ad.id);
+        console.log('[DEBUG] Receipt URL:', receiptUrl);
+
+        await ad.update(updateData, receiptUrl);
+        console.log('[DEBUG] Advertisement updated successfully:', adId);
+        
+        setShowSuccess(true);
+        handleReset();
+        
+        // Navigate to details page or back to dashboard
+        setTimeout(() => {
+          navigate(`/detailsForClient/${adId}`);
+        }, 1500);
+        ///////////////////////////////////////////////////////////////////////////////////////////////////
+        // const updatedImages = [...oldImages, ...imageUrls];
+
+        // Upload receipt if provided
+        // let receiptUrl = editData.receipt_image;
+        // if (receiptImage) {
+        //   try {
+        //     receiptUrl = await uploadReceiptAndGetUrl(
+        //       receiptImage,
+        //       auth.currentUser.uid,
+        //       editData.id
+        //     );
+        //   } catch (error) {
+        //     console.error("[DEBUG] Error uploading receipt image:", error);
+        //     if (error.code === "storage/unauthorized") {
+        //       setSubmitError(
+        //         "ليس لديك إذن لرفع صورة الإيصال. تحقق من إعدادات التخزين في Firebase."
+        //       );
+        //     } else {
+        //       setSubmitError("فشل رفع صورة الإيصال: " + error.message);
+        //     }
+        //     return;
+        //   }
+        // }
+
+        // await ad.update(
+        //   {
+        //     ...editData,
+        //     ...data,
+        //     type: data.propertyType,
+        //     user_name: data.username,
+        //     ad_type: data.adType,
+        //     ad_status: data.adStatus,
+        //     images: updatedImages,
+        //     adPackage: selectedPackage ? Number(selectedPackage) : null,
+        //     ads: data.adsActivation,
+        //     adExpiryTime: data.adsActivation
+        //       ? Date.now() + data.activationDays * 24 * 60 * 60 * 1000
+        //       : null,
+        //   },
+        //   receiptUrl
+        // );
+        // adId = editData.id;
+        // console.log("[DEBUG] تم تحديث الإعلان:", adId);
+///////////////////////////////////////////////////////////////////////////////////     //////////////////////////////
+} else {
         const adData = {
           title: data.title,
           type: data.propertyType,
@@ -631,7 +823,9 @@ const ModernRealEstateForm = () => {
 
           <Box
             component="form"
-            onSubmit={handleSubmit(onSubmit)}
+            onSubmit={(e) => {
+              handleSubmit(onSubmit)(e);
+            }} 
             width={"100%"}
             sx={{ direction: "rtl" }}
           >
@@ -906,11 +1100,35 @@ const ModernRealEstateForm = () => {
                       )}
 
                       <ImagePreviewBox>
+                          {/* Show existing images in edit mode */}
+                      {isEditMode && editData?.images && editData.images.map((imageUrl, index) => (
+                        <ImagePreview key={`existing-${index}`}>
+                          <img
+                            src={imageUrl}
+                            alt={`صورة موجودة ${index + 1}`}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          />
+                          <Box
+                            sx={{
+                              position: 'absolute',
+                              top: 4,
+                              right: 4,
+                              backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                              color: 'white',
+                              padding: '2px 6px',
+                              borderRadius: '4px',
+                              fontSize: '0.7rem',
+                            }}
+                          >
+                            موجودة
+                          </Box>
+                        </ImagePreview>
+                      ))}
                         {images.map((image, index) => (
                           <ImagePreview key={index}>
                             <img
                               src={URL.createObjectURL(image)}
-                              alt={`صورة ${index + 1}`}
+                              alt={`صورة جديدة ${index + 1}`}
                               style={{
                                 width: "100%",
                                 height: "100%",
@@ -932,11 +1150,25 @@ const ModernRealEstateForm = () => {
                             >
                               <Delete fontSize="small" />
                             </IconButton>
+                            <Box
+                            sx={{
+                              position: 'absolute',
+                              top: 4,
+                              left: 4,
+                              backgroundColor: 'rgba(76, 175, 80, 0.9)',
+                              color: 'white',
+                              padding: '2px 6px',
+                              borderRadius: '4px',
+                              fontSize: '0.7rem',
+                            }}
+                          >
+                            جديدة
+                          </Box>
                           </ImagePreview>
                         ))}
                       </ImagePreviewBox>
 
-                      {images.length > 0 && (
+                      {(images.length > 0 || (isEditMode && editData?.images?.length > 0)) && (
                         <Typography
                           variant="body2"
                           sx={{
@@ -945,9 +1177,15 @@ const ModernRealEstateForm = () => {
                             fontSize: "0.75rem",
                             textAlign: "right",
                           }}
-                        >
-                          تم رفع {images.length} من 4 صور
-                        </Typography>
+                        >{isEditMode ? (
+                          <>
+                            الصور الموجودة: {editData?.images?.length || 0} | 
+                            الصور الجديدة: {images.length} | 
+                            المجموع: {(editData?.images?.length || 0) + images.length} من 4
+                          </>
+                        ) : (
+                          `تم رفع ${images.length} من 4 صور`
+                        )}</Typography>
                       )}
 
                       <Divider sx={{ my: 3 }} />
@@ -1338,7 +1576,7 @@ const ModernRealEstateForm = () => {
 
                   <Divider sx={{ my: 3, borderColor: "#e0e0e0" }} />
 
-                  {/* Activation Settings */}
+                  {/* Activation Settings
                   <Grid item xs={12} md={6} width={"100%"}>
                     <Typography
                       variant="h6"
@@ -1403,7 +1641,7 @@ const ModernRealEstateForm = () => {
                         />
                       </>
                     )}
-                  </Grid>
+                  </Grid> */}
                 </Container>
               </CardContent>
             </StyledCard>

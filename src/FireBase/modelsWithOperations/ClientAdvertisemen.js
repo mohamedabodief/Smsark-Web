@@ -1029,6 +1029,31 @@ class ClientAdvertisement {
     });
   }
 
+  static subscribeByUserId(userId, callback) {
+    const colRef = collection(db, 'ClientAdvertisements');
+    const q = query(colRef, where('userId', '==', userId));
+    return onSnapshot(q, async (querySnapshot) => {
+      const ads = [];
+      for (const docSnap of querySnapshot.docs) {
+        const ad = await ClientAdvertisement.#handleExpiry(docSnap.data());
+        if (ad) ads.push(ad);
+      }
+      callback(ads);
+    });
+  }
+
+  static subscribeAll(callback) {
+    const colRef = collection(db, 'ClientAdvertisements');
+    return onSnapshot(colRef, async (querySnapshot) => {
+      const ads = [];
+      for (const docSnap of querySnapshot.docs) {
+        const ad = await ClientAdvertisement.#handleExpiry(docSnap.data());
+        if (ad) ads.push(ad);
+      }
+      callback(ads);
+    });
+  }
+
   static async #handleExpiry(data) {
     const now = Date.now();
     if (data.ads === true && data.adExpiryTime && data.adExpiryTime <= now) {

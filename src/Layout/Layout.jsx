@@ -39,6 +39,12 @@ export default function Layout({ children }) {
     "/privateChat"
   ].some((path) => location.pathname.startsWith(path));
 
+  const isDashboardNav = [
+    "/admin-dashboard",
+    "/client-dashboard",
+    "/organization-dashboard",
+  ].some((path) => location.pathname.startsWith(path));
+
   return (
     <UnreadMessagesProvider>
       <ThemeProvider theme={theme}>
@@ -49,7 +55,7 @@ export default function Layout({ children }) {
           minHeight: "100vh",
         }}
         >
-          <Nav toggleMode={toggleMode} />
+          {!isDashboardNav && <Nav toggleMode={toggleMode} />}
           <Box component="main" sx={{ mt: { xs: 5, md: 8 }, flex: 1 }}>
             {children}
           </Box>
