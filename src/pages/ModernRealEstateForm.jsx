@@ -49,6 +49,7 @@ import MapPicker from "../LocationComponents/MapPicker";
 import { useNavigate, useLocation } from "react-router-dom";
 import AdPackagesClient from "../../packages/packagesClient";
 import { getAuth } from "firebase/auth";
+import { auth } from '../FireBase/firebaseConfig';
 import useReverseGeocoding from "../LocationComponents/useReverseGeocoding";
 
 // Custom styled components
@@ -526,6 +527,15 @@ const ModernRealEstateForm = () => {
         return;
       }
     }
+    if (
+      isEditMode &&
+      (!adId || adId === undefined || adId === null)
+    ) {
+      console.error('[DEBUG] Missing advertisement ID for edit mode');
+      console.error('[DEBUG] adId value:', adId);
+      setSubmitError("لا يمكن تعديل إعلان بدون معرف (ID).");
+      return;
+    }
     try  {
       // Upload property images if any
       let imageUrls = [];
@@ -541,27 +551,28 @@ const ModernRealEstateForm = () => {
           setSubmitError("فشل رفع الصور. تأكد من صلاحيات التخزين.");
           return;
         }
-      }
-
-      if (
-        isEditMode &&
-        (!adId || adId === undefined || adId === null)
-      ) {
-        console.error('[DEBUG] Missing advertisement ID for edit mode');
-        console.error('[DEBUG] adId value:', adId);
-        setSubmitError("لا يمكن تعديل إعلان بدون معرف (ID).");
-        return;
-      }
+      }      
 
       let adId;
       if (isEditMode && editData) {
+        adId = editData.id; // Set adId from editData
         console.log('[DEBUG] Starting advertisement update with ID:', adId);
         console.log('[DEBUG] Using adId:', adId);
         
         const adObject = { ...editData, id: adId };
         console.log('[DEBUG] Ad object being passed to ClientAdvertisement constructor:', JSON.stringify(adObject, null, 2));
+        console.log('[DEBUG] adId value in adObject:', adObject.id);
         
         const ad = new ClientAdvertisement(adObject);
+        console.log('[DEBUG] ClientAdvertisement instance created with ID:', ad.id);
+        
+        // Validate that the advertisement has a valid ID
+        if (!ad.id) {
+          console.error('[DEBUG] Advertisement instance has no ID:', ad);
+          setSubmitError('معرف الإعلان غير صالح للتعديل.');
+          return;
+        }
+        
         const oldImages = Array.isArray(editData.images) ? editData.images : [];
         // const newImageFiles = images;
         // let filesToUpload = null;
@@ -625,10 +636,11 @@ const ModernRealEstateForm = () => {
          }
 
         console.log('[DEBUG] Update data:', updateData);
-        console.log('[DEBUG] Files to upload:', filesToUpload);
+        console.log('[DEBUG] Files to upload:', updatedImages);
         console.log('[DEBUG] Ad instance ID:', ad.id);
+        console.log('[DEBUG] Receipt URL:', receiptUrl);
 
-        await ad.update(updateData , receiptUrl);
+        await ad.update(updateData, receiptUrl);
         console.log('[DEBUG] Advertisement updated successfully:', adId);
         
         setShowSuccess(true);
@@ -1564,7 +1576,7 @@ const ModernRealEstateForm = () => {
 
                   <Divider sx={{ my: 3, borderColor: "#e0e0e0" }} />
 
-                  {/* Activation Settings */}
+                  {/* Activation Settings
                   <Grid item xs={12} md={6} width={"100%"}>
                     <Typography
                       variant="h6"
@@ -1629,7 +1641,7 @@ const ModernRealEstateForm = () => {
                         />
                       </>
                     )}
-                  </Grid>
+                  </Grid> */}
                 </Container>
               </CardContent>
             </StyledCard>

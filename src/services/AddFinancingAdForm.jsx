@@ -47,6 +47,9 @@ export default function AddFinancingAdForm() {
         }
         
         if (adData) {
+          console.log('[DEBUG] Setting form data with adData:', adData);
+          console.log('[DEBUG] adData.userId:', adData.userId);
+          
           setForm({
             title: adData.title || '',
             description: adData.description || '',
@@ -54,7 +57,7 @@ export default function AddFinancingAdForm() {
             start_limit: adData.start_limit || '',
             end_limit: adData.end_limit || '',
             org_name: adData.org_name || '',
-            userId: adData.userId || 'admin',
+            userId: adData.userId || auth.currentUser?.uid || 'admin',
             type_of_user: adData.type_of_user || 'individual',
             ads: adData.ads !== undefined ? adData.ads : false,
             adExpiryTime: adData.adExpiryTime || Date.now() + 30 * 24 * 60 * 60 * 1000,
@@ -91,7 +94,7 @@ export default function AddFinancingAdForm() {
     start_limit: editData?.start_limit || '',
     end_limit: editData?.end_limit || '',
     org_name: editData?.org_name || '',
-    userId: editData?.userId || 'admin',
+    userId: editData?.userId || auth.currentUser?.uid || 'admin',
     type_of_user: editData?.type_of_user || 'individual',
     ads: false,
     adExpiryTime: editData?.adExpiryTime || Date.now() + 30 * 24 * 60 * 60 * 1000,
@@ -213,11 +216,25 @@ export default function AddFinancingAdForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!isFormValid()) return;
+    
+    // Validate authentication
+    if (!auth.currentUser) {
+      setError('يجب تسجيل الدخول أولاً.');
+      return;
+    }
+    
     setLoading(true);
     setError(null);
     try {
       let ad;
       if (isEditMode && form.id) {
+        // Validate that we have a valid userId
+        const userId = editData?.userId || form.userId || auth.currentUser?.uid;
+        if (!userId) {
+          setError('معرف المستخدم غير صالح للتعديل.');
+          return;
+        }
+        
         // الصور القديمة (روابط فقط)
         const existingImageUrls = previewUrls.filter(url => !url.startsWith('blob:'));
         let finalImageUrls = existingImageUrls;
@@ -229,8 +246,12 @@ export default function AddFinancingAdForm() {
           updateImages = finalImageUrls;
         }
         // مرر userId وid من editData دائماً
-        ad = new FinancingAdvertisement({ ...form, adPackage: selectedPackage ? Number(selectedPackage) : null, images: finalImageUrls, id: form.id, userId: editData.userId });
-        await ad.update({ ...form, adPackage: selectedPackage ? Number(selectedPackage) : null, ...(updateImages ? { images: updateImages } : {}), id: form.id, userId: editData.userId }, images.length > 0 ? images : null, receiptImage);
+        console.log('[DEBUG] Creating FinancingAdvertisement with userId:', userId);
+        console.log('[DEBUG] Form data:', form);
+        console.log('[DEBUG] EditData:', editData);
+        
+        ad = new FinancingAdvertisement({ ...form, adPackage: selectedPackage ? Number(selectedPackage) : null, images: finalImageUrls, id: form.id, userId: userId });
+        await ad.update({ ...form, adPackage: selectedPackage ? Number(selectedPackage) : null, ...(updateImages ? { images: updateImages } : {}), id: form.id, userId: userId }, images.length > 0 ? images : null, receiptImage);
         
         // Update status to pending for admin review
         try {

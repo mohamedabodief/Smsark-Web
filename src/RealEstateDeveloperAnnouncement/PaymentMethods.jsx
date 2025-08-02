@@ -31,8 +31,8 @@ const PaymentIcons = {
         gradientTransform="translate(0 -1354)"
         gradientUnits="userSpaceOnUse"
       >
-        <stop offset="0" stop-color="#00b3ee"></stop>
-        <stop offset="1" stop-color="#0082d8"></stop>
+        <stop offset="0" stopColor="#00b3ee"></stop>
+        <stop offset="1" stopColor="#0082d8"></stop>
       </linearGradient>
       <path
         fill="url(#Et0R~umK8VADpitl6wcz1a_pFNd0FTuBU2Q_gr1)"

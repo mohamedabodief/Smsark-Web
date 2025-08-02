@@ -333,9 +333,9 @@ function DetailsForClient() {
               color: "#333",
             }}
           >
-            {clientAds.description || "لا يوجد وصف"}
+            {clientAds.title || "لا يوجد عنوان"}
           </Typography>
-          {clientAds.description?.length > 100 && (
+          {clientAds.title?.length > 100 && (
             <Button
               onClick={toggleShow}
               sx={{
@@ -353,7 +353,6 @@ function DetailsForClient() {
           )}
           <Divider sx={{ my: 3 }} />
           <Grid container spacing={2}>
-            ب
             <Grid item xs={12} sm={6}>
               <Typography variant="body2" color="text.secondary">
                 المحافظة
