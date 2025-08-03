@@ -233,7 +233,7 @@
 //           bottom: "130%",
 
 //           right: "35%",
-//           color: "white",
+//           color: "#5121a5ff",
 //           fontWeight: "bold",
 //           textShadow: "2px 2px 4px rgba(0,0,0,0.5)",
 //           maxWidth: "50%",
@@ -535,7 +535,7 @@ function HeroSlider({ ads }) {
       sx={{
         position: "relative",
         width: "100%",
-        height: { xs: "50vh", md: "70vh" },
+        height: { xs: "50vh", md: "75vh" },
         overflow: "hidden",
         direction: "rtl",
         margin: 0,
@@ -663,7 +663,7 @@ export default function HeroWithSearch() {
         variant="h3"
         sx={{
           position: "absolute",
-          top: "107%",
+          top: "105%",
           left: "50%",
           transform: "translateX(-50%)",
           color: "#5121a5ff",
