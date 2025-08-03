@@ -322,6 +322,15 @@ function DetailsForClient() {
           sx={{ textAlign: "right", mt: 2 }}
         >
           <Typography
+            variant="h4"
+            fontWeight="bold"
+            gutterBottom
+            sx={{ color: "#6E00FE", mb: 3 }}
+          >
+            {clientAds.project_types?.join(" - ") || "عقار للبيع"}
+          </Typography>
+
+          <Typography
             sx={{
               fontSize: "18px",
               lineHeight: 1.8,
@@ -333,9 +342,10 @@ function DetailsForClient() {
               color: "#333",
             }}
           >
-            {clientAds.title || "لا يوجد عنوان"}
+            {clientAds.description || "لا يوجد وصف متاح"}
           </Typography>
-          {clientAds.title?.length > 100 && (
+
+          {clientAds.description && clientAds.description.length > 200 && (
             <Button
               onClick={toggleShow}
               sx={{
@@ -351,8 +361,10 @@ function DetailsForClient() {
               {showFull ? "إخفاء التفاصيل" : "عرض المزيد"}
             </Button>
           )}
+
           <Divider sx={{ my: 3 }} />
-          <Grid container spacing={2}>
+
+          <Grid container spacing={4}>
             <Grid item xs={12} sm={6}>
               <Typography variant="body2" color="text.secondary">
                 المحافظة
@@ -417,7 +429,8 @@ function DetailsForClient() {
                 {clientAds.ad_status || "غير محدد"}
               </Typography>
             </Grid>
-            {clientAds.adPackage && (
+
+            {isOwner && clientAds.adPackage && (
               <Grid item xs={12} sm={6}>
                 <Typography variant="body2" color="text.secondary">
                   الباقة المختارة

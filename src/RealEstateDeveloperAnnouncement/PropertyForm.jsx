@@ -113,7 +113,11 @@ const PropertyForm = ({
         setFormData({
           developer_name: initialData.developer_name || "",
           phone: initialData.phone || "",
-          location: initialData.location || { city: "", governorate: "", detailedAddress: "" },
+          location: initialData.location || {
+            city: "",
+            governorate: "",
+            detailedAddress: "",
+          },
           description: initialData.description || "",
           price_start_from: initialData.price_start_from?.toString() || "",
           price_end_to: initialData.price_end_to?.toString() || "",
@@ -354,6 +358,14 @@ const PropertyForm = ({
     if (isEditMode && images.length === 0 && previewUrls.length === 0) {
       newErrors.images = "يجب إضافة صورة واحدة على الأقل";
     }
+    // تحقق من اختيار الباقة
+    if (!selectedPackage) {
+      newErrors.selectedPackage = "يجب اختيار باقة إعلانية";
+    }
+    // تحقق من صورة الإيصال
+    if (!receiptImage) {
+      newErrors.receiptImage = "يجب رفع صورة الإيصال";
+    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -476,7 +488,7 @@ const PropertyForm = ({
   return (
     <Paper
       elevation={3}
-      sx={{ p: 3, borderRadius: 2, mt: 5, maxWidth: 1200, mx: "auto" }}
+      sx={{ p: 3, borderRadius: 2, mt: 0, maxWidth: 1200, mx: "auto" }}
     >
       <Typography
         variant="h4"
@@ -535,7 +547,7 @@ const PropertyForm = ({
               onChange={handleChange}
               error={!!errors.phone}
               helperText={errors.phone}
-              disabled={loading|| loadingEditData}
+              disabled={loading || loadingEditData}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -591,7 +603,9 @@ const PropertyForm = ({
               fullWidth
               label="العنوان بالتفصيل"
               name="detailedAddress"
-              value={formData.location.detailedAddress || addressFromMap.full || ""}
+              value={
+                formData.location.detailedAddress || addressFromMap.full || ""
+              }
               InputProps={{
                 readOnly: true,
                 startAdornment: (
@@ -895,7 +909,7 @@ const PropertyForm = ({
               type="file"
               multiple
               onChange={handleImageChange}
-              disabled={loading || loadingEditData ||  uploading}
+              disabled={loading || loadingEditData || uploading}
               style={{ marginBottom: "16px" }}
             />
             {errors.images && (
@@ -1132,16 +1146,43 @@ const PropertyForm = ({
             </Grid>
           )}
 
-          {/* أضف مكون الباقات أسفل الفورم */}
-          <Box
-            sx={{ display: "flex", justifyContent: "center", width: "100%" }}
-          >
-            <AdPackages
-              selectedPackageId={selectedPackage}
-              setSelectedPackageId={setSelectedPackage}
-              onReceiptImageChange={setReceiptImage}
-            />
-          </Box>
+          {/* أضف مكون الباقات وإيصال الدفع */}
+          <Grid size={{ xs: 12, md: 6, lg: 12 }}>
+            <Typography
+              variant="h6"
+              sx={{ color: "#6E00FE", mb: 2, mt: 2, textAlign: "right" }}
+            >
+              اختيار الباقة وإيصال الدفع
+            </Typography>
+            <Box
+              sx={{ display: "flex", justifyContent: "center", width: "100%" }}
+            >
+              <AdPackages
+                selectedPackageId={selectedPackage}
+                setSelectedPackageId={setSelectedPackage}
+                onReceiptImageChange={setReceiptImage}
+              />
+            </Box>
+            {errors.selectedPackage && (
+              <Typography
+                variant="caption"
+                color="error"
+                sx={{ mt: 1, textAlign: "right" }}
+              >
+                {errors.selectedPackage}
+              </Typography>
+            )}
+            {errors.receiptImage && (
+              <Typography
+                variant="caption"
+                color="error"
+                sx={{ mt: 1, textAlign: "right" }}
+              >
+                {errors.receiptImage}
+              </Typography>
+            )}
+          </Grid>
+
           <PaymentMethods />
           <Box
             sx={{
@@ -1151,8 +1192,7 @@ const PropertyForm = ({
               justifyContent: "center",
               mb: "16px",
             }}
-          >
-          </Box>
+          ></Box>
         </Grid>
         <Box sx={{ width: "100%", display: "flex", justifyContent: "center" }}>
           <Grid size={{ xs: 12, md: 6 }}>
@@ -1160,8 +1200,7 @@ const PropertyForm = ({
               type="submit"
               variant="contained"
               size="large"
-              fullWidth
-              disabled={loading || loadingEditData || uploading}
+              disabled={loading || uploading}
               sx={{
                 py: 2,
                 fontSize: "1.3rem",
@@ -1196,31 +1235,6 @@ const PropertyForm = ({
               )}
             </StyledButton>
           </Grid>
-
-          {isEditMode && (
-            <Grid size={{ xs: 12, md: 6, lg: 6 }}>
-              <Button
-                variant="outlined"
-                size="large"
-                fullWidth
-                disabled={loading || loadingEditData || uploading}
-                onClick={() => window.history.back()}
-                sx={{
-                  mt: 2,
-                  py: 2,
-                  fontSize: "1.3rem",
-                  borderColor: "#6E00FE",
-                  color: "#6E00FE",
-                  "&:hover": {
-                    borderColor: "#200D3A",
-                    backgroundColor: "#f5f5f5",
-                  },
-                }}
-              >
-                إلغاء التعديل
-              </Button>
-            </Grid>
-          )}
         </Box>
       </form>
     </Paper>

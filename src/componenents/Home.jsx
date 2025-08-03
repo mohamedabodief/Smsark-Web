@@ -5,12 +5,15 @@ import Advertise from '../Homeparts/adv';
 import BestFin from '../Homeparts/BestFin';
 import BestDev from '../Homeparts/BestDev';
 import HeroWithSearch from '../Homeparts/HeroWithSearch';
+// import SimpleHeroSlider from '../Homeparts/Hero';
+
 
 function Home() {
   return (
     <SearchProvider> {/* أضف هذا */}
       <>
         <HeroWithSearch />
+        {/* <SimpleHeroSlider/> */}
         <BestFin />
         <BestDev />
         <Needs />
