@@ -144,7 +144,7 @@ const governorates = [
 const organizationTypes = ["مطور عقاري", "مطور عقارى", "ممول عقاري", "ممول عقارى"];
 // Login Logout 
 // import { logoutUser } from '../../reduxToolkit/authSlice';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate , Navigate } from 'react-router-dom';
 
 // Import the ConfirmDeleteModal
 // Create RTL cache for Emotion
@@ -2678,6 +2678,7 @@ function Mainadvertisment(props) {
 
 function PaidAdvertismentPage() {
     const dispatch = useDispatch();
+    const navigate = useNavigate();
     const userProfile = useSelector((state) => state.user.profile);
     const developerAds = useSelector((state) => state.developerAds?.byUser || []);
     const financingAds = useSelector((state) => state.financingAds?.byUser || []);
@@ -3178,11 +3179,12 @@ function PaidAdvertismentPage() {
         
         // Navigate directly to the edit page
         if (type === 'developer') {
-            // Navigate to PropertyPage with edit data
-            window.location.href = `/RealEstateDeveloperAnnouncement?editMode=true&adId=${ad.id}`;
+            // Ensure the ad object has an id property
+            const adWithId = { ...ad, id: ad.id || ad._id };
+            navigate('/RealEstateDeveloperAnnouncement', { state: { editMode: true, adData: adWithId, adId: adWithId.id } });
         } else if (type === 'funder') {
-            // Navigate to financing ad form with edit data
-            window.location.href = `/add-financing-ad?editMode=true&adId=${ad.id}`;
+            const adFWithId = { ...ad, id: ad.id || ad._id };
+            navigate(`/add-financing-ad`,{ state: { editMode: true, adData: adFWithId, adId: adFWithId.id } });
         }
     };
     const handleDeleteClick = (ad, type) => {

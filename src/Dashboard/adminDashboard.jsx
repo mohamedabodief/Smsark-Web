@@ -2919,16 +2919,22 @@ function PaidAdvertismentPage() {
         { field: 'title', headerName: 'العنوان', width: 200 },
         { field: 'description', headerName: 'الوصف', width: 300 },
         {
-            field: 'image',
+            field: 'images',
             headerName: 'الصورة',
             width: 100,
-            renderCell: (params) => (
-                <Avatar
-                    src={params.value || 'https://placehold.co/50x50/E0E0E0/FFFFFF?text=No+Image'}
-                    variant="rounded"
-                    sx={{ width: 50, height: 50 }}
-                />
-            ),
+            renderCell: (params) => {
+                // Handle the case where images is an array
+                const imageUrl = Array.isArray(params.value) && params.value.length > 0 
+                    ? params.value[0] 
+                    : params.value || 'https://placehold.co/50x50/E0E0E0/FFFFFF?text=No+Image';
+                return (
+                    <Avatar
+                        src={imageUrl}
+                        variant="rounded"
+                        sx={{ width: 50, height: 50 }}
+                    />
+                );
+            },
             sortable: false,
             filterable: false,
         },

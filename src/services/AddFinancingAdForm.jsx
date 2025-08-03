@@ -1,5 +1,5 @@
 import {
-  Box, TextField, Button, Typography, Paper, Grid, Alert, CircularProgress, IconButton
+  Box, TextField, Button, Typography, Paper, Grid, Alert, CircularProgress, IconButton, Chip
 } from '@mui/material';
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -15,78 +15,24 @@ import PaymentMethods from './PaymentMethods';
 export default function AddFinancingAdForm() {
   const navigate = useNavigate();
   const location = useLocation();
-  
-  // Get URL parameters for edit mode
+
   const urlParams = new URLSearchParams(window.location.search);
   const editModeParam = urlParams.get('editMode');
   const adIdParam = urlParams.get('adId');
-  
+
   const editData = location.state?.adData || null;
   const isEditMode = location.state?.editMode || editModeParam === 'true' || false;
 
-  // --- تعديل: تهيئة الحقول والصور في وضع التعديل مثل PropertyForm.jsx ---
-  React.useEffect(() => {
-    const initializeEditData = async () => {
-      if (isEditMode) {
-        let adData = editData;
-        
-        // If we have adId from URL but no editData, fetch the ad
-        if (adIdParam && !editData) {
-          try {
-            console.log('Fetching ad data for ID:', adIdParam);
-            adData = await FinancingAdvertisement.getById(adIdParam);
-            if (!adData) {
-              setError('الإعلان غير موجود');
-              return;
-            }
-          } catch (error) {
-            console.error('Error fetching ad data:', error);
-            setError('حدث خطأ أثناء تحميل بيانات الإعلان');
-            return;
-          }
-        }
-        
-        if (adData) {
-          console.log('[DEBUG] Setting form data with adData:', adData);
-          console.log('[DEBUG] adData.userId:', adData.userId);
-          
-          setForm({
-            title: adData.title || '',
-            description: adData.description || '',
-            phone: adData.phone || '',
-            start_limit: adData.start_limit || '',
-            end_limit: adData.end_limit || '',
-            org_name: adData.org_name || '',
-            userId: adData.userId || auth.currentUser?.uid || 'admin',
-            type_of_user: adData.type_of_user || 'individual',
-            ads: adData.ads !== undefined ? adData.ads : false,
-            adExpiryTime: adData.adExpiryTime || Date.now() + 30 * 24 * 60 * 60 * 1000,
-            interest_rate_upto_5: adData.interest_rate_upto_5 || '',
-            interest_rate_upto_10: adData.interest_rate_upto_10 || '',
-            interest_rate_above_10: adData.interest_rate_above_10 || '',
-            id: adData.id || undefined,
-          });
-          
-          // الصور القديمة فقط (روابط صحيحة)
-          if (adData.images && adData.images.length > 0) {
-            const validImages = adData.images.filter(
-              (img) => img && img.trim() !== '' && img !== 'null' && img !== 'undefined' && img.startsWith('http')
-            );
-            setPreviewUrls(validImages);
-            setImages([]); // الصور الجديدة فقط من input
-          }
-          
-          // Set package if available
-          if (adData.adPackage) {
-            setSelectedPackage(adData.adPackage);
-          }
-        }
-      }
-    };
-    
-    initializeEditData();
-  }, [isEditMode, editData, adIdParam]);
+  // --- MODIFIED: The new state to track all images (existing and new files)
+  // Initialize with existing images if in edit mode
+  const [images, setImages] = useState([]); // Only new files
+  const [imageMetadata, setImageMetadata] = useState(
+    isEditMode && editData?.images && Array.isArray(editData.images)
+      ? editData.images.filter(img => img && img.trim() !== '' && img !== 'null' && img !== 'undefined' && img.startsWith('http')).map((url, idx) => ({ url, isNew: false, id: `existing-${idx}` }))
+      : []
+  );
 
+  // --- MODIFIED: Initializing form state based on editData
   const [form, setForm] = useState({
     title: editData?.title || '',
     description: editData?.description || '',
@@ -107,34 +53,88 @@ export default function AddFinancingAdForm() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState(null);
-  // تعريفات فارغة لتعطيل الصور مؤقتًا بدون أخطاء
-  const [images, setImages] = useState([]); // ملفات الصور الجديدة
-  const [previewUrls, setPreviewUrls] = useState(editData?.images || []); // روابط الصور للمعاينة (قديمة وجديدة)
+
   const [selectedPackage, setSelectedPackage] = useState(editData?.adPackage || null);
   const [receiptImage, setReceiptImage] = useState(null);
 
-  // / --- START: صور الإعلان ---
-  // const [images, setImages] = useState([]); // ملفات الصور الجديدة
-  // const [previewUrls, setPreviewUrls] = useState(editData?.images || []); // روابط الصور للمعاينة (قديمة وجديدة)
-  // // --- END: صور الإعلان ---/
+  // --- MODIFIED: useEffect to handle form and image initialization on edit mode
+  React.useEffect(() => {
+    const initializeEditData = async () => {
+      if (isEditMode) {
+        let adData = editData;
 
+        if (adIdParam && !editData) {
+          try {
+            adData = await FinancingAdvertisement.getById(adIdParam);
+            if (!adData) {
+              setError('الإعلان غير موجود');
+              return;
+            }
+          } catch (error) {
+            setError('حدث خطأ أثناء تحميل بيانات الإعلان');
+            return;
+          }
+        }
 
-  // تنظيف object URLs عند إلغاء تحميل المكون
+        if (adData) {
+          setForm({
+            title: adData.title || '',
+            description: adData.description || '',
+            phone: adData.phone || '',
+            start_limit: adData.start_limit || '',
+            end_limit: adData.end_limit || '',
+            org_name: adData.org_name || '',
+            userId: adData.userId || auth.currentUser?.uid || 'admin',
+            type_of_user: adData.type_of_user || 'individual',
+            ads: adData.ads !== undefined ? adData.ads : false,
+            adExpiryTime: adData.adExpiryTime || Date.now() + 30 * 24 * 60 * 60 * 1000,
+            interest_rate_upto_5: adData.interest_rate_upto_5 || '',
+            interest_rate_upto_10: adData.interest_rate_upto_10 || '',
+            interest_rate_above_10: adData.interest_rate_above_10 || '',
+            id: adData.id || undefined,
+          });
+
+          // Create image metadata for existing images
+          if (adData.images && adData.images.length > 0) {
+            const validImages = adData.images.filter(
+              (img) => img && img.trim() !== '' && img !== 'null' && img !== 'undefined' && img.startsWith('http')
+            );
+            const existingImageMetadata = validImages.map((url, index) => ({
+              url,
+              isNew: false,
+              id: `existing-${index}`
+            }));
+            setImageMetadata(existingImageMetadata);
+          } else {
+            setImageMetadata([]);
+          }
+
+          if (adData.adPackage) {
+            setSelectedPackage(adData.adPackage);
+          }
+        }
+      }
+    };
+
+    initializeEditData();
+  }, [isEditMode, editData, adIdParam]);
+
+  // Clean up object URLs when the component unmounts
   React.useEffect(() => {
     return () => {
-      previewUrls.forEach((url) => {
-        if (url.startsWith("blob:")) {
-          URL.revokeObjectURL(url);
+      imageMetadata.forEach((img) => {
+        if (img.url && img.url.startsWith("blob:")) {
+          URL.revokeObjectURL(img.url);
         }
       });
     };
-  }, [previewUrls]);
+  }, [imageMetadata]);
 
-  // دالة للتعامل مع تغيير الصور
+  // --- MODIFIED: Handle image change to correctly add new images
   const handleImageChange = (e) => {
     const files = Array.from(e.target.files);
     const validTypes = ["image/jpeg", "image/png"];
-    const maxSize = 5 * 1024 * 1024; // 5 ميجابايت
+    const maxSize = 5 * 1024 * 1024; // 5 MB
     const invalidFiles = files.filter(
       (file) => !validTypes.includes(file.type) || file.size > maxSize
     );
@@ -142,49 +142,44 @@ export default function AddFinancingAdForm() {
       setError("يرجى رفع صور بصيغة JPEG أو PNG وبحجم أقل من 5 ميجابايت");
       return;
     }
-    if (files.length + previewUrls.length > 4) {
-      setError("يمكنك تحميل 4 صور كحد أقصى");
+
+    const currentImageCount = imageMetadata.length;
+    if (files.length + currentImageCount > 4) {
+      setError("يمكنك تحميل 4 صور كحد أقصى (بما في ذلك الصور الموجودة)");
       return;
     }
-    setImages((prev) => [...prev, ...files]);
+
     setError(null);
-    const newPreviewUrls = files.map((file) => URL.createObjectURL(file));
-    setPreviewUrls((prev) => [...prev, ...newPreviewUrls]);
+
+    const newImageMetadata = files.map((file, index) => ({
+      url: URL.createObjectURL(file),
+      isNew: true,
+      id: `new-${Date.now()}-${index}`,
+      file: file
+    }));
+    // Append new images for preview, do not overwrite
+    setImageMetadata((prev) => [...prev, ...newImageMetadata]);
+    // Only append new files for upload
+    setImages((prev) => [...prev, ...files]);
   };
 
-  // دالة لإزالة صورة
-  const removeImage = (index) => {
-    if (previewUrls[index] && previewUrls[index].startsWith("blob:")) {
-      URL.revokeObjectURL(previewUrls[index]);
-      setImages((prev) => {
-        const newImgs = [...prev];
-        newImgs.splice(index - (previewUrls.length - images.length), 1);
-        return newImgs;
-      });
-    }
-    const newPreviews = [...previewUrls];
-    newPreviews.splice(index, 1);
-    setPreviewUrls(newPreviews);
-  };
+  // --- MODIFIED: Remove image logic to handle the new state structure
+  const removeImage = (idToRemove) => {
+    setImageMetadata(prev => {
+      const imageToRemove = prev.find(img => img.id === idToRemove);
+      if (!imageToRemove) return prev;
 
-  // دالة لرفع الصور إلى Firebase Storage
-  const uploadImagesToFirebase = async (files) => {
-    const currentUser = auth.currentUser;
-    if (!currentUser) {
-      throw new Error("يجب تسجيل الدخول أولاً. يرجى تسجيل الدخول من جديد.");
-    }
-    const uploadPromises = files.map(async (file, index) => {
-      const timestamp = Date.now();
-      const fileName = `financing_${timestamp}_${index}.jpg`;
-      const storageRef = ref(
-        storage,
-        `financing_images/${currentUser.uid}/${fileName}`
-      );
-      await uploadBytes(storageRef, file);
-      const downloadURL = await getDownloadURL(storageRef);
-      return downloadURL;
+      if (imageToRemove.url && imageToRemove.url.startsWith("blob:")) {
+        URL.revokeObjectURL(imageToRemove.url);
+      }
+      
+      // If the image is new, remove the corresponding file from the `images` state
+      if (imageToRemove.isNew) {
+        setImages(prevFiles => prevFiles.filter(file => file !== imageToRemove.file));
+      }
+
+      return prev.filter(img => img.id !== idToRemove);
     });
-    return Promise.all(uploadPromises);
   };
 
   const handleChange = (e) => {
@@ -212,67 +207,77 @@ export default function AddFinancingAdForm() {
     return true;
   };
 
-  // --- تعديل: handleSubmit مطابق لمنطق PropertyForm.jsx ---
+  const uploadImagesToFirebase = async (files) => {
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      throw new Error("يجب تسجيل الدخول أولاً. يرجى تسجيل الدخول من جديد.");
+    }
+    const uploadPromises = files.map(async (file, index) => {
+      const timestamp = Date.now();
+      const fileName = `financing_${timestamp}_${index}.jpg`;
+      const storageRef = ref(
+        storage,
+        `financing_images/${currentUser.uid}/${fileName}`
+      );
+      await uploadBytes(storageRef, file);
+      const downloadURL = await getDownloadURL(storageRef);
+      return downloadURL;
+    });
+    return Promise.all(uploadPromises);
+  };
+
+  // --- MODIFIED: The handleSubmit function to correctly save old and new images
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!isFormValid()) return;
-    
-    // Validate authentication
     if (!auth.currentUser) {
       setError('يجب تسجيل الدخول أولاً.');
       return;
     }
-    
+
     setLoading(true);
     setError(null);
+
     try {
+      const newImageFiles = images;
+      const newImageUrls = newImageFiles.length > 0 ? await uploadImagesToFirebase(newImageFiles) : [];
+      
+      // Robust merge: combine all old image URLs with all new uploaded image URLs
+      const oldImageUrls = imageMetadata.filter(img => !img.isNew && img.url && img.url.startsWith('http')).map(img => img.url);
+      const finalImageUrls = [...oldImageUrls, ...newImageUrls];
+      console.log("Final image list before update:", finalImageUrls);
+
       let ad;
       if (isEditMode && form.id) {
-        // Validate that we have a valid userId
         const userId = editData?.userId || form.userId || auth.currentUser?.uid;
         if (!userId) {
           setError('معرف المستخدم غير صالح للتعديل.');
           return;
         }
-        
-        // الصور القديمة (روابط فقط)
-        const existingImageUrls = previewUrls.filter(url => !url.startsWith('blob:'));
-        let finalImageUrls = existingImageUrls;
-        let updateImages = undefined;
-        if (images.length > 0) {
-          // إذا تم اختيار صور جديدة، سيتم رفعها ودمجها مع القديمة (حتى 4 صور)
-          const newImageUrls = await uploadImagesToFirebase(images);
-          finalImageUrls = [...existingImageUrls, ...newImageUrls].slice(0, 4);
-          updateImages = finalImageUrls;
-        }
-        // مرر userId وid من editData دائماً
-        console.log('[DEBUG] Creating FinancingAdvertisement with userId:', userId);
-        console.log('[DEBUG] Form data:', form);
-        console.log('[DEBUG] EditData:', editData);
-        
-        ad = new FinancingAdvertisement({ ...form, adPackage: selectedPackage ? Number(selectedPackage) : null, images: finalImageUrls, id: form.id, userId: userId });
-        await ad.update({ ...form, adPackage: selectedPackage ? Number(selectedPackage) : null, ...(updateImages ? { images: updateImages } : {}), id: form.id, userId: userId }, images.length > 0 ? images : null, receiptImage);
-        
-        // Update status to pending for admin review
-        try {
-          await ad.returnToPending();
-          console.log('Status updated to pending successfully');
-        } catch (statusError) {
-          console.error('Error updating status to pending:', statusError);
-          // Don't fail the entire operation if status update fails
-        }
+
+        ad = new FinancingAdvertisement({ ...form, id: form.id, userId: userId });
+
+        await ad.update({
+          ...form,
+          images: finalImageUrls,
+          adPackage: selectedPackage ? Number(selectedPackage) : null
+        }, newImageFiles, receiptImage);
+
+        await ad.returnToPending();
       } else {
-        // في حالة إضافة إعلان جديد
         const currentUser = auth.currentUser;
         if (!currentUser) throw new Error("يجب تسجيل الدخول أولاً.");
+
         ad = new FinancingAdvertisement({
           ...form,
           userId: currentUser.uid,
           adPackage: selectedPackage ? Number(selectedPackage) : null,
+          images: finalImageUrls,
         });
-        await ad.save(images, receiptImage);
+        await ad.save(newImageFiles, receiptImage);
         form.id = ad.id;
       }
+
       setSuccess(true);
       setTimeout(() => {
         navigate(`/details/financingAds/${form.id || ad.id}`);
@@ -434,27 +439,44 @@ export default function AddFinancingAdForm() {
               type="file"
               multiple
               onChange={handleImageChange}
-              disabled={loading || previewUrls.length >= 4}
+              disabled={loading || imageMetadata.length >= 4}
               style={{ marginBottom: "16px" }}
             />
             <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
-              {previewUrls.map((url, index) => (
-                <Box key={index} sx={{ position: "relative" }}>
+              {imageMetadata.map((img) => (
+                <Box key={img.id} sx={{ position: "relative" }}>
                   <img
-                    src={url}
-                    alt={`معاينة ${index + 1}`}
+                    src={img.url}
+                    alt={`معاينة ${img.id + 1}`}
                     style={{ width: "100px", height: "100px", objectFit: "cover", borderRadius: "8px" }}
                   />
+                  <Chip
+                    label={img.isNew ? "جديد" : "موجود"}
+                    size="small"
+                    color={img.isNew ? "primary" : "default"}
+                    sx={{
+                      position: "absolute",
+                      top: 4,
+                      right: 4,
+                      fontSize: "0.7rem",
+                      height: "20px",
+                      backgroundColor: img.isNew ? "primary.main" : "grey.500",
+                      color: "white",
+                      "& .MuiChip-label": {
+                        padding: "0 6px"
+                      }
+                    }}
+                  />
                   <IconButton
-                    sx={{ position: "absolute", top: 0, right: 0, bgcolor: "white", '&:hover': { bgcolor: "grey.200" } }}
-                    onClick={() => removeImage(index)}
+                    sx={{ position: "absolute", top: 0, left: 0, bgcolor: "white", '&:hover': { bgcolor: "grey.200" } }}
+                    onClick={() => removeImage(img.id)}
                     disabled={loading}
                   >
                     <DeleteIcon color="error" />
                   </IconButton>
                 </Box>
               ))}
-              {previewUrls.length === 0 && !loading && (
+              {imageMetadata.length === 0 && !loading && (
                 <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100px", height: "100px", border: "2px dashed #ccc", borderRadius: "8px", color: "text.secondary", backgroundColor: "#f5f5f5" }}>
                   <Typography variant="caption" textAlign="center">لا توجد صور</Typography>
                 </Box>
