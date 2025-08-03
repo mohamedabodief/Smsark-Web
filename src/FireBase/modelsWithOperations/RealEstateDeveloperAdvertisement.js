@@ -262,13 +262,7 @@ class RealEstateDeveloperAdvertisement {
 
   // 🔁 إعادة الإعلان لحالة "pending"
   async returnToPending() {
-    // التحقق من حالة تسجيل الدخول
-    const currentUser = auth.currentUser;
-    if (!currentUser) {
-      throw new Error("يجب تسجيل الدخول أولاً قبل إعادة العقار للمراجعة");
-    }
-    
-    const admin = await User.getByUid(currentUser.uid);
+    const admin = await User.getByUid(auth.currentUser.uid);
     await this.update({
       reviewStatus: 'pending',
       reviewed_by: {

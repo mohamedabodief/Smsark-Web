@@ -8,8 +8,8 @@ import Home from "./componenents/Home";
 import ChatAiPage from "./Homeparts/ChatAiPage";
 import Footer from "./componenents/Footer";
 import Favorite from "./componenents/Favorite";
-import FinancingAdvExample from "./Homeparts/FinancingAdvExample";
-import RealEstateDevAdvExample from "./Homeparts/RealEstateDevAdvExample";
+// import FinancingAdvExample from "./Homeparts/FinancingAdvExample";
+// import RealEstateDevAdvExample from "./Homeparts/RealEstateDevAdvExample";
 import AddFinancingAdForm from "./services/AddFinancingAdForm";
 import FinancingRequestForm from "./services/FinancingRequestForm";
 import LoginRegister from "./LoginAndRegister/modulesLR/LoginRegister";
@@ -222,8 +222,8 @@ function App() {
           <Route path="/Client-packages" element={<AdPackagesClient />} />
           {/* صفحات الإدخال والنماذج */}
           <Route path="/add-financing-ad" element={<AddFinancingAdForm />} />
-          <Route path="/insert-finance-data" element={<FinancingAdvExample />} />
-          <Route path="/insert-dev-data" element={<RealEstateDevAdvExample />} />
+          {/* <Route path="/insert-finance-data" element={<FinancingAdvExample />} /> */}
+          {/* <Route path="/insert-dev-data" element={<RealEstateDevAdvExample />} /> */}
           <Route path="/financing-request" element={<FinancingRequestForm />} />
           <Route path="/AddAdvertisement" element={<ModernRealEstateForm />} />
           {/* صفحات الداشبورد */}
