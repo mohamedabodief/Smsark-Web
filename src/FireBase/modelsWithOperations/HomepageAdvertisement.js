@@ -357,6 +357,17 @@ class HomepageAdvertisement {
       title: this.title, // Add title to the data
     };
   }
+  // ✅ جلب كل الإعلانات النشطة (ads: true)
+  static async getActiveAds() {
+    const colRef = collection(db, 'HomepageAdvertisements');
+    const q = query(colRef, where('ads', '==', true));
+    const querySnapshot = await getDocs(q);
+    const ads = [];
+    querySnapshot.forEach((docSnap) => {
+      ads.push(new HomepageAdvertisement({ id: docSnap.id, ...docSnap.data() }));
+    });
+    return ads;
+  }
 }
 
 export default HomepageAdvertisement;

@@ -3,6 +3,7 @@ import { useForm, Controller } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import "../styles/ModernRealEstateForm.css";
+import ClientAdvertisement from "../FireBase/modelsWithOperations/ClientAdvertisemen";
 import RealEstateDeveloperAdvertisement from "../FireBase/modelsWithOperations/RealEstateDeveloperAdvertisement";
 import { storage } from "../FireBase/firebaseConfig";
 import PaymentMethods from "./PaymentMethods";
@@ -563,7 +564,7 @@ const ModernRealEstateForm = () => {
         console.log('[DEBUG] Ad object being passed to RealEstateDeveloperAdvertisement constructor:', JSON.stringify(adObject, null, 2));
         console.log('[DEBUG] adId value in adObject:', adObject.id);
         
-        const ad = new RealEstateDeveloperAdvertisement(adObject);
+        const ad = new ClientAdvertisement(adObject);
         console.log('[DEBUG] RealEstateDeveloperAdvertisement instance created with ID:', ad.id);
         
         // Validate that the advertisement has a valid ID
@@ -680,7 +681,7 @@ const ModernRealEstateForm = () => {
           adPackage: selectedPackage ? Number(selectedPackage) : null,
         };
         console.log("[DEBUG] بيانات الإعلان الجديد:", adData);
-        const ad = new RealEstateDeveloperAdvertisement(adData);
+        const ad = new ClientAdvertisement(adData);
         adId = await ad.save(imageUrls, null); // Save without receipt initially
         console.log("[DEBUG] Ad saved with ID:", adId);
 

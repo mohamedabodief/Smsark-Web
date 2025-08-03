@@ -1649,11 +1649,15 @@ const Analytics = () => {
     const clientAdsTimeData = timeBasedData.map(item => ({
       date: item.date,
       clientAdsCreated: clientAds.filter(ad => {
+        if (!ad.created_at) return false;
         const adDate = new Date(ad.created_at?.toDate?.() || ad.created_at);
+        if (isNaN(adDate.getTime())) return false; // skip invalid dates
         return adDate.toISOString().split('T')[0] === item.date;
       }).length,
       clientAdsApproved: clientAds.filter(ad => {
+        if (!ad.created_at) return false;
         const adDate = new Date(ad.created_at?.toDate?.() || ad.created_at);
+        if (isNaN(adDate.getTime())) return false; // skip invalid dates
         return adDate.toISOString().split('T')[0] === item.date && ad.reviewStatus === 'approved';
       }).length
     }));

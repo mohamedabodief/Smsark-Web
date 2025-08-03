@@ -9,7 +9,13 @@ export const fetchFinancialRequests = createAsyncThunk(
     try {
       const colRef = collection(db, "FinancingRequests");
       const querySnapshot = await getDocs(colRef);
-      return querySnapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
+      return querySnapshot.docs.map((docSnap) => {
+        const data = docSnap.data();
+        if (data.submitted_at && typeof data.submitted_at.toDate === 'function') {
+          data.submitted_at = data.submitted_at.toDate().toISOString();
+        }
+        return { id: docSnap.id, ...data };
+      });
     } catch (error) {
       return rejectWithValue(error.message || "فشل تحميل طلبات التمويل");
     }
