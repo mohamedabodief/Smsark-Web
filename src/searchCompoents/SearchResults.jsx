@@ -138,6 +138,7 @@ function SearchResults() {
                 justifyContent: 'center',   // وسط الكروت عرضياً
                 flexWrap: 'wrap',           // يسمح للكروت تنزل سطر جديد لو ضاقت الشاشة
                 gap: 3,                     // مسافة بين الكروت
+                
               }}
             >
               {['بيع', 'إيجار', 'الغرض'].includes(filters.purpose) &&

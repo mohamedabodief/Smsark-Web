@@ -36,6 +36,7 @@ const FavoriteButton = ({ advertisementId, type }) => {
         size="small"
         onClick={(e) => {
           e.stopPropagation(); 
+          e.preventDefault();
           handleToggle();
         }}
         sx={{

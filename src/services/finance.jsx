@@ -148,6 +148,7 @@ const FinancingAdsPage = () => {
           adress={ad.org_name}
           image={[ad.image]}
           type={ad.financing_model}
+          id={ad.id}
         />
       </Link>
     ))}
