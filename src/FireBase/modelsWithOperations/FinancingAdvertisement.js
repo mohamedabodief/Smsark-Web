@@ -331,6 +331,44 @@ class FinancingAdvertisement {
     return snap.docs.map((d) => new FinancingAdvertisement({ ...d.data(), id: d.id }));
   }
 
+  // ✅ جلب الإعلانات المفعّلة فقط
+  static async getActiveAds() {
+    const q = query(
+      collection(db, 'FinancingAdvertisements'),
+      where('ads', '==', true)
+    );
+    const snap = await getDocs(q);
+    return snap.docs.map((d) => {
+      const data = d.data();
+      return {
+        id: d.id,
+        title: data.title,
+        description: data.description,
+        images: data.images || [],
+        phone: data.phone,
+        start_limit: data.start_limit,
+        end_limit: data.end_limit,
+        org_name: data.org_name,
+        type_of_user: data.type_of_user,
+        userId: data.userId,
+        ads: data.ads !== undefined ? data.ads : false,
+        adExpiryTime: data.adExpiryTime,
+        interest_rate_upto_5: data.interest_rate_upto_5,
+        interest_rate_upto_10: data.interest_rate_upto_10,
+        interest_rate_above_10: data.interest_rate_above_10,
+        financing_model: data.financing_model,
+        receipt_image: data.receipt_image,
+        reviewStatus: data.reviewStatus || 'pending',
+        reviewed_by: data.reviewed_by,
+        review_note: data.review_note,
+        adPackage: data.adPackage,
+        adPackageName: data.adPackageName,
+        adPackagePrice: data.adPackagePrice,
+        adPackageDuration: data.adPackageDuration,
+      };
+    });
+  }
+
   // ✅ الاشتراك اللحظي في الإعلانات المفعّلة فقط (Real-time listener)
   static subscribeActiveAds(callback) {
     const q = query(
