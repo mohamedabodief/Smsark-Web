@@ -18,7 +18,6 @@ import { ShareOutlined as ShareOutlinedIcon } from '@mui/icons-material';
 import FavoriteButton from '../Homeparts/FavoriteButton';
 import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
-
 function HorizontalCard({ image, title, price, adress, type, status, city, governoment, phone, onClickCard, id }) {
   const settings = {
     dots: false,
@@ -32,6 +31,7 @@ function HorizontalCard({ image, title, price, adress, type, status, city, gover
 
   const handleShare = async (e) => {
     e.stopPropagation();
+
     if (navigator.share) {
       try {
         await navigator.share({
@@ -57,6 +57,7 @@ function HorizontalCard({ image, title, price, adress, type, status, city, gover
   return (
     <>
       <Card
+        onClick={onClickCard}
         sx={{
           cursor: 'pointer',
           display: 'flex',
@@ -215,6 +216,25 @@ function HorizontalCard({ image, title, price, adress, type, status, city, gover
             <Typography sx={{ color: '#52498F', fontWeight: '900' }}>مشاركة</Typography>
           </Button>
           <FavoriteButton advertisementId={id} />
+          {/* <Button
+            variant="outlined"
+            sx={{
+              borderColor: '#52498F',
+              color: '#52498F',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              fontWeight: 'bold',
+              px: 2,
+              py: 0.5,
+              borderRadius: '8px',
+              textTransform: 'none',
+
+            }}
+          > */}
+          <FavoriteButton advertisementId={id} />
+
+          {/* </Button> */}
         </Box>
       </Card>
     </>

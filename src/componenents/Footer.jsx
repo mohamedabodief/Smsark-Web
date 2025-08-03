@@ -2,6 +2,7 @@ import { Box, Stack, Typography, IconButton, Paper } from "@mui/material";
 import FacebookIcon from "@mui/icons-material/Facebook";
 import TwitterIcon from "@mui/icons-material/Twitter";
 import YouTubeIcon from "@mui/icons-material/YouTube";
+import InstagramIcon from '@mui/icons-material/Instagram';
 
 export default function Footer() {
   return (
@@ -41,22 +42,54 @@ export default function Footer() {
           </Typography>
         </Paper>
 
-        <Stack spacing={1} alignItems="center">
+        <Stack spacing={0} alignItems="center">
           <Typography fontWeight="bold">Address</Typography>
           <Typography>1080 Brickell Ave</Typography>
           <Typography>Damanhour - Egypt</Typography>
           <Typography>U.S. of America</Typography>
           <Stack direction="row" spacing={1} mt={1}>
-            <IconButton sx={{ color: "#fff" }}>
+            <IconButton
+              sx={{ color: "#fff" }}
+              component="a"
+              href="https://facebook.com/your_page"
+              target="_blank"
+              rel="noopener"
+            >
               <FacebookIcon />
             </IconButton>
-            <IconButton sx={{ color: "#fff" }}>
+
+            <IconButton
+              sx={{ color: "#fff" }}
+              component="a"
+              href="https://twitter.com/your_account"
+              target="_blank"
+              rel="noopener"
+            >
               <TwitterIcon />
             </IconButton>
-            <IconButton sx={{ color: "#fff" }}>
+
+            {/* <IconButton
+              sx={{ color: "#fff" }}
+              component="a"
+              href="https://youtube.com/your_channel"
+              target="_blank"
+              rel="noopener"
+            >
               <YouTubeIcon />
+            </IconButton> */}
+
+            <IconButton
+              sx={{ color: "#fff" }}
+              component="a"
+              href="https://instagram.com/your_account"
+              target="_blank"
+              rel="noopener"
+            >
+              <InstagramIcon />
             </IconButton>
+
           </Stack>
+
         </Stack>
 
         <Stack spacing={1} alignItems="center">

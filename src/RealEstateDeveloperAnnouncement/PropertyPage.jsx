@@ -32,14 +32,17 @@ const PropertyPage = () => {
   const [editData, setEditData] = useState(null);
   const [loadingEditData, setLoadingEditData] = useState(false);
 
-  // Get URL parameters
-  const urlParams = new URLSearchParams(window.location.search);
-  const editModeParam = urlParams.get('editMode');
-  const adIdParam = urlParams.get('adId');
+  // Get location state instead of URL parameters
+  const locationState = location.state || {};
+  const editModeFromState = locationState.editMode;
+  const adDataFromState = locationState.adData;
+  const adIdFromState = locationState.adId || adDataFromState?.id;
 
-  // طباعة بيانات التعديل للتأكد
-  console.log('Edit mode param:', editModeParam);
-  console.log('Ad ID param:', adIdParam);
+  // Debug logging for edit mode state
+  console.log('[DEBUG] PropertyPage - Full location state:', location.state);
+  console.log('[DEBUG] PropertyPage - Edit mode from state:', editModeFromState);
+  console.log('[DEBUG] PropertyPage - Ad data from state:', adDataFromState);
+  console.log('[DEBUG] PropertyPage - Ad ID from state:', adIdFromState);
 
   // التحقق من حالة تسجيل الدخول عند تحميل الصفحة
   useEffect(() => {
@@ -52,39 +55,69 @@ const PropertyPage = () => {
     }
   }, [navigate]);
 
-  // Fetch ad data for editing
+  // Initialize edit mode from location state
   useEffect(() => {
-    const fetchEditData = async () => {
-      if (editModeParam === 'true' && adIdParam) {
+    const initializeEditMode = async () => {
+      console.log('[DEBUG] PropertyPage - Initializing edit mode...');
+      console.log('[DEBUG] PropertyPage - editModeFromState:', editModeFromState);
+      console.log('[DEBUG] PropertyPage - adDataFromState:', adDataFromState);
+      console.log('[DEBUG] PropertyPage - adIdFromState:', adIdFromState);
+      
+      if (editModeFromState && adDataFromState) {
+        console.log('[DEBUG] PropertyPage - Setting edit mode with provided data');
         setLoadingEditData(true);
         setIsEditMode(true);
         
         try {
-          console.log('Fetching ad data for ID:', adIdParam);
-          const adData = await RealEstateDeveloperAdvertisement.getById(adIdParam);
+          // Use the data directly from location state
+          console.log('[DEBUG] PropertyPage - Using ad data from state:', adDataFromState);
+          setEditData(adDataFromState);
+          
+          // Set property type from data
+          const propertyType = adDataFromState.project_types?.[0] || "شقق للبيع";
+          console.log('[DEBUG] PropertyPage - Setting property type:', propertyType);
+          setSelectedItem(propertyType);
+        } catch (error) {
+          console.error('[DEBUG] PropertyPage - Error setting edit data:', error);
+          setError('حدث خطأ أثناء تحميل بيانات الإعلان');
+        } finally {
+          setLoadingEditData(false);
+        }
+      } else if (editModeFromState && adIdFromState && !adDataFromState) {
+        // Fallback: fetch data if only ID is provided
+        console.log('[DEBUG] PropertyPage - Fetching ad data for ID:', adIdFromState);
+        setLoadingEditData(true);
+        setIsEditMode(true);
+        
+        try {
+          const adData = await RealEstateDeveloperAdvertisement.getById(adIdFromState);
           
           if (adData) {
-            console.log('Fetched ad data:', adData);
+            console.log('[DEBUG] PropertyPage - Fetched ad data:', adData);
             setEditData(adData);
             
             // Set property type from data
             const propertyType = adData.project_types?.[0] || "شقق للبيع";
             setSelectedItem(propertyType);
           } else {
-            console.error('Ad not found');
+            console.error('[DEBUG] PropertyPage - Ad not found');
             setError('الإعلان غير موجود');
           }
         } catch (error) {
-          console.error('Error fetching ad data:', error);
+          console.error('[DEBUG] PropertyPage - Error fetching ad data:', error);
           setError('حدث خطأ أثناء تحميل بيانات الإعلان');
         } finally {
           setLoadingEditData(false);
         }
+      } else {
+        console.log('[DEBUG] PropertyPage - Not in edit mode or missing required data');
+        setIsEditMode(false);
+        setEditData(null);
       }
     };
 
-    fetchEditData();
-  }, [editModeParam, adIdParam]);
+    initializeEditMode();
+  }, [editModeFromState, adDataFromState, adIdFromState]);
 
   const handleSubmit = async (formData) => {
     // التحقق من حالة تسجيل الدخول قبل الإرسال

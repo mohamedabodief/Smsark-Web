@@ -614,26 +614,26 @@ const ModernRealEstateForm = () => {
         };
         
          // Upload receipt if provided
-         let receiptUrl = editData.receipt_image;
-         if (receiptImage) {
-           try {
-             receiptUrl = await uploadReceiptAndGetUrl(
-               receiptImage,
-               auth.currentUser.uid,
-               editData.id
-             );
-           } catch (error) {
-             console.error("[DEBUG] Error uploading receipt image:", error);
-             if (error.code === "storage/unauthorized") {
-               setSubmitError(
-                 "ليس لديك إذن لرفع صورة الإيصال. تحقق من إعدادات التخزين في Firebase."
-               );
-             } else {
-               setSubmitError("فشل رفع صورة الإيصال: " + error.message);
-             }
-             return;
-           }
-         }
+        let receiptUrl = editData.receipt_image;
+        if (receiptImage) {
+          try {
+            receiptUrl = await uploadReceiptAndGetUrl(
+              receiptImage,
+              auth.currentUser.uid,
+              editData.id
+            );
+          } catch (error) {
+            console.error("[DEBUG] Error uploading receipt image:", error);
+            if (error.code === "storage/unauthorized") {
+              setSubmitError(
+                "ليس لديك إذن لرفع صورة الإيصال. تحقق من إعدادات التخزين في Firebase."
+              );
+            } else {
+              setSubmitError("فشل رفع صورة الإيصال: " + error.message);
+            }
+            return;
+          }
+        }
 
         console.log('[DEBUG] Update data:', updateData);
         console.log('[DEBUG] Files to upload:', updatedImages);
@@ -650,51 +650,7 @@ const ModernRealEstateForm = () => {
         setTimeout(() => {
           navigate(`/detailsForClient/${adId}`);
         }, 1500);
-        ///////////////////////////////////////////////////////////////////////////////////////////////////
-        // const updatedImages = [...oldImages, ...imageUrls];
-
-        // Upload receipt if provided
-        // let receiptUrl = editData.receipt_image;
-        // if (receiptImage) {
-        //   try {
-        //     receiptUrl = await uploadReceiptAndGetUrl(
-        //       receiptImage,
-        //       auth.currentUser.uid,
-        //       editData.id
-        //     );
-        //   } catch (error) {
-        //     console.error("[DEBUG] Error uploading receipt image:", error);
-        //     if (error.code === "storage/unauthorized") {
-        //       setSubmitError(
-        //         "ليس لديك إذن لرفع صورة الإيصال. تحقق من إعدادات التخزين في Firebase."
-        //       );
-        //     } else {
-        //       setSubmitError("فشل رفع صورة الإيصال: " + error.message);
-        //     }
-        //     return;
-        //   }
-        // }
-
-        // await ad.update(
-        //   {
-        //     ...editData,
-        //     ...data,
-        //     type: data.propertyType,
-        //     user_name: data.username,
-        //     ad_type: data.adType,
-        //     ad_status: data.adStatus,
-        //     images: updatedImages,
-        //     adPackage: selectedPackage ? Number(selectedPackage) : null,
-        //     ads: data.adsActivation,
-        //     adExpiryTime: data.adsActivation
-        //       ? Date.now() + data.activationDays * 24 * 60 * 60 * 1000
-        //       : null,
-        //   },
-        //   receiptUrl
-        // );
-        // adId = editData.id;
-        // console.log("[DEBUG] تم تحديث الإعلان:", adId);
-///////////////////////////////////////////////////////////////////////////////////     //////////////////////////////
+      
 } else {
         const adData = {
           title: data.title,
@@ -1576,72 +1532,6 @@ const ModernRealEstateForm = () => {
 
                   <Divider sx={{ my: 3, borderColor: "#e0e0e0" }} />
 
-                  {/* Activation Settings
-                  <Grid item xs={12} md={6} width={"100%"}>
-                    <Typography
-                      variant="h6"
-                      sx={{ mb: 3, color: "#6E00FE", fontWeight: 600 }}
-                    >
-                      <Visibility
-                        sx={{
-                          mr: 1,
-                          verticalAlign: "middle",
-                          ml: "6px",
-                          mt: "-6px",
-                        }}
-                      />
-                      إعدادات التفعيل
-                    </Typography>
-
-                    <Controller
-                      name="adsActivation"
-                      control={control}
-                      render={({ field }) => (
-                        <FormControlLabel
-                          control={
-                            <Switch
-                              {...field}
-                              checked={field.value}
-                              onChange={(e) => field.onChange(e.target.checked)}
-                            />
-                          }
-                          label="تفعيل الإعلان"
-                          sx={{ mb: 2 }}
-                        />
-                      )}
-                    />
-
-                    {adsActivation && (
-                      <>
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            mb: 1,
-                            color: "#666",
-                            fontWeight: 500,
-                            fontSize: "20px",
-                          }}
-                        >
-                          عدد أيام التفعيل
-                        </Typography>
-                        <Controller
-                          name="activationDays"
-                          control={control}
-                          render={({ field }) => (
-                            <StyledTextField
-                              {...field}
-                              fullWidth
-                              placeholder="أدخل عدد الأيام"
-                              type="number"
-                              error={!!errors.activationDays}
-                              helperText={errors.activationDays?.message}
-                              sx={{ mb: 2 }}
-                            />
-                          )}
-                        />
-                      </>
-                    )}
-                  </Grid> */}
                 </Container>
               </CardContent>
             </StyledCard>
