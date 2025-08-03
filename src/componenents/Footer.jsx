@@ -16,6 +16,7 @@ export default function Footer() {
         p: 2,
         // position:'fixed',
         // bottom:'0'
+        marginTop:10
         }}>
       <Stack
         direction={{ xs: "column", md: "row" }}
