@@ -8,7 +8,7 @@ import FavoriteButton from './FavoriteButton';
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import RealEstateDeveloperAdvertisement from '../FireBase/modelsWithOperations/RealEstateDeveloperAdvertisement';
-import { devAdsData } from '../FireBase/models/Users/devAdsData';
+// import { devAdsData } from '../FireBase/models/Users/devAdsData';
 
 export default function BestDev() {
   const sliderRef = useRef();
@@ -22,27 +22,28 @@ export default function BestDev() {
     try {
       if (user) {
         // لو المستخدم مسجل دخول: جلب الإعلانات من Firebase
-        const existingAds = await RealEstateDeveloperAdvertisement.getAll();
+        // const existingAds = await RealEstateDeveloperAdvertisement.getAll();
 
-        for (const adData of devAdsData) {
-          const alreadyExists = existingAds.some(
-            (ad) => ad.title === adData.title && ad.developer_name === adData.developer_name
-          );
-          if (!alreadyExists) {
-            const ad = new RealEstateDeveloperAdvertisement(adData);
-            await ad.save();
-          }
-        }
+        // for (const adData of devAdsData) {
+        //   const alreadyExists = existingAds.some(
+        //     (ad) => ad.title === adData.title && ad.developer_name === adData.developer_name
+        //   );
+        //   if (!alreadyExists) {
+        //     const ad = new RealEstateDeveloperAdvertisement(adData);
+        //     await ad.save();
+        //   }
+        // }
 
         const freshAds = await RealEstateDeveloperAdvertisement.getActiveAds();
         const activeAds = freshAds.filter(ad => ad.ads === true);
         setOffers(activeAds);
 
-      } else {
-        // لو مش مسجل دخول: اعرض البيانات المحلية فقط بدون استدعاء getAll()
-        const activeAds = devAdsData.filter(ad => ad.ads === true);
-        setOffers(activeAds);
       }
+      //  else {
+      //   // لو مش مسجل دخول: اعرض البيانات المحلية فقط بدون استدعاء getAll()
+      //   // const activeAds = devAdsData.filter(ad => ad.ads === true);
+      //   // setOffers(activeAds);
+      // }
     } catch (error) {
       console.error('Initialization error:', error);
     } finally {
@@ -121,8 +122,8 @@ export default function BestDev() {
                 onClick={() => navigate(`/details/developmentAds/${item.id}`)}
                 sx={{ cursor: 'pointer' }}
               >
-                <Card sx={{ minWidth: { xs: 260, sm: 300, md: 320 }, scrollSnapAlign: 'start', flexShrink: 0, borderRadius: 3, position: 'relative', height: '100%' }}>
-                  <CardMedia component="img" height="160" image={item.images?.[0] || '/default-placeholder.png'} />
+                <Card sx={{ minWidth: { xs: 260, sm: 300, md: 320 }, width: { xs: 260, sm: 300, md: 320 }, scrollSnapAlign: 'start', flexShrink: 0, borderRadius: 3, position: 'relative', height: '100%' }}>
+                  <CardMedia component="img" objectFit='contain' width='300' height="160" image={item.images?.[0] || '/default-placeholder.png'} />
                   <FavoriteButton advertisementId={item.id}  />
                   <CardContent>
                     <Typography color="primary" fontWeight="bold">
@@ -134,7 +135,7 @@ export default function BestDev() {
                         ? `${item.location.governorate || ''} - ${item.location.city || ''}`
                         : item.location}
                     </Typography>
-                    <Typography variant="body2" mt={1}>{item.description}</Typography>
+                    <Typography variant="body2" mt={1} sx={{ overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{item.description}</Typography>
                   </CardContent>
                 </Card>
               </Box>

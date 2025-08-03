@@ -168,7 +168,7 @@ import FavoriteButton from './FavoriteButton';
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import FinancingAdvertisement from '../FireBase/modelsWithOperations/FinancingAdvertisement';
-import { financingAdsData } from '../FireBase/models/Users/FinAdsData';
+// import { financingAdsData } from '../FireBase/models/Users/FinAdsData';
 import { getCachedAds, saveAdsToCache, hasAdsChanged } from './adsCacheUtils';
 
 const CACHE_KEY = 'fin_ads_cache';
@@ -187,16 +187,16 @@ export default function BestFin() {
         setLoading(false);
       }
 
-      const existingAds = await FinancingAdvertisement.getAll();
-      for (const data of financingAdsData) {
-        const alreadyExists = existingAds.some(
-          (ad) => ad.title === data.title && ad.price === data.price
-        );
-        if (!alreadyExists) {
-          const ad = new FinancingAdvertisement(data);
-          await ad.save();
-        }
-      }
+      // const existingAds = await FinancingAdvertisement.getAll();
+      // for (const data of financingAdsData) {
+      //   const alreadyExists = existingAds.some(
+      //     (ad) => ad.title === data.title && ad.price === data.price
+      //   );
+      //   if (!alreadyExists) {
+      //     const ad = new FinancingAdvertisement(data);
+      //     await ad.save();
+      //   }
+      // }
 
       if (!cachedAds) {
         const freshAds = await FinancingAdvertisement.getActiveAds();
@@ -301,9 +301,11 @@ export default function BestFin() {
                 onClick={() => navigate(`/details/financingAds/${item.id}`)}
                 sx={{ cursor: 'pointer' }}
               >
-                <Card sx={{ minWidth: { xs: 260, sm: 300, md: 320 }, scrollSnapAlign: 'start', flexShrink: 0, borderRadius: 3, position: 'relative', height: '100%' }}>
+                <Card sx={{ minWidth: { xs: 260, sm: 300, md: 320 }, width: { xs: 260, sm: 300, md: 320 }, scrollSnapAlign: 'start', flexShrink: 0, borderRadius: 3, position: 'relative', height: '100%' }}>
                   <CardMedia
                     component="img"
+                    objectFit='contain'
+                    width='300'
                     height="160"
                     image={item.images?.[0] || '/default-placeholder.png'}
                   />
