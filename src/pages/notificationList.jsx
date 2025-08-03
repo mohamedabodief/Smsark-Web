@@ -97,12 +97,12 @@ const NotificationList = ({ userId }) => {
               }}
             >
               <CardContent sx={{ p: 1.5 }}>
-                <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+                <Stack direction="row" display="flex" justifyContent="space-between" alignItems="flex-start">
                   <Box sx={{ flex: 1 }}>
                     <Typography variant="subtitle2" fontWeight="bold">{notif.title}</Typography>
                     <Typography variant="body2" fontSize={13}>{notif.body}</Typography>
                   </Box>
-                  <Stack direction="column" spacing={1} ml={1}>
+                  <Stack direction="column" spacing={1} ml={6} >
                     <Tooltip title="تحديد كمقروء">
                       <IconButton
                         size="small"

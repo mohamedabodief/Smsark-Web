@@ -1,5 +1,4 @@
 //scr/pages/Details/detailsForDevelopment.jsx
-
 import React, { useState, useEffect } from "react";
 import {
   Container,
@@ -143,8 +142,6 @@ function DetailsForDevelopment() {
   console.log("Ad user ID:", clientAds?.userId);
   console.log("Is owner:", isOwner);
 
-
-
   if (error) {
     return (
       <Box
@@ -171,20 +168,20 @@ function DetailsForDevelopment() {
       </Box>
     );
   }
- const handleShare = async () => {
+  const handleShare = async () => {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: clientAds?.title || 'إعلان عقاري',
-          text: clientAds?.description || 'تحقق من هذا الإعلان العقاري!',
+          title: clientAds?.title || "إعلان عقاري",
+          text: clientAds?.description || "تحقق من هذا الإعلان العقاري!",
           url: window.location.href,
         });
-        console.log('[DEBUG] تمت المشاركة بنجاح');
+        console.log("[DEBUG] تمت المشاركة بنجاح");
       } catch (error) {
-        console.error('[DEBUG] حدث خطأ أثناء المشاركة:', error);
+        console.error("[DEBUG] حدث خطأ أثناء المشاركة:", error);
       }
     } else {
-      alert('المتصفح لا يدعم خاصية المشاركة.');
+      alert("المتصفح لا يدعم خاصية المشاركة.");
     }
   };
   if (!clientAds) {
@@ -328,7 +325,7 @@ function DetailsForDevelopment() {
                 marginRight: 0,
               },
             }}
-            onClick={ handleShare }
+            onClick={handleShare}
           >
             مشاركة
           </Button>
@@ -344,12 +341,24 @@ function DetailsForDevelopment() {
             gap: 2,
           }}
         >
-          <Box sx={{ flex: 3, height: "500px", display: "flex", alignItems: "center", justifyContent: "center", background: "#f7f7f7" }}>
+          <Box
+            sx={{
+              flex: 3,
+              height: "500px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background: "#f7f7f7",
+            }}
+          >
             <img
               src={mainImage}
               alt="صورة العقار الرئيسية"
               style={{
-                width: '100%', height: '100%', borderRadius: '8px', objectFit: 'cover'
+                width: "100%",
+                height: "100%",
+                borderRadius: "8px",
+                objectFit: "cover",
               }}
               onError={(e) => {
                 console.log("Image failed to load:", mainImage);
@@ -362,14 +371,14 @@ function DetailsForDevelopment() {
           </Box>
 
           {clientAds?.images &&
-            clientAds.images.filter(
-              (img) =>
-                typeof img === "string" &&
-                img.trim() !== "" &&
-                img !== "null" &&
-                img !== "undefined" &&
-                (img.startsWith("http") || img.startsWith("https"))
-            ).length > 1 ? (
+          clientAds.images.filter(
+            (img) =>
+              typeof img === "string" &&
+              img.trim() !== "" &&
+              img !== "null" &&
+              img !== "undefined" &&
+              (img.startsWith("http") || img.startsWith("https"))
+          ).length > 1 ? (
             <Box
               sx={{
                 flex: 1,
@@ -431,8 +440,6 @@ function DetailsForDevelopment() {
 
       {/* معلومات العقار والمطور */}
       <Grid container spacing={4}>
-
-
         {/* معلومات العقار - على اليمين */}
         <Grid size={{ xs: 12, md: 8 }}>
           <Paper elevation={3} sx={{ borderRadius: 3 }}>
@@ -445,8 +452,6 @@ function DetailsForDevelopment() {
               >
                 {clientAds.project_types?.join(" - ") || "عقار للبيع"}
               </Typography>
-
-
 
               <Typography
                 sx={{
@@ -662,7 +667,6 @@ function DetailsForDevelopment() {
                   </Box>
                 </Grid>
 
-
                 <Grid item xs={12} sm={6}>
                   <Box
                     sx={{
@@ -752,7 +756,6 @@ function DetailsForDevelopment() {
                 )}
               </Grid>
 
-
               {/* مميزات العقار */}
               {clientAds.features && clientAds.features.length > 0 && (
                 <>
@@ -780,23 +783,22 @@ function DetailsForDevelopment() {
               )}
               {/* سطر معلومات الباقة */}
 
-              {clientAds.adPackage && (
+              {isOwner && clientAds.adPackage && (
                 <Grid item xs={12} sm={6} mt={3}>
-                  <Typography variant="body2" color="text.secondary">الباقة المختارة</Typography>
-                  <Typography variant="body1" fontWeight="bold" color="primary">
-                    {/* {clientAds.adPackage} */}
-                    {clientAds.adPackage === 1 ? 'باقة الأساس' : clientAds.adPackage === 2 ? 'باقة النخبة' : clientAds.adPackage === 3 ? 'باقة التميز' : clientAds.adPackage}
-
+                  <Typography variant="body2" color="text.secondary">
+                    الباقة المختارة
                   </Typography>
-
+                  <Typography variant="body1" fontWeight="bold" color="primary">
+                    {clientAds.adPackage === 1
+                      ? "باقة الأساس"
+                      : clientAds.adPackage === 2
+                      ? "باقة النخبة"
+                      : clientAds.adPackage === 3
+                      ? "باقة التميز"
+                      : clientAds.adPackage}
+                  </Typography>
                 </Grid>
               )}
-              {/* {clientAds.receipt_image && (
-                <Grid item xs={12} sm={6} mt={3}>
-                  <Typography variant="body2" color="text.secondary">إيصال الدفع</Typography>
-                  <img src={clientAds.receipt_image} alt="إيصال الدفع" style={{ maxWidth: 200, borderRadius: 8, marginTop: 8 }} />
-                </Grid>
-              )} */}
             </CardContent>
           </Paper>
         </Grid>
@@ -861,7 +863,7 @@ function DetailsForDevelopment() {
                     },
                     fontWeight: "bold",
                   }}
-                  onClick={() => window.open(`tel:${clientAds.phone}`, '_self')}
+                  onClick={() => window.open(`tel:${clientAds.phone}`, "_self")}
                 >
                   اتصل الآن
                 </Button>
@@ -883,29 +885,19 @@ function DetailsForDevelopment() {
                     fontWeight: "bold",
                   }}
                   onClick={() => {
-                const message = 'مرحبًا، أريد الاستفسار عن الإعلان الخاص بك';
-                const url = `https://wa.me/${clientAds.phone}?text=${encodeURIComponent(message)}`;
-                window.open(url, '_blank');
-              }}
+                    const message =
+                      "مرحبًا، أريد الاستفسار عن الإعلان الخاص بك";
+                    const url = `https://wa.me/${
+                      clientAds.phone
+                    }?text=${encodeURIComponent(message)}`;
+                    window.open(url, "_blank");
+                  }}
                 >
                   واتساب
                 </Button>
               </Box>
 
               <Divider sx={{ my: 3 }} />
-
-              {/* <Box sx={{ textAlign: "center" }}>
-                <Typography variant="body2" color="text.secondary" gutterBottom>
-                  نوع العقار
-                </Typography>
-                <Typography
-                  variant="body1"
-                  fontWeight="bold"
-                  sx={{ color: "#6E00FE" }}
-                >
-                  {clientAds.project_types?.join(" - ")}
-                </Typography>
-              </Box> */}
             </CardContent>
           </Paper>
         </Grid>

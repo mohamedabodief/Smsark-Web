@@ -207,28 +207,28 @@
 //               <AccountCircleIcon />
 //             </IconButton>
 //           </Tooltip>
-//           <Popover
-//             open={open}
-//             anchorEl={anchorEl}
-//             onClose={handleClose}
-//             anchorOrigin={{
-//               vertical: 'bottom',
-//               horizontal: 'left',
-//             }}
-//             transformOrigin={{
-//               vertical: 'top',
-//               horizontal: 'right',
-//             }}
-//           >
-//             <NotificationList userId={currentId} />
-//           </Popover>
+// <Popover
+//   open={open}
+//   anchorEl={anchorEl}
+//   onClose={handleClose}
+//   anchorOrigin={{
+//     vertical: 'bottom',
+//     horizontal: 'left',
+//   }}
+//   transformOrigin={{
+//     vertical: 'top',
+//     horizontal: 'right',
+//   }}
+// >
+//   <NotificationList userId={currentId} />
+// </Popover>
 //         </Stack>
 //       </Toolbar>
 //     </AppBar>
 //   );
 // }
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   AppBar,
   Toolbar,
@@ -237,7 +237,6 @@ import {
   Box,
   Tooltip,
   IconButton,
-  Avatar,
   Button,
   Popover,
   Badge,
@@ -252,14 +251,15 @@ import NotificationsIcon from "@mui/icons-material/Notifications";
 import { useUnreadMessages } from "../context/unreadMessageContext";
 import NotificationList from "../pages/notificationList";
 import Notification from "../FireBase/MessageAndNotification/Notification";
- import SearchIcon from '@mui/icons-material/Search';
-
+import SearchIcon from "@mui/icons-material/Search";
 import { auth } from "../FireBase/firebaseConfig";
 
 export default function Nav({ toggleMode }) {
   const [unreadCount, setUnreadCount] = useState(0);
   const [anchorEl, setAnchorEl] = useState(null);
   const [loginPromptAnchorEl, setLoginPromptAnchorEl] = useState(null);
+  const [popoverPosition, setPopoverPosition] = useState({ left: 0, top: 0 });
+  const notificationButtonRef = useRef(null);
   const navigate = useNavigate();
   const currentId = auth.currentUser?.uid;
   const { totalUnreadCount } = useUnreadMessages();
@@ -284,16 +284,21 @@ export default function Nav({ toggleMode }) {
       const timer = setTimeout(() => {
         setLoginPromptAnchorEl(null);
         navigate("/login");
-      }, 1500); // إغلاق الـ Popover والانتقال بعد 1.5 ثانية
-      return () => clearTimeout(timer); // تنظيف الـ timer
+      }, 1500);
+      return () => clearTimeout(timer);
     }
   }, [loginPromptAnchorEl, navigate]);
 
-  const handleClick = () => {
+  const handleClick = (event) => {
     if (!currentId) {
       setLoginPromptAnchorEl(document.body);
     } else {
-      setAnchorEl(document.body);
+      const buttonRect = notificationButtonRef.current.getBoundingClientRect();
+      setPopoverPosition({
+        left: buttonRect.left + window.scrollX +5,
+        top: buttonRect.bottom + window.scrollY +1,
+      });
+      setAnchorEl(event.currentTarget);
     }
   };
 
@@ -327,9 +332,11 @@ export default function Nav({ toggleMode }) {
       navigate("/profile");
     }
   };
-const toSerachpage=()=>{
-   navigate('/search')
-}
+
+  const toSerachpage = () => {
+    navigate("/search");
+  };
+
   const handleFavoriteClick = () => {
     if (!currentId) {
       setLoginPromptAnchorEl(document.body);
@@ -337,14 +344,6 @@ const toSerachpage=()=>{
       navigate("/favorite");
     }
   };
-
-  // const handleProfilePageClick = () => {
-  //   if (!currentId) {
-  //     setLoginPromptAnchorEl(document.body);
-  //   } else {
-  //     navigate("/profile");
-  //   }
-  // };
 
   const handleLoginClick = () => {
     navigate("/login");
@@ -401,10 +400,13 @@ const toSerachpage=()=>{
           >
             عن الموقع
           </Typography>
-         <Typography variant="button" sx={{ cursor: "pointer" }} onClick={() => navigate('/search')}>
+          <Typography
+            variant="button"
+            sx={{ cursor: "pointer" }}
+            onClick={() => navigate("/search")}
+          >
             ابحث عن عقارك
           </Typography>
-
           <Typography
             variant="button"
             sx={{ cursor: "pointer" }}
@@ -430,7 +432,7 @@ const toSerachpage=()=>{
               }}
               onClick={handleLoginClick}
             >
-              سجّل الدخول أو انضم إلينا{" "}
+              سجّل الدخول أو انضم إلينا
             </Button>
           )}
         </Stack>
@@ -443,6 +445,7 @@ const toSerachpage=()=>{
                   size="small"
                   sx={{ color: "white" }}
                   onClick={handleClick}
+                  ref={notificationButtonRef}
                 >
                   <Badge
                     badgeContent={unreadCount}
@@ -501,9 +504,9 @@ const toSerachpage=()=>{
                 </IconButton>
               </Tooltip>
               <Tooltip title="قائمة المفضل">
-                <Button onClick={handleFavoriteClick} sx={{ color: "#fff" }}>
+                <IconButton onClick={handleFavoriteClick} sx={{ color: "#fff" }}>
                   <FavoriteIcon />
-                </Button>
+                </IconButton>
               </Tooltip>
             </>
           )}
@@ -521,32 +524,19 @@ const toSerachpage=()=>{
             open={open}
             anchorEl={anchorEl}
             onClose={handleClose}
-            anchorOrigin={{
-              vertical: "bottom",
-              horizontal: "left",
-            }}
-            transformOrigin={{
-              vertical: "top",
-              horizontal: "right",
-            }}
+            anchorReference="anchorPosition" // Use anchorPosition instead of anchorEl for custom positioning
+            anchorPosition={{ left: popoverPosition.left, top: popoverPosition.top }} // Apply custom position
+            transformOrigin={{ vertical: "top", horizontal: "right" }} // Adjust origin as needed
           >
             <NotificationList userId={currentId} />
           </Popover>
           <Popover
             open={loginPromptOpen}
             anchorEl={loginPromptAnchorEl}
-            anchorOrigin={{
-              vertical: "top",
-              horizontal: "center",
-            }}
-            transformOrigin={{
-              vertical: "top",
-              horizontal: "center",
-            }}
-            sx={{
-              mt: "64px", // إزاحة لأسفل بمقدار ارتفاع الناف بار
-            }}
-            disableRestoreFocus // منع إعادة التركيز
+            anchorOrigin={{ vertical: "top", horizontal: "center" }}
+            transformOrigin={{ vertical: "top", horizontal: "center" }}
+            sx={{ mt: "64px" }}
+            disableRestoreFocus
           >
             <Box sx={{ p: 2, bgcolor: "#fff", borderRadius: "8px" }}>
               <Typography>يرجى تسجيل الدخول أولاً</Typography>

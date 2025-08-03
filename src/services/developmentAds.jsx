@@ -130,6 +130,7 @@ const DeveloperAdsPage = () => {
             price={`من ${ad.price_start_from} إلى ${ad.price_end_to}`}
             adress={`${ad.location?.governorate} - ${ad.location?.city}`}
             type={ad.project_types}
+            id={ad.id}
           />
         </Link>
       </Box>

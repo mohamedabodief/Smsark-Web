@@ -40,7 +40,7 @@ import AuthSync from "./AuthSync";
 // import RequireNotAuth from "./LoginAndRegister/RequireNotAuth";
 import { Fab, Box } from '@mui/material';
 import { FaRobot } from 'react-icons/fa';
-
+import { useLocation } from 'react-router-dom';
 
 import { onMessage, messaging, auth } from "./FireBase/firebaseConfig";
 import { requestPermissionAndSaveToken } from "./FireBase/MessageAndNotification/fcmHelper";
@@ -58,7 +58,7 @@ function App() {
   const navigate = useNavigate();
   const [soundEnabled, setSoundEnabled] = useState(false);
   const [openPermissionDialog, setOpenPermissionDialog] = useState(false);
-
+  
   ////////////////////////////////////////////////
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -67,6 +67,15 @@ function App() {
   const goToChat = () => {
     navigate('/chat');
   };
+  const location = useLocation();
+  const hiddenFabRoutes = [
+    '/chat',
+    '/login',
+    '/register',
+  ];
+
+  const isFabHidden = hiddenFabRoutes.includes(location.pathname) || location.pathname.startsWith('/details') ||
+  location.pathname.startsWith('/privateChat');
   useEffect(() => {
     const checkNotificationPermission = () => {
       if ("Notification" in window && Notification.permission !== "granted") {
@@ -179,7 +188,7 @@ function App() {
       <AuthSync />
       <Layout>
         <Routes>
-<Route path="/" element={<Navigate to="/home" replace />} />
+          <Route path="/" element={<Navigate to="/home" replace />} />
           <Route path="/home" element={<Home />} />
           {/* <Route path="/" element={<Navigate to="/login" replace />} /> */}
           <Route path="/home" element={<Home />} />
@@ -216,7 +225,7 @@ function App() {
           {/* <Route path="/insert-finance-data" element={<FinancingAdvExample />} /> */}
           {/* <Route path="/insert-dev-data" element={<RealEstateDevAdvExample />} /> */}
           <Route path="/financing-request" element={<FinancingRequestForm />} />
-           <Route path="/AddAdvertisement" element={<ModernRealEstateForm />} /> 
+          <Route path="/AddAdvertisement" element={<ModernRealEstateForm />} />
           {/* صفحات الداشبورد */}
           <Route element={<PrivateRoute />}>
             <Route path="/admin-dashboard" element={<AdminDashboard />} />
@@ -251,9 +260,9 @@ function App() {
           severity="info"
           action={
             <>
-              <Button color="inherit" size="small" sx={{ fontWeight: 'bold', fontSize: '18px' }} onClick={handleOpenChat}>
+              {/* <Button color="inherit" size="small" sx={{ fontWeight: 'bold', fontSize: '18px' }} onClick={handleOpenChat}>
                 فتح
-              </Button>
+              </Button> */}
               <Button color="inherit" size="small" sx={{ fontWeight: 'bold', fontSize: '18px' }} onClick={handleMarkAsRead}>
                 تحديد كمقروء
               </Button>
@@ -309,6 +318,25 @@ function App() {
           </Button>
         </DialogActions>
       </Dialog>
+              {!isFabHidden && (
+          <Box
+            sx={{
+              position: 'fixed',
+              bottom: 16,
+              right: 16,
+              zIndex: 9999
+            }}
+          >
+            <Fab
+              color="primary"
+              onClick={goToChat}
+              aria-label="Chat"
+              sx={{ backgroundColor: '#6E00FE', color: '#fff' }}
+            >
+              <FaRobot size={24} />
+            </Fab>
+          </Box>
+        )}
 
     </>
   );

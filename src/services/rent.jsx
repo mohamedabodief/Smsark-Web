@@ -182,6 +182,7 @@ const RentAds = () => {
           type={ad.type}
           status={ad.ad_status}
           city={ad.city}
+          id={ad.id}
           governoment={ad.governoment}
         />
       </Link>
