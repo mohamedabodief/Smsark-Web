@@ -260,9 +260,9 @@ function App() {
           severity="info"
           action={
             <>
-              <Button color="inherit" size="small" sx={{ fontWeight: 'bold', fontSize: '18px' }} onClick={handleOpenChat}>
+              {/* <Button color="inherit" size="small" sx={{ fontWeight: 'bold', fontSize: '18px' }} onClick={handleOpenChat}>
                 فتح
-              </Button>
+              </Button> */}
               <Button color="inherit" size="small" sx={{ fontWeight: 'bold', fontSize: '18px' }} onClick={handleMarkAsRead}>
                 تحديد كمقروء
               </Button>
