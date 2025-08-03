@@ -57,7 +57,7 @@ const ContactUs = () => {
     if (auth.currentUser) {
       fetchPreviousMessages(auth.currentUser.uid);
     } else if (formData.email) {
-      fetchPreviousMessages(formData.email); 
+      fetchPreviousMessages(formData.email);
     }
   }, [formData.email]);
 
@@ -196,8 +196,10 @@ const ContactUs = () => {
           <Grid item xs={12} md={4}>
             <Box sx={{ textAlign: "center" }}>
               <LocationOn
-                sx={{ fontSize: 40, color: theme.palette.primary.main }}
+                sx={{ fontSize: 40, color: theme.palette.primary.main, cursor: 'pointer' }}
+                onClick={() => window.open('https://www.google.com/maps/place/Damanhour,+El+Beheira', '_blank')}
               />
+
               <Typography variant="h6" fontWeight="bold" sx={{ mt: 1 }}>
                 الموقع
               </Typography>
@@ -211,7 +213,11 @@ const ContactUs = () => {
 
           <Grid item xs={12} md={4}>
             <Box sx={{ textAlign: "center" }}>
-              <Phone sx={{ fontSize: 40, color: theme.palette.primary.main }} />
+              <Phone
+                sx={{ fontSize: 40, color: theme.palette.primary.main, cursor: 'pointer' }}
+                onClick={() => (window.location.href = 'tel:+201119159182')}
+              />
+
               <Typography variant="h6" fontWeight="bold" sx={{ mt: 1 }}>
                 اتصل بنا
               </Typography>
@@ -225,7 +231,11 @@ const ContactUs = () => {
 
           <Grid item xs={12} md={4}>
             <Box sx={{ textAlign: "center" }}>
-              <Email sx={{ fontSize: 40, color: theme.palette.primary.main }} />
+              <Email
+                sx={{ fontSize: 40, color: theme.palette.primary.main, cursor: 'pointer' }}
+                onClick={() => (window.location.href = 'mailto:quote@semsack.com')}
+              />
+
               <Typography variant="h6" fontWeight="bold" sx={{ mt: 1 }}>
                 اكتب لنا
               </Typography>
@@ -266,7 +276,7 @@ const ContactUs = () => {
                 >
                   <iframe
                     title="Office Location"
-                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3593.2103204779216!2d-80.1304566849789!3d25.76142618363638!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x88d9b3668a1fcee1%3A0x2f0a2a5a5a5a5a5a!2s1628%20Michigan%20Ave%2C%20Miami%20Beach%2C%20FL%2033139%2C%20USA!5e0!3m2!1sen!2seg!4v1620000000000!5m2!1sen!2seg"
+                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d110475.94748750485!2d30.390256!3d31.035047!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x14f5c4f94c1d6e75%3A0x4084edcbd5e0220!2sDamanhour%2C%20El%20Beheira%20Governorate!5e0!3m2!1sen!2seg!4v1693473175197!5m2!1sen!2seg"
                     height="100%"
                     style={{ border: 0, borderRadius: 8 }}
                     allowFullScreen=""

@@ -16,9 +16,9 @@ import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import { Link } from 'react-router-dom';
-import {ShareOutlined as ShareOutlinedIcon} from '@mui/icons-material'
+import { ShareOutlined as ShareOutlinedIcon } from '@mui/icons-material'
 import FavoriteButton from '../Homeparts/FavoriteButton';
-function HorizontalCard({ image, title, price, adress, type, status, city, governoment, phone ,onClickCard ,id }) {
+function HorizontalCard({ image, title, price, adress, type, status, city, governoment, phone, onClickCard, id }) {
   const settings = {
     dots: false,
     infinite: true,
@@ -30,31 +30,31 @@ function HorizontalCard({ image, title, price, adress, type, status, city, gover
 
   };
   const handleShare = async (e) => {
-  e.stopPropagation();
+    e.stopPropagation();
 
-  if (navigator.share) {
-    try {
-      await navigator.share({
-        title: title || 'إعلان عقاري',
-        text: 'تحقق من هذا الإعلان العقاري!',
-        url: window.location.href,
-      });
-      console.log('[DEBUG] تمت المشاركة بنجاح');
-    } catch (error) {
-      console.error('[DEBUG] حدث خطأ أثناء المشاركة:', error);
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: title || 'إعلان عقاري',
+          text: 'تحقق من هذا الإعلان العقاري!',
+          url: window.location.href,
+        });
+        console.log('[DEBUG] تمت المشاركة بنجاح');
+      } catch (error) {
+        console.error('[DEBUG] حدث خطأ أثناء المشاركة:', error);
+      }
+    } else {
+      alert('المتصفح لا يدعم خاصية المشاركة.');
     }
-  } else {
-    alert('المتصفح لا يدعم خاصية المشاركة.');
-  }
-};
+  };
 
   //////////////////////
   return (
     <>
-      <Card 
-       onClick={onClickCard} 
+      <Card
+        onClick={onClickCard}
         sx={{
-           cursor: 'pointer' ,
+          cursor: 'pointer',
           display: 'flex',
           flexDirection: 'row-reverse',
           borderRadius: '10px',
@@ -138,11 +138,11 @@ function HorizontalCard({ image, title, price, adress, type, status, city, gover
               borderRadius: '8px',
               textTransform: 'none',
             }}
-             onClick={(e) => {
-    e.stopPropagation(); 
-    e.preventDefault(); 
-    window.location.href = `tel:${phone}`;
-  }}
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              window.location.href = `tel:${phone}`;
+            }}
           >
             <PhoneIphoneIcon sx={{ fontSize: 25, color: '#52498F', }} />
             <Typography sx={{ color: '#52498F', fontWeight: '900' }}>اتصل</Typography>
@@ -190,8 +190,8 @@ function HorizontalCard({ image, title, price, adress, type, status, city, gover
 
             }}
           >
-          <ShareOutlinedIcon sx={{ fontSize: 25, color: '#52498F', fontWeight: '900' }}/>
-          <Typography sx={{ color: '#52498F', fontWeight: '900' }}>مشاركة</Typography>
+            <ShareOutlinedIcon sx={{ fontSize: 25, color: '#52498F', fontWeight: '900' }} />
+            <Typography sx={{ color: '#52498F', fontWeight: '900' }}>مشاركة</Typography>
           </Button>
           {/* <Button
             variant="outlined"
@@ -209,7 +209,7 @@ function HorizontalCard({ image, title, price, adress, type, status, city, gover
 
             }}
           > */}
-           <FavoriteButton advertisementId={id} />
+          <FavoriteButton advertisementId={id} />
 
           {/* </Button> */}
         </Box>

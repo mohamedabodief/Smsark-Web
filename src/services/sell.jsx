@@ -186,6 +186,8 @@ const SellAds = () => {
           status={ad.ad_status}
           city={ad.city}
           governoment={ad.governoment}
+          
+          id={ad.id}
         />
       </Link>
     ))}
