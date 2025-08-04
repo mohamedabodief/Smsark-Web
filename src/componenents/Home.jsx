@@ -5,6 +5,7 @@ import Advertise from '../Homeparts/adv';
 import BestFin from '../Homeparts/BestFin';
 import BestDev from '../Homeparts/BestDev';
 import HeroWithSearch from '../Homeparts/HeroWithSearch';
+import MobilSection from '../Homeparts/mobileSection';
 // import SimpleHeroSlider from '../Homeparts/Hero';
 
 
@@ -14,6 +15,7 @@ function Home() {
       <>
         <HeroWithSearch />
         {/* <SimpleHeroSlider/> */}
+<MobileSection />
         <BestFin />
         <BestDev />
         <Needs />
