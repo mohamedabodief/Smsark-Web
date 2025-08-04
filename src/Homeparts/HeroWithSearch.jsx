@@ -657,28 +657,37 @@ export default function HeroWithSearch() {
   }, []);
 
   return (
-    <Box sx={{ position: "relative", width: "100%" }}>
-      <HeroSlider ads={ads} />
-      <Typography
-        variant="h3"
-        sx={{
-          position: "absolute",
-          top: "105%",
-          left: "50%",
-          transform: "translateX(-50%)",
-          color: "#5121a5ff",
-          fontWeight: "bold",
-          textShadow: "2px 2px 6px rgba(0,0,0,0.7)",
-          maxWidth: "50%",
-          textAlign: "center",
-          direction: "rtl",
-          zIndex: 10,
-        }}
-      >
-        دوّر على بيتك عندنا
-      </Typography>
-    </Box>
-  );
+  <Box sx={{ position: "relative", width: "100%" }}>
+    <HeroSlider ads={ads} />
+    <Typography
+      variant="h2" // خليه h3 كـ base، ونغيّر الحجم فعليًا عن طريق fontSize
+      sx={{
+        position: "absolute",
+        top: "103%",
+        left: "50%",
+        transform: "translateX(-50%)",
+        color: "#5121a5ff",
+        fontWeight: "bold",
+        textShadow: "2px 2px 6px rgba(0,0,0,0.7)",
+        maxWidth: "50%",
+        textAlign: "center",
+        direction: "rtl",
+        marginBottom: "20px",
+        zIndex: 10,
+        fontSize: {
+          xs: "2.4rem",     // h4 تقريبًا
+          sm: "2.4rem",
+          md: "3rem",       // h3 تقريبًا
+          lg: "4rem",
+          xl: "4rem",
+        },
+      }}
+    >
+      دوّر على بيتك عندنا
+    </Typography>
+  </Box>
+);
+
 }
 
 
