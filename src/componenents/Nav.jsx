@@ -258,7 +258,6 @@ export default function Nav({ toggleMode }) {
   const [unreadCount, setUnreadCount] = useState(0);
   const [anchorEl, setAnchorEl] = useState(null);
   const [loginPromptAnchorEl, setLoginPromptAnchorEl] = useState(null);
-  const [popoverPosition, setPopoverPosition] = useState({ left: 0, top: 0 });
   const notificationButtonRef = useRef(null);
   const navigate = useNavigate();
   const currentId = auth.currentUser?.uid;
@@ -293,11 +292,6 @@ export default function Nav({ toggleMode }) {
     if (!currentId) {
       setLoginPromptAnchorEl(document.body);
     } else {
-      const buttonRect = notificationButtonRef.current.getBoundingClientRect();
-      setPopoverPosition({
-        left: buttonRect.left + window.scrollX +5,
-        top: buttonRect.bottom + window.scrollY +1,
-      });
       setAnchorEl(event.currentTarget);
     }
   };
@@ -524,9 +518,8 @@ export default function Nav({ toggleMode }) {
             open={open}
             anchorEl={anchorEl}
             onClose={handleClose}
-            anchorReference="anchorPosition" // Use anchorPosition instead of anchorEl for custom positioning
-            anchorPosition={{ left: popoverPosition.left, top: popoverPosition.top }} // Apply custom position
-            transformOrigin={{ vertical: "top", horizontal: "right" }} // Adjust origin as needed
+            anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+            transformOrigin={{ vertical: 'top', horizontal: 'right' }}
           >
             <NotificationList userId={currentId} />
           </Popover>
