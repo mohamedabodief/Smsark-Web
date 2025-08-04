@@ -745,7 +745,7 @@ const ModernRealEstateForm = () => {
         sx={{
           minHeight: "100vh",
           backgroundColor: "#f5f5f5",
-          py: 4,
+          py: -2,
           direction: "rtl",
         }}
       >

@@ -272,6 +272,7 @@ const AboutUs = () => {
       >
         <img
           src={aboutUsHeader}
+          
           alt="عقارات سمسارك"
           style={{
             width: "100%",
