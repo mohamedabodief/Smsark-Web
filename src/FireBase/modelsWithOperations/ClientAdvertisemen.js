@@ -946,15 +946,14 @@ class ClientAdvertisement {
   }
 
   static async getById(id) {
-  const docRef = doc(db, 'ClientAdvertisements', id);
-  const snapshot = await getDoc(docRef);
-  if (snapshot.exists()) {
-    const data = await ClientAdvertisement.#handleExpiry(snapshot.data());
-    return { ...data, id }; // ✅ لازم ترجع id هنا
+    const docRef = doc(db, 'ClientAdvertisements', id);
+    const snapshot = await getDoc(docRef);
+    if (snapshot.exists()) {
+      const data = await ClientAdvertisement.#handleExpiry(snapshot.data());
+      return new ClientAdvertisement({ ...data, id });
+    }
+    return null;
   }
-  return null;
-}
-
 
   static async getAll() {
     const colRef = collection(db, "ClientAdvertisements");

@@ -123,7 +123,7 @@ export default function BestDev() {
                 sx={{ cursor: 'pointer' }}
               >
                 <Card sx={{ minWidth: { xs: 260, sm: 300, md: 320 }, width: { xs: 260, sm: 300, md: 320 }, scrollSnapAlign: 'start', flexShrink: 0, borderRadius: 3, position: 'relative', height: '100%' }}>
-                  <CardMedia component="img" objectFit='contain' width='300' height="160" image={item.images?.[0] || '/default-placeholder.png'} />
+                  <CardMedia component="img"  width='300' height="160" image={item.images?.[0] || '/no-img.jpeg'} />
                   <FavoriteButton advertisementId={item.id}  />
                   <CardContent>
                     <Typography color="primary" fontWeight="bold">

@@ -146,9 +146,10 @@ export default function BestFin() {
                   <CardMedia
                     component="img"
                     objectFit='contain'
+                    sx={{backgroundSize:'contain'}}
                     width='300'
                     height="160"
-                    image={item.images?.[0] || '/default-placeholder.png'}
+                    image={item.images?.[0] || '/no-img.jpeg'}
                   />
                   <FavoriteButton advertisementId={item.id} />
                 

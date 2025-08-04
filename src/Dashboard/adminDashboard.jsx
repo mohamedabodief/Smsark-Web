@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo , useRef } from 'react';
 import { useSelector, useDispatch, shallowEqual } from 'react-redux';
 import { createTheme, ThemeProvider, styled } from '@mui/material/styles';
 import { db } from '../FireBase/firebaseConfig';
@@ -2774,24 +2774,22 @@ function PaidAdvertismentPage() {
                 />
             ),
         },
-        { 
-            field: 'adPackageName', 
-            headerName: 'الباقة المختارة', 
-            width: 100, 
-            renderCell: (params) => {
-                if (params.value) {
-                    return (
-                        <Chip
-                            label={params.value}
-                            color="primary"
-                            size="small"
-                            variant="outlined"
-                        />
-                    );
-                }
-                return '—';
-            }
+        {
+            field: 'adPackageName',
+            headerName: 'الباقة المختارة',
+            width: 120,
+            renderCell: (params) => (
+                params.value ? (
+                    <Chip
+                        label={params.value}
+                        color="primary"
+                        size="small"
+                        variant="outlined"
+                    />
+                ) : '—'
+            ),
         },
+        { field: 'address', headerName: 'العنوان التفصيلي', width: 300 },
         {
             field: 'actions',
             headerName: 'الإجراءات',
@@ -3361,6 +3359,33 @@ function ClientAdvertismentPage() {
     const [adToActivate, setAdToActivate] = useState(null);
     const [adToActivateType, setAdToActivateType] = useState(null);
 
+    // Activation dropdown state
+    const [activationMenuAnchorEl, setActivationMenuAnchorEl] = useState(null);
+
+    // Receipt dialog state
+    const [openReceiptDialog, setOpenReceiptDialog] = useState(false);
+    const [receiptDialogImage, setReceiptDialogImage] = useState(null);
+    const receiptButtonRef = useRef(null);
+
+    // Handler to close the receipt dialog
+    const handleCloseReceiptDialog = () => {
+        setOpenReceiptDialog(false);
+        setReceiptDialogImage(null);
+        // Restore focus to the receipt icon button
+        if (receiptButtonRef.current) {
+            receiptButtonRef.current.focus();
+        }
+    };
+
+    // Handler to view the receipt image
+    const handleViewReceipt = (ad, event) => {
+        if (event && event.currentTarget) {
+            receiptButtonRef.current = event.currentTarget;
+        }
+        setReceiptDialogImage(ad.receipt_image || null);
+        setOpenReceiptDialog(!!ad.receipt_image);
+    };
+
     // Real-time subscription to all client advertisements
     useEffect(() => {
         setLoading(true);
@@ -3565,10 +3590,10 @@ function ClientAdvertismentPage() {
             filterable: false,
         },
         { field: 'type', headerName: 'النوع', width: 120, editable: false },
-        { field: 'price', headerName: 'السعر (ج.م)', width: 150, type: 'number', editable: false },
-        { field: 'area', headerName: 'المساحة (م²)', width: 120, type: 'number', editable: false },
-        { field: 'city', headerName: 'المدينة', width: 150, editable: false },
-        { field: 'governorate', headerName: 'المحافظة', width: 150, editable: false },
+        { field: 'price', headerName: 'السعر (ج.م)', width: 120, type: 'number', editable: false },
+        { field: 'area', headerName: 'المساحة (م²)', width: 100, type: 'number', editable: false },
+        { field: 'city', headerName: 'المدينة', width: 100, editable: false },
+        { field: 'governorate', headerName: 'المحافظة', width: 100, editable: false },
         {
             field: 'phone',
             headerName: 'رقم الهاتف',
@@ -3580,7 +3605,7 @@ function ClientAdvertismentPage() {
                 </Link>
             ),
         },
-        { field: 'user_name', headerName: 'اسم المعلن', width: 150, editable: false },
+        { field: 'user_name', headerName: 'اسم المعلن', width: 100, editable: false },
         {
             field: 'ad_type',
             headerName: 'نوع الإعلان',
@@ -3643,7 +3668,6 @@ function ClientAdvertismentPage() {
             field: 'ads',
             headerName: 'التفعيل',
             width: 100,
-            editable: false,
             renderCell: (params) => (
                 <Chip
                     label={params.value ? 'مفعل' : 'غير مفعل'}
@@ -3652,149 +3676,178 @@ function ClientAdvertismentPage() {
                 />
             ),
         },
-        { field: 'address', headerName: 'العنوان التفصيلي', width: 300, editable: false },
-        { field: 'date_of_building', headerName: 'تاريخ الإنشاء', width: 150, editable: false },
+        {
+            field: 'adPackageName',
+            headerName: 'الباقة المختارة',
+            width: 120,
+            renderCell: (params) => (
+                params.value ? (
+                    <Chip
+                        label={params.value}
+                        color="primary"
+                        size="small"
+                        variant="outlined"
+                    />
+                ) : '—'
+            ),
+        },
         {
             field: 'actions',
             headerName: 'الإجراءات',
-            width: 300,
+            width: 350,
             sortable: false,
             filterable: false,
             renderCell: (params) => {
                 const ad = params.row;
                 return (
-                    <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                        {/* Review Actions */}
-                        {ad.reviewStatus === 'pending' && (
-                            <>
-                                <Tooltip title="الموافقة على الإعلان">
-                        <IconButton
-                                        aria-label="approve"
-                            size="small"
-                                        onClick={() => handleApproveClick(ad)}
-                                        color="success"
-                            disabled={loading}
-                        >
-                                        <CheckCircleOutlineIcon fontSize="small" />
-                        </IconButton>
-                    </Tooltip>
-                                <Tooltip title="رفض الإعلان">
-                                    <IconButton
-                                        aria-label="reject"
-                                        size="small"
-                                        onClick={() => handleRejectClick(ad)}
-                                        color="error"
-                                        disabled={loading}
-                                    >
-                                        <BlockIcon fontSize="small" />
-                                    </IconButton>
-                                </Tooltip>
-                            </>
-                        )}
-
-                        {(ad.reviewStatus === 'approved' || ad.reviewStatus === 'rejected') && (
-                            <Tooltip title="إعادة إلى المراجعة">
+                    <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                        {/* Approve */}
+                        <Tooltip title="موافقة الإعلان">
+                            <span>
+                                <IconButton
+                                    aria-label="approve"
+                                    size="small"
+                                    onClick={() => handleApproveClick(ad)}
+                                    color="success"
+                                    disabled={ad.reviewStatus === 'approved' || ad.loading}
+                                >
+                                    <ApprovalIcon fontSize="small" />
+                                </IconButton>
+                            </span>
+                        </Tooltip>
+                        {/* Reject */}
+                        <Tooltip title="رفض الإعلان">
+                            <span>
+                                <IconButton
+                                    aria-label="reject"
+                                    size="small"
+                                    onClick={() => handleRejectClick(ad)}
+                                    color="error"
+                                    disabled={ad.reviewStatus === 'rejected' || ad.loading}
+                                >
+                                    <DoNotDisturbOnIcon fontSize="small" />
+                                </IconButton>
+                            </span>
+                        </Tooltip>
+                        {/* Return to Pending */}
+                        <Tooltip title="إعادة للمراجعة">
+                            <span>
                                 <IconButton
                                     aria-label="return to pending"
                                     size="small"
                                     onClick={() => handleReturnClick(ad)}
-                                    color="info"
-                                    disabled={loading}
+                                    color="warning"
+                                    disabled={ad.reviewStatus === 'pending' || ad.loading}
                                 >
-                                    <AutorenewIcon fontSize="small" />
+                                    <PendingIcon fontSize="small" />
                                 </IconButton>
-                            </Tooltip>
-                        )}
-
-                        {/* Activation Actions */}
-                        {ad.reviewStatus === 'approved' && (
-                            <>
-                                {!ad.ads ? (
-                                    <Tooltip title="تفعيل الإعلان">
-                                        <IconButton
-                                            aria-label="activate"
-                                            size="small"
-                                            onClick={() => handleActivateClick(ad)}
-                                            color="success"
-                                            disabled={loading}
-                                        >
-                                            <CheckCircleOutlineIcon fontSize="small" />
-                                        </IconButton>
-                                    </Tooltip>
-                                ) : (
-                                    <Tooltip title="إيقاف التفعيل">
-                                        <IconButton
-                                            aria-label="deactivate"
-                                            size="small"
-                                            onClick={() => handleDeactivateClick(ad)}
-                                            color="warning"
-                                            disabled={loading}
-                                        >
-                                            <BlockIcon fontSize="small" />
-                                        </IconButton>
-                                    </Tooltip>
-                                )}
-                            </>
-                        )}
-
-                        {/* Status Toggle */}
-                    <Tooltip
-                        title={
-                                ad.status === 'تحت العرض'
-                                ? "إنهاء العرض"
-                                    : ad.status === 'منتهي'
-                                    ? "إعادة العرض"
-                                        : "تغيير الحالة"
-                        }
-                    >
-                        <IconButton
-                            aria-label="toggle status"
-                            size="small"
-                                onClick={() => handleToggleAdStatus(ad)}
-                            color={
-                                    ad.status === 'تحت العرض'
-                                    ? 'warning'
-                                        : ad.status === 'منتهي'
-                                        ? 'success'
-                                            : 'info'
-                            }
-                            disabled={loading}
-                        >
-                                {ad.status === 'تحت العرض' ? (
-                                <BlockIcon fontSize="small" />
-                                ) : ad.status === 'منتهي' ? (
-                                <CheckCircleOutlineIcon fontSize="small" />
-                            ) : (
-                                    <AutorenewIcon fontSize="small" />
-                            )}
-                        </IconButton>
-                    </Tooltip>
-
+                            </span>
+                        </Tooltip>
+                        {/* Activate */}
+                        <Tooltip title="تفعيل الإعلان">
+                            <span>
+                                <>
+                                    <IconButton
+                                        aria-label="activate"
+                                        size="small"
+                                        onClick={(event) => {
+                                            setActivationMenuAnchorEl(event.currentTarget);
+                                            setAdToActivate(ad);
+                                        }}
+                                        color="success"
+                                        disabled={ad.ads || ad.reviewStatus !== 'approved' || ad.loading}
+                                    >
+                                        <CheckCircleOutlineIcon fontSize="small" />
+                                    </IconButton>
+                                    <Menu
+                                        anchorEl={activationMenuAnchorEl}
+                                        open={Boolean(activationMenuAnchorEl) && adToActivate && adToActivate.id === ad.id}
+                                        onClose={() => { setActivationMenuAnchorEl(null); setAdToActivate(null); }}
+                                        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                                        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+                                    >
+                                        {[7, 15, 30, 60, 90].map((days) => (
+                                            <MenuItem
+                                                key={days}
+                                                onClick={async () => {
+                                                    setActivationMenuAnchorEl(null);
+                                                    setAdToActivate(null);
+                                                    try {
+                                                        const adInstance = await ClientAdvertisement.getById(ad.id);
+                                                        await adInstance.adsActivation(days);
+                                                        setSnackbar({ open: true, message: `تم تفعيل الإعلان لمدة ${days} يومًا بنجاح!`, severity: "success" });
+                                                    } catch (err) {
+                                                        setSnackbar({ open: true, message: `فشل تفعيل الإعلان: ${err.message || 'خطأ غير معروف'}`, severity: "error" });
+                                                    }
+                                                }}
+                                                disabled={ad.ads || ad.reviewStatus !== 'approved' || ad.loading}
+                                            >
+                                                {`تفعيل لمدة ${days} يوم`}
+                                            </MenuItem>
+                                        ))}
+                                    </Menu>
+                                </>
+                            </span>
+                        </Tooltip>
+                        {/* Deactivate (no confirmation) */}
+                        <Tooltip title="إيقاف التفعيل">
+                            <span>
+                                <IconButton
+                                    aria-label="deactivate"
+                                    size="small"
+                                    onClick={() => handleDeactivateClick(ad)}
+                                    color="warning"
+                                    disabled={!ad.ads || ad.loading}
+                                >
+                                    <BlockIcon fontSize="small" />
+                                </IconButton>
+                            </span>
+                        </Tooltip>
                         {/* Edit */}
                         <Tooltip title="تعديل الإعلان">
-                            <IconButton
-                                aria-label="edit"
-                                size="small"
-                                onClick={() => handleEditClick(ad)}
-                                disabled={loading}
-                            >
-                                <EditIcon fontSize="small" />
-                            </IconButton>
+                            <span>
+                                <IconButton
+                                    aria-label="edit"
+                                    size="small"
+                                    onClick={() => handleEditClick(ad)}
+                                    color="info"
+                                    disabled={ad.loading}
+                                >
+                                    <EditIcon fontSize="small" />
+                                </IconButton>
+                            </span>
                         </Tooltip>
-
                         {/* Delete */}
-                    <Tooltip title="حذف الإعلان">
-                        <IconButton
-                            aria-label="delete"
-                            size="small"
-                                onClick={() => handleDeleteClick(ad)}
-                            color="error"
-                            disabled={loading}
-                        >
-                            <DeleteIcon fontSize="small" />
-                        </IconButton>
-                    </Tooltip>
-                </Box>
+                        <Tooltip title="حذف الإعلان">
+                            <span>
+                                <IconButton
+                                    aria-label="delete"
+                                    size="small"
+                                    onClick={() => handleDeleteClick(ad)}
+                                    color="error"
+                                    disabled={ad.loading}
+                                >
+                                    <DeleteIcon fontSize="small" />
+                                </IconButton>
+                            </span>
+                        </Tooltip>
+                        {/* View Receipt */}
+                        {ad.receipt_image && (
+                            <Tooltip title="عرض الإيصال">
+                                <span>
+                                    <IconButton
+                                        aria-label="view receipt"
+                                        size="small"
+                                        onClick={event => handleViewReceipt(ad, event)}
+                                        color="info"
+                                        disabled={ad.loading}
+                                    >
+                                        <VisibilityIcon fontSize="small" />
+                                    </IconButton>
+                                </span>
+                            </Tooltip>
+                        )}
+                    </Box>
                 );
             },
         },
@@ -4107,6 +4160,26 @@ function ClientAdvertismentPage() {
                     {snackbar.message || error}
                 </Alert>
             </Snackbar>
+
+            {/* Receipt Image Dialog */}
+            <Dialog open={openReceiptDialog} onClose={handleCloseReceiptDialog} maxWidth="md">
+                <DialogTitle>إيصال الدفع</DialogTitle>
+                <DialogContent dividers sx={{ textAlign: 'center' }}>
+                    {receiptDialogImage ? (
+                        <img
+                            src={receiptDialogImage}
+                            alt="إيصال الدفع"
+                            style={{ maxWidth: '100%', maxHeight: 500, borderRadius: 8 }}
+                        />
+                    ) : (
+                        <Typography color="text.secondary">لا يوجد إيصال دفع متاح</Typography>
+                    )}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCloseReceiptDialog} color="primary">إغلاق</Button>
+                </DialogActions>
+            </Dialog>
+
         </Box>
     );
 }

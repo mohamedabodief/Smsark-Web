@@ -12,7 +12,17 @@ export const fetchClients = createAsyncThunk(
             console.log("Fetching client users...");
             const clients = await User.getAllUsersByType('client');
             console.log("Fetched clients:", clients);
-            return clients;
+            // Convert User instances to plain objects
+            const plainClients = clients.map(user => {
+                const plain = {};
+                for (const key in user) {
+                    if (Object.prototype.hasOwnProperty.call(user, key)) {
+                        plain[key] = user[key];
+                    }
+                }
+                return plain;
+            });
+            return plainClients;
         } catch (error) {
             console.error("Error fetching clients:", error);
             return rejectWithValue(error.message || 'Failed to fetch clients.');
@@ -28,7 +38,17 @@ export const fetchOrganizations = createAsyncThunk(
             console.log("Fetching organization users...");
             const organizations = await User.getAllUsersByType('organization');
             console.log("Fetched organizations:", organizations);
-            return organizations;
+            // Convert User instances to plain objects
+            const plainOrganizations = organizations.map(user => {
+                const plain = {};
+                for (const key in user) {
+                    if (Object.prototype.hasOwnProperty.call(user, key)) {
+                        plain[key] = user[key];
+                    }
+                }
+                return plain;
+            });
+            return plainOrganizations;
         } catch (error) {
             console.error("Error fetching organizations:", error);
             return rejectWithValue(error.message || 'Failed to fetch organizations.');
@@ -44,7 +64,17 @@ export const fetchAdmins = createAsyncThunk(
             console.log("Fetching admin users...");
             const admins = await User.getAllUsersByType('admin');
             console.log("Fetched admins:", admins);
-            return admins;
+            // Convert User instances to plain objects
+            const plainAdmins = admins.map(user => {
+                const plain = {};
+                for (const key in user) {
+                    if (Object.prototype.hasOwnProperty.call(user, key)) {
+                        plain[key] = user[key];
+                    }
+                }
+                return plain;
+            });
+            return plainAdmins;
         } catch (error) {
             console.error("Error fetching admins:", error);
             return rejectWithValue(error.message || 'Failed to fetch admins.');
