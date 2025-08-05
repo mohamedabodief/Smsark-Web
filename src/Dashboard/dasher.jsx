@@ -1103,21 +1103,18 @@ function ProfilePage() {
     }
 
     return (
-        <Box dir='rtl' sx={{ p: 2, textAlign: 'left' }}>
-            <PageHeader 
-                title={"حسابي"}
-                icon={AccountBoxIcon}
-            />
-            <Paper sx={{ p: 4, borderRadius: 2, minHeight: 400, boxShadow: '0px 0px 8px rgba(0,0,0,0.2)' }}>
-                <Grid container spacing={4} >
+        <Box sx={{ p: 2, textAlign: 'right' }}>
+            <Typography variant="h3" sx={{ display: 'flex', flexDirection: 'row-reverse', mb: 3 }}>حسابي</Typography>
+            <Paper sx={{ p: 4, borderRadius: 2, minHeight: 400, textAlign: 'right', boxShadow: '0px 0px 8px rgba(0,0,0,0.2)' }}>
+                <Grid container spacing={4} direction="row-reverse">
                     <Grid item xs={12} md={4} lg={3}>
                         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
                             <UploadAvatars />
                         </Box>
                     </Grid>
                     <Grid item xs={12} md={8} lg={9}>
-                        <Box >
-                            <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', fontSize: '1.5rem', display: 'flex', flexDirection: 'row' }}>المعلومات الشخصية</Typography>
+                        <Box>
+                            <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', fontSize: '1.5rem', display: 'flex', flexDirection: 'row-reverse' }}>المعلومات الشخصية</Typography>
 
                             {/* Admin Name */}
                             <TextField
@@ -1946,23 +1943,9 @@ function Mainadvertisment(props) {
                                     backgroundColor: 'background.paper'
                                 }}
                             >
-                                <Box sx={{ 
-                                    display: 'flex', 
-                                    width: '100%', 
-                                    flexDirection: { xs: 'column', sm: 'row', md: 'row', lg: 'row' },
-                                    alignItems: { xs: 'flex-start', sm: 'center' },
-                                    gap: 2 
-                                }}>
+                                <Box sx={{ display: 'flex', width: '100%', alignItems: 'center', gap: 2 }}>
                                     {/* Ad Image */}
-                                    <Box sx={{ 
-                                        minWidth: 80, 
-                                        width: '100%',
-                                        maxWidth: 120,
-                                        height: 80, 
-                                        borderRadius: 1, 
-                                        overflow: 'hidden',
-                                        alignSelf: { xs: 'center', sm: 'flex-start' }
-                                    }}>
+                                    <Box sx={{ minWidth: 80, height: 80, borderRadius: 1, overflow: 'hidden' }}>
                                         <img
                                             src={ad.image || './home.jpg'}
                                             alt="Ad"
@@ -1971,11 +1954,7 @@ function Mainadvertisment(props) {
                                     </Box>
 
                                     {/* Ad Info */}
-                                    <Box sx={{ 
-                                        flexGrow: 1, 
-                                        width: '100%',
-                                        textAlign: { xs: 'center', sm: 'left' }
-                                    }}>
+                                    <Box sx={{ flexGrow: 1 }}>
                                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                                             <Chip
                                                 label={getStatusLabel(ad.reviewStatus)}
@@ -2014,15 +1993,7 @@ function Mainadvertisment(props) {
                                         )}
                                     </Box>
                                     {/* Receipt and Package Info */}
-                                    <Box sx={{ 
-                                        display: 'flex', 
-                                        flexWrap: 'wrap',
-                                        justifyContent: 'center',
-                                        alignItems: 'center', 
-                                        gap: 1,
-                                        mt: { xs: 1, sm: 0 },
-                                        width: { xs: '100%', sm: 'auto' }
-                                    }}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                                         {/* Receipt Icon */}
                                         {ad.receipt_image && (
                                             <Tooltip title="عرض إيصال الدفع">
@@ -2042,14 +2013,7 @@ function Mainadvertisment(props) {
                                     </Box>
 
                                     {/* Admin Actions */}
-                                <Box sx={{ 
-                                    display: 'flex', 
-                                    flexWrap: 'wrap',
-                                    gap: 1, 
-                                    justifyContent: { xs: 'center', sm: 'flex-start' },
-                                    mt: { xs: 2, sm: 0 },
-                                    width: { xs: '100%', sm: 'auto' }
-                                }}>
+                                <Box sx={{ display: 'flex', gap: 1, flexDirection: 'row' }}>
                                         {/* Approve/Reject buttons for pending ads */}
                                         {ad.reviewStatus === 'pending' && (
                                             <>
@@ -5173,7 +5137,7 @@ export default function AdminDashboard(props) {
 
     // Set initial mobile state after component mounts (client-side only)
     React.useEffect(() => {
-        const checkIfMobile = () => window.innerWidth < 750;
+        const checkIfMobile = () => window.innerWidth < 600;
         setIsMobile(checkIfMobile());
     }, []);
 
@@ -5185,7 +5149,7 @@ export default function AdminDashboard(props) {
     // Handle window resize
     React.useEffect(() => {
         const handleResize = () => {
-            const mobile = window.innerWidth < 750;
+            const mobile = window.innerWidth < 600;
             setIsMobile(mobile);
             // Close drawer on mobile when resizing to larger screens
             if (!mobile && mobileOpen) {
@@ -5343,12 +5307,10 @@ export default function AdminDashboard(props) {
                 marginRight: 0,
                 paddingRight: theme.spacing(2),
                 paddingLeft: theme.spacing(2),
-                paddingTop: '50px',
-                marginTop:0,
+                marginTop: '64px',
             },
             [theme.breakpoints.up('sm')]: {
                 padding: theme.spacing(3),
-                paddingTop:'4px',
             },
         })
     );
@@ -5470,7 +5432,7 @@ export default function AdminDashboard(props) {
                                         aria-label="open drawer"
                                         edge="start"
                                         onClick={handleDrawerToggle}
-                                        sx={{ ml: 2, display: { md: 'none' } }}
+                                        sx={{ ml: 2, display: { sm: 'none' } }}
                                     >
                                         <MenuIcon />
                                     </IconButton>
