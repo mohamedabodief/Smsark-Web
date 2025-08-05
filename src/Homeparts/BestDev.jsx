@@ -20,7 +20,7 @@ export default function BestDev() {
   const initializeAds = useCallback(async () => {
     setLoading(true);
     try {
-      if (user) {
+      // if (user) {
         // لو المستخدم مسجل دخول: جلب الإعلانات من Firebase
         // const existingAds = await RealEstateDeveloperAdvertisement.getAll();
 
@@ -38,7 +38,7 @@ export default function BestDev() {
         const activeAds = freshAds.filter(ad => ad.ads === true);
         setOffers(activeAds);
 
-      }
+      // }
       //  else {
       //   // لو مش مسجل دخول: اعرض البيانات المحلية فقط بدون استدعاء getAll()
       //   // const activeAds = devAdsData.filter(ad => ad.ads === true);
@@ -56,13 +56,13 @@ export default function BestDev() {
 
     // الاشتراك في تحديثات الإعلانات النشطة لو المستخدم مسجل دخول فقط
     let unsubscribe = () => {};
-    if (user) {
+    // if (user) {
       unsubscribe = RealEstateDeveloperAdvertisement.subscribeActiveAds((newAds) => {
         const activeAds = newAds.filter(ad => ad.ads === true);
         setOffers(activeAds);
         setLoading(false);
       });
-    }
+    // }
 
     // التمرير التلقائي
     const interval = setInterval(() => {
