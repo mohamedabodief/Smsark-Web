@@ -53,8 +53,7 @@ export default function BestDev() {
 
   useEffect(() => {
     initializeAds();
-
-    // الاشتراك في تحديثات الإعلانات النشطة لو المستخدم مسجل دخول فقط
+  
     let unsubscribe = () => {};
     // if (user) {
       unsubscribe = RealEstateDeveloperAdvertisement.subscribeActiveAds((newAds) => {
@@ -66,33 +65,36 @@ export default function BestDev() {
 
     // التمرير التلقائي
     const interval = setInterval(() => {
+      const container = sliderRef.current;
       const cardWidth = 344;
-      if (sliderRef.current) {
-        sliderRef.current.scrollBy({
-          left: -cardWidth,
-          behavior: 'smooth',
-        });
+  
+      if (container) {
+        const maxScrollLeft = container.scrollWidth - container.clientWidth;
+  
+        // SCROLLING FORWARD (LTR)
+        if (container.scrollLeft + cardWidth >= maxScrollLeft) {
+          container.scrollTo({
+            left: 0,
+            behavior: 'smooth'
+          });
+        } else {
+          container.scrollBy({
+            left: cardWidth,
+            behavior: 'smooth'
+          });
+        }
       }
     }, 5000);
-
+  
     return () => {
       unsubscribe();
       clearInterval(interval);
     };
   }, [initializeAds, user]);
-
-  const scroll = (direction) => {
-    const cardWidth = 344;
-    if (sliderRef.current) {
-      sliderRef.current.scrollBy({
-        left: direction === 'left' ? -cardWidth : cardWidth,
-        behavior: 'smooth',
-      });
-    }
-  };
+  
 
   return (
-    <Box sx={{ direction: 'rtl', paddingTop: 8, px: 5 }}>
+    <Box sx={{  paddingTop: 8, px: 5 }}>
       <Typography variant="h4" fontWeight="bold" textAlign="center" mb={4}>
         أفضل عروض التطوير العقاري
       </Typography>
@@ -107,7 +109,7 @@ export default function BestDev() {
         </IconButton>
 
         <Box ref={sliderRef} sx={{
-          display: 'flex', justifyContent: 'center', overflowX: 'auto', gap: 3, scrollSnapType: 'x mandatory', scrollPaddingRight: '60px', pb: 2,
+          display: 'flex', justifyContent: 'row', overflowX: 'auto', gap: 3, scrollSnapType: 'x mandatory', scrollPaddingRight: '60px', pb: 2,
           pl: 5,
           '&::-webkit-scrollbar': { display: 'none' }
         }}>
@@ -116,11 +118,11 @@ export default function BestDev() {
           ) : offers.length === 0 ? (
             <Typography>لا توجد عروض تطوير مفعلة حالياً.</Typography>
           ) : (
-            offers.map((item, index) => (
+            [...offers, ...offers].map((item, index) => (
               <Box
                 key={index}
                 onClick={() => navigate(`/details/developmentAds/${item.id}`)}
-                sx={{ cursor: 'pointer' }}
+                sx={{ cursor: 'pointer' , direction:'rtl'}}
               >
                 <Card sx={{ minWidth: { xs: 260, sm: 300, md: 320 }, width: { xs: 260, sm: 300, md: 320 }, scrollSnapAlign: 'start', flexShrink: 0, borderRadius: 3, position: 'relative', height: '100%' }}>
                   <CardMedia component="img"  width='300' height="160" image={item.images?.[0] || '/no-img.jpeg'} />
