@@ -33,9 +33,7 @@ const ContactUs = () => {
     message: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [previousMessages, setPreviousMessages] = useState([]); // لحفظ الرسايل السابقة
-
-  // دالة لجلب الرسايل السابقة
+  const [previousMessages, setPreviousMessages] = useState([]); 
   const fetchPreviousMessages = async (senderId) => {
     try {
       const messagesQuery = query(
@@ -74,7 +72,6 @@ const ContactUs = () => {
     setIsSubmitting(true);
 
     try {
-      // جلب الأدمنز
       const adminsQuery = query(
         collection(db, "users"),
         where("type_of_user", "==", "admin")
@@ -121,8 +118,6 @@ const ContactUs = () => {
         });
         await notif.send();
       }
-
-      // تحديث الرسايل السابقة
       await fetchPreviousMessages(senderId);
 
       setSubmitStatus({
