@@ -19,8 +19,8 @@ const MobilSection = () => {
           src="/src/assets/mobile-pic.png"
           alt="تطبيق سمسارك العقاري"
           sx={{
-            width: { xs: "100%", sm: 900 },
-            height: { xs: "auto", sm: 750 },
+            width: { xs: "100%", sm: 750 },
+            height: { xs: "auto", sm: 650 },
             objectFit: "contain",
             display: "block",
             margin: "0 auto",
