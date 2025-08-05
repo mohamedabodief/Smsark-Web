@@ -37,7 +37,7 @@ class HomepageAdvertisement {
     this.userId = data.userId || null;
     this.createdAt = data.createdAt || null;
     // إضافة العنوان إذا كان موجودًا في البيانات
-    this.title = data.title || '';
+    // this.title = data.title || '';
   }
 
   get id() {
@@ -49,9 +49,9 @@ class HomepageAdvertisement {
     this.createdAt = Date.now();
     const colRef = collection(db, 'HomepageAdvertisements');
     // تأكد من وجود العنوان قبل الحفظ
-    if (!this.title) {
-      this.title = 'إعلان بدون عنوان';
-    }
+    // if (!this.title) {
+    //   this.title = 'إعلان بدون عنوان';
+    // }
     const docRef = await addDoc(colRef, this.#getAdData());
     this.#id = docRef.id;
     await updateDoc(docRef, { id: this.#id });
@@ -354,7 +354,7 @@ class HomepageAdvertisement {
       review_note: this.review_note,
       userId: this.userId,
       createdAt: this.createdAt,
-      title: this.title, // Add title to the data
+      // title: this.title, // Add title to the data
     };
   }
   // ✅ جلب كل الإعلانات النشطة (ads: true)

@@ -59,7 +59,7 @@ export default function SimpleHeroSlider() {
             }}
           />
           {/* Safe display for title/location/description if present */}
-          {ads[index].title && (
+          {/* {ads[index].title && (
             <Box sx={{
               position: 'absolute',
               bottom: 24,
@@ -83,7 +83,7 @@ export default function SimpleHeroSlider() {
                 </div>
               )}
             </Box>
-          )}
+          )} */}
         </>
       )}
 
