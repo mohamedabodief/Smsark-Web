@@ -316,8 +316,6 @@
 //   );
 // }
 
-
-
 import { useEffect, useState } from 'react';
 import { Box, Grid, Typography, Button, Avatar, Popover } from '@mui/material';
 import { SearchRounded, HomeWorkRounded, ApartmentRounded } from '@mui/icons-material';
@@ -330,6 +328,7 @@ export default function Advertise() {
   const [userType, setUserType] = useState(null);
   const [loginPromptAnchorEl, setLoginPromptAnchorEl] = useState(null);
   const [errorPromptAnchorEl, setErrorPromptAnchorEl] = useState(null);
+  const [requestedType, setRequestedType] = useState(null); // نوع القسم الذي تم الضغط عليه
 
   // تعريف options
   const options = [
@@ -375,9 +374,9 @@ export default function Advertise() {
       const timer = setTimeout(() => {
         setLoginPromptAnchorEl(null);
         navigate('/login');
-      }, 1000); // إغلاق الـ Popover والانتقال بعد ثانية واحدة
+      }, 1000);
 
-      return () => clearTimeout(timer); // تنظيف الـ timer
+      return () => clearTimeout(timer);
     }
   }, [loginPromptAnchorEl, navigate]);
 
@@ -385,15 +384,16 @@ export default function Advertise() {
     if (errorPromptAnchorEl) {
       const timer = setTimeout(() => {
         setErrorPromptAnchorEl(null);
-      }, 2000); // إغلاق الـ Popover بعد ثانيتين
+        setRequestedType(null); // إعادة تعيين النوع المطلوب
+      }, 2000);
 
-      return () => clearTimeout(timer); // تنظيف الـ timer
+      return () => clearTimeout(timer);
     }
   }, [errorPromptAnchorEl]);
 
   const handleNavigate = (item) => {
     if (!userType) {
-      setLoginPromptAnchorEl(document.body); // فتح الـ Popover في منتصف الصفحة
+      setLoginPromptAnchorEl(document.body);
       return;
     }
 
@@ -405,17 +405,32 @@ export default function Advertise() {
       } else if (item.type === 'financer') {
         navigate('/add-financing-ad');
       } else {
-        setErrorPromptAnchorEl(document.body); // فتح الـ Popover لخطأ المنظمات
+        setRequestedType(item.type);
+        setErrorPromptAnchorEl(document.body);
       }
     } else if (userType === item.type) {
       navigate(item.route);
     } else {
-      setErrorPromptAnchorEl(document.body); // فتح الـ Popover لخطأ عدم التصريح
+      setRequestedType(item.type);
+      setErrorPromptAnchorEl(document.body);
     }
   };
 
   const loginPromptOpen = Boolean(loginPromptAnchorEl);
   const errorPromptOpen = Boolean(errorPromptAnchorEl);
+
+  const getErrorMessage = () => {
+    switch (requestedType) {
+      case 'client':
+        return 'غير مصرح لك بالدخول، يجب التسجيل كـ عميل أولاً';
+      case 'developer':
+        return 'غير مصرح لك بالدخول، يجب التسجيل كـ مطور أولاً';
+      case 'financer':
+        return 'غير مصرح لك بالدخول، يجب التسجيل كـ ممول أولاً';
+      // default:
+        // return 'غير مصرح لك بالدخول لهذا القسم';
+    }
+  };
 
   return (
     <Box sx={{ py: 10, px: { xs: 2, md: 10 }, direction: 'rtl' }}>
@@ -487,9 +502,9 @@ export default function Advertise() {
           horizontal: 'center',
         }}
         sx={{
-          mt: '64px', // إزاحة لأسفل بمقدار ارتفاع الناف بار
+          mt: '64px',
         }}
-        disableRestoreFocus // منع إعادة التركيز
+        disableRestoreFocus
       >
         <Box sx={{ p: 2, bgcolor: '#fff', borderRadius: '8px' }}>
           <Typography>يرجى تسجيل الدخول أولاً</Typography>
@@ -508,12 +523,12 @@ export default function Advertise() {
           horizontal: 'center',
         }}
         sx={{
-          mt: '64px', // إزاحة لأسفل بمقدار ارتفاع الناف بار
+          mt: '64px',
         }}
-        disableRestoreFocus // منع إعادة التركيز
+        disableRestoreFocus
       >
         <Box sx={{ p: 2, bgcolor: '#fff', borderRadius: '8px' }}>
-          <Typography>غير مصرح لك بالدخول لهذا القسم</Typography>
+          <Typography>{getErrorMessage()}</Typography>
         </Box>
       </Popover>
     </Box>

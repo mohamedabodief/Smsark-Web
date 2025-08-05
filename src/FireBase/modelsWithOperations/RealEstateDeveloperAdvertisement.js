@@ -441,11 +441,11 @@ class RealEstateDeveloperAdvertisement {
 
   // ✅ جلب الإعلانات المفعّلة فقط
   static async getActiveAds() {
-    // التحقق من حالة تسجيل الدخول
-    const currentUser = auth.currentUser;
-    if (!currentUser) {
-      throw new Error("يجب تسجيل الدخول أولاً قبل جلب العقارات المفعلة");
-    }
+    // // التحقق من حالة تسجيل الدخول
+    // const currentUser = auth.currentUser;
+    // if (!currentUser) {
+    //   throw new Error("يجب تسجيل الدخول أولاً قبل جلب العقارات المفعلة");
+    // }
     
     const q = query(
       collection(db, 'RealEstateDeveloperAdvertisements'),
@@ -492,11 +492,11 @@ class RealEstateDeveloperAdvertisement {
 
   // 🔁 استماع لحظي للإعلانات المفعلة
   static subscribeActiveAds(callback) {
-    // التحقق من حالة تسجيل الدخول
-    const currentUser = auth.currentUser;
-    if (!currentUser) {
-      throw new Error("يجب تسجيل الدخول أولاً قبل الاشتراك في العقارات المفعلة");
-    }
+    // // التحقق من حالة تسجيل الدخول
+    // const currentUser = auth.currentUser;
+    // if (!currentUser) {
+    //   throw new Error("يجب تسجيل الدخول أولاً قبل الاشتراك في العقارات المفعلة");
+    // }
     
     const q = query(
       collection(db, 'RealEstateDeveloperAdvertisements'),

@@ -416,7 +416,7 @@ export default function Nav({ toggleMode }) {
                 color: "#fff",
                 borderColor: "#fff",
                 borderRadius: "25px",
-                padding: "6px 20px",
+                // padding: "6px 20px",
                 fontWeight: "bold",
                 "&:hover": {
                   bgcolor: "#fff",
