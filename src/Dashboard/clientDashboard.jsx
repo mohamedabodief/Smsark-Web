@@ -107,12 +107,24 @@ const NAVIGATION = [
         kind: 'header',
         title: 'العناصر الرئيسية',
     },
+    // {
+    //     segment: 'dashboard',
+    //     title: 'لوحة التحكم',
+    //     icon: <DashboardIcon />,
+    //     tooltip: 'لوحة التحكم',
+    // },
     {
         segment: 'profile',
         title: 'الملف الشخصي',
         icon: <AccountBoxIcon />,
         tooltip: 'الملف الشخصي',
     },
+    // {
+    //     segment: 'favproperties',
+    //     title: 'المفضلة',
+    //     icon: <FavoriteIcon />,
+    //     tooltip: 'المفضلة',
+    // },
     {
         segment: 'orders',
         title: 'الطلبات',
@@ -152,6 +164,15 @@ const NAVIGATION = [
         icon: <DescriptionIcon />,
         tooltip: 'التقرير',
     },
+    // {
+    //     segment: 'reports',
+    //     title: 'التقارير',
+    //     icon: <BarChartIcon />,
+    //     tooltip: 'التقارير',
+    //     children: [
+
+    //     ],
+    // },
     {
         segment: 'settings',
         title: 'إعدادات الحساب',
@@ -743,6 +764,650 @@ function ProfilePage() {
     );
 }
 
+// function UsersPage() {
+//     const dispatch = useDispatch();
+//     const users = useSelector((state) => state.users.users);
+//     // Use useSelector to get organizations from the Redux store
+//     const organizations = useSelector((state) => state.organizations.organizations);
+//     const admins = useSelector((state) => state.admins.admins);
+
+//     const [activeTab, setActiveTab] = React.useState('users');
+//     const [activeOrgSubTab, setActiveOrgSubTab] = React.useState('developers'); // State for organization sub-tabs
+
+//     const [isAddUserModalOpen, setIsAddUserModalOpen] = React.useState(false);
+//     const [isEditUserModalOpen, setIsEditUserModalOpen] = React.useState(false);
+//     const [userToEdit, setUserToEdit] = React.useState(null);
+
+//     const [isDeleteConfirmModalOpen, setIsDeleteConfirmModalOpen] = React.useState(false);
+//     const [itemToDelete, setItemToDelete] = React.useState(null);
+
+//     const [isAddOrgModalOpen, setIsAddOrgModalOpen] = React.useState(false);
+//     const [isEditOrgModalOpen, setIsEditOrgModalOpen] = React.useState(false);
+//     const [orgToEdit, setOrgToEdit] = React.useState(null);
+
+//     const [isAddAdminModalOpen, setIsAddAdminModalOpen] = React.useState(false);
+//     const [isEditAdminModalOpen, setIsEditAdminModalOpen] = React.useState(false);
+//     const [adminToEdit, setAdminToEdit] = React.useState(null);
+
+//     // --- User Handlers ---
+//     const handleAddUser = () => {
+//         setIsAddUserModalOpen(true);
+//     };
+
+//     const handleAddUserConfirm = ({ name, email }) => {
+//         const newId = (Math.random() * 100000).toFixed(0);
+//         dispatch(addUser({ id: newId, name, email }));
+//     };
+
+//     const handleEditUser = (user) => {
+//         setUserToEdit(user);
+//         setIsEditUserModalOpen(true);
+//     };
+
+//     const handleEditUserSave = (updatedUser) => {
+//         dispatch(editUser(updatedUser));
+//     };
+
+//     // --- Organization (Developers and Funders) Handlers ---
+//     const handleAddOrg = () => {
+//         setIsAddOrgModalOpen(true);
+//     };
+
+//     const handleAddOrgConfirm = ({ name, contact, type }) => {
+//         const prefix = type === 'developer' ? 'DEV' : 'FUND';
+//         // Generate a unique ID, ensuring it includes the type prefix
+//         const newId = `${prefix}${Math.floor(Math.random() * 10000).toString().padStart(3, '0')}`;
+//         // Dispatch the addOrganization action with the new organization including its type
+//         dispatch(addOrganization({ id: newId, name, contact, type }));
+//     };
+
+//     const handleEditOrg = (org) => {
+//         setOrgToEdit(org);
+//         setIsEditOrgModalOpen(true);
+//     };
+
+//     const handleEditOrgSave = (updatedOrg) => {
+//         // Dispatch the editOrganization action with the updated organization
+//         dispatch(editOrganization(updatedOrg));
+//     };
+
+//     // Filter organizations for developers and funders based on the 'type' property
+//     const realEstateDevelopers = organizations.filter(org => org.type === 'developer');
+//     const realEstateFunders = organizations.filter(org => org.type === 'funder');
+
+//     // --- Admin Handlers ---
+//     const handleAddAdmin = () => {
+//         setIsAddAdminModalOpen(true);
+//     };
+
+//     const handleAddAdminConfirm = ({ name, email }) => {
+//         const newId = (Math.random() * 100000).toFixed(0);
+//         dispatch(addAdmin({ id: newId, name, email }));
+//     };
+
+//     const handleEditAdmin = (admin) => {
+//         setAdminToEdit(admin);
+//         setIsEditAdminModalOpen(true);
+//     };
+
+//     const handleEditAdminSave = (updatedAdmin) => {
+//         dispatch(editAdmin(updatedAdmin));
+//     };
+
+//     // --- General Delete Handler ---
+//     const handleDeleteItem = (id, type, name) => {
+//         setItemToDelete({ id, type, name });
+//         setIsDeleteConfirmModalOpen(true);
+//     };
+
+//     const handleDeleteConfirm = () => {
+//         if (itemToDelete.type === 'user') {
+//             dispatch(deleteUser(itemToDelete.id));
+//         } else if (itemToDelete.type === 'organization') {
+//             // Dispatch deleteOrganization action for both developers and funders
+//             dispatch(deleteOrganization(itemToDelete.id));
+//         } else if (itemToDelete.type === 'admin') {
+//             dispatch(deleteAdmin(itemToDelete.id));
+//         }
+//         setIsDeleteConfirmModalOpen(false);
+//         setItemToDelete(null);
+//     };
+
+//     return (
+//         <Box sx={{ p: 2, textAlign: 'right' }}>
+//             <Typography variant="h4" display={'flex'} flexDirection={'row-reverse'} gutterBottom>المستخدمين</Typography>
+//             <Box sx={{ mb: 2, display: 'flex', gap: 1, flexDirection: 'row-reverse' }}>
+//                 <Button
+//                     variant={activeTab === 'users' ? 'contained' : 'outlined'}
+//                     onClick={() => setActiveTab('users')}
+//                     sx={{ borderRadius: 2, fontSize: '17px' }}
+//                 >
+//                     العملاء
+//                 </Button>
+//                 <Button
+//                     variant={activeTab === 'organizations' ? 'contained' : 'outlined'}
+//                     onClick={() => {
+//                         setActiveTab('organizations');
+//                         // Reset sub-tab to default when main tab changes
+//                         setActiveOrgSubTab('developers');
+//                     }}
+//                     sx={{ borderRadius: 2, fontSize: '17px' }}
+//                 >
+//                     المؤسسات
+//                 </Button>
+//                 <Button
+//                     variant={activeTab === 'admins' ? 'contained' : 'outlined'}
+//                     onClick={() => setActiveTab('admins')}
+//                     sx={{ borderRadius: 2, fontSize: '17px' }}
+//                 >
+//                     المدراء
+//                 </Button>
+//             </Box>
+
+//             <Paper sx={{ p: 2, borderRadius: 2, minHeight: 400, textAlign: 'right' }}>
+//                 {activeTab === 'users' && (
+//                     <>
+//                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexDirection: 'row-reverse' }}>
+//                             <Typography variant="h6" sx={{ fontWeight: 'bold' }} color="text.secondary">قائمة المستخدمين</Typography>
+//                             <Button variant="outlined" startIcon={<AddIcon />} onClick={handleAddUser}>
+//                                 إضافة مستخدم
+//                             </Button>
+//                         </Box>
+//                         <List>
+//                             {users.map((user) => (
+//                                 <ListItem
+//                                     key={user.id}
+//                                     disablePadding
+//                                     secondaryAction={
+//                                         <Box sx={{ display: 'flex', gap: 1, flexDirection: 'row-reverse' }}>
+//                                             <IconButton edge="start" aria-label="edit" onClick={() => handleEditUser(user)}>
+//                                                 <EditIcon sx={{ color: 'purple' }} />
+//                                             </IconButton>
+//                                             <IconButton edge="start" aria-label="delete" onClick={() => handleDeleteItem(user.id, 'user', user.name)}>
+//                                                 <DeleteIcon sx={{ color: 'red' }} />
+//                                             </IconButton>
+//                                         </Box>
+//                                     }
+//                                 >
+//                                     <ListItemText
+//                                         primary={user.name}
+//                                         secondary={`ID: ${user.id} | Email: ${user.email}`}
+//                                     />
+//                                 </ListItem>
+//                             ))}
+//                         </List>
+//                     </>
+//                 )}
+
+//                 {activeTab === 'organizations' && (
+//                     <>
+//                         {/* Sub-tabs for Organizations */}
+//                         <Box sx={{ mb: 2, display: 'flex', gap: 1, flexDirection: 'row-reverse' }}>
+//                             <Button
+//                                 variant={activeOrgSubTab === 'developers' ? 'contained' : 'outlined'}
+//                                 onClick={() => setActiveOrgSubTab('developers')}
+//                                 sx={{ borderRadius: 2, fontSize: '17px' }}
+//                             >
+//                                 مطورين عقاريين
+//                             </Button>
+//                             <Button
+//                                 variant={activeOrgSubTab === 'funders' ? 'contained' : 'outlined'}
+//                                 onClick={() => setActiveOrgSubTab('funders')}
+//                                 sx={{ borderRadius: 2, fontSize: '17px' }}
+//                             >
+//                                 ممولين عقاريين
+//                             </Button>
+//                         </Box>
+
+//                         {activeOrgSubTab === 'developers' && (
+//                             <>
+//                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexDirection: 'row-reverse' }}>
+//                                     <Typography variant="h6" color="text.secondary">قائمة المطورين العقاريين</Typography>
+//                                     <Button variant="outlined" startIcon={<AddIcon />} onClick={handleAddOrg}>
+//                                         إضافة مطور عقاري
+//                                     </Button>
+//                                 </Box>
+//                                 <List>
+//                                     {realEstateDevelopers.map((org) => (
+//                                         <ListItem
+//                                             key={org.id}
+//                                             disablePadding
+//                                             secondaryAction={
+//                                                 <Box sx={{ display: 'flex', gap: 1, flexDirection: 'row-reverse' }}>
+//                                                     <IconButton edge="start" aria-label="edit" onClick={() => handleEditOrg(org)}>
+//                                                         <EditIcon sx={{ color: 'purple' }} />
+//                                                     </IconButton>
+//                                                     <IconButton edge="start" aria-label="delete" onClick={() => handleDeleteItem(org.id, 'organization', org.name)}>
+//                                                         <DeleteIcon sx={{ color: 'red' }} />
+//                                                     </IconButton>
+//                                                 </Box>
+//                                             }
+//                                         >
+//                                             <ListItemText
+//                                                 primary={org.name}
+//                                                 secondary={`ID: ${org.id} | Contact: ${org.contact}`}
+//                                             />
+//                                         </ListItem>
+//                                     ))}
+//                                 </List>
+//                             </>
+//                         )}
+
+//                         {activeOrgSubTab === 'funders' && (
+//                             <Box sx={{ mt: 2 }}>
+//                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexDirection: 'row-reverse' }}>
+//                                     <Typography variant="h6" color="text.secondary">قائمة الممولين العقاريين</Typography>
+//                                     <Button variant="outlined" startIcon={<AddIcon />} onClick={handleAddOrg}>
+//                                         إضافة ممول عقاري
+//                                     </Button>
+//                                 </Box>
+//                                 <List>
+//                                     {realEstateFunders.map((funder) => (
+//                                         <ListItem
+//                                             key={funder.id}
+//                                             disablePadding
+//                                             secondaryAction={
+//                                                 <Box sx={{ display: 'flex', gap: 1, flexDirection: 'row-reverse' }}>
+//                                                     <IconButton edge="start" aria-label="edit" onClick={() => handleEditOrg(funder)}>
+//                                                         <EditIcon sx={{ color: 'purple' }} />
+//                                                     </IconButton>
+//                                                     <IconButton edge="start" aria-label="delete" onClick={() => handleDeleteItem(funder.id, 'organization', funder.name)}>
+//                                                         <DeleteIcon sx={{ color: 'red' }} />
+//                                                     </IconButton>
+//                                                 </Box>
+//                                             }
+//                                         >
+//                                             <ListItemText
+//                                                 primary={funder.name}
+//                                                 secondary={`ID: ${funder.id} | Contact: ${funder.contact}`}
+//                                             />
+//                                         </ListItem>
+//                                     ))}
+//                                 </List>
+//                             </Box>
+//                         )}
+//                     </>
+//                 )}
+
+//                 {activeTab === 'admins' && (
+//                     <>
+//                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexDirection: 'row-reverse' }}>
+//                             <Typography variant="h6" color="text.secondary">قائمة المدراء</Typography>
+//                             <Button variant="outlined" startIcon={<AddIcon />} onClick={handleAddAdmin}>
+//                                 إضافة مدير
+//                             </Button>
+//                         </Box>
+//                         <List>
+//                             {admins.map((admin) => (
+//                                 <ListItem
+//                                     key={admin.id}
+//                                     disablePadding
+//                                     secondaryAction={
+//                                         <Box sx={{ display: 'flex', gap: 1, flexDirection: 'row-reverse' }}>
+//                                             <IconButton edge="start" aria-label="edit" onClick={() => handleEditAdmin(admin)}>
+//                                                 <EditIcon sx={{ color: 'purple' }} />
+//                                             </IconButton>
+//                                             <IconButton edge="start" aria-label="delete" onClick={() => handleDeleteItem(admin.id, 'admin', admin.name)}>
+//                                                 <DeleteIcon sx={{ color: 'red' }} />
+//                                             </IconButton>
+//                                         </Box>
+//                                     }
+//                                 >
+//                                     <ListItemText
+//                                         primary={admin.name}
+//                                         secondary={`ID: ${admin.id} | Email: ${admin.email}`}
+//                                     />
+//                                 </ListItem>
+//                             ))}
+//                         </List>
+//                     </>
+//                 )}
+//             </Paper>
+
+//             <AddUserModal
+//                 open={isAddUserModalOpen}
+//                 onClose={() => setIsAddUserModalOpen(false)}
+//                 onAdd={handleAddUserConfirm}
+//             />
+//             {userToEdit && (
+//                 <EditUserModal
+//                     open={isEditUserModalOpen}
+//                     onClose={() => setIsEditUserModalOpen(false)}
+//                     onSave={handleEditUserSave}
+//                     user={userToEdit}
+//                 />
+//             )}
+//             <ConfirmDeleteModal
+//                 open={isDeleteConfirmModalOpen}
+//                 onClose={() => setIsDeleteConfirmModalOpen(false)}
+//                 onConfirm={handleDeleteConfirm}
+//                 itemType={itemToDelete?.type}
+//                 itemId={itemToDelete?.id}
+//                 itemName={itemToDelete?.name}
+//             />
+//             {/* Pass activeOrgSubTab as 'orgType' prop to AddOrgModal and EditOrgModal */}
+//             <AddOrgModal
+//                 open={isAddOrgModalOpen}
+//                 onClose={() => setIsAddOrgModalOpen(false)}
+//                 // When adding, infer the type from the active sub-tab
+//                 onAdd={(data) => handleAddOrgConfirm({ ...data, type: activeOrgSubTab === 'developers' ? 'developer' : 'funder' })}
+//                 orgType={activeOrgSubTab === 'developers' ? 'developer' : 'funder'}
+//             />
+//             {orgToEdit && (
+//                 <EditOrgModal
+//                     open={isEditOrgModalOpen}
+//                     onClose={() => setIsEditOrgModalOpen(false)}
+//                     onSave={handleEditOrgSave}
+//                     organization={orgToEdit}
+//                     orgType={orgToEdit.type}
+//                 />
+//             )}
+
+//             <AddAdminModal
+//                 open={isAddAdminModalOpen}
+//                 onClose={() => setIsAddAdminModalOpen(false)}
+//                 onAdd={handleAddAdminConfirm}
+//             />
+//             {adminToEdit && (
+//                 <EditAdminModal
+//                     open={isEditAdminModalOpen}
+//                     onClose={() => setIsEditAdminModalOpen(false)}
+//                     onSave={handleEditAdminSave}
+//                     admin={adminToEdit}
+//                 />
+//             )}
+//         </Box>
+//     );
+// }
+
+
+// function FavPropertiesPage() {
+//     // Mock data for favorite properties as plain JavaScript objects,
+//     // but structured like your FavoriteData class properties.
+//     const [favoriteProperties, setFavoriteProperties] = useState([
+//         {
+//             id: 'FAV001',
+//             user_id: 'user123',
+//             advertisement_id: 'ADV12345',
+//             saved_at: Timestamp.fromDate(new Date('2025-06-15T10:00:00Z')),
+//             property_name: 'منزل العائلة الفاخر', // Luxurious Family Home
+//             property_address: 'حي الزهور، القاهرة الجديدة', // Al-Zuhour District, New Cairo
+//             property_type: 'Home',
+//             status: 'For Sale',
+//         },
+//         {
+//             id: 'FAV002',
+//             user_id: 'user123',
+//             advertisement_id: 'ADV12346',
+//             saved_at: Timestamp.fromDate(new Date('2025-06-20T14:30:00Z')),
+//             property_name: 'فيلا مطلة على النيل', // Villa with Nile View
+//             property_address: 'الزمالك، القاهرة', // Zamalek, Cairo
+//             property_type: 'Villa',
+//             status: 'For Rent',
+//         },
+//         {
+//             id: 'FAV003',
+//             user_id: 'user123',
+//             advertisement_id: 'ADV12347',
+//             saved_at: Timestamp.fromDate(new Date('2025-07-01T09:15:00Z')),
+//             property_name: 'شقة عصرية بوسط المدينة', // Modern Apartment Downtown
+//             property_address: 'المهندسين، الجيزة', // Mohandessin, Giza
+//             property_type: 'Apartment',
+//             status: 'Financing',
+//         },
+//         {
+//             id: 'FAV004',
+//             user_id: 'user456',
+//             advertisement_id: 'ADV12348',
+//             saved_at: Timestamp.fromDate(new Date('2025-06-25T11:00:00Z')),
+//             property_name: 'استوديو أنيق', // Elegant Studio
+//             property_address: 'الساحل الشمالي', // North Coast
+//             property_type: 'Studio',
+//             status: 'For Sale',
+//         },
+//     ]);
+
+//     const handleDeleteFavorite = (favoriteId) => {
+//         // This still works because we're just filtering based on the 'id' property
+//         setFavoriteProperties((prevFavs) => prevFavs.filter((fav) => fav.id !== favoriteId));
+//         alert('تم حذف العقار من المفضلة بنجاح!'); // Property removed from favorites successfully!
+//     };
+
+//     return (
+//         <Box sx={{ p: 2, textAlign: 'right' }}>
+//             <Typography variant="h4" sx={{ display: 'flex', flexDirection: 'row-reverse' }} gutterBottom>
+//                 العقارات المفضلة
+//             </Typography>
+//             <Paper sx={{ p: 2, borderRadius: 2, minHeight: 400, textAlign: 'right', direction: 'rtl' }}>
+//                 <Typography variant="h6" color="text.secondary" sx={{ mb: 2, textAlign: 'left' }}>
+//                     : قائمة العقارات المفضلة لديك
+//                 </Typography>
+
+//                 {favoriteProperties.length === 0 ? (
+//                     <Typography variant="body1" color="text.secondary" sx={{ mt: 4, textAlign: 'center' }}>
+//                         لا توجد عقارات مفضلة حتى الآن.
+//                     </Typography>
+//                 ) : (
+//                     <List>
+//                         {favoriteProperties.map((fav) => (
+//                             <ListItem
+//                                 key={fav.id}
+//                                 disablePadding
+//                                 divider
+//                                 secondaryAction={
+//                                     <IconButton
+//                                         edge="end"
+//                                         aria-label="delete"
+//                                         onClick={() => handleDeleteFavorite(fav.id)}
+//                                         sx={{ color: 'red' }}
+//                                     >
+//                                         <DeleteIcon />
+//                                     </IconButton>
+//                                 }
+//                                 sx={{ py: 1 }}
+//                             >
+//                                 <ListItemText
+//                                     primary={
+//                                         <Grid container alignItems="center" spacing={1} direction="row-reverse">
+//                                             <Grid item>
+//                                                 <FavoriteIcon fontSize="small" color="primary" />
+//                                             </Grid>
+//                                             <Grid item>
+//                                                 <Typography variant="body1" component="span" sx={{ fontWeight: 'bold' }}>
+//                                                     {fav.property_name}
+//                                                 </Typography>
+//                                             </Grid>
+//                                             <Grid item>
+//                                                 <Chip
+//                                                     label={fav.status === 'For Sale' ? 'للبيع' : fav.status === 'For Rent' ? 'للإيجار' : 'تمويل'}
+//                                                     size="small"
+//                                                     color={fav.status === 'For Sale' ? 'success' : fav.status === 'For Rent' ? 'warning' : 'info'}
+//                                                     sx={{ mr: 1 }}
+//                                                 />
+//                                             </Grid>
+//                                         </Grid>
+//                                     }
+//                                     secondary={
+//                                         // This Stack component renders as a <div> by default, which was inside <p>
+//                                         <Stack direction="column" spacing={0.5} sx={{ mt: 0.5 }}>
+//                                             <Box display="flex" alignItems="center" flexDirection="row-reverse">
+//                                                 <LocationOnIcon fontSize="small" sx={{ color: 'text.secondary', ml: 0.5 }} />
+//                                                 <Typography variant="body2" color="text.secondary">
+//                                                     {fav.property_address}
+//                                                 </Typography>
+//                                             </Box>
+//                                             <Typography variant="caption" color="text.disabled">
+//                                                 ID: {fav.advertisement_id} | النوع: {fav.property_type} | تمت الإضافة في: {fav.saved_at.toDate().toLocaleDateString('ar-EG')}
+//                                             </Typography>
+//                                         </Stack>
+//                                     }
+//                                     primaryTypographyProps={{ component: 'div' }}
+//                                     // Add this line to render the secondary content within a <div>
+//                                     secondaryTypographyProps={{ component: 'div' }}
+//                                 />
+//                             </ListItem>
+//                         ))}
+//                     </List>
+//                 )}
+//             </Paper>
+//         </Box>
+//     );
+// }
+
+// function Mainadvertisment() {
+//     const adverts = [
+//         { id: 1, title: 'Advert 1', description: 'Description for Advert 1' },
+//         { id: 2, title: 'Advert 2', description: 'Description for Advert 2' },
+//         { id: 3, title: 'Advert 3', description: 'Description for Advert 3' },
+//     ]
+//     return (
+//         <Box>
+//             <Typography variant="h4" sx={{ display: 'flex', flexDirection: 'row-reverse' }} gutterBottom>إعلانات القسم الرئيسي</Typography>
+//             <Paper sx={{ p: 2, borderRadius: 2, minHeight: 400, textAlign: 'right' }}>
+//                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexDirection: 'row-reverse' }}>
+//                     <Typography variant="h6" sx={{ fontWeight: 'bold', fontSize: 18 }} color="text.secondary">قائمة الإعلانات</Typography>
+//                     <Tooltip title="إضافة" >
+//                         <Button sx={{ fontWeight: 'bold', fontSize: 16 }} variant="outlined" startIcon={<AddIcon sx={{ ml: 1 }} />} >
+//                             إضافة إعلان
+//                         </Button>
+//                     </Tooltip>
+//                 </Box>
+//                 <List>
+//                     {adverts.map((advert) =>
+//                         <ListItem
+//                             key={advert.id}
+//                             disablePadding
+//                             secondaryAction={
+//                                 <Box sx={{ display: 'flex', gap: 1, flexDirection: 'row-reverse' }}>
+//                                     <Tooltip title="تعديل">
+//                                         <IconButton edge="start" aria-label="edit">
+//                                             <EditIcon sx={{ color: 'purple' }} />
+//                                         </IconButton>
+//                                     </Tooltip>
+//                                     <Tooltip title="حذف">
+//                                         <IconButton edge="start" aria-label="delete" >
+//                                             <DeleteIcon sx={{ color: 'red' }} />
+//                                         </IconButton>
+//                                     </Tooltip>
+//                                 </Box>
+//                             }
+//                             sx={{ mb: 1.5, p: 1 }}
+//                         >
+
+//                             <ListItemText
+//                                 primary={advert.title}
+//                                 secondary={advert.description}
+
+//                             />
+//                             <ListItemAvatar sx={{ display: 'flex', flexDirection: 'row-reverse' }}>
+//                                 <img
+//                                     src='./home.jpg'
+//                                     style={{ height: 20, marginRight: 8, scale: 2 }}
+//                                 />
+
+//                             </ListItemAvatar>
+//                         </ListItem>
+//                     )
+//                     }
+//                 </List>
+//             </Paper>
+//         </Box>
+//     )
+// }
+
+// function PaidAdvertismentPage() {
+//     // State to manage the active tab
+//     const [activeTab, setActiveTab] = React.useState('paidAds'); // 'paidAds' or 'freeAds'
+
+//     // Handler for tab changes
+//     const handleTabChange = (event, newValue) => {
+//         setActiveTab(newValue);
+//     };
+
+//     // Data for the 'Paid Advertisements' tab
+//     const { data: paidAdsData, loading: paidAdsLoading } = useDemoData({
+//         dataSet: 'Commodity', // Or a different dataset for paid ads
+//         rowLength: 4,
+//         maxColumns: 6,
+//     });
+
+//     // Data for the 'Free Advertisements' tab
+//     // Let's use a different dataSet or modify rowLength/maxColumns to distinguish
+//     const { data: freeAdsData, loading: freeAdsLoading } = useDemoData({
+//         dataSet: 'Employee', // Using 'Employee' dataset for the second tab as an example
+//         rowLength: 5,
+//         maxColumns: 5,
+//     });
+
+//     // Function to get the DataGrid content based on the active tab
+//     const renderDataGrid = () => {
+//         if (activeTab === 'paidAds') {
+//             return (
+//                 <DataGrid
+//                     {...paidAdsData}
+//                     loading={paidAdsLoading} // Pass loading state
+//                     localeText={{
+//                         toolbarQuickFilterPlaceholder: 'البحث عن إعلان', // Arabic for 'Search commodities'
+//                         // Add other Arabic translations for the paid ads DataGrid
+//                         // filterPanelOperator: 'المشغل',
+//                         // ...
+
+//                     }}
+//                     showToolbar
+//                 />
+//             );
+//         } else if (activeTab === 'freeAds') {
+//             return (
+//                 <DataGrid
+//                     {...freeAdsData}
+//                     loading={freeAdsLoading} // Pass loading state
+//                     localeText={{
+//                         toolbarQuickFilterPlaceholder: 'البحث عن موظفين', // Arabic for 'Search employees'
+//                         // Add other Arabic translations for the free ads DataGrid
+//                         // filterPanelOperator: 'المشغل',
+//                         // ...
+//                     }}
+//                     showToolbar
+//                 />
+//             );
+//         }
+//         return null; // Should not happen, but good practice
+//     };
+
+//     return (
+//         <Box dir={'rtl'} sx={{ p: 2, textAlign: 'right' }}>
+
+//             <Typography sx={{ display: 'flex', flexDirection: 'row' }} variant="h4" gutterBottom>
+//                 إلاعلانات المدفوعة
+//             </Typography>
+//             <Paper dir={'rtl'} sx={{ p: 2, borderRadius: 2, minHeight: 400, textAlign: 'right' }}>
+//                 {/* Header and Title */}
+
+//                 {/* Tabs for switching */}
+//                 <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+//                     <Tabs
+//                         variant='scrollable'
+//                         value={activeTab}
+//                         onChange={handleTabChange}
+//                         aria-label="advertisement tabs"
+//                         centered
+//                         textColor="primary"
+//                         indicatorColor="primary"
+//                     >
+//                         <Tab value="paidAds" label="إعلانات مطوريين عقاريين" />
+//                         <Tab value="freeAds" label="إعلانات ممولين عقاريين" />
+//                     </Tabs>
+//                 </Box>
+
+//                 {/* DataGrid Container */}
+//                 <div style={{ height: 400, width: '100%', padding: '1rem' }}>
+//                     {renderDataGrid()}
+//                 </div>
+//             </Paper>
+//         </Box>
+
+//     );
+// }
 
 function ClientAdvertismentPage() {
     const authUid = useSelector((state) => state.auth.uid);
@@ -1116,41 +1781,13 @@ function ClientAdvertismentPage() {
             </Typography>
 
             {/* Statistics */}
-            <Box
-                sx={{
-                    mb: 3,
-                    display: 'flex',
-                    gap: { xs: 1, sm: 2, md: 2.5, lg: 3, xl: 3.5 },
-                    flexWrap: 'wrap',
-                    justifyContent: {
-                        xs: 'center',
-                        sm: 'flex-start',
-                        md: 'flex-start',
-                        lg: 'flex-start',
-                        xl: 'flex-start',
-                    },
-                    flexDirection: {
-                        xs: 'column',
-                        sm: 'row',
-                        md: 'row',
-                        lg: 'row',
-                        xl: 'row',
-                    },
-                    alignItems: {
-                        xs: 'stretch',
-                        sm: 'center',
-                        md: 'center',
-                        lg: 'center',
-                        xl: 'center',
-                    },
-                }}
-            >
-                <Chip label={`الكل: ${filteredAdvertisements.length}`} color="primary" sx={{ width: { xs: '100%', sm: 'auto', md: 'auto', lg: 'auto', xl: 'auto' }, mb: { xs: 1, sm: 0, md: 0, lg: 0, xl: 0 } }} />
-                <Chip label={`قيد المراجعة: ${filteredAdvertisements.filter(ad => ad.reviewStatus === 'pending').length}`} color="warning" sx={{ width: { xs: '100%', sm: 'auto', md: 'auto', lg: 'auto', xl: 'auto' }, mb: { xs: 1, sm: 0, md: 0, lg: 0, xl: 0 } }} />
-                <Chip label={`تمت الموافقة: ${filteredAdvertisements.filter(ad => ad.reviewStatus === 'approved').length}`} color="success" sx={{ width: { xs: '100%', sm: 'auto', md: 'auto', lg: 'auto', xl: 'auto' }, mb: { xs: 1, sm: 0, md: 0, lg: 0, xl: 0 } }} />
-                <Chip label={`مرفوض: ${filteredAdvertisements.filter(ad => ad.reviewStatus === 'rejected').length}`} color="error" sx={{ width: { xs: '100%', sm: 'auto', md: 'auto', lg: 'auto', xl: 'auto' }, mb: { xs: 1, sm: 0, md: 0, lg: 0, xl: 0 } }} />
-                <Chip label={`مفعل: ${filteredAdvertisements.filter(ad => ad.ads === true).length}`} color="info" sx={{ width: { xs: '100%', sm: 'auto', md: 'auto', lg: 'auto', xl: 'auto' }, mb: { xs: 1, sm: 0, md: 0, lg: 0, xl: 0 } }} />
-                <Chip label={`غير مفعل: ${filteredAdvertisements.filter(ad => ad.ads === false).length}`} color="default" sx={{ width: { xs: '100%', sm: 'auto', md: 'auto', lg: 'auto', xl: 'auto' }, mb: { xs: 1, sm: 0, md: 0, lg: 0, xl: 0 } }} />
+            <Box sx={{ mb: 3, display: 'flex', gap: 2, flexWrap: 'wrap', justifyContent: 'center' }}>
+                <Chip label={`الكل: ${filteredAdvertisements.length}`} color="primary" />
+                <Chip label={`قيد المراجعة: ${filteredAdvertisements.filter(ad => ad.reviewStatus === 'pending').length}`} color="warning" />
+                <Chip label={`تمت الموافقة: ${filteredAdvertisements.filter(ad => ad.reviewStatus === 'approved').length}`} color="success" />
+                <Chip label={`مرفوض: ${filteredAdvertisements.filter(ad => ad.reviewStatus === 'rejected').length}`} color="error" />
+                <Chip label={`مفعل: ${filteredAdvertisements.filter(ad => ad.ads === true).length}`} color="info" />
+                <Chip label={`غير مفعل: ${filteredAdvertisements.filter(ad => ad.ads === false).length}`} color="default" />
             </Box>
 
             <Paper
@@ -1169,36 +1806,8 @@ function ClientAdvertismentPage() {
                 </Typography>
 
                 {/* Filters */}
-                <Box
-                    sx={{
-                        mb: 3,
-                        display: 'flex',
-                        flexWrap: 'wrap',
-                        gap: { xs: 1, sm: 2, md: 2.5, lg: 3, xl: 3.5 },
-                        flexDirection: {
-                            xs: 'column',
-                            sm: 'row-reverse',
-                            md: 'row-reverse',
-                            lg: 'row-reverse',
-                            xl: 'row-reverse',
-                        },
-                        alignItems: {
-                            xs: 'stretch',
-                            sm: 'flex-start',
-                            md: 'flex-start',
-                            lg: 'center',
-                            xl: 'center',
-                        },
-                        justifyContent: {
-                            xs: 'center',
-                            sm: 'flex-start',
-                            md: 'flex-start',
-                            lg: 'flex-start',
-                            xl: 'flex-start',
-                        },
-                    }}
-                >
-                    <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 160, md: 180, lg: 200, xl: 220 }, flexGrow: { xs: 1, sm: 0, md: 0 } }}>
+                <Box sx={{ mb: 3, display: 'flex', gap: 2, flexDirection: 'row-reverse' }}>
+                    <FormControl size="small" sx={{ minWidth: 150 }}>
                         <InputLabel>حالة المراجعة</InputLabel>
                         <Select
                             value={statusFilter}
@@ -1211,7 +1820,8 @@ function ClientAdvertismentPage() {
                             <MenuItem value="rejected">مرفوض</MenuItem>
                         </Select>
                     </FormControl>
-                    <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 160, md: 180, lg: 200, xl: 220 }, flexGrow: { xs: 1, sm: 0, md: 0 } }}>
+                    
+                    <FormControl size="small" sx={{ minWidth: 150 }}>
                         <InputLabel>حالة التفعيل</InputLabel>
                         <Select
                             value={activationFilter}
@@ -1223,7 +1833,8 @@ function ClientAdvertismentPage() {
                             <MenuItem value="inactive">غير مفعل</MenuItem>
                         </Select>
                     </FormControl>
-                    <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 160, md: 180, lg: 200, xl: 220 }, flexGrow: { xs: 1, sm: 0, md: 0 } }}>
+                    
+                    <FormControl size="small" sx={{ minWidth: 150 }}>
                         <InputLabel>نوع الإعلان</InputLabel>
                         <Select
                             value={adTypeFilter}
@@ -1976,12 +2587,10 @@ function SettingsPage() {
     };
 
     return (
-        <Box dir="rtl" sx={{ p: 2, textAlign: 'right' }}>
-            <PageHeader
-             title="إعدادات الحساب"
-             icon={SettingsIcon}
-             />
-            <Paper sx={{ p: 2, borderRadius: 2, minHeight: 200, textAlign: 'left' }}>
+        <Box sx={{ p: 2, textAlign: 'right' }}>
+            <Typography variant="h4" gutterBottom>إعدادات الحساب</Typography>
+            
+            <Paper sx={{ p: 2, borderRadius: 2, minHeight: 200, textAlign: 'right' }}>
                 <Typography variant="h6" color="text.secondary" gutterBottom>
                     إدارة الحساب
                 </Typography>
@@ -2117,20 +2726,6 @@ export default function ClientDashboard(props) {
     const [open, setOpen] = React.useState(true);
     const [openReports, setOpenReports] = React.useState(false);
     const [mode, setMode] = React.useState('light');
-
-    // Auto-close Drawer at <=600px
-    React.useEffect(() => {
-        if (typeof window === 'undefined') return;
-        function handleResize() {
-            if (window.innerWidth <= 600) {
-                setOpen(false);
-            }
-        }
-        window.addEventListener('resize', handleResize);
-        // Run once on mount to handle initial load
-        handleResize();
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
     const userProfile = useSelector((state) => state.user.profile);
     const userProfileStatus = useSelector((state) => state.user.status);
     
@@ -2322,6 +2917,9 @@ export default function ClientDashboard(props) {
         case '/favproperties':
             currentPageContent = <FavPropertiesPage />;
             break;
+        // case '/mainadvertisment':
+        //     currentPageContent = <Mainadvertisment />;
+        //     break;
         case '/clientadvertisment':
             currentPageContent = <ClientAdvertismentPage />;
             break;
