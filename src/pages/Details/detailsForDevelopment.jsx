@@ -49,6 +49,8 @@ import RealEstateDeveloperAdvertisement from "../../FireBase/modelsWithOperation
 import { auth } from "../../FireBase/firebaseConfig";
 
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
+import Message from "../../FireBase/MessageAndNotification/Message";
+import Notification from "../../FireBase/MessageAndNotification/Notification";
 function DetailsForDevelopment() {
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState("");
@@ -59,7 +61,46 @@ function DetailsForDevelopment() {
   const [showFull, setShowFull] = useState(false);
   // const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const currentUser = auth.currentUser?.uid;
 
+const handleSend = async () => {
+    if (!message.trim() || !currentUser || !clientAds?.userId) return;
+
+    try {
+      const receiverName = clientAds.developer_name;
+      const newMessage = new Message({
+        sender_id: currentUser,
+        receiver_id: clientAds.userId,
+        content: message,
+        reciverName: receiverName,
+        timestamp: new Date(),
+        is_read: false,
+        message_type: "text",
+      });
+
+      console.log("[DEBUG] Sending message to:", {
+        receiver_id: clientAds.userId,
+        reciverName: receiverName,
+      });
+      await newMessage.send();
+
+      const notification = new Notification({
+        receiver_id: clientAds.userId,
+        title: `رسالة جديدة من ${auth.currentUser.email || "مستخدم"}`,
+        body: message || "لقد تلقيت رسالة جديدة!",
+        type: "message",
+        link: `/privateChat/${clientAds.userId}`,
+      });
+      await notification.send();
+
+      alert("تم إرسال الرسالة!");
+      setMessage("");
+      setOpen(false);
+    } catch (error) {
+      console.error("[DEBUG] خطأ أثناء الإرسال:", error);
+      alert("فشل في إرسال الرسالة!");
+    }
+  };
   const toggleShow = () => setShowFull((prev) => !prev);
 
   useEffect(() => {
@@ -270,7 +311,7 @@ function DetailsForDevelopment() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpen(false)}>إلغاء</Button>
-          <Button variant="contained">إرسال</Button>
+          <Button variant="contained" onClick={handleSend}>إرسال</Button>
         </DialogActions>
       </Dialog>
 
