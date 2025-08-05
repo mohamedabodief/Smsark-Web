@@ -101,7 +101,7 @@ export default function BestFin() {
   };
 
   return (
-    <Box sx={{ direction: "rtl", paddingTop: 10, px: 5 }}>
+    <Box sx={{ direction: "rtl", paddingTop: 15, px: 5 }}>
       <Typography variant="h4" fontWeight="bold" textAlign="center" mb={4}>
         أفضل عروض التمويل
       </Typography>
