@@ -25,9 +25,11 @@ import {
     TableContainer,
     TableHead,
     TableRow,
-    useTheme
+    useTheme,
+    useMediaQuery
 } from '@mui/material';
 import PeopleIcon from '@mui/icons-material/People'; // Icon for Users
+import BusinessIcon from '@mui/icons-material/Business'; // Icon for Organizations
 import CampaignIcon from '@mui/icons-material/Campaign'; // Icon for Ads
 import RequestQuoteIcon from '@mui/icons-material/RequestQuote'; // Icon for Financial Requests
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney'; // Icon for Revenue
@@ -57,6 +59,7 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import { logout } from '../LoginAndRegister/featuresLR/authSlice';
 import { signOut } from 'firebase/auth';
 import { auth } from '../FireBase/firebaseConfig';
+import { performLogout } from '../utils/logoutUtils';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import ApprovalIcon from '@mui/icons-material/Approval';
 import DoNotDisturbOnIcon from '@mui/icons-material/DoNotDisturbOn';
@@ -133,7 +136,7 @@ import {
     deleteOrganizationAsync,
 } from '../reduxToolkit/slice/adminUsersSlice';
 
-import { fetchUserProfile, updateUserProfile, uploadAndSaveProfileImage } from "../LoginAndRegister/featuresLR/userSlice";
+import { fetchUserProfile, updateUserProfile, uploadAndSaveProfileImage, clearProfile } from "../LoginAndRegister/featuresLR/userSlice";
 import sendResetPasswordEmail from "../FireBase/authService/sendResetPasswordEmail";
 import { collection, doc, getDoc, getDocs } from "firebase/firestore";
 import { fetchFinancialRequests, deleteFinancialRequest, updateFinancialRequest } from '../reduxToolkit/slice/financialRequestSlice';
@@ -230,19 +233,7 @@ const NAVIGATION = [
                 icon: <AnalyticsIcon />,
                 tooltip: 'التحليلات والتقارير',
             },
-            {
-                segment: 'traffic',
-                title: 'حركة مرور الزوار',
-                icon: <DescriptionIcon />,
-                tooltip: 'حركة مرور الزوار',
-            },
         ],
-    },
-    {
-        segment: 'integrations',
-        title: 'إضافات',
-        icon: <LayersIcon />,
-        tooltip: 'إضافات',
     },
 ];
 
@@ -794,48 +785,48 @@ function EditAdminModal({ open, onClose, admin, setSnackbar }) { // Added setSna
 }
 
 
-function DashboardPage() {
-    return (
-        <Box sx={{ p: 2, textAlign: 'right' }}>
-            <PageHeader
-                title="لوحة التحكم"
-                icon={DashboardIcon}
-                showCount={false}
-            />
-            <Grid container spacing={3} direction="row-reverse">
-                <Grid item xs={12} sm={6} md={4}>
-                    <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', height: 140, borderRadius: 2, textAlign: 'right' }}>
-                        <Typography variant="h6" color="text.secondary">Total Sales</Typography>
-                        <Typography variant="h5" sx={{ mt: 1, fontWeight: 'bold', color: 'primary.main' }}>$12,345.00</Typography>
-                        <Typography variant="body2" color="success.main">+15% since last month</Typography>
-                    </Paper>
-                </Grid>
-                <Grid item xs={12} sm={6} md={4}>
-                    <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', height: 140, borderRadius: 2, textAlign: 'right' }}>
-                        <Typography variant="h6" color="text.secondary">New Orders</Typography>
-                        <Typography variant="h5" sx={{ mt: 1, fontWeight: 'bold', color: 'secondary.main' }}>245</Typography>
-                        <Typography variant="body2" color="error.main">-5% since last month</Typography>
-                    </Paper>
-                </Grid>
-                <Grid item xs={12} sm={6} md={4}>
-                    <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', height: 140, borderRadius: 2, textAlign: 'right' }}>
-                        <Typography variant="h6" color="text.secondary">Customers</Typography>
-                        <Typography variant="h5" sx={{ mt: 1, fontWeight: 'bold' }}>1,234</Typography>
-                        <Typography variant="body2" color="success.main">+2% since last month</Typography>
-                    </Paper>
-                </Grid>
-                <Grid item xs={12}>
-                    <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', borderRadius: 2, height: 300, textAlign: 'right' }}>
-                        <Typography variant="h6">Sales Trend (Placeholder)</Typography>
-                        <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <Typography variant="body1" color="text.secondary">Chart would go here</Typography>
-                        </Box>
-                    </Paper>
-                </Grid>
-            </Grid>
-        </Box>
-    );
-}
+// function DashboardPage() {
+//     return (
+//         <Box sx={{ p: 2, textAlign: 'right' }}>
+//             <PageHeader
+//                 title="لوحة التحكم"
+//                 icon={DashboardIcon}
+//                 showCount={false}
+//             />
+//             <Grid container spacing={3} direction="row-reverse">
+//                 <Grid item xs={12} sm={6} md={4}>
+//                     <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', height: 140, borderRadius: 2, textAlign: 'right' }}>
+//                         <Typography variant="h6" color="text.secondary">Total Sales</Typography>
+//                         <Typography variant="h5" sx={{ mt: 1, fontWeight: 'bold', color: 'primary.main' }}>$12,345.00</Typography>
+//                         <Typography variant="body2" color="success.main">+15% since last month</Typography>
+//                     </Paper>
+//                 </Grid>
+//                 <Grid item xs={12} sm={6} md={4}>
+//                     <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', height: 140, borderRadius: 2, textAlign: 'right' }}>
+//                         <Typography variant="h6" color="text.secondary">New Orders</Typography>
+//                         <Typography variant="h5" sx={{ mt: 1, fontWeight: 'bold', color: 'secondary.main' }}>245</Typography>
+//                         <Typography variant="body2" color="error.main">-5% since last month</Typography>
+//                     </Paper>
+//                 </Grid>
+//                 <Grid item xs={12} sm={6} md={4}>
+//                     <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', height: 140, borderRadius: 2, textAlign: 'right' }}>
+//                         <Typography variant="h6" color="text.secondary">Customers</Typography>
+//                         <Typography variant="h5" sx={{ mt: 1, fontWeight: 'bold' }}>1,234</Typography>
+//                         <Typography variant="body2" color="success.main">+2% since last month</Typography>
+//                     </Paper>
+//                 </Grid>
+//                 <Grid item xs={12}>
+//                     <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', borderRadius: 2, height: 300, textAlign: 'right' }}>
+//                         <Typography variant="h6">Sales Trend (Placeholder)</Typography>
+//                         <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+//                             <Typography variant="body1" color="text.secondary">Chart would go here</Typography>
+//                         </Box>
+//                     </Paper>
+//                 </Grid>
+//             </Grid>
+//         </Box>
+//     );
+// }
 
 
 const genders = ["ذكر", "أنثى", "غير محدد"];
@@ -1061,7 +1052,7 @@ function ProfilePage() {
         return (
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
                 <CircularProgress />
-                <Typography sx={{ ml: 2 }}>Loading profile...</Typography>
+                <Typography sx={{ ml: 2 }}>جارٍ تحميل الملف الشخصي...</Typography>
             </Box>
         );
     }
@@ -1078,7 +1069,7 @@ function ProfilePage() {
     if (userProfileStatus === "failed") {
         return (
             <Box sx={{ p: 3 }}>
-                <Alert severity="error">Error loading profile: {userProfileError || "Unknown error."}</Alert>
+                <Alert severity="error">خطأ في تحميل الملف الشخصي: {userProfileError || "Unknown error."}</Alert>
             </Box>
         );
     }
@@ -1225,7 +1216,6 @@ function ProfilePage() {
 function UsersPage() {
     const dispatch = useDispatch();
 
-    // Select data and status from the new adminUsersSlice
     const clients = useSelector((state) => state.adminUsers.clients);
     const clientsStatus = useSelector((state) => state.adminUsers.clientsStatus);
     const clientsError = useSelector((state) => state.adminUsers.clientsError);
@@ -1240,6 +1230,7 @@ function UsersPage() {
 
     const [activeTab, setActiveTab] = useState('users');
     const [activeOrgSubTab, setActiveOrgSubTab] = useState('developers');
+    const [searchTerm, setSearchTerm] = useState('');
 
     const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
     const [isEditUserModalOpen, setIsEditUserModalOpen] = useState(false);
@@ -1256,12 +1247,13 @@ function UsersPage() {
     const [isEditAdminModalOpen, setIsEditAdminModalOpen] = useState(false);
     const [adminToEdit, setAdminToEdit] = useState(null);
 
-    // Snackbar state for UsersPage itself
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
-    // --- Fetch Data on Mount and Tab Change ---
+    // Responsiveness hook
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
     useEffect(() => {
-        // Only fetch if status is 'idle' or 'failed' to prevent continuous fetching
         if (activeTab === 'users' && (clientsStatus === 'idle' || clientsStatus === 'failed')) {
             dispatch(fetchClients());
         } else if (activeTab === 'organizations' && (organizationsStatus === 'idle' || organizationsStatus === 'failed')) {
@@ -1271,13 +1263,17 @@ function UsersPage() {
         }
     }, [activeTab, clientsStatus, organizationsStatus, adminsStatus, dispatch]);
 
-    // --- User Handlers (now dispatching actions from adminUsersSlice) ---
+    const handleSearchChange = (event) => {
+        setSearchTerm(event.target.value);
+    };
+
+    // --- User Handlers ---
     const handleAddUser = () => {
         setIsAddUserModalOpen(true);
     };
 
     const handleAddUserConfirm = async ({ name, email, phone, gender }) => {
-         try {
+        try {
             await dispatch(addClient({ cli_name: name, email, phone, gender, type_of_user: 'client' })).unwrap();
             setSnackbar({ open: true, message: "تم إضافة العميل بنجاح!", severity: "success" });
         } catch (err) {
@@ -1294,15 +1290,14 @@ function UsersPage() {
         setIsAddOrgModalOpen(true);
     };
 
-    const handleAddOrgConfirm = async ({ name, contact }) => { // Removed type, phone, city, governorate, address, email from here
-        const orgType = activeOrgSubTab === 'developers' ? 'مطور عقاري' : 'ممول عقاري'; // Map to your OrganizationUserData types
+    const handleAddOrgConfirm = async ({ name, contact }) => {
+        const orgType = activeOrgSubTab === 'developers' ? 'مطور عقاري' : 'ممول عقاري';
         try {
             await dispatch(addOrganization({
                 org_name: name,
-                contact_info: contact, // Assuming 'contact' maps to 'contact_info' in your model
+                contact_info: contact,
                 type_of_organization: orgType,
                 type_of_user: 'organization'
-                // You might need to add other fields like phone, city, etc., if your AddOrgModal supports them
             })).unwrap();
             setSnackbar({ open: true, message: `تم إضافة ${orgType} بنجاح!`, severity: "success" });
         } catch (err) {
@@ -1313,7 +1308,6 @@ function UsersPage() {
         }
     };
 
-    // Filter organizations for developers and funders based on the 'type_of_organization' property
     const realEstateDevelopers = organizations.filter(org => org.type_of_organization === 'مطور عقاري');
     const realEstateFunders = organizations.filter(org => org.type_of_organization === 'ممول عقاري');
 
@@ -1327,23 +1321,22 @@ function UsersPage() {
         setIsEditAdminModalOpen(true);
     };
 
-
     // --- General Delete Handler ---
     const handleDeleteItem = (uid, type, name) => {
-        setItemToDelete({ uid, type, name }); // Store uid, not id
+        setItemToDelete({ uid, type, name });
         setIsDeleteConfirmModalOpen(true);
     };
 
     const handleDeleteConfirm = async () => {
         try {
             if (itemToDelete.type === 'user') {
-                await dispatch(deleteClientAsync(itemToDelete.uid)).unwrap(); // Async thunk, use .unwrap()
+                await dispatch(deleteClientAsync(itemToDelete.uid)).unwrap();
                 setSnackbar({ open: true, message: "تم حذف العميل بنجاح!", severity: "success" });
             } else if (itemToDelete.type === 'organization') {
-                await dispatch(deleteOrganizationAsync(itemToDelete.uid)).unwrap(); // Async thunk, use .unwrap()
+                await dispatch(deleteOrganizationAsync(itemToDelete.uid)).unwrap();
                 setSnackbar({ open: true, message: "تم حذف المؤسسة بنجاح!", severity: "success" });
             } else if (itemToDelete.type === 'admin') {
-                await dispatch(deleteAdmin(itemToDelete.uid)).unwrap(); // Async thunk, use .unwrap()
+                await dispatch(deleteAdmin(itemToDelete.uid)).unwrap();
                 setSnackbar({ open: true, message: "تم حذف المدير بنجاح!", severity: "success" });
             }
         } catch (err) {
@@ -1355,7 +1348,6 @@ function UsersPage() {
         }
     };
 
-    // Handle Snackbar close
     const handleSnackbarClose = (event, reason) => {
         if (reason === 'clickaway') {
             return;
@@ -1363,8 +1355,7 @@ function UsersPage() {
         setSnackbar({ ...snackbar, open: false });
     };
 
-
-    // Helper to render lists based on status
+    // Helper to render lists based on status and search term
     const renderListContent = (data, status, error, type) => {
         if (status === 'loading') {
             return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}><CircularProgress /></Box>;
@@ -1372,40 +1363,74 @@ function UsersPage() {
         if (status === 'failed') {
             return <Alert severity="error" sx={{ mt: 2 }}>Error: {error}</Alert>;
         }
-        if (!data || data.length === 0) {
-            return <Typography sx={{ mt: 2, textAlign: 'center', color: 'text.secondary' }}>لا توجد بيانات لعرضها.</Typography>;
+        if (!data) {
+            return null;
         }
 
+        const filteredData = data.filter(item => {
+            const name = item.cli_name || item.org_name || item.adm_name;
+            const email = item.email || '';
+            return name?.toLowerCase().includes(searchTerm.toLowerCase()) || email?.toLowerCase().includes(searchTerm.toLowerCase());
+        });
+
+        if (filteredData.length === 0) {
+            return <Typography sx={{ mt: 2, textAlign: 'center', color: 'text.secondary' }}>لا توجد نتائج مطابقة لبحثك.</Typography>;
+        }
+
+        const columns = [
+            { id: 'name', label: 'الاسم' },
+            { id: 'contact', label: 'البريد الإلكتروني / الهاتف' },
+            { id: 'actions', label: 'إجراءات' },
+        ];
+
         return (
-            <List>
-                {data.map((item) => (
-                    <ListItem
-                        key={item.uid} // Use uid as key
-                        disablePadding
-                        secondaryAction={
-                            <Box sx={{ display: 'flex', gap: 1, flexDirection: 'row' }}>
-                                <IconButton edge="start" aria-label="edit" onClick={() => {
-                                    if (type === 'user') handleEditUser(item);
-                                    else if (type === 'organization') handleEditOrg(item);
-                                    else if (type === 'admin') handleEditAdmin(item);
-                                }}>
-                                    <EditIcon sx={{ color: 'purple' }} />
-                                </IconButton>
-                                <IconButton edge="start" aria-label="delete" onClick={() => handleDeleteItem(item.uid, type, item.cli_name || item.org_name || item.adm_name)}>
-                                    <DeleteIcon sx={{ color: 'red' }} />
-                                </IconButton>
-                            </Box>
-                        }
-                    >
-                        <ListItemText
-                            primary={item.cli_name || item.org_name || item.adm_name} // Display appropriate name
-                            secondary={`UID: ${item.uid} | ${item.email ? `Email: ${item.email} | ` : ''}Phone: ${item.phone || 'N/A'}`}
-                        />
-                    </ListItem>
-                ))}
-            </List>
+            <TableContainer sx={{ overflowX: 'auto' }}>
+                <Table>
+                    <TableHead>
+                        <TableRow>
+                            {columns.map((column) => (
+                                <TableCell
+                                    key={column.id}
+                                    sx={{ fontWeight: 'bold', minWidth: isMobile && column.id === 'contact' ? 150 : 'auto' }}
+                                >
+                                    {column.label}
+                                </TableCell>
+                            ))}
+                        </TableRow>
+                    </TableHead>
+                    <TableBody>
+                        {filteredData.map((item) => (
+                            <TableRow key={item.uid}>
+                                <TableCell>
+                                    <Typography variant="body1">{item.cli_name || item.org_name || item.adm_name}</Typography>
+                                </TableCell>
+                                <TableCell>
+                                    <Typography variant="body2" color="text.secondary">
+                                        {item.email ? `Email: ${item.email}` : ''}
+                                        {item.email && item.phone ? ' | ' : ''}
+                                        {item.phone ? `Phone: ${item.phone}` : ''}
+                                    </Typography>
+                                </TableCell>
+                                <TableCell>
+                                    <Stack direction="row" spacing={1}>
+                                        <IconButton
+                                            edge="start"
+                                            aria-label="delete"
+                                            onClick={() => handleDeleteItem(item.uid, type, item.cli_name || item.org_name || item.adm_name)}
+                                            sx={{ color: 'red' }}
+                                        >
+                                            <DeleteIcon />
+                                        </IconButton>
+                                    </Stack>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </TableContainer>
         );
     };
+
 
     return (
         <Box dir={'rtl'} sx={{ p: 3, textAlign: 'right' }}>
@@ -1413,9 +1438,9 @@ function UsersPage() {
                 title="المستخدمين"
                 icon={GroupIcon}
                 showCount={false}
-                
             />
-            <Box sx={{ mb: 2, display: 'flex', gap: 1, flexDirection: 'row' }}>
+
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ mb: 2 }}>
                 <Button
                     variant={activeTab === 'users' ? 'contained' : 'outlined'}
                     onClick={() => setActiveTab('users')}
@@ -1440,25 +1465,41 @@ function UsersPage() {
                 >
                     المدراء
                 </Button>
-            </Box>
+            </Stack>
 
-            <Paper sx={{ p: 2, borderRadius: 2, minHeight: 400, textAlign: 'right' }}>
+            <Paper sx={{ p: { xs: 1, sm: 2 }, borderRadius: 2, minHeight: 400, textAlign: 'right' }}>
                 {activeTab === 'users' && (
                     <>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexDirection: 'row' }}>
+                        <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems="center" mb={2} spacing={2}>
                             <Typography variant="h6" sx={{ fontWeight: 'bold' }} color="text.secondary">قائمة العملاء</Typography>
-                            <Button variant="outlined" startIcon={<AddIcon />} onClick={handleAddUser}>
-                                إضافة عميل
-                            </Button>
-                        </Box>
+                            <Box sx={{ display: 'flex', gap: 1, width: { xs: '100%', sm: 'auto' } }}>
+                                <TextField
+                                    label="بحث بالاسم أو البريد الإلكتروني"
+                                    variant="outlined"
+                                    size="small"
+                                    value={searchTerm}
+                                    onChange={handleSearchChange}
+                                    sx={{ width: { xs: '100%', sm: 300 } }}
+                                    InputProps={{
+                                        endAdornment: (
+                                            <InputAdornment position="end">
+                                                <SearchIcon />
+                                            </InputAdornment>
+                                        ),
+                                    }}
+                                />
+                                <Button variant="outlined" startIcon={<AddIcon />} onClick={handleAddUser}>
+                                    إضافة عميل
+                                </Button>
+                            </Box>
+                        </Stack>
                         {renderListContent(clients, clientsStatus, clientsError, 'user')}
                     </>
                 )}
 
                 {activeTab === 'organizations' && (
                     <>
-                        {/* Sub-tabs for Organizations */}
-                        <Box sx={{ mb: 2, display: 'flex', gap: 1, flexDirection: 'row' }}>
+                        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ mb: 2 }}>
                             <Button
                                 variant={activeOrgSubTab === 'developers' ? 'contained' : 'outlined'}
                                 onClick={() => setActiveOrgSubTab('developers')}
@@ -1473,28 +1514,62 @@ function UsersPage() {
                             >
                                 ممولين عقاريين
                             </Button>
-                        </Box>
+                        </Stack>
 
                         {activeOrgSubTab === 'developers' && (
                             <>
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexDirection: 'row-reverse' }}>
+                                <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems="center" mb={2} spacing={2}>
                                     <Typography variant="h6" color="text.secondary">قائمة المطورين العقاريين</Typography>
-                                    <Button variant="outlined" startIcon={<AddIcon />} onClick={handleAddOrg}>
-                                        إضافة مطور عقاري
-                                    </Button>
-                                </Box>
+                                    <Box sx={{ display: 'flex', gap: 1, width: { xs: '100%', sm: 'auto' } }}>
+                                        <TextField
+                                            label="بحث بالاسم أو البريد الإلكتروني"
+                                            variant="outlined"
+                                            size="small"
+                                            value={searchTerm}
+                                            onChange={handleSearchChange}
+                                            sx={{ width: { xs: '100%', sm: 300 } }}
+                                            InputProps={{
+                                                endAdornment: (
+                                                    <InputAdornment position="end">
+                                                        <SearchIcon />
+                                                    </InputAdornment>
+                                                ),
+                                            }}
+                                        />
+                                        <Button variant="outlined" startIcon={<AddIcon />} onClick={handleAddOrg}>
+                                            إضافة مطور عقاري
+                                        </Button>
+                                    </Box>
+                                </Stack>
                                 {renderListContent(realEstateDevelopers, organizationsStatus, organizationsError, 'organization')}
                             </>
                         )}
 
                         {activeOrgSubTab === 'funders' && (
                             <Box sx={{ mt: 2 }}>
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexDirection: 'row' }}>
+                                <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems="center" mb={2} spacing={2}>
                                     <Typography variant="h6" color="text.secondary">قائمة الممولين العقاريين</Typography>
-                                    <Button variant="outlined" startIcon={<AddIcon />} onClick={handleAddOrg}>
-                                        إضافة ممول عقاري
-                                    </Button>
-                                </Box>
+                                    <Box sx={{ display: 'flex', gap: 1, width: { xs: '100%', sm: 'auto' } }}>
+                                        <TextField
+                                            label="بحث بالاسم أو البريد الإلكتروني"
+                                            variant="outlined"
+                                            size="small"
+                                            value={searchTerm}
+                                            onChange={handleSearchChange}
+                                            sx={{ width: { xs: '100%', sm: 300 } }}
+                                            InputProps={{
+                                                endAdornment: (
+                                                    <InputAdornment position="end">
+                                                        <SearchIcon />
+                                                    </InputAdornment>
+                                                ),
+                                            }}
+                                        />
+                                        <Button variant="outlined" startIcon={<AddIcon />} onClick={handleAddOrg}>
+                                            إضافة ممول عقاري
+                                        </Button>
+                                    </Box>
+                                </Stack>
                                 {renderListContent(realEstateFunders, organizationsStatus, organizationsError, 'organization')}
                             </Box>
                         )}
@@ -1503,37 +1578,46 @@ function UsersPage() {
 
                 {activeTab === 'admins' && (
                     <>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexDirection: 'row' }}>
+                        <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems="center" mb={2} spacing={2}>
                             <Typography variant="h6" color="text.secondary">قائمة المدراء</Typography>
-                            <Button variant="outlined" startIcon={<AddIcon />} onClick={handleAddAdmin}>
-                                إضافة مدير
-                            </Button>
-                        </Box>
+                            <Box sx={{ display: 'flex', gap: 1, width: { xs: '100%', sm: 'auto' } }}>
+                                <TextField
+                                    label="بحث بالاسم أو البريد الإلكتروني"
+                                    variant="outlined"
+                                    size="small"
+                                    value={searchTerm}
+                                    onChange={handleSearchChange}
+                                    sx={{ width: { xs: '100%', sm: 300 } }}
+                                    InputProps={{
+                                        endAdornment: (
+                                            <InputAdornment position="end">
+                                                <SearchIcon />
+                                            </InputAdornment>
+                                        ),
+                                    }}
+                                />
+                                <Button variant="outlined" startIcon={<AddIcon />} onClick={handleAddAdmin}>
+                                    إضافة مدير
+                                </Button>
+                            </Box>
+                        </Stack>
                         {renderListContent(admins, adminsStatus, adminsError, 'admin')}
                     </>
                 )}
             </Paper>
 
-            {/* Modals (ensure these components are correctly imported and defined) */}
+            {/* Modals */}
             <AddUserModal
                 open={isAddUserModalOpen}
                 onClose={() => setIsAddUserModalOpen(false)}
                 onAdd={handleAddUserConfirm}
             />
-            {/* {userToEdit && (
-                <EditUserModal
-                    open={isEditUserModalOpen}
-                    onClose={() => setIsEditUserModalOpen(false)}
-                    onSave={handleEditUserSave}
-                    user={userToEdit}
-                />
-            )} */}
             <ConfirmDeleteModal
                 open={isDeleteConfirmModalOpen}
                 onClose={() => setIsDeleteConfirmModalOpen(false)}
                 onConfirm={handleDeleteConfirm}
                 itemType={itemToDelete?.type}
-                itemId={itemToDelete?.uid} // Use uid for modal
+                itemId={itemToDelete?.uid}
                 itemName={itemToDelete?.name}
             />
             <AddOrgModal
@@ -1545,14 +1629,14 @@ function UsersPage() {
             <AddAdminModal
                 open={isAddAdminModalOpen}
                 onClose={() => setIsAddAdminModalOpen(false)}
-                setSnackbar={setSnackbar} // Pass setSnackbar to AddAdminModal
+                setSnackbar={setSnackbar}
             />
             {adminToEdit && (
                 <EditAdminModal
                     open={isEditAdminModalOpen}
                     onClose={() => setIsEditAdminModalOpen(false)}
                     admin={adminToEdit}
-                    setSnackbar={setSnackbar} // Pass setSnackbar to EditAdminModal
+                    setSnackbar={setSnackbar}
                 />
             )}
 
@@ -1571,33 +1655,6 @@ function UsersPage() {
     );
 }
 
-
-
-
-function PropertiesPage() {
-    return (
-        <Box sx={{ p: 2, textAlign: 'right' }} >
-            <PageHeader
-                title="قائمة العقارات"
-                icon={HomeIcon}
-                showCount={false}
-            />
-            <Paper sx={{ p: 2, borderRadius: 2, minHeight: 400, textAlign: 'right', direction: 'rtl' }}>
-                <Typography variant="h6" color="text.secondary">On sell | Financing | Rent</Typography>
-                <Box sx={{ mt: 2, p: 2, border: '1px dashed #ccc', borderRadius: 1, textAlign: 'right' }}>
-                    <Typography variant="body1" color="text.secondary">
-                        List of Properties
-                    </Typography>
-                    <ul style={{ listStyle: 'none', padding: 0, textAlign: 'right' }}>
-                        <li>#ID: #12345 | Home1 | Address: Damanhour</li>
-                        <li>#ID: #12346 | Villa334 | Address: Alex</li>
-                        <li>#ID: #12347 | Apartment234 | Address: Cairo</li>
-                    </ul>
-                </Box>
-            </Paper>
-        </Box>
-    );
-}
 
 function Mainadvertisment(props) {
     const userProfile = useSelector((state) => state.user.profile);
@@ -2441,34 +2498,6 @@ function PaidAdvertismentPage() {
         }
     };
 
-    // const handleDeveloperConfirmReject = async () => {
-    //     if (!adToReject || rejectReason.trim() === '') return;
-
-    //     const adTypeLoadingKey = 'developer';
-    //     dispatch(setLoadingDeveloper(true));
-    //     setRejectDialogOpen(false); // Close dialog
-
-    //     try {
-    //         const instance = new RealEstateDeveloperAdvertisement({ id: adToReject.id });
-    //         await instance.reject(rejectReason.trim());
-    //         setSnackbar({
-    //             open: true,
-    //             message: `تم رفض إعلان المطور "${adToReject.developer_name}" بنجاح!`,
-    //             severity: 'success',
-    //         });
-    //         setRejectReason(''); // Clear reason
-    //     } catch (err) {
-    //         console.error(`Failed to reject developer ad for ID ${adToReject.id}:`, err);
-    //         setSnackbar({
-    //             open: true,
-    //             message: `فشل رفض إعلان المطور: ${err.message || 'حدث خطأ غير معروف.'}`,
-    //             severity: 'error',
-    //         });
-    //     } finally {
-    //         dispatch(setLoadingDeveloper(false));
-    //         setAdToReject(null);
-    //     }
-    // };
 
 
     const handleReturnToPending = async (ad) => {
@@ -5098,56 +5127,6 @@ function ReportsPage() {
         </Box>
     );
 }
-function SalesPage() {
-    return (
-        <Box sx={{ p: 2, textAlign: 'left' }}>
-            <Typography variant="h4" gutterBottom>Sales Reports</Typography>
-            <Paper dir="rtl" sx={{ p: 2, borderRadius: 2, minHeight: 300, textAlign: 'right' }}>
-                <Typography variant="h6" color="text.secondary">Sales data visualization (placeholder)</Typography>
-                <Box sx={{ mt: 2, p: 2, border: '1px dashed #ccc', borderRadius: 1, textAlign: 'right' }}>
-                    <Typography variant="body1" color="text.secondary">
-                        This section could feature various charts (line, bar, pie) showing sales trends,
-                        revenue by product, or regional sales performance.
-                    </Typography>
-                </Box>
-            </Paper>
-        </Box>
-    );
-}
-
-function TrafficPage() {
-    return (
-        <Box sx={{ p: 2, textAlign: 'right' }}>
-            <Typography variant="h4" gutterBottom>Traffic Reports</Typography>
-            <Paper sx={{ p: 2, borderRadius: 2, minHeight: 300, textAlign: 'right' }}>
-                <Typography variant="h6" color="text.secondary">Website traffic analytics (placeholder)</Typography>
-                <Box sx={{ mt: 2, p: 2, border: '1px dashed #ccc', borderRadius: 1, textAlign: 'right' }}>
-                    <Typography variant="body1" color="text.secondary">
-                        This section might display data on website visits, unique users, page views,
-                        bounce rate, and traffic sources using charts and metrics.
-                    </Typography>
-                </Box>
-            </Paper>
-        </Box>
-    );
-}
-
-function IntegrationsPage() {
-    return (
-        <Box sx={{ p: 2, textAlign: 'right' }}>
-            <Typography variant="h4" gutterBottom>Integrations</Typography>
-            <Paper sx={{ p: 2, borderRadius: 2, minHeight: 200, textAlign: 'right' }}>
-                <Typography variant="h6" color="text.secondary">Manage external service integrations (placeholder)</Typography>
-                <Box sx={{ mt: 2, p: 2, border: '1px dashed #ccc', borderRadius: 1, textAlign: 'right' }}>
-                    <Typography variant="body1" color="text.secondary">
-                        This page could list various integrations (e.g., payment gateways, CRM, marketing tools)
-                        with options to connect or configure them.
-                    </Typography>
-                </Box>
-            </Paper>
-        </Box>
-    );
-}
 
 function useDemoRouter(initialPath) {
     const [pathname, setPathname] = React.useState(initialPath);
@@ -5315,18 +5294,7 @@ export default function AdminDashboard(props) {
         loadUserProfile();
     }, [authUid, userProfile, userProfileStatus, dispatch]);
     const handleLogout = async () => {
-        console.log('جارى تسجيل الخروج');
-        try {
-            await signOut(auth); // Sign out from Firebase
-            dispatch(logout()); // Dispatch Redux logout action to clear state
-            setTimeout(() => {
-                navigate('/login'); // Redirect to login page
-            }, 2000);
-            console.log('تم تسجيل الخروج بنجاح.');
-        } catch (error) {
-            console.error('خطأ في تسجيل الخروج:', error);
-            // You might want to show a Snackbar or Alert here for the user
-        }
+        await performLogout(dispatch, signOut, auth, navigate);
     };
 
     const Main = styled('main', { shouldForwardProp: (prop) => prop !== 'open' })(
@@ -5603,10 +5571,11 @@ export default function AdminDashboard(props) {
                                         <Avatar
                                             alt="Admin User"
                                             src={userProfile?.image || './admin.jpg'}
-                                            sx={{ width: 80, height: 80, mb: 1, boxShadow: '0px 0px 8px rgba(0,0,0,0.2)' }}
+                                            sx={{ width: 80, height: 80, mb: 1, boxShadow: '0px 0px 8px rgba(0,0,0,0.2)',border: '3px solid',
+                                                borderColor: 'primary.main' }}
                                         />
                                         <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                                            Hello, {userName}
+                                            مرحباً، {userName}
                                         </Typography>
                                         <Typography variant="body2" color="text.secondary">
                                             مرحباً بك في لوحة التحكم

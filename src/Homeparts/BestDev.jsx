@@ -1,4 +1,3 @@
-
 import { useAuth } from '../context/AuthContext';
 import {
   Box, Typography, Card, CardMedia, CardContent, IconButton
@@ -8,93 +7,99 @@ import FavoriteButton from './FavoriteButton';
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import RealEstateDeveloperAdvertisement from '../FireBase/modelsWithOperations/RealEstateDeveloperAdvertisement';
-// import { devAdsData } from '../FireBase/models/Users/devAdsData';
 
 export default function BestDev() {
   const sliderRef = useRef();
   const navigate = useNavigate();
-  const { user } = useAuth(); // حالة المستخدم، null أو بيانات المستخدم
+  const { user } = useAuth();
   const [offers, setOffers] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // We'll create a single, duplicated list for infinite scrolling
+  const duplicatedOffers = offers.length > 0 ? [...offers, ...offers] : [];
 
   const initializeAds = useCallback(async () => {
     setLoading(true);
     try {
-      // if (user) {
-        // لو المستخدم مسجل دخول: جلب الإعلانات من Firebase
-        // const existingAds = await RealEstateDeveloperAdvertisement.getAll();
-
-        // for (const adData of devAdsData) {
-        //   const alreadyExists = existingAds.some(
-        //     (ad) => ad.title === adData.title && ad.developer_name === adData.developer_name
-        //   );
-        //   if (!alreadyExists) {
-        //     const ad = new RealEstateDeveloperAdvertisement(adData);
-        //     await ad.save();
-        //   }
-        // }
-
-        const freshAds = await RealEstateDeveloperAdvertisement.getActiveAds();
-        const activeAds = freshAds.filter(ad => ad.ads === true);
-        setOffers(activeAds);
-
-      // }
-      //  else {
-      //   // لو مش مسجل دخول: اعرض البيانات المحلية فقط بدون استدعاء getAll()
-      //   // const activeAds = devAdsData.filter(ad => ad.ads === true);
-      //   // setOffers(activeAds);
-      // }
+      const freshAds = await RealEstateDeveloperAdvertisement.getActiveAds();
+      const activeAds = freshAds.filter(ad => ad.ads === true);
+      setOffers(activeAds);
     } catch (error) {
       console.error('Initialization error:', error);
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, []);
 
   useEffect(() => {
     initializeAds();
   
     let unsubscribe = () => {};
-    // if (user) {
-      unsubscribe = RealEstateDeveloperAdvertisement.subscribeActiveAds((newAds) => {
-        const activeAds = newAds.filter(ad => ad.ads === true);
-        setOffers(activeAds);
-        setLoading(false);
-      });
-    // }
+    unsubscribe = RealEstateDeveloperAdvertisement.subscribeActiveAds((newAds) => {
+      const activeAds = newAds.filter(ad => ad.ads === true);
+      setOffers(activeAds);
+      setLoading(false);
+    });
 
-    // التمرير التلقائي
-    const interval = setInterval(() => {
-      const container = sliderRef.current;
-      const cardWidth = 344;
-  
-      if (container) {
-        const maxScrollLeft = container.scrollWidth - container.clientWidth;
-  
-        // SCROLLING FORWARD (LTR)
-        if (container.scrollLeft + cardWidth >= maxScrollLeft) {
-          container.scrollTo({
-            left: 0,
-            behavior: 'smooth'
-          });
-        } else {
-          container.scrollBy({
-            left: cardWidth,
-            behavior: 'smooth'
-          });
-        }
+    const cardWidth = 344; // Card width for calculations
+    const cardGap = 24; // Gap between cards (from your `gap: 3`)
+    const scrollAmount = cardWidth + cardGap;
+    
+    // Auto-scrolling logic
+    let autoScrollInterval;
+    const startAutoScroll = () => {
+      if (sliderRef.current) {
+        autoScrollInterval = setInterval(() => {
+          const container = sliderRef.current;
+          const maxScrollLeft = offers.length * scrollAmount;
+
+          if (container.scrollLeft >= maxScrollLeft) {
+            // Jump back to the start of the duplicated set
+            container.scrollTo({ left: 0, behavior: 'auto' });
+          }
+          // Now scroll to the next card smoothly
+          container.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+
+        }, 2500); // 3-second interval
       }
-    }, 5000);
-  
+    };
+    
+    // Start auto-scroll
+    startAutoScroll();
+
+    // Clear interval when user interacts
+    const container = sliderRef.current;
+    if (container) {
+      container.addEventListener('wheel', () => clearInterval(autoScrollInterval), { once: true });
+      container.addEventListener('mousedown', () => clearInterval(autoScrollInterval), { once: true });
+    }
+
     return () => {
       unsubscribe();
-      clearInterval(interval);
+      clearInterval(autoScrollInterval);
+      if (container) {
+        container.removeEventListener('wheel', () => clearInterval(autoScrollInterval));
+        container.removeEventListener('mousedown', () => clearInterval(autoScrollInterval));
+      }
     };
-  }, [initializeAds, user]);
+  }, [initializeAds, offers.length]);
   
+  // Manual navigation logic
+  const scroll = (direction) => {
+    if (!sliderRef.current) return;
+    const cardWidth = 344;
+    const cardGap = 24;
+    const scrollAmount = cardWidth + cardGap;
+
+    if (direction === "left") {
+      sliderRef.current.scrollBy({ left: -scrollAmount, behavior: "smooth" });
+    } else {
+      sliderRef.current.scrollBy({ left: scrollAmount, behavior: "smooth" });
+    }
+  };
 
   return (
-    <Box sx={{  paddingTop: 8, px: 5 }}>
+    <Box sx={{ paddingTop: 8, px: 5 }}>
       <Typography variant="h4" fontWeight="bold" textAlign="center" mb={4}>
         أفضل عروض التطوير العقاري
       </Typography>
@@ -109,8 +114,7 @@ export default function BestDev() {
         </IconButton>
 
         <Box ref={sliderRef} sx={{
-          display: 'flex', justifyContent: 'row', overflowX: 'auto', gap: 3, scrollSnapType: 'x mandatory', scrollPaddingRight: '60px', pb: 2,
-          pl: 5,
+          display: 'flex', overflowX: 'hidden', gap: 3, pb: 2, pl: 5,
           '&::-webkit-scrollbar': { display: 'none' }
         }}>
           {loading ? (
@@ -118,15 +122,28 @@ export default function BestDev() {
           ) : offers.length === 0 ? (
             <Typography>لا توجد عروض تطوير مفعلة حالياً.</Typography>
           ) : (
-            [...offers, ...offers].map((item, index) => (
+            duplicatedOffers.map((item, index) => (
               <Box
-                key={index}
+                key={`${item?.id}-${index}`}
                 onClick={() => navigate(`/details/developmentAds/${item.id}`)}
-                sx={{ cursor: 'pointer' , direction:'rtl'}}
+                sx={{
+                  cursor: 'pointer',
+                  flexShrink: 0,
+                  minWidth: { xs: 260, sm: 300, md: 320 },
+                  width: { xs: 260, sm: 300, md: 320 }
+                }}
               >
-                <Card sx={{ minWidth: { xs: 260, sm: 300, md: 320 }, width: { xs: 260, sm: 300, md: 320 }, scrollSnapAlign: 'start', flexShrink: 0, borderRadius: 3, position: 'relative', height: '100%' }}>
-                  <CardMedia component="img"  width='300' height="160" image={item.images?.[0] || '/no-img.jpeg'} />
-                  <FavoriteButton advertisementId={item.id}  />
+                <Card sx={{
+                  minWidth: { xs: 260, sm: 300, md: 320 },
+                  width: { xs: 260, sm: 300, md: 320 },
+                  scrollSnapAlign: 'start',
+                  flexShrink: 0,
+                  borderRadius: 3,
+                  position: 'relative',
+                  height: '100%'
+                }}>
+                  <CardMedia component="img" width='300' height="160" image={item.images?.[0] || '/no-img.jpeg'} />
+                  <FavoriteButton advertisementId={item.id} />
                   <CardContent>
                     <Typography color="primary" fontWeight="bold">
                       {item.price_start_from?.toLocaleString()} - {item.price_end_to?.toLocaleString()} ج.م

@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { useState, useEffect, useMemo } from 'react';
-import { useSelector, useDispatch ,shallowEqual } from 'react-redux';
+import { useSelector, useDispatch, shallowEqual } from 'react-redux';
 import { createTheme, ThemeProvider, styled } from '@mui/material/styles';
 import {
     Typography, Box, Paper, Tabs, Tab, CssBaseline, AppBar, Toolbar, IconButton, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Divider, Avatar, Button, Collapse, Grid, Dialog, DialogTitle, DialogContent, DialogActions, TextField, ListItemAvatar, Tooltip,
@@ -17,6 +17,8 @@ import {
     Chip,
     Badge,
     Popover,
+    useTheme,
+    useMediaQuery
 } from '@mui/material';
 import PageHeader from '../../componenents/PageHeader';
 import MenuIcon from '@mui/icons-material/Menu';
@@ -47,6 +49,7 @@ import NotificationsIcon from '@mui/icons-material/Notifications';
 import LogoutIcon from '@mui/icons-material/Logout';
 import DownloadIcon from '@mui/icons-material/Download';
 import { logout } from '../../LoginAndRegister/featuresLR/authSlice';
+import { performLogout } from '../../utils/logoutUtils';
 import { addUser, editUser, deleteUser } from '../../reduxToolkit/slice/usersSlice';
 import { addOrganization, editOrganization, deleteOrganization } from '../../reduxToolkit/slice/organizationsSlice';
 import { addAdmin, editAdmin, deleteAdmin } from '../../reduxToolkit/slice/adminsSlice';
@@ -109,18 +112,18 @@ import {
 // import { selectProperties } from '../../reduxToolkit/slice/propertiesSlice';
 
 // org profile
-import { fetchUserProfile, updateUserProfile, uploadAndSaveProfileImage } from "../../LoginAndRegister/featuresLR/userSlice";
+import { fetchUserProfile, updateUserProfile, uploadAndSaveProfileImage, clearProfile } from "../../LoginAndRegister/featuresLR/userSlice";
 import sendResetPasswordEmail from "../../FireBase/authService/sendResetPasswordEmail";
 import { auth } from "../../FireBase/firebaseConfig";
 import { signOut } from "firebase/auth";
 import { fetchDeveloperAdsByUser } from "../../feature/ads/developerAdsSlice";
 import { fetchFinancingAdsByUser } from "../../feature/ads/financingAdsSlice";
-import { 
+import {
     // fetchAllHomepageAds, 
     fetchHomepageAdsByUser,
-    subscribeToUserHomepageAds, 
-    createHomepageAd, 
-    updateHomepageAd, 
+    subscribeToUserHomepageAds,
+    createHomepageAd,
+    updateHomepageAd,
     deleteHomepageAd,
     returnHomepageAdToPending,
     clearSubscriptions
@@ -144,7 +147,7 @@ const governorates = [
 const organizationTypes = ["مطور عقاري", "مطور عقارى", "ممول عقاري", "ممول عقارى"];
 // Login Logout 
 // import { logoutUser } from '../../reduxToolkit/authSlice';
-import { useNavigate , Navigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
 
 // Import the ConfirmDeleteModal
 // Create RTL cache for Emotion
@@ -160,93 +163,93 @@ const closedDrawerWidth = 70;
 // This function conditionally includes the 'orders' tab only for funder organizations
 const getNavigationItems = (organizationType) => {
     const baseItems = [
-    {
-        kind: 'header',
-        title: 'العناصر الرئيسية',
-    },
-    // {
-    //     segment: 'dashboard',
-    //     title: 'لوحة التحكم',
-    //     icon: <DashboardIcon />,
-    //     tooltip: 'لوحة التحكم',
-    // },
-    {
-        segment: 'profile',
-        title: 'الملف الشخصي',
-        icon: <AccountBoxIcon />,
-        tooltip: 'الملف الشخصي',
-    },
-    {
-        segment: 'mainadvertisment',
-        title: 'إعلانات القسم الرئيسى',
-        icon: <BroadcastOnHomeIcon />,
-        tooltip: 'إعلانات القسم الرئيسى',
-    },
-    {
-        segment: 'paidadvertisment',
-        title: 'إعلانات ممولة',
-        icon: <BroadcastOnPersonalIcon />,
-        tooltip: 'إعلانات ممولة',
-    },
-    // {
-    //     segment: 'inquiries',
-    //     title: 'المحادثات',
-    //     icon: <MessageIcon />,
-    //     tooltip: 'المحادثات',
-    // },
+        {
+            kind: 'header',
+            title: 'العناصر الرئيسية',
+        },
+        // {
+        //     segment: 'dashboard',
+        //     title: 'لوحة التحكم',
+        //     icon: <DashboardIcon />,
+        //     tooltip: 'لوحة التحكم',
+        // },
+        {
+            segment: 'profile',
+            title: 'الملف الشخصي',
+            icon: <AccountBoxIcon />,
+            tooltip: 'الملف الشخصي',
+        },
+        {
+            segment: 'mainadvertisment',
+            title: 'إعلانات القسم الرئيسى',
+            icon: <BroadcastOnHomeIcon />,
+            tooltip: 'إعلانات القسم الرئيسى',
+        },
+        {
+            segment: 'paidadvertisment',
+            title: 'إعلانات ممولة',
+            icon: <BroadcastOnPersonalIcon />,
+            tooltip: 'إعلانات ممولة',
+        },
+        // {
+        //     segment: 'inquiries',
+        //     title: 'المحادثات',
+        //     icon: <MessageIcon />,
+        //     tooltip: 'المحادثات',
+        // },
     ];
 
     // Add orders tab only for funder organizations
     // This tab shows financing advertisements for funder organizations to review and approve
     if (organizationType === 'ممول عقارى' || organizationType === 'ممول عقاري') {
         baseItems.push({
-        segment: 'orders',
-        title: 'الطلبات',
-        icon: <ShoppingCartIcon />,
-        tooltip: 'الطلبات',
+            segment: 'orders',
+            title: 'الطلبات',
+            icon: <ShoppingCartIcon />,
+            tooltip: 'الطلبات',
         });
     }
 
     // Add remaining items
     baseItems.push(
-    {
-        kind: 'divider',
-    },
-    {
-        kind: 'header',
-        title: 'التحليلات',
-    },
-    {
-        segment: 'analytics',
-        title: 'التحليلات',
-        icon: <BarChartIcon />,
-        tooltip: 'التحليلات والتقارير',
-    },
-    {
-        segment: 'reports',
-        title: 'التقارير',
-        icon: <DescriptionIcon />,
-        tooltip: 'التقارير',
-        children: [
-            {
-                segment: 'sales',
-                title: 'المبيعات',
-                icon: <DescriptionIcon />,
-                tooltip: 'المبيعات',
-            },
-            {
-                segment: 'traffic',
-                title: 'حركة مرور الزوار',
-                icon: <DescriptionIcon />,
-                tooltip: 'حركة مرور الزوار',
-            },
-        ],
-    },
-    {
-        segment: 'integrations',
-        title: 'إضافات',
-        icon: <LayersIcon />,
-        tooltip: 'إضافات',
+        {
+            kind: 'divider',
+        },
+        {
+            kind: 'header',
+            title: 'التحليلات',
+        },
+        {
+            segment: 'analytics',
+            title: 'التحليلات',
+            icon: <BarChartIcon />,
+            tooltip: 'التحليلات والتقارير',
+        },
+        {
+            segment: 'reports',
+            title: 'التقارير',
+            icon: <DescriptionIcon />,
+            tooltip: 'التقارير',
+            children: [
+                {
+                    segment: 'sales',
+                    title: 'المبيعات',
+                    icon: <DescriptionIcon />,
+                    tooltip: 'المبيعات',
+                },
+                {
+                    segment: 'traffic',
+                    title: 'حركة مرور الزوار',
+                    icon: <DescriptionIcon />,
+                    tooltip: 'حركة مرور الزوار',
+                },
+            ],
+        },
+        {
+            segment: 'integrations',
+            title: 'إضافات',
+            icon: <LayersIcon />,
+            tooltip: 'إضافات',
         }
     );
 
@@ -1259,8 +1262,8 @@ function ProfilePage() {
                 email: auth.currentUser?.email || userProfile.email || "",
                 // Ensure governorate is always a string and valid
                 governorate: typeof userProfile.governorate === 'string' && governorates.includes(userProfile.governorate)
-                  ? userProfile.governorate
-                  : '',
+                    ? userProfile.governorate
+                    : '',
                 city: userProfile.city || "",
                 address: userProfile.address || "",
             });
@@ -1456,12 +1459,12 @@ function ProfilePage() {
 
     // Check if user is an organization - use both profile and auth state
     const isOrganization = userProfile.type_of_user === "organization" || authTypeOfUser === "organization";
-    
+
     if (!isOrganization) {
         return (
             <Box sx={{ p: 3 }}>
                 <Alert severity="error">
-                    Access Denied: This profile page is for organizations only. 
+                    Access Denied: This profile page is for organizations only.
                     User type: {userProfile.type_of_user || 'undefined'} (profile), {authTypeOfUser || 'undefined'} (auth)
                 </Alert>
             </Box>
@@ -1595,8 +1598,8 @@ function ProfilePage() {
                                     onClick={handleSave}
                                     sx={{ px: 4, py: 1.5, fontSize: '1.1rem' }}
                                 >
-                                حفظ التغييرات
-                            </Button>
+                                    حفظ التغييرات
+                                </Button>
                             </Box>
                         </Box>
                     </Grid>
@@ -2269,7 +2272,7 @@ function Mainadvertisment(props) {
         if (userProfile?.uid) {
             console.log("Mainadvertisment - Setting up real-time subscription for UID:", userProfile.uid);
             dispatch(subscribeToUserHomepageAds(userProfile.uid));
-            
+
             // Cleanup subscription on unmount
             return () => {
                 console.log("Mainadvertisment - Cleaning up subscription...");
@@ -2332,7 +2335,7 @@ function Mainadvertisment(props) {
             console.error("Error deleting ad:", error);
         }
     };
-// Handle return to pending
+    // Handle return to pending
     const handleReturnToPending = async (adId) => {
         try {
             await dispatch(returnHomepageAdToPending(adId)).unwrap();
@@ -2375,7 +2378,7 @@ function Mainadvertisment(props) {
         }
         return date.toLocaleDateString('ar-EG');
     };
-// Calculate remaining days from expiry time
+    // Calculate remaining days from expiry time
     const calculateRemainingDays = (expiryTime) => {
         if (!expiryTime) return null;
         const now = Date.now();
@@ -2388,10 +2391,10 @@ function Mainadvertisment(props) {
     // Get activation days display text
     const getActivationDaysText = (ad) => {
         if (!ad.adExpiryTime) return null;
-        
+
         const remainingDays = calculateRemainingDays(ad.adExpiryTime);
         if (remainingDays === null) return null;
-        
+
         if (remainingDays === 0) {
             return 'منتهي الصلاحية';
         } else if (remainingDays === 1) {
@@ -2490,9 +2493,9 @@ function Mainadvertisment(props) {
                         </Typography>
                     </Box>
                 ) : (
-                <List>
+                    <List>
                         {filteredAds.map((ad) => (
-                        <ListItem
+                            <ListItem
                                 key={ad.id}
                                 sx={{
                                     mb: 2,
@@ -2537,7 +2540,7 @@ function Mainadvertisment(props) {
                                                 ينتهي في: {formatDate(ad.adExpiryTime)}
                                             </Typography>
                                         )}
- {/* Activation Days Display */}
+                                        {/* Activation Days Display */}
                                         {getActivationDaysText(ad) && (
                                             <Chip
                                                 label={getActivationDaysText(ad)}
@@ -2546,7 +2549,7 @@ function Mainadvertisment(props) {
                                                 sx={{ mt: 0.5 }}
                                             />
                                         )}
-                                        
+
                                         {ad.review_note && (
                                             <Typography variant="body2" color="error">
                                                 ملاحظة: {ad.review_note}
@@ -2555,38 +2558,38 @@ function Mainadvertisment(props) {
                                     </Box>
 
                                     {/* Actions (simplified for organization view) */}
-                                <Box sx={{ display: 'flex', gap: 1, flexDirection: 'row-reverse' }}>
-{/* Show edit button for pending and rejected ads */}
-                                    {(ad.reviewStatus === 'pending' || ad.reviewStatus === 'rejected') && (
-                                        <Tooltip title="تعديل">
-                                            <IconButton
-                                                onClick={() => {
-                                                    setSelectedAd(ad);
-                                                    setIsEditModalOpen(true);
-                                                }}
-                                                sx={{ color: 'primary.main' }}
-                                            >
-                                                <EditIcon />
-                                            </IconButton>
-                                        </Tooltip>
-                                    )}
+                                    <Box sx={{ display: 'flex', gap: 1, flexDirection: 'row-reverse' }}>
+                                        {/* Show edit button for pending and rejected ads */}
+                                        {(ad.reviewStatus === 'pending' || ad.reviewStatus === 'rejected') && (
+                                            <Tooltip title="تعديل">
+                                                <IconButton
+                                                    onClick={() => {
+                                                        setSelectedAd(ad);
+                                                        setIsEditModalOpen(true);
+                                                    }}
+                                                    sx={{ color: 'primary.main' }}
+                                                >
+                                                    <EditIcon />
+                                                </IconButton>
+                                            </Tooltip>
+                                        )}
 
-                                    {/* Show return to pending button for rejected ads */}
-                                    {ad.reviewStatus === 'rejected' && (
-                                        <Tooltip title="إعادة إرسال للمراجعة">
-                                            <IconButton
-                                                onClick={() => {
-                                                    setSelectedAd(ad);
-                                                    setIsReturnToPendingModalOpen(true);
-                                                }}
-                                                sx={{ color: 'warning.main' }}
-                                            >
-                                                <AutorenewIcon />
-                                            </IconButton>
-                                        </Tooltip>
-                                    )}
+                                        {/* Show return to pending button for rejected ads */}
+                                        {ad.reviewStatus === 'rejected' && (
+                                            <Tooltip title="إعادة إرسال للمراجعة">
+                                                <IconButton
+                                                    onClick={() => {
+                                                        setSelectedAd(ad);
+                                                        setIsReturnToPendingModalOpen(true);
+                                                    }}
+                                                    sx={{ color: 'warning.main' }}
+                                                >
+                                                    <AutorenewIcon />
+                                                </IconButton>
+                                            </Tooltip>
+                                        )}
 
-                                    <Tooltip title="حذف">
+                                        <Tooltip title="حذف">
                                             <IconButton
                                                 onClick={() => {
                                                     setSelectedAd(ad);
@@ -2595,9 +2598,9 @@ function Mainadvertisment(props) {
                                                 sx={{ color: 'error.main' }}
                                             >
                                                 <DeleteIcon />
-                                        </IconButton>
-                                    </Tooltip>
-                                </Box>
+                                            </IconButton>
+                                        </Tooltip>
+                                    </Box>
                                 </Box>
                             </ListItem>
                         ))}
@@ -2643,7 +2646,7 @@ function Mainadvertisment(props) {
                 itemId={selectedAd?.id}
                 itemName="إعلان الصفحة الرئيسية"
             />
-{/* Return to Pending Confirmation Modal */}
+            {/* Return to Pending Confirmation Modal */}
             <ConfirmDeleteModal
                 open={isReturnToPendingModalOpen}
                 onClose={() => {
@@ -2703,14 +2706,14 @@ function PaidAdvertismentPage() {
             }
         }
     }, [userProfile?.type_of_organization, activeTab]);
-    
+
     // Fetch paid ads based on organization type
     useEffect(() => {
-            if (!userProfile?.uid) return;
+        if (!userProfile?.uid) return;
 
         const orgType = userProfile.type_of_organization;
         console.log('Fetching ads for user:', userProfile.uid, 'with organization type:', orgType);
-        
+
         if (orgType === "مطور عقاري" || orgType === "مطور عقارى") {
             // Only fetch real estate ads for developers
             console.log('Fetching real estate ads for developer organization');
@@ -2739,7 +2742,7 @@ function PaidAdvertismentPage() {
 
         const orgType = userProfile.type_of_organization;
         console.log('Getting ads to show for organization type:', orgType);
-        
+
         if (orgType === "مطور عقاري" || orgType === "مطور عقارى") {
             // Developers only see their real estate ads
             console.log('Showing real estate ads for developer, count:', developerAds.length);
@@ -2757,7 +2760,7 @@ function PaidAdvertismentPage() {
                 type: "funder"
             };
         }
-        
+
         console.warn('Unknown organization type, showing no ads');
         return { ads: [], loading: false, type: null };
     };
@@ -2783,11 +2786,14 @@ function PaidAdvertismentPage() {
             filterable: false,
         },
         { field: 'description', headerName: 'الوصف', width: 300 },
-        { field: 'project_types', headerName: 'أنواع المشاريع', width: 150, 
-            renderCell: (params) => Array.isArray(params.value) ? params.value.join(', ') : params.value },
+        {
+            field: 'project_types', headerName: 'أنواع المشاريع', width: 150,
+            renderCell: (params) => Array.isArray(params.value) ? params.value.join(', ') : params.value
+        },
         { field: 'price_start_from', headerName: 'السعر من', width: 120, type: 'number' },
         { field: 'price_end_to', headerName: 'السعر إلى', width: 120, type: 'number' },
-        { field: 'status', headerName: 'الحالة', width: 120,
+        {
+            field: 'status', headerName: 'الحالة', width: 120,
             renderCell: (params) => (
                 <Chip
                     label={params.value}
@@ -2796,7 +2802,8 @@ function PaidAdvertismentPage() {
                 />
             )
         },
-        { field: 'ads', headerName: 'مفعل', width: 100,
+        {
+            field: 'ads', headerName: 'مفعل', width: 100,
             renderCell: (params) => (
                 <Chip
                     label={params.value ? 'نعم' : 'لا'}
@@ -2805,30 +2812,32 @@ function PaidAdvertismentPage() {
                 />
             )
         },
-        { field: 'reviewStatus', headerName: 'حالة المراجعة', width: 120,
+        {
+            field: 'reviewStatus', headerName: 'حالة المراجعة', width: 120,
             renderCell: (params) => {
                 const statusColors = {
                     'pending': 'warning',
                     'approved': 'success',
                     'rejected': 'error'
                 };
-            return (
+                return (
                     <Chip
-                        label={params.value === 'pending' ? 'قيد المراجعة' : 
-                               params.value === 'approved' ? 'مقبول' : 'مرفوض'}
+                        label={params.value === 'pending' ? 'قيد المراجعة' :
+                            params.value === 'approved' ? 'مقبول' : 'مرفوض'}
                         color={statusColors[params.value] || 'default'}
                         size="small"
                     />
                 );
             }
         },
-        { field: 'actions', headerName: 'الإجراءات', width: 180, sortable: false, filterable: false,
+        {
+            field: 'actions', headerName: 'الإجراءات', width: 180, sortable: false, filterable: false,
             renderCell: (params) => (
                 <Box sx={{ display: 'flex', gap: 1 }}>
                     <Tooltip title="تعديل الإعلان" arrow>
-                        <IconButton 
-                            size="small" 
-                            color="info" 
+                        <IconButton
+                            size="small"
+                            color="info"
                             onClick={() => handleEditClick(params.row, 'developer')}
                             disabled={updatingAdId === params.row.id}
                         >
@@ -2840,9 +2849,9 @@ function PaidAdvertismentPage() {
                         </IconButton>
                     </Tooltip>
                     <Tooltip title="حذف الإعلان" arrow>
-                        <IconButton 
-                            size="small" 
-                            color="error" 
+                        <IconButton
+                            size="small"
+                            color="error"
                             onClick={() => handleDeleteClick(params.row, 'developer')}
                             disabled={updatingAdId === params.row.id}
                         >
@@ -2862,9 +2871,9 @@ function PaidAdvertismentPage() {
                         <Avatar
                             src={params.value}
                             variant="rounded"
-                            sx={{ 
-                                width: 60, 
-                                height: 50, 
+                            sx={{
+                                width: 60,
+                                height: 50,
                                 cursor: 'pointer',
                                 '&:hover': {
                                     opacity: 0.8,
@@ -2908,10 +2917,14 @@ function PaidAdvertismentPage() {
         },
         { field: 'org_name', headerName: 'اسم المؤسسة', width: 200 },
         { field: 'description', headerName: 'الوصف', width: 300 },
-        { field: 'start_limit', headerName: 'الحد الأدنى', width: 120, type: 'number',
-            renderCell: (params) => params?.value ? `${params.value.toLocaleString()} ج.م` : '-' },
-        { field: 'end_limit', headerName: 'الحد الأقصى', width: 120, type: 'number',
-            renderCell: (params) => params?.value ? `${params.value.toLocaleString()} ج.م` : '-' },
+        {
+            field: 'start_limit', headerName: 'الحد الأدنى', width: 120, type: 'number',
+            renderCell: (params) => params?.value ? `${params.value.toLocaleString()} ج.م` : '-'
+        },
+        {
+            field: 'end_limit', headerName: 'الحد الأقصى', width: 120, type: 'number',
+            renderCell: (params) => params?.value ? `${params.value.toLocaleString()} ج.م` : '-'
+        },
         // { field: 'interest_rates', headerName: 'معدلات الفائدة', width: 200,
         //     renderCell: (params) => {
         //         const rates = [];
@@ -2922,7 +2935,8 @@ function PaidAdvertismentPage() {
         //     }
         // },
         { field: 'phone', headerName: 'رقم الهاتف', width: 120 },
-        { field: 'ads', headerName: 'مفعل', width: 100,
+        {
+            field: 'ads', headerName: 'مفعل', width: 100,
             renderCell: (params) => (
                 <Chip
                     label={params?.value ? 'نعم' : 'لا'}
@@ -2931,7 +2945,8 @@ function PaidAdvertismentPage() {
                 />
             )
         },
-        { field: 'reviewStatus', headerName: 'حالة المراجعة', width: 120,
+        {
+            field: 'reviewStatus', headerName: 'حالة المراجعة', width: 120,
             renderCell: (params) => {
                 const statusColors = {
                     'pending': 'warning',
@@ -2940,15 +2955,16 @@ function PaidAdvertismentPage() {
                 };
                 return (
                     <Chip
-                        label={params?.value === 'pending' ? 'قيد المراجعة' : 
-                               params?.value === 'approved' ? 'مقبول' : 'مرفوض'}
+                        label={params?.value === 'pending' ? 'قيد المراجعة' :
+                            params?.value === 'approved' ? 'مقبول' : 'مرفوض'}
                         color={statusColors[params?.value] || 'default'}
                         size="small"
                     />
                 );
             }
         },
-        { field: 'adExpiryTime', headerName: 'تاريخ انتهاء التفعيل', width: 150,
+        {
+            field: 'adExpiryTime', headerName: 'تاريخ انتهاء التفعيل', width: 150,
             renderCell: (params) => {
                 if (!params.value) return '-';
                 const expiryDate = new Date(params.value);
@@ -2957,13 +2973,14 @@ function PaidAdvertismentPage() {
                 return remainingDays > 0 ? `${remainingDays} يوم` : 'منتهي';
             }
         },
-        { field: 'actions', headerName: 'الإجراءات', width: 180, sortable: false, filterable: false,
+        {
+            field: 'actions', headerName: 'الإجراءات', width: 180, sortable: false, filterable: false,
             renderCell: (params) => (
                 <Box sx={{ display: 'flex', gap: 1 }}>
                     <Tooltip title="تعديل الإعلان" arrow>
-                        <IconButton 
-                            size="small" 
-                            color="info" 
+                        <IconButton
+                            size="small"
+                            color="info"
                             onClick={() => handleEditClick(params.row, 'funder')}
                             disabled={updatingAdId === params.row.id}
                         >
@@ -2975,9 +2992,9 @@ function PaidAdvertismentPage() {
                         </IconButton>
                     </Tooltip>
                     <Tooltip title="حذف الإعلان" arrow>
-                        <IconButton 
-                            size="small" 
-                            color="error" 
+                        <IconButton
+                            size="small"
+                            color="error"
                             onClick={() => handleDeleteClick(params.row, 'funder')}
                             disabled={updatingAdId === params.row.id}
                         >
@@ -2997,9 +3014,9 @@ function PaidAdvertismentPage() {
                         <Avatar
                             src={params.value}
                             variant="rounded"
-                            sx={{ 
-                                width: 60, 
-                                height: 50, 
+                            sx={{
+                                width: 60,
+                                height: 50,
                                 cursor: 'pointer',
                                 '&:hover': {
                                     opacity: 0.8,
@@ -3037,13 +3054,13 @@ function PaidAdvertismentPage() {
         const orgType = userProfile.type_of_organization;
         const columns = (orgType === "مطور عقاري" || orgType === "مطور عقارى") ? developerColumns : financingColumns;
         const tabLabel = (orgType === "مطور عقاري" || orgType === "مطور عقارى") ? 'المطورين' : 'الممولين';
-        
+
         console.log('Rendering DataGrid for organization type:', orgType);
         console.log('Current ads count:', currentAds.length);
         console.log('Using columns:', columns.length, 'columns');
 
-            return (
-                <DataGrid
+        return (
+            <DataGrid
                 rows={currentAds}
                 columns={columns}
                 loading={currentLoading}
@@ -3053,10 +3070,10 @@ function PaidAdvertismentPage() {
                         paginationModel: { page: 0, pageSize: 10 },
                     },
                 }}
-                    localeText={{
+                localeText={{
                     toolbarQuickFilterPlaceholder: `البحث في إعلانات ${tabLabel}`,
-                    noRowsLabel: (orgType === "مطور عقاري" || orgType === "مطور عقارى") 
-                        ? "لا توجد إعلانات عقارية لعرضها" 
+                    noRowsLabel: (orgType === "مطور عقاري" || orgType === "مطور عقارى")
+                        ? "لا توجد إعلانات عقارية لعرضها"
                         : "لا توجد إعلانات تمويل لعرضها",
                     loadingOverlay: 'جاري التحميل...',
                 }}
@@ -3077,7 +3094,7 @@ function PaidAdvertismentPage() {
     // Get the appropriate title based on organization type
     const getPageTitle = () => {
         if (!userProfile) return "إعلاناتي المدفوعة";
-        
+
         const orgType = userProfile.type_of_organization;
         if (orgType === "مطور عقاري" || orgType === "مطور عقارى") {
             return "إعلانات مدفوعة - التطوير العقاراى";
@@ -3093,17 +3110,17 @@ function PaidAdvertismentPage() {
     const [adToDeleteType, setAdToDeleteType] = React.useState(null);
     const [snackbar, setSnackbar] = React.useState({ open: false, message: '', severity: 'success' });
     const [updatingAdId, setUpdatingAdId] = React.useState(null); // Track which ad is being updated
-    
+
     // Receipt image dialog state
     const [receiptDialogOpen, setReceiptDialogOpen] = React.useState(false);
     const [receiptDialogImage, setReceiptDialogImage] = React.useState(null);
-    
+
     // Function to update ad status to pending using the proper methods
     const updateAdStatusToPending = async (adId, type) => {
         setUpdatingAdId(adId); // Set loading state
         try {
             console.log('Updating ad status to pending:', { adId, type });
-            
+
             if (type === 'developer') {
                 const ad = await RealEstateDeveloperAdvertisement.getById(adId);
                 if (ad) {
@@ -3117,22 +3134,22 @@ function PaidAdvertismentPage() {
                     console.log('Financing ad status updated to pending');
                 }
             }
-            
+
             // Refresh the data after status update
             dispatch(fetchDeveloperAdsByUser(userProfile.uid));
             dispatch(fetchFinancingAdsByUser(userProfile.uid));
-            
-            setSnackbar({ 
-                open: true, 
-                message: 'تم تحديث حالة الإعلان إلى قيد المراجعة', 
-                severity: 'info' 
+
+            setSnackbar({
+                open: true,
+                message: 'تم تحديث حالة الإعلان إلى قيد المراجعة',
+                severity: 'info'
             });
         } catch (error) {
             console.error('Error updating ad status to pending:', error);
-            setSnackbar({ 
-                open: true, 
-                message: `فشل تحديث حالة الإعلان: ${error.message}`, 
-                severity: 'error' 
+            setSnackbar({
+                open: true,
+                message: `فشل تحديث حالة الإعلان: ${error.message}`,
+                severity: 'error'
             });
         } finally {
             setUpdatingAdId(null); // Clear loading state
@@ -3143,7 +3160,7 @@ function PaidAdvertismentPage() {
     const updateAdStatusToPendingGlobal = async (adId, type) => {
         try {
             console.log('Global function: Updating ad status to pending:', { adId, type });
-            
+
             if (type === 'developer') {
                 const ad = await RealEstateDeveloperAdvertisement.getById(adId);
                 if (ad) {
@@ -3157,7 +3174,7 @@ function PaidAdvertismentPage() {
                     console.log('Financing ad status updated to pending');
                 }
             }
-            
+
             return { success: true, message: 'تم تحديث حالة الإعلان إلى قيد المراجعة' };
         } catch (error) {
             console.error('Error updating ad status to pending:', error);
@@ -3176,7 +3193,7 @@ function PaidAdvertismentPage() {
     // Handlers for actions
     const handleEditClick = (ad, type) => {
         console.log('handleEditClick called with:', { ad, type, adId: ad.id });
-        
+
         // Navigate directly to the edit page
         if (type === 'developer') {
             // Ensure the ad object has an id property
@@ -3184,7 +3201,7 @@ function PaidAdvertismentPage() {
             navigate('/RealEstateDeveloperAnnouncement', { state: { editMode: true, adData: adWithId, adId: adWithId.id } });
         } else if (type === 'funder') {
             const adFWithId = { ...ad, id: ad.id || ad._id };
-            navigate(`/add-financing-ad`,{ state: { editMode: true, adData: adFWithId, adId: adFWithId.id } });
+            navigate(`/add-financing-ad`, { state: { editMode: true, adData: adFWithId, adId: adFWithId.id } });
         }
     };
     const handleDeleteClick = (ad, type) => {
@@ -3195,10 +3212,10 @@ function PaidAdvertismentPage() {
     const handleConfirmDelete = async () => {
         setOpenDeleteDialog(false);
         if (!adToDelete || !adToDeleteType) return;
-        
+
         console.log('Attempting to delete ad:', { id: adToDelete.id, type: adToDeleteType });
         console.log('deleteAd function:', typeof deleteAd);
-        
+
         try {
             await dispatch(deleteAd({ id: adToDelete.id, type: adToDeleteType })).unwrap();
             setSnackbar({ open: true, message: `تم حذف الإعلان بنجاح!`, severity: 'success' });
@@ -3230,7 +3247,7 @@ function PaidAdvertismentPage() {
                 icon={BroadcastOnPersonalIcon}
                 showCount={false}
             />
-            
+
             {/* Conditional tabs based on organization type */}
             {userProfile?.type_of_organization && (
                 <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
@@ -3238,7 +3255,7 @@ function PaidAdvertismentPage() {
                         value={activeTab}
                         onChange={handleTabChange}
                         aria-label="ad type tabs"
-                        sx={{ 
+                        sx={{
                             '& .MuiTab-root': {
                                 fontSize: '1rem',
                                 fontWeight: 500,
@@ -3247,10 +3264,10 @@ function PaidAdvertismentPage() {
                         }}
                     >
                         {(userProfile.type_of_organization === "مطور عقاري" || userProfile.type_of_organization === "مطور عقارى") && (
-                            <Tab 
-                                label="إعلانات العقارات" 
+                            <Tab
+                                label="إعلانات العقارات"
                                 value="developer"
-                                sx={{ 
+                                sx={{
                                     color: activeTab === 'developer' ? 'primary.main' : 'text.secondary',
                                     '&.Mui-selected': {
                                         color: 'primary.main',
@@ -3260,10 +3277,10 @@ function PaidAdvertismentPage() {
                             />
                         )}
                         {(userProfile.type_of_organization === "ممول عقاري" || userProfile.type_of_organization === "ممول عقارى") && (
-                            <Tab 
-                                label="إعلانات التمويل" 
+                            <Tab
+                                label="إعلانات التمويل"
                                 value="funder"
-                                sx={{ 
+                                sx={{
                                     color: activeTab === 'funder' ? 'primary.main' : 'text.secondary',
                                     '&.Mui-selected': {
                                         color: 'primary.main',
@@ -3275,7 +3292,7 @@ function PaidAdvertismentPage() {
                     </Tabs>
                 </Box>
             )}
-            
+
             <Paper dir={'rtl'} sx={{ p: 2, borderRadius: 2, minHeight: 400, textAlign: 'right' }}>
                 {/* DataGrid Container */}
                 <div style={{ height: 600, width: '100%', padding: '1rem' }}>
@@ -3292,8 +3309,8 @@ function PaidAdvertismentPage() {
                 </DialogActions>
             </Dialog>
             {/* Receipt Image Dialog */}
-            <Dialog 
-                open={receiptDialogOpen} 
+            <Dialog
+                open={receiptDialogOpen}
                 onClose={() => setReceiptDialogOpen(false)}
                 maxWidth="md"
                 fullWidth
@@ -3308,13 +3325,13 @@ function PaidAdvertismentPage() {
                 <DialogContent>
                     {receiptDialogImage && (
                         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                            <img 
-                                src={receiptDialogImage} 
+                            <img
+                                src={receiptDialogImage}
                                 alt="إيصال الدفع"
-                                style={{ 
-                                    maxWidth: '100%', 
-                                    maxHeight: '70vh', 
-                                    objectFit: 'contain' 
+                                style={{
+                                    maxWidth: '100%',
+                                    maxHeight: '70vh',
+                                    objectFit: 'contain'
                                 }}
                             />
                         </Box>
@@ -3324,7 +3341,7 @@ function PaidAdvertismentPage() {
                     <Button onClick={() => setReceiptDialogOpen(false)}>إغلاق</Button>
                 </DialogActions>
             </Dialog>
-            
+
             {/* Snackbar for feedback */}
             <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={handleSnackbarClose} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
                 <Alert onClose={handleSnackbarClose} severity={snackbar.severity} sx={{ width: '100%' }}>
@@ -3612,7 +3629,7 @@ function OrdersPage() {
         setActionLoading((prev) => ({ ...prev, [requestId]: true }));
         try {
             const reqInstance = await FinancingRequest.getById(requestId);
-            
+
             switch (action) {
                 case 'pending':
                     await reqInstance.update({ reviewStatus: 'pending', review_note: null });
@@ -3629,7 +3646,7 @@ function OrdersPage() {
                 default:
                     throw new Error('إجراء غير معروف');
             }
-            
+
             // No need to dispatch - onSnapshot will automatically update the state
         } catch (e) {
             setSnackbar({ open: true, message: e.message || 'خطأ أثناء تنفيذ الإجراء', severity: 'error' });
@@ -3678,7 +3695,7 @@ function OrdersPage() {
 
     return (
         <Box sx={{ p: 2, textAlign: 'left' }}>
-             <PageHeader
+            <PageHeader
                 title="طلبات التمويل على إعلاناتك"
                 icon={AccountBalanceWalletIcon}
                 showCount={false}
@@ -3723,10 +3740,10 @@ function OrdersPage() {
                                     </Box>
                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                                         {/* Ad Status Chip */}
-                                        <Chip 
-                                            label={getAdStatusLabel(ad.reviewStatus)} 
-                                            color={getAdStatusColor(ad.reviewStatus)} 
-                                            sx={{ fontWeight: 'bold', fontSize: 14 }} 
+                                        <Chip
+                                            label={getAdStatusLabel(ad.reviewStatus)}
+                                            color={getAdStatusColor(ad.reviewStatus)}
+                                            sx={{ fontWeight: 'bold', fontSize: 14 }}
                                         />
                                         {/* Counter for requests */}
                                         <Chip label={`عدد الطلبات: ${requestsForAd.length}`} color="info" sx={{ fontWeight: 'bold', fontSize: 16 }} />
@@ -3763,14 +3780,14 @@ function OrdersPage() {
                                                 <Stack direction="row" spacing={1.5}>
                                                     {/* Org Approval Button */}
                                                     {req.reviewStatus !== 'approved' && (
-                                                       <IconButton
+                                                        <IconButton
                                                             color="success"
                                                             size="small"
                                                             disabled={actionLoading[req.id]}
                                                             onClick={() => handleOrgApproveRequest(req, ad)}
                                                         >
                                                             <Tooltip title='موافقة'>
-                                                                <CheckCircleIcon sx={{border:'1px solid green' , borderRadius:'50%' }} />
+                                                                <CheckCircleIcon sx={{ border: '1px solid green', borderRadius: '50%' }} />
                                                             </Tooltip>
                                                         </IconButton>
                                                     )}
@@ -3791,7 +3808,7 @@ function OrdersPage() {
                                                         onClick={() => handleRequestAction(req.id, 'reject', ad.id, 'تم الرفض من قبل المؤسسة')}
                                                     >
                                                         <Tooltip title='رفض'>
-                                                            <CloseIcon sx={{border:'1px solid red' , borderRadius:'50%' }} />
+                                                            <CloseIcon sx={{ border: '1px solid red', borderRadius: '50%' }} />
                                                         </Tooltip>
                                                     </IconButton>
                                                     <IconButton
@@ -3910,20 +3927,59 @@ function useDemoRouter(initialPath) {
 }
 
 export default function OrganizationDashboard(props) {
-    const { window } = props;
+    const { window: windowProp } = props;
+    const [mobileOpen, setMobileOpen] = React.useState(false);
     const [open, setOpen] = React.useState(true);
     const [openReports, setOpenReports] = React.useState(false);
     const [mode, setMode] = React.useState('light');
+    const [isMobile, setIsMobile] = React.useState(false);
+    // Set initial mobile state after component mounts (client-side only)
+    React.useEffect(() => {
+        const checkIfMobile = () => window.innerWidth < 750;
+        setIsMobile(checkIfMobile());
+    }, []);
+
+    // Handle window resize
+    React.useEffect(() => {
+        const handleResize = () => {
+            const mobile = window.innerWidth < 750;
+            setIsMobile(mobile);
+            // Close drawer on mobile when resizing to larger screens
+            if (!mobile && mobileOpen) {
+                setMobileOpen(false);
+            }
+        };
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, [mobileOpen]);
+
+    // Close drawer when route changes on mobile
+    const handleDrawerToggle = () => {
+        if (isMobile) {
+            setMobileOpen(!mobileOpen);
+        } else {
+            setOpen(!open);
+        }
+    };
+
+    // Close drawer when clicking on a menu item on mobile
+    const handleMenuItemClick = () => {
+        if (isMobile) {
+            setMobileOpen(false);
+        }
+    };
+
     const profilePicInDrawer = useSelector((state) => state.profilePic.profilePicUrl);
     const userProfile = useSelector((state) => state.user.profile);
     const userName = userProfile?.adm_name || userProfile?.cli_name || userProfile?.org_name || 'Organization';
-    
+
     // Get organization type for conditional navigation
     const organizationType = userProfile?.type_of_organization;
-    
+
     // Check if user profile is loaded to prevent UI flicker
     const isProfileLoaded = !!userProfile;
-    
+
     // Get navigation items based on organization type
     const NAVIGATION = React.useMemo(() => {
         // Return empty array if profile is not loaded yet to prevent rendering issues
@@ -3994,11 +4050,6 @@ export default function OrganizationDashboard(props) {
     );
 
     const router = useDemoRouter('/profile');
-
-    const handleDrawerToggle = () => {
-        setOpen(!open);
-    };
-
     const handleReportsClick = () => {
         setOpenReports(!openReports);
     };
@@ -4010,18 +4061,7 @@ export default function OrganizationDashboard(props) {
     // const authStatus = useSelector((state) => state.auth.status); // Get auth status to disable button
 
     const handleLogout = async () => {
-        console.log('جارى تسجيل الخروج');
-        try {
-            await signOut(auth); // Sign out from Firebase
-            dispatch(logout()); // Dispatch Redux logout action to clear state
-            setTimeout(() => {
-                navigate('/login'); // Redirect to login page
-            }, 2000);
-            console.log('تم تسجيل الخروج بنجاح.');
-        } catch (error) {
-            console.error('خطأ في تسجيل الخروج:', error);
-            // You might want to show a Snackbar or Alert here for the user
-        }
+        await performLogout(dispatch, signOut, auth, navigate);
     };
 
     const Main = styled('main', { shouldForwardProp: (prop) => prop !== 'open' })(
@@ -4033,11 +4073,17 @@ export default function OrganizationDashboard(props) {
                 easing: theme.transitions.easing.sharp,
                 duration: theme.transitions.duration.leavingScreen,
             }),
-            marginRight: open ? theme.spacing(2) + drawerWidth : closedDrawerWidth,
+            marginRight: open && !isMobile ? theme.spacing(2) + drawerWidth : closedDrawerWidth,
             [theme.breakpoints.down('sm')]: {
                 marginRight: 0,
                 paddingRight: theme.spacing(2),
                 paddingLeft: theme.spacing(2),
+                paddingTop: '50px',
+                marginTop: 0,
+            },
+            [theme.breakpoints.up('sm')]: {
+                padding: theme.spacing(3),
+                paddingTop: '4px',
             },
         })
     );
@@ -4048,11 +4094,12 @@ export default function OrganizationDashboard(props) {
                 easing: theme.transitions.easing.sharp,
                 duration: theme.transitions.duration.leavingScreen,
             }),
-            width: `calc(100% - ${open ? theme.spacing(2) + drawerWidth : closedDrawerWidth}px)`,
-            marginLeft: open ? theme.spacing(2) + drawerWidth : closedDrawerWidth,
+            width: `calc(100% - ${open && !isMobile ? theme.spacing(2) + drawerWidth : closedDrawerWidth}px)`,
+            marginLeft: open && !isMobile ? theme.spacing(2) + drawerWidth : closedDrawerWidth,
             [theme.breakpoints.down('sm')]: {
                 width: '100%',
                 marginLeft: 0,
+                // paddingRight: theme.spacing(1),
             },
         })
     );
@@ -4101,7 +4148,7 @@ export default function OrganizationDashboard(props) {
                     </Box>
                 );
             } else if (organizationType === 'ممول عقارى' || organizationType === 'ممول عقاري') {
-            currentPageContent = <OrdersPage />;
+                currentPageContent = <OrdersPage />;
             } else {
                 currentPageContent = (
                     <Box sx={{ p: 2, textAlign: 'right' }}>
@@ -4172,7 +4219,16 @@ export default function OrganizationDashboard(props) {
                             <CssBaseline />
                             <AppBarStyled position="fixed" open={open}>
                                 <Toolbar sx={{ flexDirection: 'row-reverse' }}>
-                                    {!open && (
+                                    <IconButton
+                                        color="inherit"
+                                        aria-label="open drawer"
+                                        edge="start"
+                                        onClick={handleDrawerToggle}
+                                        sx={{ ml: 2, display: { md: 'none' } }}
+                                    >
+                                        <MenuIcon />
+                                    </IconButton>
+                                    {!open && !isMobile && (
                                         <img
                                             src="./logo.png"
                                             alt="App Logo"
@@ -4181,13 +4237,13 @@ export default function OrganizationDashboard(props) {
                                     )}
                                     <Box sx={{ flexGrow: 1 }} />
                                     {/* Notification Bell Icon */}
-                                    <IconButton 
-                                        sx={{ mr: -1 }} 
-                                        onClick={handleNotificationClick} 
+                                    <IconButton
+                                        sx={{ mr: -1 }}
+                                        onClick={handleNotificationClick}
                                         color="inherit"
                                     >
-                                        <Badge 
-                                            badgeContent={unreadCount} 
+                                        <Badge
+                                            badgeContent={unreadCount}
                                             color="error"
                                             sx={{
                                                 "& .MuiBadge-badge": {
@@ -4246,13 +4302,14 @@ export default function OrganizationDashboard(props) {
                                     >
                                         تسجيل الخروج
                                     </Button>
-                                    
+
                                 </Toolbar>
                             </AppBarStyled>
 
                             <Drawer
-                                variant="permanent"
+                                variant={isMobile ? 'temporary' : 'permanent'}
                                 sx={{
+                                    display: { xs: 'block' },
                                     width: open ? drawerWidth : closedDrawerWidth,
                                     flexShrink: 0,
                                     whiteSpace: 'nowrap',
@@ -4262,9 +4319,9 @@ export default function OrganizationDashboard(props) {
                                         duration: theme.transitions.duration.enteringScreen,
                                     }),
                                     '& .MuiDrawer-paper': {
-                                        width: open ? drawerWidth : closedDrawerWidth,
                                         boxSizing: 'border-box',
-                                        borderRadius: '8px 0 0 8px',
+                                        width: isMobile ? '80%' : (open ? drawerWidth : closedDrawerWidth),
+                                        borderRadius: isMobile ? 0 : '8px 0 0 8px',
                                         overflowX: 'hidden',
                                         transition: theme.transitions.create('width', {
                                             easing: theme.transitions.easing.sharp,
@@ -4273,7 +4330,11 @@ export default function OrganizationDashboard(props) {
                                     },
                                 }}
                                 anchor="left"
-                                open={open}
+                                open={isMobile ? mobileOpen : open}
+                                onClose={handleDrawerToggle}
+                                ModalProps={{
+                                    keepMounted: true,
+                                }}
                             >
                                 <DrawerHeader>
                                     {open && (
@@ -4295,10 +4356,10 @@ export default function OrganizationDashboard(props) {
                                         <Avatar
                                             alt={userName}
                                             src={userProfile?.image || profilePicInDrawer || './admin.jpg'}
-                                            sx={{ 
-                                                width: 80, 
-                                                height: 80, 
-                                                mb: 1, 
+                                            sx={{
+                                                width: 80,
+                                                height: 80,
+                                                mb: 1,
                                                 boxShadow: '0px 0px 8px rgba(0,0,0,0.2)',
                                                 border: '3px solid',
                                                 borderColor: 'primary.main'
@@ -4323,26 +4384,75 @@ export default function OrganizationDashboard(props) {
                                         </Box>
                                     ) : (
                                         NAVIGATION.map((item) => {
-                                        if (item.kind === 'header') {
-                                            return open ? (
-                                                <List key={item.title} component="nav" sx={{ px: 2, pt: 2, display: 'flex', flexDirection: 'row-reverse' }}>
-                                                    <Typography variant="overline" color="text.secondary" sx={{ textTransform: 'uppercase', fontWeight: 'bold', fontSize: 18, textAlign: 'right' }} >
-                                                        {item.title}
-                                                    </Typography>
-                                                </List>
-                                            ) : null;
-                                        }
-                                        if (item.kind === 'divider') {
-                                            return <Divider key={`divider-${item.kind}`} sx={{ my: 1 }} />;
-                                        }
-                                        if (item.children) {
-                                            const isOpen = item.segment === 'reports' ? openReports : false;
+                                            if (item.kind === 'header') {
+                                                return open ? (
+                                                    <List key={item.title} component="nav" sx={{ px: 2, pt: 2, display: 'flex', flexDirection: 'row-reverse' }}>
+                                                        <Typography variant="overline" color="text.secondary" sx={{ textTransform: 'uppercase', fontWeight: 'bold', fontSize: 18, textAlign: 'right' }} >
+                                                            {item.title}
+                                                        </Typography>
+                                                    </List>
+                                                ) : null;
+                                            }
+                                            if (item.kind === 'divider') {
+                                                return <Divider key={`divider-${item.kind}`} sx={{ my: 1 }} />;
+                                            }
+                                            if (item.children) {
+                                                const isOpen = item.segment === 'reports' ? openReports : false;
+                                                return (
+                                                    <React.Fragment key={item.segment}>
+                                                        <Tooltip title={item.tooltip} placment='top'>
+                                                            <ListItemButton
+                                                                dir='rtl'
+                                                                onClick={open ? handleReportsClick : () => setOpen(true)}
+                                                                sx={{
+                                                                    borderRadius: 2,
+                                                                    mx: 1,
+                                                                    justifyContent: open ? 'initial' : 'center',
+                                                                    px: 2.5,
+                                                                    '&.Mui-selected': { backgroundColor: 'action.selected' },
+                                                                }}
+                                                            >
+                                                                <ListItemIcon sx={{ minWidth: 0, ml: open ? 3 : 'auto', justifyContent: 'center' }}>
+                                                                    {item.icon}
+                                                                </ListItemIcon>
+                                                                {open && <ListItemText primary={item.title} sx={{ opacity: open ? 1 : 0, textAlign: 'left', pl: 2 }} />}
+                                                                {open && (isOpen ? <ExpandLess /> : <ExpandMore />)}
+                                                            </ListItemButton>
+                                                        </Tooltip>
+                                                        <Collapse in={isOpen && open} timeout="auto" unmountOnExit>
+                                                            <List component="div" disablePadding >
+                                                                {item.children.map((child) => (
+                                                                    <Tooltip title={child.tooltip} key={child.segment}>
+                                                                        <ListItem key={child.segment} disablePadding>
+                                                                            <ListItemButton
+                                                                                selected={router.pathname === `/reports/${child.segment}`}
+                                                                                onClick={() => router.navigate(`/reports/${child.segment}`)}
+                                                                                sx={{
+                                                                                    pr: open ? 4 : 2.5,
+                                                                                    borderRadius: 2,
+                                                                                    mx: 1,
+                                                                                    justifyContent: open ? 'initial' : 'center',
+                                                                                }}
+                                                                            >
+                                                                                <ListItemIcon sx={{ minWidth: 0, ml: open ? 3 : 'auto', justifyContent: 'center' }}>
+                                                                                    {child.icon}
+                                                                                </ListItemIcon>
+                                                                                {open && <ListItemText primary={child.title} sx={{ opacity: open ? 1 : 0, textAlign: 'right' }} />}
+                                                                            </ListItemButton>
+                                                                        </ListItem>
+                                                                    </Tooltip>
+                                                                ))}
+                                                            </List>
+                                                        </Collapse>
+                                                    </React.Fragment>
+                                                );
+                                            }
                                             return (
-                                                <React.Fragment key={item.segment}>
-                                                    <Tooltip title={item.tooltip} placment='top'>
+                                                <Tooltip title={item.tooltip} placement='right-end'>
+                                                    <ListItem key={item.segment} disablePadding dir='rtl'>
                                                         <ListItemButton
-                                                            dir='rtl'
-                                                            onClick={open ? handleReportsClick : () => setOpen(true)}
+                                                            selected={router.pathname === `/${item.segment}`}
+                                                            onClick={() => router.navigate(`/${item.segment}`)}
                                                             sx={{
                                                                 borderRadius: 2,
                                                                 mx: 1,
@@ -4351,64 +4461,15 @@ export default function OrganizationDashboard(props) {
                                                                 '&.Mui-selected': { backgroundColor: 'action.selected' },
                                                             }}
                                                         >
-                                                            <ListItemIcon sx={{ minWidth: 0, ml: open ? 3 : 'auto', justifyContent: 'center' }}>
+                                                            <ListItemIcon sx={{ minWidth: 0, ml: open ? 3 : 'auto', justifyContent: 'center', }}>
                                                                 {item.icon}
                                                             </ListItemIcon>
                                                             {open && <ListItemText primary={item.title} sx={{ opacity: open ? 1 : 0, textAlign: 'left', pl: 2 }} />}
-                                                            {open && (isOpen ? <ExpandLess /> : <ExpandMore />)}
                                                         </ListItemButton>
-                                                    </Tooltip>
-                                                    <Collapse in={isOpen && open} timeout="auto" unmountOnExit>
-                                                        <List component="div" disablePadding >
-                                                            {item.children.map((child) => (
-                                                                <Tooltip title={child.tooltip} key={child.segment}>
-                                                                    <ListItem key={child.segment} disablePadding>
-                                                                        <ListItemButton
-                                                                            selected={router.pathname === `/reports/${child.segment}`}
-                                                                            onClick={() => router.navigate(`/reports/${child.segment}`)}
-                                                                            sx={{
-                                                                                pr: open ? 4 : 2.5,
-                                                                                borderRadius: 2,
-                                                                                mx: 1,
-                                                                                justifyContent: open ? 'initial' : 'center',
-                                                                            }}
-                                                                        >
-                                                                            <ListItemIcon sx={{ minWidth: 0, ml: open ? 3 : 'auto', justifyContent: 'center' }}>
-                                                                                {child.icon}
-                                                                            </ListItemIcon>
-                                                                            {open && <ListItemText primary={child.title} sx={{ opacity: open ? 1 : 0, textAlign: 'right' }} />}
-                                                                        </ListItemButton>
-                                                                    </ListItem>
-                                                                </Tooltip>
-                                                            ))}
-                                                        </List>
-                                                    </Collapse>
-                                                </React.Fragment>
+                                                    </ListItem>
+                                                </Tooltip>
                                             );
-                                        }
-                                        return (
-                                            <Tooltip title={item.tooltip} placement='right-end'>
-                                                <ListItem key={item.segment} disablePadding dir='rtl'>
-                                                    <ListItemButton
-                                                        selected={router.pathname === `/${item.segment}`}
-                                                        onClick={() => router.navigate(`/${item.segment}`)}
-                                                        sx={{
-                                                            borderRadius: 2,
-                                                            mx: 1,
-                                                            justifyContent: open ? 'initial' : 'center',
-                                                            px: 2.5,
-                                                            '&.Mui-selected': { backgroundColor: 'action.selected' },
-                                                        }}
-                                                    >
-                                                        <ListItemIcon sx={{ minWidth: 0, ml: open ? 3 : 'auto', justifyContent: 'center', }}>
-                                                            {item.icon}
-                                                        </ListItemIcon>
-                                                        {open && <ListItemText primary={item.title} sx={{ opacity: open ? 1 : 0, textAlign: 'left', pl: 2 }} />}
-                                                    </ListItemButton>
-                                                </ListItem>
-                                            </Tooltip>
-                                        );
-                                    })
+                                        })
                                     )}
                                 </List>
                             </Drawer>
@@ -4458,10 +4519,10 @@ function AnalyticsPage() {
         });
 
         // Use the same fetchAnalyticsData thunk as admin analytics
-        dispatch(fetchAnalyticsData({ 
-            userRole: 'organization', 
-            userId: userProfile.uid, 
-            filters 
+        dispatch(fetchAnalyticsData({
+            userRole: 'organization',
+            userId: userProfile.uid,
+            filters
         }));
     }, [dispatch, userProfile?.uid, organizationType, filters]);
 
@@ -4502,7 +4563,7 @@ function AnalyticsPage() {
 
         // Get financing ads for this organization
         const financingAds = analyticsData.financingAds?.filter(ad => ad.userId === userProfile.uid) || [];
-        
+
         // Debug logging for financing ads
         console.log('Funder Analytics Debug:', {
             userProfileUid: userProfile.uid,
@@ -4511,14 +4572,14 @@ function AnalyticsPage() {
             allFinancingAdsData: analyticsData.financingAds?.map(ad => ({ id: ad.id, userId: ad.userId, title: ad.title })) || [],
             filteredFinancingAdsData: financingAds.map(ad => ({ id: ad.id, userId: ad.userId, title: ad.title })) || []
         });
-        
+
         // Calculate metrics
         const totalAds = financingAds.length;
         const totalRequests = Number(analyticsData.financialInsights?.totalFinancingRequests) || 0;
         const totalFinancingAmount = Number(analyticsData.financialInsights?.totalRevenue) || 0;
         const averageFinancingAmount = totalRequests > 0 ? totalFinancingAmount / totalRequests : 0;
         const averageRequestAmount = averageFinancingAmount; // Same value for consistency
-        
+
         // Interest rate distribution from analytics data
         const interestRateDistribution = {
             'upTo5': Number(analyticsData.financialInsights?.interestRateBreakdown?.['≤5%']) || 0,
@@ -4572,7 +4633,7 @@ function AnalyticsPage() {
 
         // Get real estate ads for this organization
         const realEstateAds = analyticsData.developerAds?.filter(ad => ad.userId === userProfile.uid) || [];
-        
+
         // Calculate metrics
         const totalAds = realEstateAds.length;
         const activeAds = realEstateAds.filter(ad => ad.reviewStatus === 'approved').length;
@@ -4585,7 +4646,7 @@ function AnalyticsPage() {
         // Average price and area (calculate from actual ads)
         const prices = realEstateAds.map(ad => parseFloat(ad.price) || 0).filter(price => price > 0);
         const areas = realEstateAds.map(ad => parseFloat(ad.area) || 0).filter(area => area > 0);
-        
+
         const averagePrice = prices.length > 0 ? prices.reduce((sum, price) => sum + price, 0) / prices.length : 0;
         const averageArea = areas.length > 0 ? areas.reduce((sum, area) => sum + area, 0) / areas.length : 0;
 
@@ -4657,7 +4718,7 @@ function AnalyticsPage() {
         }
 
         const data = processFunderAnalytics();
-        
+
         return (
             <Box dir='rtl' sx={{ p: 2 }}>
                 <Typography variant="h4" gutterBottom sx={{ textAlign: 'right', mb: 3 }}>
@@ -4909,13 +4970,17 @@ function AnalyticsPage() {
                             { field: 'title', headerName: 'عنوان الإعلان', width: 200 },
                             { field: 'totalRequests', headerName: 'إجمالي الطلبات', width: 120 },
                             { field: 'approvedRequests', headerName: 'الطلبات المقبولة', width: 120 },
-                            { field: 'averageAmount', headerName: 'متوسط المبلغ', width: 150, 
-                                valueFormatter: (params) => params?.value ? `${params.value.toLocaleString('ar-EG')} ج.م` : '0 ج.م' },
+                            {
+                                field: 'averageAmount', headerName: 'متوسط المبلغ', width: 150,
+                                valueFormatter: (params) => params?.value ? `${params.value.toLocaleString('ar-EG')} ج.م` : '0 ج.م'
+                            },
                             { field: 'interestRate', headerName: 'نسبة الفائدة', width: 120 },
                             { field: 'location', headerName: 'الموقع', width: 120 },
                             { field: 'status', headerName: 'الحالة', width: 120 },
-                            { field: 'createdAt', headerName: 'تاريخ الإنشاء', width: 150,
-                                valueFormatter: (params) => params?.value ? params.value.toLocaleDateString('ar-EG') : '' }
+                            {
+                                field: 'createdAt', headerName: 'تاريخ الإنشاء', width: 150,
+                                valueFormatter: (params) => params?.value ? params.value.toLocaleDateString('ar-EG') : ''
+                            }
                         ]}
                         pageSize={5}
                         rowsPerPageOptions={[5, 10, 25]}
@@ -4971,7 +5036,7 @@ function AnalyticsPage() {
         }
 
         const data = processDeveloperAnalytics();
-        
+
         return (
             <Box sx={{ p: 2 }}>
                 <Typography variant="h4" gutterBottom sx={{ textAlign: 'left', mb: 3 }}>
@@ -5221,8 +5286,10 @@ function AnalyticsPage() {
                             { field: 'views', headerName: 'المشاهدات', width: 100 },
                             { field: 'edits', headerName: 'التعديلات', width: 100 },
                             { field: 'daysSincePublished', headerName: 'أيام منذ النشر', width: 150 },
-                            { field: 'lastEdited', headerName: 'آخر تعديل', width: 150,
-                                valueFormatter: (params) => params?.value ? new Date(params.value).toLocaleDateString('ar-EG') : '' }
+                            {
+                                field: 'lastEdited', headerName: 'آخر تعديل', width: 150,
+                                valueFormatter: (params) => params?.value ? new Date(params.value).toLocaleDateString('ar-EG') : ''
+                            }
                         ]}
                         pageSize={5}
                         rowsPerPageOptions={[5, 10, 25]}
@@ -5274,7 +5341,7 @@ function AnalyticsPage() {
                 icon={BarChartIcon}
                 showCount={false}
             />
-            
+
             {/* Filter Controls */}
             <Paper sx={{ p: 2, mb: 3, borderRadius: 2 }}>
                 <Typography variant="h6" sx={{ mb: 2, textAlign: 'left' }}>
@@ -5340,9 +5407,9 @@ function AnalyticsPage() {
                             startIcon={<RefreshIcon />}
                             onClick={() => {
                                 // Refresh data
-                                dispatch(fetchAnalyticsData({ 
-                                    userRole: 'organization', 
-                                    userId: userProfile.uid, 
+                                dispatch(fetchAnalyticsData({
+                                    userRole: 'organization',
+                                    userId: userProfile.uid,
                                     filters: analyticsData?.filters || {}
                                 }));
                             }}
@@ -5352,7 +5419,7 @@ function AnalyticsPage() {
                     </Grid>
                 </Grid>
             </Paper>
-            
+
             {(organizationType === 'ممول عقارى' || organizationType === 'ممول عقاري') ? renderFunderAnalytics() : renderDeveloperAnalytics()}
         </Box>
     );

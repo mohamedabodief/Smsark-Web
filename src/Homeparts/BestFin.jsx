@@ -23,6 +23,9 @@ export default function BestFin() {
   const [offers, setOffers] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Duplicate the offers to create a seamless looping effect
+  const duplicatedOffers = offers.length > 0 ? [...offers, ...offers] : [];
+
   const initializeAds = useCallback(async () => {
     try {
       const cachedAds = getCachedAds(CACHE_KEY);
@@ -30,17 +33,6 @@ export default function BestFin() {
         setOffers(cachedAds.filter((ad) => ad.ads === true));
         setLoading(false);
       }
-
-      // const existingAds = await FinancingAdvertisement.getAll();
-      // for (const data of financingAdsData) {
-      //   const alreadyExists = existingAds.some(
-      //     (ad) => ad.title === data.title && ad.price === data.price
-      //   );
-      //   if (!alreadyExists) {
-      //     const ad = new FinancingAdvertisement(data);
-      //     await ad.save();
-      //   }
-      // }
 
       if (!cachedAds) {
         const freshAds = await FinancingAdvertisement.getActiveAds();
@@ -57,9 +49,9 @@ export default function BestFin() {
 
   useEffect(() => {
     initializeAds();
-
-    const unsubscribe = FinancingAdvertisement.subscribeActiveAds((newAds) => {
-      const activeAds = newAds.filter((ad) => ad.ads === true);
+    let unsubscribe = () => {};
+     unsubscribe = FinancingAdvertisement.subscribeActiveAds((newAds) => {
+      const activeAds = newAds.filter(ad => ad.ads === true);
 
       setOffers((prevOffers) => {
         const currentAds =
@@ -70,33 +62,63 @@ export default function BestFin() {
         }
         return prevOffers;
       });
-
       setLoading(false);
     });
 
-    const interval = setInterval(() => {
-      const cardWidth = 344;
+    const cardWidth = 344; // Card width for calculations
+    const cardGap = 24; // Gap between cards (from your `gap: 3`)
+    const scrollAmount = cardWidth + cardGap;
+    
+    // Auto-scrolling logic
+    let autoScrollInterval;
+    const startAutoScroll = () => {
       if (sliderRef.current) {
-        sliderRef.current.scrollBy({
-          left: -cardWidth,
-          behavior: "smooth",
-        });
+        autoScrollInterval = setInterval(() => {
+          const container = sliderRef.current;
+          const maxScrollLeft = offers.length * scrollAmount;
+
+          if (container.scrollLeft >= maxScrollLeft) {
+            // Jump back to the start of the duplicated set
+            container.scrollTo({ left: 0, behavior: 'auto' });
+          }
+          // Now scroll to the next card smoothly
+          container.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+
+        }, 3000); // 3-second interval
       }
-    }, 5000);
+    };
+    
+    // Start auto-scroll
+    startAutoScroll();
+
+    // Clear interval when user interacts
+    const container = sliderRef.current;
+    if (container) {
+      container.addEventListener('wheel', () => clearInterval(autoScrollInterval), { once: true });
+      container.addEventListener('mousedown', () => clearInterval(autoScrollInterval), { once: true });
+    }
 
     return () => {
       unsubscribe();
-      clearInterval(interval);
+      clearInterval(autoScrollInterval);
+      if (container) {
+        container.removeEventListener('wheel', () => clearInterval(autoScrollInterval));
+        container.removeEventListener('mousedown', () => clearInterval(autoScrollInterval));
+      }
     };
-  }, [initializeAds]);
+  }, [initializeAds, offers.length]);
 
+  // Manual navigation logic
   const scroll = (direction) => {
+    if (!sliderRef.current) return;
     const cardWidth = 344;
-    if (sliderRef.current) {
-      sliderRef.current.scrollBy({
-        left: direction === "left" ? -cardWidth : cardWidth,
-        behavior: "smooth",
-      });
+    const cardGap = 24;
+    const scrollAmount = cardWidth + cardGap;
+    
+    if (direction === "left") {
+      sliderRef.current.scrollBy({ left: -scrollAmount, behavior: "smooth" });
+    } else {
+      sliderRef.current.scrollBy({ left: scrollAmount, behavior: "smooth" });
     }
   };
 
@@ -141,11 +163,8 @@ export default function BestFin() {
           ref={sliderRef}
           sx={{
             display: "flex",
-            justifyContent: "center",
-            overflowX: "auto",
+            overflowX: "hidden",
             gap: 3,
-            scrollSnapType: "x mandatory",
-            scrollPaddingRight: "60px",
             pb: 2,
             pl: 5,
             "&::-webkit-scrollbar": { display: "none" },
@@ -156,11 +175,16 @@ export default function BestFin() {
           ) : offers.length === 0 ? (
             <Typography>لا توجد عروض تمويل مفعلة حالياً.</Typography>
           ) : (
-            offers.map((item, index) => (
+            duplicatedOffers.map((item, index) => (
               <Box
-                key={index}
+                key={`${item?.id}-${index}`}
                 onClick={() => navigate(`/details/financingAds/${item.id}`)}
-                sx={{ cursor: "pointer" }}
+                sx={{
+                  cursor: "pointer",
+                  flexShrink: 0,
+                  minWidth: { xs: 260, sm: 300, md: 320 },
+                  width: { xs: 260, sm: 300, md: 320 },
+                }}
               >
                 <Card
                   sx={{
@@ -179,18 +203,18 @@ export default function BestFin() {
                     sx={{ backgroundSize: "contain" }}
                     width="300"
                     height="160"
-                    image={item.images?.[0] || "/no-img.jpeg"}
+                    image={item?.images?.[0] || "/no-img.jpeg"}
                   />
-                  <FavoriteButton advertisementId={item.id} />
+                  <FavoriteButton advertisementId={item?.id} />
 
                   <CardContent>
                     <Typography color="primary" fontWeight="bold">
-                      {item.start_limit?.toLocaleString()} -{" "}
-                      {item.end_limit?.toLocaleString()} ج.م
+                      {item?.start_limit?.toLocaleString()} -{" "}
+                      {item?.end_limit?.toLocaleString()} ج.م
                     </Typography>
-                    <Typography variant="subtitle1">{item.org_name}</Typography>
+                    <Typography variant="subtitle1">{item?.org_name}</Typography>
                     <Typography variant="body2" color="text.secondary">
-                      {item.financing_model}
+                      {item?.financing_model}
                     </Typography>
                   </CardContent>
                 </Card>

@@ -44,6 +44,7 @@ import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
 import LogoutIcon from '@mui/icons-material/Logout';
 import { logout } from '../LoginAndRegister/featuresLR/authSlice';
+import { performLogout } from '../utils/logoutUtils';
 import SettingsIcon from '@mui/icons-material/Settings';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 
@@ -72,7 +73,7 @@ import HomeWorkIcon from '@mui/icons-material/HomeWork';     // For Rental
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import RefreshIcon from '@mui/icons-material/Refresh';
 // user profile
-import { fetchUserProfile, updateUserProfile, uploadAndSaveProfileImage } from "../LoginAndRegister/featuresLR/userSlice";
+import { fetchUserProfile, updateUserProfile, uploadAndSaveProfileImage, clearProfile } from "../LoginAndRegister/featuresLR/userSlice";
 import sendResetPasswordEmail from "../FireBase/authService/sendResetPasswordEmail";
 import { auth } from "../FireBase/firebaseConfig"; // Adjust path if necessary
 // import { setProfilePic } from "../LoginAndRegister/featuresLR/profilePicSlice";
@@ -121,37 +122,37 @@ const NAVIGATION = [
     },
     {
         segment: 'clientadvertisment',
-        title: 'الإعلانات المجانية',
+        title: 'الإعلانات',
         icon: <SupervisedUserCircleIcon />,
-        tooltip: 'الإعلانات المجانية',
+        tooltip: 'الإعلانات',
     },
-    {
-        segment: 'paidclientadvertisment',
-        title: 'الإعلانات المدفوعة',
-        icon: <PaymentsTwoToneIcon />,
-        tooltip: 'الإعلانات المدفوعة',
-    },
+    // {
+    //     segment: 'paidclientadvertisment',
+    //     title: 'الإعلانات المدفوعة',
+    //     icon: <PaymentsTwoToneIcon />,
+    //     tooltip: 'الإعلانات المدفوعة',
+    // },
 
-    {
-        kind: 'divider',
-    },
-    {
-        kind: 'header',
-        title: 'التحليلات',
+    // {
+    //     kind: 'divider',
+    // },
+    // {
+    //     kind: 'header',
+    //     title: 'التحليلات',
 
-    },
-    {
-        segment: 'charts',
-        title: 'الرسم البيانى',
-        icon: <BarChartIcon />,
-        tooltip: 'الرسم البيانى',
-    },
-    {
-        segment: 'reports',
-        title: 'التقرير',
-        icon: <DescriptionIcon />,
-        tooltip: 'التقرير',
-    },
+    // },
+    // {
+    //     segment: 'charts',
+    //     title: 'الرسم البيانى',
+    //     icon: <BarChartIcon />,
+    //     tooltip: 'الرسم البيانى',
+    // },
+    // {
+    //     segment: 'reports',
+    //     title: 'التقرير',
+    //     icon: <DescriptionIcon />,
+    //     tooltip: 'التقرير',
+    // },
     {
         segment: 'settings',
         title: 'إعدادات الحساب',
@@ -2111,26 +2112,64 @@ function useDemoRouter(initialPath) {
 }
 
 export default function ClientDashboard(props) {
-    const { window } = props;
+    const { window: windowProp } = props;
     const dispatch = useDispatch();
     const navigate = useNavigate();
+    const [mobileOpen, setMobileOpen] = React.useState(false);
     const [open, setOpen] = React.useState(true);
     const [openReports, setOpenReports] = React.useState(false);
     const [mode, setMode] = React.useState('light');
+    const [isMobile, setIsMobile] = React.useState(false);
 
-    // Auto-close Drawer at <=600px
+    // Set initial mobile state after component mounts (client-side only)
     React.useEffect(() => {
-        if (typeof window === 'undefined') return;
-        function handleResize() {
-            if (window.innerWidth <= 600) {
-                setOpen(false);
-            }
-        }
-        window.addEventListener('resize', handleResize);
-        // Run once on mount to handle initial load
-        handleResize();
-        return () => window.removeEventListener('resize', handleResize);
+        const checkIfMobile = () => window.innerWidth < 750;
+        setIsMobile(checkIfMobile());
     }, []);
+    // // Auto-close Drawer at <=600px
+    // React.useEffect(() => {
+    //     if (typeof window === 'undefined') return;
+    //     function handleResize() {
+    //         if (window.innerWidth <= 600) {
+    //             setOpen(false);
+    //         }
+    //     }
+    //     window.addEventListener('resize', handleResize);
+    //     // Run once on mount to handle initial load
+    //     handleResize();
+    //     return () => window.removeEventListener('resize', handleResize);
+    // }, []);
+
+        // Handle window resize
+        React.useEffect(() => {
+            const handleResize = () => {
+                const mobile = window.innerWidth < 750;
+                setIsMobile(mobile);
+                // Close drawer on mobile when resizing to larger screens
+                if (!mobile && mobileOpen) {
+                    setMobileOpen(false);
+                }
+            };
+    
+            window.addEventListener('resize', handleResize);
+            return () => window.removeEventListener('resize', handleResize);
+        }, [mobileOpen]);
+            // Close drawer when route changes on mobile
+    const handleDrawerToggle = () => {
+        if (isMobile) {
+            setMobileOpen(!mobileOpen);
+        } else {
+            setOpen(!open);
+        }
+    };
+
+    // Close drawer when clicking on a menu item on mobile
+    const handleMenuItemClick = () => {
+        if (isMobile) {
+            setMobileOpen(false);
+        }
+    };
+
     const userProfile = useSelector((state) => state.user.profile);
     const userProfileStatus = useSelector((state) => state.user.status);
     
@@ -2246,26 +2285,15 @@ export default function ClientDashboard(props) {
         }
     }, [authUid]);
 
-    const handleDrawerToggle = () => {
-        setOpen(!open);
-    };
 
     const handleReportsClick = () => {
         setOpenReports(!openReports);
     };
 
     const handleLogout = async () => {
-        console.log('جارى تسجيل الخروج');
-        try {
-            await signOut(auth); // Sign out from Firebase
-            dispatch(logout()); // Dispatch Redux logout action to clear state
-            navigate('/login'); // Redirect to login page
-            console.log('تم تسجيل الخروج بنجاح.');
-        } catch (error) {
-            console.error('خطأ في تسجيل الخروج:', error);
-            // You might want to show a Snackbar or Alert here for the user
-        }
+        await performLogout(dispatch, signOut, auth, navigate);
     };
+
 
     const Main = styled('main', { shouldForwardProp: (prop) => prop !== 'open' })(
         ({ theme, open }) => ({
@@ -2276,11 +2304,17 @@ export default function ClientDashboard(props) {
                 easing: theme.transitions.easing.sharp,
                 duration: theme.transitions.duration.leavingScreen,
             }),
-            marginRight: open ? theme.spacing(2) + drawerWidth : closedDrawerWidth,
+            marginRight: open && !isMobile ? theme.spacing(2) + drawerWidth : closedDrawerWidth,
             [theme.breakpoints.down('sm')]: {
                 marginRight: 0,
                 paddingRight: theme.spacing(2),
                 paddingLeft: theme.spacing(2),
+                paddingTop: '50px',
+                marginTop: 0,
+            },
+            [theme.breakpoints.up('sm')]: {
+                padding: theme.spacing(3),
+                paddingTop: '4px',
             },
         })
     );
@@ -2291,11 +2325,12 @@ export default function ClientDashboard(props) {
                 easing: theme.transitions.easing.sharp,
                 duration: theme.transitions.duration.leavingScreen,
             }),
-            width: `calc(100% - ${open ? theme.spacing(2) + drawerWidth : closedDrawerWidth}px)`,
-            marginLeft: open ? theme.spacing(2) + drawerWidth : closedDrawerWidth,
+            width: `calc(100% - ${open && !isMobile ? theme.spacing(2) + drawerWidth : closedDrawerWidth}px)`,
+            marginLeft: open && !isMobile ? theme.spacing(2) + drawerWidth : closedDrawerWidth,
             [theme.breakpoints.down('sm')]: {
                 width: '100%',
                 marginLeft: 0,
+                // paddingRight: theme.spacing(1),
             },
         })
     );
@@ -2359,7 +2394,16 @@ export default function ClientDashboard(props) {
                             <CssBaseline />
                             <AppBarStyled position="fixed" open={open}>
                                 <Toolbar sx={{ flexDirection: 'row-reverse' }}>
-                                    {!open && (
+                                    <IconButton
+                                        color="inherit"
+                                        aria-label="open drawer"
+                                        edge="start"
+                                        onClick={handleDrawerToggle}
+                                        sx={{ ml: 2, display: { md: 'none' } }}
+                                    >
+                                        <MenuIcon />
+                                    </IconButton>
+                                    {!open && !isMobile && (
                                         <img
                                             src="./logo.png"
                                             alt="App Logo"
@@ -2440,8 +2484,9 @@ export default function ClientDashboard(props) {
                             </AppBarStyled>
 
                             <Drawer
-                                variant="permanent"
+                                variant={isMobile ? 'temporary' : 'permanent'}
                                 sx={{
+                                    display: { xs: 'block' },
                                     width: open ? drawerWidth : closedDrawerWidth,
                                     flexShrink: 0,
                                     whiteSpace: 'nowrap',
@@ -2451,9 +2496,9 @@ export default function ClientDashboard(props) {
                                         duration: theme.transitions.duration.enteringScreen,
                                     }),
                                     '& .MuiDrawer-paper': {
-                                        width: open ? drawerWidth : closedDrawerWidth,
+                                        width: isMobile ? '80%' : (open ? drawerWidth : closedDrawerWidth),
                                         boxSizing: 'border-box',
-                                        borderRadius: '8px 0 0 8px',
+                                        borderRadius: isMobile ? 0 : '8px 0 0 8px',
                                         overflowX: 'hidden',
                                         transition: theme.transitions.create('width', {
                                             easing: theme.transitions.easing.sharp,
@@ -2462,7 +2507,11 @@ export default function ClientDashboard(props) {
                                     },
                                 }}
                                 anchor="left"
-                                open={open}
+                                open={isMobile ? mobileOpen : open}
+                                onClose={handleDrawerToggle}
+                                ModalProps={{
+                                    keepMounted: true,
+                                }}
                             >
                                 <DrawerHeader>
                                     {open && (
@@ -2484,7 +2533,7 @@ export default function ClientDashboard(props) {
                                         <Avatar
                                             alt="User"
                                             src={userProfile?.image || './admin.jpg'}
-                                            sx={{ width: 80, height: 80, mb: 1, boxShadow: '0px 0px 8px rgba(0,0,0,0.2)' }}
+                                            sx={{ width: 80, height: 80, mb: 1, boxShadow: '0px 0px 8px rgba(0,0,0,0.2)' , border: '3px solid', borderColor: 'primary.main' }}
                                         />
                                         <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
                                             {userProfileStatus === 'loading' ? (
@@ -2493,7 +2542,7 @@ export default function ClientDashboard(props) {
                                                     جاري التحميل...
                                                 </Box>
                                             ) : (
-                                                `Hello, ${userName}`
+                                                `مرحباً، ${userName}`
                                             )}
                                         </Typography>
                                         <Typography variant="body2" color="text.secondary">
