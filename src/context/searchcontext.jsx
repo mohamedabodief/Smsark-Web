@@ -1,3 +1,4 @@
+// src/context/searchcontext.jsx
 import  React, { createContext, useContext, useState } from 'react';
 export const SearchContext=createContext();
 export const SearchProvider = ({ children }) => {

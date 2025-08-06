@@ -170,7 +170,7 @@
 //       if (imageToRemove.url && imageToRemove.url.startsWith("blob:")) {
 //         URL.revokeObjectURL(imageToRemove.url);
 //       }
-      
+
 //       // If the image is new, remove the corresponding file from the `images` state
 //       if (imageToRemove.isNew) {
 //         setImages(prevFiles => prevFiles.filter(file => file !== imageToRemove.file));
@@ -239,7 +239,7 @@
 //     try {
 //       const newImageFiles = images;
 //       const newImageUrls = newImageFiles.length > 0 ? await uploadImagesToFirebase(newImageFiles) : [];
-      
+
 //       // Robust merge: combine all old image URLs with all new uploaded image URLs
 //       const oldImageUrls = imageMetadata.filter(img => !img.isNew && img.url && img.url.startsWith('http')).map(img => img.url);
 //       const finalImageUrls = [...oldImageUrls, ...newImageUrls];
@@ -498,14 +498,14 @@
 
 //         </Grid>
 //       </form>
-      
+
 //     </Paper>
 //   );
 // }
 
 
 import {
-  Box, TextField, Button, Typography, Paper, Grid, Alert, CircularProgress, IconButton, Chip
+  Box, TextField, Button, Typography, Paper, Grid, Alert, CircularProgress, IconButton, Chip, Snackbar
 } from '@mui/material';
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -561,6 +561,7 @@ export default function AddFinancingAdForm() {
 
   const [selectedPackage, setSelectedPackage] = useState(editData?.adPackage || null);
   const [receiptImage, setReceiptImage] = useState(null);
+  const [receiptPreviewUrl, setReceiptPreviewUrl] = useState(null);
 
   // --- MODIFIED: useEffect to handle form and image initialization on edit mode
   React.useEffect(() => {
@@ -616,6 +617,12 @@ export default function AddFinancingAdForm() {
 
           if (adData.adPackage) {
             setSelectedPackage(adData.adPackage);
+          }
+
+          // إضافة معاينة صورة الإيصال القديمة
+          if (adData.receipt_image) {
+            setReceiptImage(adData.receipt_image);
+            setReceiptPreviewUrl(adData.receipt_image);
           }
         }
       }
@@ -677,7 +684,7 @@ export default function AddFinancingAdForm() {
       if (imageToRemove.url && imageToRemove.url.startsWith("blob:")) {
         URL.revokeObjectURL(imageToRemove.url);
       }
-      
+
       // If the image is new, remove the corresponding file from the `images` state
       if (imageToRemove.isNew) {
         setImages(prevFiles => prevFiles.filter(file => file !== imageToRemove.file));
@@ -756,7 +763,7 @@ export default function AddFinancingAdForm() {
     try {
       const newImageFiles = images;
       const newImageUrls = newImageFiles.length > 0 ? await uploadImagesToFirebase(newImageFiles) : [];
-      
+
       // Robust merge: combine all old image URLs with all new uploaded image URLs
       const oldImageUrls = imageMetadata.filter(img => !img.isNew && img.url && img.url.startsWith('http')).map(img => img.url);
       const finalImageUrls = [...oldImageUrls, ...newImageUrls];
@@ -805,6 +812,15 @@ export default function AddFinancingAdForm() {
     }
   };
 
+  const handleCloseSnackbar = () => {
+    setSuccess(false);
+  };
+
+  const removeReceiptImage = () => {
+    setReceiptImage(null);
+    setReceiptPreviewUrl(null);
+  };
+
   return (
     <Paper elevation={3} sx={{ p: 3, borderRadius: 2, mt: 5, maxWidth: 1100, mx: "auto", mb: 10 }}>
       <Typography
@@ -816,16 +832,29 @@ export default function AddFinancingAdForm() {
           {isEditMode ? "تعديل إعلان تمويل" : "إضافة إعلان تمويل جديد"}
         </Box>
       </Typography>
-      {success && (
-        <Alert severity="success" sx={{ mb: 2 }}>
-          {isEditMode ? "تم تحديث الإعلان بنجاح! وحالة الإعلان الآن قيد المراجعة" : "تم حفظ الإعلان بنجاح!"}
-        </Alert>
-      )}
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>
       )}
+
+      <Snackbar
+        open={success}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert
+          severity="success"
+          sx={{ width: "100%", mt: 3 }}
+          onClose={handleCloseSnackbar}
+        >
+          {isEditMode ?
+            "تم تحديث إعلان التمويل بنجاح! سيتم إعادة مراجعته من قبل الإدارة. سيتم الانتقال لصفحة التفاصيل خلال ثانيتين..." :
+            "تم حفظ إعلان التمويل بنجاح! سيتم الانتقال لصفحة التفاصيل خلال ثانيتين..."
+          }
+        </Alert>
+      </Snackbar>
       <form onSubmit={handleSubmit}>
-        <Grid  spacing={2} dir="rtl">
+        <Grid spacing={2} dir="rtl">
           <Grid item xs={12} md={6} mt={2} mb={2} lg={4}>
             <TextField
               fullWidth
@@ -989,7 +1018,21 @@ export default function AddFinancingAdForm() {
             <Typography variant="h6" sx={{ color: "#6E00FE", mb: 2, mt: 2, textAlign: "right" }}>
               اختيار الباقة وإيصال الدفع
             </Typography>
-            <AdPackages selectedPackageId={selectedPackage} setSelectedPackageId={setSelectedPackage} onReceiptImageChange={setReceiptImage} />
+            <AdPackages
+              selectedPackageId={selectedPackage}
+              setSelectedPackageId={setSelectedPackage}
+              onReceiptImageChange={(fileOrUrl) => {
+                setReceiptImage(fileOrUrl);
+                if (fileOrUrl instanceof File) {
+                  setReceiptPreviewUrl(URL.createObjectURL(fileOrUrl));
+                } else {
+                  setReceiptPreviewUrl(fileOrUrl);
+                }
+              }}
+              receiptImage={receiptImage}
+              receiptPreviewUrl={receiptPreviewUrl}
+              removeReceiptImage={removeReceiptImage}
+            />
             {error && error.includes("باقة إعلانية") && (
               <Typography variant="caption" color="error" sx={{ mt: 1, textAlign: "right" }}>
                 {error}
