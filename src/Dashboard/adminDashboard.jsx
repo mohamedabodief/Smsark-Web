@@ -25,9 +25,11 @@ import {
     TableContainer,
     TableHead,
     TableRow,
-    useTheme
+    useTheme,
+    useMediaQuery
 } from '@mui/material';
 import PeopleIcon from '@mui/icons-material/People'; // Icon for Users
+import BusinessIcon from '@mui/icons-material/Business'; // Icon for Organizations
 import CampaignIcon from '@mui/icons-material/Campaign'; // Icon for Ads
 import RequestQuoteIcon from '@mui/icons-material/RequestQuote'; // Icon for Financial Requests
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney'; // Icon for Revenue
@@ -57,14 +59,12 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import { logout } from '../LoginAndRegister/featuresLR/authSlice';
 import { signOut } from 'firebase/auth';
 import { auth } from '../FireBase/firebaseConfig';
+import { performLogout } from '../utils/logoutUtils';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import ApprovalIcon from '@mui/icons-material/Approval';
 import DoNotDisturbOnIcon from '@mui/icons-material/DoNotDisturbOn';
 import PendingIcon from '@mui/icons-material/Pending';
 import CloseIcon from '@mui/icons-material/Close';
-// import { addUser, editUser, deleteUser } from '../reduxToolkit/slice/usersSlice';
-// import { addOrganization, editOrganization, deleteOrganization } from '../reduxToolkit/slice/organizationsSlice';
-// import { addAdmin, editAdmin, deleteAdmin } from '../reduxToolkit/slice/adminsSlice';
 import { CacheProvider } from '@emotion/react';
 import createCache from '@emotion/cache';
 import rtlPlugin from 'stylis-plugin-rtl';
@@ -136,7 +136,7 @@ import {
     deleteOrganizationAsync,
 } from '../reduxToolkit/slice/adminUsersSlice';
 
-import { fetchUserProfile, updateUserProfile, uploadAndSaveProfileImage } from "../LoginAndRegister/featuresLR/userSlice";
+import { fetchUserProfile, updateUserProfile, uploadAndSaveProfileImage, clearProfile } from "../LoginAndRegister/featuresLR/userSlice";
 import sendResetPasswordEmail from "../FireBase/authService/sendResetPasswordEmail";
 import { collection, doc, getDoc, getDocs } from "firebase/firestore";
 import { fetchFinancialRequests, deleteFinancialRequest, updateFinancialRequest } from '../reduxToolkit/slice/financialRequestSlice';
@@ -171,12 +171,6 @@ const NAVIGATION = [
         kind: 'header',
         title: 'العناصر الرئيسية',
     },
-    // {
-    //     segment: 'dashboard',
-    //     title: 'لوحة التحكم',
-    //     icon: <DashboardIcon />,
-    //     tooltip: 'لوحة التحكم',
-    // },
     {
         segment: 'profile',
         title: 'الملف الشخصي',
@@ -189,12 +183,6 @@ const NAVIGATION = [
         icon: <GroupIcon />,
         tooltip: 'المستخدمين',
     },
-    // {
-    //     segment: 'properties',
-    //     title: 'العقارات',
-    //     icon: <HomeIcon />,
-    //     tooltip: 'العقارات',
-    // },
     {
         segment: 'mainadvertisment',
         title: 'إعلانات القسم الرئيسى',
@@ -245,19 +233,7 @@ const NAVIGATION = [
                 icon: <AnalyticsIcon />,
                 tooltip: 'التحليلات والتقارير',
             },
-            {
-                segment: 'traffic',
-                title: 'حركة مرور الزوار',
-                icon: <DescriptionIcon />,
-                tooltip: 'حركة مرور الزوار',
-            },
         ],
-    },
-    {
-        segment: 'integrations',
-        title: 'إضافات',
-        icon: <LayersIcon />,
-        tooltip: 'إضافات',
     },
 ];
 
@@ -548,19 +524,12 @@ function AddAdminModal({ open, onClose, setSnackbar }) {
         if (validateStep2()) {
             setIsLoading(true);
             try {
-                // IMPORTANT: The `addAdmin` thunk in your `adminUsersSlice` MUST be updated
-                // to handle Firebase Auth user creation (e.g., using `createUserWithEmailAndPassword`)
-                // with `adminData.email` and `adminData.password`.
-                // After successful Firebase Auth registration, it should then save the
-                // rest of the admin data (adm_name, phone, gender) to Firestore,
-                // associating it with the newly created Firebase Auth UID.
                 await dispatch(addAdmin({
                     email: adminData.email,
                     password: adminData.password,
                     adm_name: adminData.adm_name,
                     phone: adminData.phone,
                     gender: adminData.gender,
-                    // image: adminData.image, // Include if you add image upload to modal
                 }));
                 setSnackbar({ open: true, message: "تم إضافة المدير بنجاح!", severity: "success" });
                 onClose();
@@ -708,17 +677,7 @@ function EditAdminModal({ open, onClose, admin, setSnackbar }) { // Added setSna
     const [phone, setPhone] = React.useState(admin?.phone || ''); // New state for phone
     const [gender, setGender] = React.useState(admin?.gender || ''); // New state for gender
 
-    // Removed states for email, city, governorate, address, userName as per AdminUserData
-    // const [email, setEmail] = React.useState(admin?.email || '');
-    // const [city, setCity] = React.useState(admin?.city || '');
-    // const [governorate, setGovernorate] = React.useState(admin?.governorate || '');
-    // const [address, setAddress] = React.useState(admin?.address || '');
-    // const [userName, setUserName] = React.useState(admin?.user_name || '');
-
     const [nameError, setNameError] = React.useState(false);
-    // Removed emailError and emailHelperText
-    // const [emailError, setEmailError] = React.useState(false);
-    // const [emailHelperText, setEmailHelperText] = React.useState('');
     const [isLoading, setIsLoading] = React.useState(false); // New loading state
 
     React.useEffect(() => {
@@ -726,17 +685,8 @@ function EditAdminModal({ open, onClose, admin, setSnackbar }) { // Added setSna
             setName(admin.adm_name || '');
             setPhone(admin.phone || '');
             setGender(admin.gender || '');
-            // Removed setting states for email, city, governorate, address, userName
-            // setEmail(admin.email || '');
-            // setCity(admin.city || '');
-            // setGovernorate(admin.governorate || '');
-            // setAddress(admin.address || '');
-            // setUserName(admin.user_name || '');
             setNameError(false);
-            // Removed resetting emailError and emailHelperText
-            // setEmailError(false);
-            // setEmailHelperText('');
-            setIsLoading(false); // Reset loading on admin change/modal open
+            setIsLoading(false);
         }
     }, [admin, open]);
 
@@ -749,29 +699,12 @@ function EditAdminModal({ open, onClose, admin, setSnackbar }) { // Added setSna
             setNameError(false);
         }
 
-        // Removed email validation
-        // const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        // if (!email.trim()) {
-        //     setEmailError(true);
-        //     setEmailHelperText('البريد الألكتروني مطلوب');
-        //     hasError = true;
-        // } else if (!emailRegex.test(email)) {
-        //     setEmailError(true);
-        //     setEmailHelperText('صيغة البريد الألكتروني غير صحيحة');
-        //     hasError = true;
-        // } else {
-        //     setEmailError(false);
-        //     setEmailHelperText('');
-        // }
+    
 
         // Add validation for phone if needed
         if (!phone.trim()) {
-            // You might want a specific error state for phone
-            // For now, just mark as error if empty
             hasError = true;
         }
-        // No validation for other removed fields
-
         if (!hasError) {
             setIsLoading(true); // Set loading true
             try {
@@ -781,10 +714,6 @@ function EditAdminModal({ open, onClose, admin, setSnackbar }) { // Added setSna
                     adm_name: name,
                     phone: phone,
                     gender: gender,
-                    // Note: 'email' is typically required for user updates in Firebase Auth.
-                    // If your editAdmin thunk or backend requires it, you will need to
-                    // either add it back to AdminUserData or handle it differently.
-                    // For now, it's excluded as per the provided AdminUserData class.
                 })); // Removed .unwrap() here as well
                 setSnackbar({ open: true, message: "تم تحديث المدير بنجاح!", severity: "success" });
                 onClose(); // Close modal on success
@@ -815,20 +744,6 @@ function EditAdminModal({ open, onClose, admin, setSnackbar }) { // Added setSna
                     sx={{ mb: 2 }}
                     disabled={isLoading} // Disable while loading
                 />
-                {/* Removed Email field */}
-                {/* <TextField
-                    margin="dense"
-                    label="البريد الألكتروني"
-                    type="email"
-                    fullWidth
-                    variant="outlined"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    error={emailError}
-                    helperText={emailHelperText}
-                    sx={{ mb: 2 }}
-                    disabled={isLoading} // Disable while loading
-                /> */}
                 <TextField
                     margin="dense"
                     label="رقم الجوال"
@@ -858,57 +773,6 @@ function EditAdminModal({ open, onClose, admin, setSnackbar }) { // Added setSna
                         ))}
                     </Select>
                 </FormControl>
-                {/* Removed City, Governorate, Address, User Name fields */}
-                {/* <FormControl fullWidth margin="dense" variant="outlined" sx={{ mb: 2 }}>
-                    <InputLabel id="governorate-label">المحافظة</InputLabel>
-                    <Select
-                        labelId="governorate-label"
-                        id="governorate"
-                        name="governorate"
-                        value={governorate}
-                        onChange={(e) => setGovernorate(e.target.value)}
-                        label="المحافظة"
-                        sx={{ textAlign: 'right' }}
-                        disabled={isLoading}
-                    >
-                        {governorates.map((gov) => (
-                            <MenuItem key={gov} value={gov}>{gov}</MenuItem>
-                        ))}
-                    </Select>
-                </FormControl>
-                <TextField
-                    margin="dense"
-                    label="المدينة/القرية"
-                    type="text"
-                    fullWidth
-                    variant="outlined"
-                    value={city}
-                    onChange={(e) => setCity(e.target.value)}
-                    sx={{ mb: 2 }}
-                    disabled={isLoading}
-                />
-                <TextField
-                    margin="dense"
-                    label="العنوان بالتفصيل"
-                    type="text"
-                    fullWidth
-                    variant="outlined"
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                    sx={{ mb: 2 }}
-                    disabled={isLoading}
-                />
-                <TextField
-                    margin="dense"
-                    label="اسم المستخدم (للمدير)"
-                    type="text"
-                    fullWidth
-                    variant="outlined"
-                    value={userName}
-                    onChange={(e) => setUserName(e.target.value)}
-                    sx={{ mb: 2 }}
-                    disabled={isLoading}
-                /> */}
             </DialogContent>
             <DialogActions sx={{ flexDirection: 'row-reverse' }}>
                 <Button onClick={handleSave} variant="contained" sx={{ bgcolor: 'purple' }} disabled={isLoading}>
@@ -921,48 +785,48 @@ function EditAdminModal({ open, onClose, admin, setSnackbar }) { // Added setSna
 }
 
 
-function DashboardPage() {
-    return (
-        <Box sx={{ p: 2, textAlign: 'right' }}>
-            <PageHeader
-                title="لوحة التحكم"
-                icon={DashboardIcon}
-                showCount={false}
-            />
-            <Grid container spacing={3} direction="row-reverse">
-                <Grid item xs={12} sm={6} md={4}>
-                    <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', height: 140, borderRadius: 2, textAlign: 'right' }}>
-                        <Typography variant="h6" color="text.secondary">Total Sales</Typography>
-                        <Typography variant="h5" sx={{ mt: 1, fontWeight: 'bold', color: 'primary.main' }}>$12,345.00</Typography>
-                        <Typography variant="body2" color="success.main">+15% since last month</Typography>
-                    </Paper>
-                </Grid>
-                <Grid item xs={12} sm={6} md={4}>
-                    <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', height: 140, borderRadius: 2, textAlign: 'right' }}>
-                        <Typography variant="h6" color="text.secondary">New Orders</Typography>
-                        <Typography variant="h5" sx={{ mt: 1, fontWeight: 'bold', color: 'secondary.main' }}>245</Typography>
-                        <Typography variant="body2" color="error.main">-5% since last month</Typography>
-                    </Paper>
-                </Grid>
-                <Grid item xs={12} sm={6} md={4}>
-                    <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', height: 140, borderRadius: 2, textAlign: 'right' }}>
-                        <Typography variant="h6" color="text.secondary">Customers</Typography>
-                        <Typography variant="h5" sx={{ mt: 1, fontWeight: 'bold' }}>1,234</Typography>
-                        <Typography variant="body2" color="success.main">+2% since last month</Typography>
-                    </Paper>
-                </Grid>
-                <Grid item xs={12}>
-                    <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', borderRadius: 2, height: 300, textAlign: 'right' }}>
-                        <Typography variant="h6">Sales Trend (Placeholder)</Typography>
-                        <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <Typography variant="body1" color="text.secondary">Chart would go here</Typography>
-                        </Box>
-                    </Paper>
-                </Grid>
-            </Grid>
-        </Box>
-    );
-}
+// function DashboardPage() {
+//     return (
+//         <Box sx={{ p: 2, textAlign: 'right' }}>
+//             <PageHeader
+//                 title="لوحة التحكم"
+//                 icon={DashboardIcon}
+//                 showCount={false}
+//             />
+//             <Grid container spacing={3} direction="row-reverse">
+//                 <Grid item xs={12} sm={6} md={4}>
+//                     <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', height: 140, borderRadius: 2, textAlign: 'right' }}>
+//                         <Typography variant="h6" color="text.secondary">Total Sales</Typography>
+//                         <Typography variant="h5" sx={{ mt: 1, fontWeight: 'bold', color: 'primary.main' }}>$12,345.00</Typography>
+//                         <Typography variant="body2" color="success.main">+15% since last month</Typography>
+//                     </Paper>
+//                 </Grid>
+//                 <Grid item xs={12} sm={6} md={4}>
+//                     <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', height: 140, borderRadius: 2, textAlign: 'right' }}>
+//                         <Typography variant="h6" color="text.secondary">New Orders</Typography>
+//                         <Typography variant="h5" sx={{ mt: 1, fontWeight: 'bold', color: 'secondary.main' }}>245</Typography>
+//                         <Typography variant="body2" color="error.main">-5% since last month</Typography>
+//                     </Paper>
+//                 </Grid>
+//                 <Grid item xs={12} sm={6} md={4}>
+//                     <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', height: 140, borderRadius: 2, textAlign: 'right' }}>
+//                         <Typography variant="h6" color="text.secondary">Customers</Typography>
+//                         <Typography variant="h5" sx={{ mt: 1, fontWeight: 'bold' }}>1,234</Typography>
+//                         <Typography variant="body2" color="success.main">+2% since last month</Typography>
+//                     </Paper>
+//                 </Grid>
+//                 <Grid item xs={12}>
+//                     <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', borderRadius: 2, height: 300, textAlign: 'right' }}>
+//                         <Typography variant="h6">Sales Trend (Placeholder)</Typography>
+//                         <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+//                             <Typography variant="body1" color="text.secondary">Chart would go here</Typography>
+//                         </Box>
+//                     </Paper>
+//                 </Grid>
+//             </Grid>
+//         </Box>
+//     );
+// }
 
 
 const genders = ["ذكر", "أنثى", "غير محدد"];
@@ -1188,7 +1052,7 @@ function ProfilePage() {
         return (
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
                 <CircularProgress />
-                <Typography sx={{ ml: 2 }}>Loading profile...</Typography>
+                <Typography sx={{ ml: 2 }}>جارٍ تحميل الملف الشخصي...</Typography>
             </Box>
         );
     }
@@ -1205,7 +1069,7 @@ function ProfilePage() {
     if (userProfileStatus === "failed") {
         return (
             <Box sx={{ p: 3 }}>
-                <Alert severity="error">Error loading profile: {userProfileError || "Unknown error."}</Alert>
+                <Alert severity="error">خطأ في تحميل الملف الشخصي: {userProfileError || "Unknown error."}</Alert>
             </Box>
         );
     }
@@ -1230,18 +1094,21 @@ function ProfilePage() {
     }
 
     return (
-        <Box sx={{ p: 2, textAlign: 'right' }}>
-            <Typography variant="h3" sx={{ display: 'flex', flexDirection: 'row-reverse', mb: 3 }}>حسابي</Typography>
-            <Paper sx={{ p: 4, borderRadius: 2, minHeight: 400, textAlign: 'right', boxShadow: '0px 0px 8px rgba(0,0,0,0.2)' }}>
-                <Grid container spacing={4} direction="row-reverse">
+        <Box dir='rtl' sx={{ p: 2, textAlign: 'left' }}>
+            <PageHeader 
+                title={"حسابي"}
+                icon={AccountBoxIcon}
+            />
+            <Paper sx={{ p: 4, borderRadius: 2, minHeight: 400, boxShadow: '0px 0px 8px rgba(0,0,0,0.2)' }}>
+                <Grid container spacing={4} >
                     <Grid item xs={12} md={4} lg={3}>
                         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
                             <UploadAvatars />
                         </Box>
                     </Grid>
                     <Grid item xs={12} md={8} lg={9}>
-                        <Box>
-                            <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', fontSize: '1.5rem', display: 'flex', flexDirection: 'row-reverse' }}>المعلومات الشخصية</Typography>
+                        <Box >
+                            <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', fontSize: '1.5rem', display: 'flex', flexDirection: 'row' }}>المعلومات الشخصية</Typography>
 
                             {/* Admin Name */}
                             <TextField
@@ -1323,17 +1190,6 @@ function ProfilePage() {
                                 </Select>
                             </FormControl>
 
-                            {/* Admin-specific fields like user_name if applicable, or remove */}
-                            {/* <TextField
-                label="اسم المستخدم (للمدير)"
-                fullWidth
-                margin="normal"
-                name="user_name"
-                value={formData.user_name || ""}
-                onChange={handleChange}
-                InputProps={{ style: { direction: 'rtl' } }}
-              /> */}
-
                             <Button variant="contained" color="primary" onClick={handleSave} sx={{ marginTop: 2, fontSize: '1.2rem' }}>
                                 حفظ التغييرات
                             </Button>
@@ -1360,7 +1216,6 @@ function ProfilePage() {
 function UsersPage() {
     const dispatch = useDispatch();
 
-    // Select data and status from the new adminUsersSlice
     const clients = useSelector((state) => state.adminUsers.clients);
     const clientsStatus = useSelector((state) => state.adminUsers.clientsStatus);
     const clientsError = useSelector((state) => state.adminUsers.clientsError);
@@ -1375,6 +1230,7 @@ function UsersPage() {
 
     const [activeTab, setActiveTab] = useState('users');
     const [activeOrgSubTab, setActiveOrgSubTab] = useState('developers');
+    const [searchTerm, setSearchTerm] = useState('');
 
     const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
     const [isEditUserModalOpen, setIsEditUserModalOpen] = useState(false);
@@ -1391,12 +1247,13 @@ function UsersPage() {
     const [isEditAdminModalOpen, setIsEditAdminModalOpen] = useState(false);
     const [adminToEdit, setAdminToEdit] = useState(null);
 
-    // Snackbar state for UsersPage itself
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
-    // --- Fetch Data on Mount and Tab Change ---
+    // Responsiveness hook
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
     useEffect(() => {
-        // Only fetch if status is 'idle' or 'failed' to prevent continuous fetching
         if (activeTab === 'users' && (clientsStatus === 'idle' || clientsStatus === 'failed')) {
             dispatch(fetchClients());
         } else if (activeTab === 'organizations' && (organizationsStatus === 'idle' || organizationsStatus === 'failed')) {
@@ -1406,17 +1263,16 @@ function UsersPage() {
         }
     }, [activeTab, clientsStatus, organizationsStatus, adminsStatus, dispatch]);
 
-    // --- User Handlers (now dispatching actions from adminUsersSlice) ---
+    const handleSearchChange = (event) => {
+        setSearchTerm(event.target.value);
+    };
+
+    // --- User Handlers ---
     const handleAddUser = () => {
         setIsAddUserModalOpen(true);
     };
 
     const handleAddUserConfirm = async ({ name, email, phone, gender }) => {
-        // For clients, we need a UID (Firebase Auth UID). This usually happens during registration.
-        // For simplicity in this admin panel, we'll use a placeholder UID for new *manual* additions.
-        // In a real app, adding a user here would likely involve creating a Firebase Auth user first.
-        // The addClient thunk should handle generating a UID if not provided, or you can generate it here.
-        // For now, let's assume addClient handles the UID generation or it's not strictly required for manual adds.
         try {
             await dispatch(addClient({ cli_name: name, email, phone, gender, type_of_user: 'client' })).unwrap();
             setSnackbar({ open: true, message: "تم إضافة العميل بنجاح!", severity: "success" });
@@ -1428,37 +1284,20 @@ function UsersPage() {
         }
     };
 
-    // const handleEditUser = (user) => {
-    //     setUserToEdit(user);
-    //     setIsEditUserModalOpen(true);
-    // };
-
-    // const handleEditUserSave = async (updatedUser) => {
-    //     try {
-    //         await dispatch(editClient(updatedUser)).unwrap(); // Assuming updatedUser contains uid
-    //         setSnackbar({ open: true, message: "تم تحديث العميل بنجاح!", severity: "success" });
-    //     } catch (err) {
-    //         console.error("Error updating client:", err);
-    //         setSnackbar({ open: true, message: `فشل تحديث العميل: ${err.message || 'خطأ غير معروف'}`, severity: "error" });
-    //     } finally {
-    //         setIsEditUserModalOpen(false);
-    //     }
-    // };
 
     // --- Organization (Developers and Funders) Handlers ---
     const handleAddOrg = () => {
         setIsAddOrgModalOpen(true);
     };
 
-    const handleAddOrgConfirm = async ({ name, contact }) => { // Removed type, phone, city, governorate, address, email from here
-        const orgType = activeOrgSubTab === 'developers' ? 'مطور عقاري' : 'ممول عقاري'; // Map to your OrganizationUserData types
+    const handleAddOrgConfirm = async ({ name, contact }) => {
+        const orgType = activeOrgSubTab === 'developers' ? 'مطور عقاري' : 'ممول عقاري';
         try {
             await dispatch(addOrganization({
                 org_name: name,
-                contact_info: contact, // Assuming 'contact' maps to 'contact_info' in your model
+                contact_info: contact,
                 type_of_organization: orgType,
                 type_of_user: 'organization'
-                // You might need to add other fields like phone, city, etc., if your AddOrgModal supports them
             })).unwrap();
             setSnackbar({ open: true, message: `تم إضافة ${orgType} بنجاح!`, severity: "success" });
         } catch (err) {
@@ -1469,24 +1308,6 @@ function UsersPage() {
         }
     };
 
-    // const handleEditOrg = (org) => {
-    //     setOrgToEdit(org);
-    //     setIsEditOrgModalOpen(true);
-    // };
-
-    // const handleEditOrgSave = async (updatedOrg) => {
-    //     try {
-    //         await dispatch(editOrganization(updatedOrg)).unwrap(); // Assuming updatedOrg contains uid
-    //         setSnackbar({ open: true, message: "تم تحديث المؤسسة بنجاح!", severity: "success" });
-    //     } catch (err) {
-    //         console.error("Error updating organization:", err);
-    //         setSnackbar({ open: true, message: `فشل تحديث المؤسسة: ${err.message || 'خطأ غير معروف'}`, severity: "error" });
-    //     } finally {
-    //         setIsEditOrgModalOpen(false);
-    //     }
-    // };
-
-    // Filter organizations for developers and funders based on the 'type_of_organization' property
     const realEstateDevelopers = organizations.filter(org => org.type_of_organization === 'مطور عقاري');
     const realEstateFunders = organizations.filter(org => org.type_of_organization === 'ممول عقاري');
 
@@ -1495,40 +1316,27 @@ function UsersPage() {
         setIsAddAdminModalOpen(true);
     };
 
-    // handleAddAdminConfirm is no longer needed here as AddAdminModal dispatches directly
-    // const handleAddAdminConfirm = ({ name, email, phone, gender }) => {
-    //     const newUid = `manual_admin_${Date.now()}`;
-    //     dispatch(addAdmin({ uid: newUid, adm_name: name, email, phone, gender, type_of_user: 'admin' }));
-    //     setIsAddAdminModalOpen(false);
-    // };
-
     const handleEditAdmin = (admin) => {
         setAdminToEdit(admin);
         setIsEditAdminModalOpen(true);
     };
 
-    // handleEditAdminSave is no longer needed here as EditAdminModal dispatches directly
-    // const handleEditAdminSave = (updatedAdmin) => {
-    //     dispatch(editAdmin(updatedAdmin)); // Assuming updatedAdmin contains uid
-    //     setIsEditAdminModalOpen(false);
-    // };
-
     // --- General Delete Handler ---
     const handleDeleteItem = (uid, type, name) => {
-        setItemToDelete({ uid, type, name }); // Store uid, not id
+        setItemToDelete({ uid, type, name });
         setIsDeleteConfirmModalOpen(true);
     };
 
     const handleDeleteConfirm = async () => {
         try {
             if (itemToDelete.type === 'user') {
-                await dispatch(deleteClientAsync(itemToDelete.uid)).unwrap(); // Async thunk, use .unwrap()
+                await dispatch(deleteClientAsync(itemToDelete.uid)).unwrap();
                 setSnackbar({ open: true, message: "تم حذف العميل بنجاح!", severity: "success" });
             } else if (itemToDelete.type === 'organization') {
-                await dispatch(deleteOrganizationAsync(itemToDelete.uid)).unwrap(); // Async thunk, use .unwrap()
+                await dispatch(deleteOrganizationAsync(itemToDelete.uid)).unwrap();
                 setSnackbar({ open: true, message: "تم حذف المؤسسة بنجاح!", severity: "success" });
             } else if (itemToDelete.type === 'admin') {
-                await dispatch(deleteAdmin(itemToDelete.uid)).unwrap(); // Async thunk, use .unwrap()
+                await dispatch(deleteAdmin(itemToDelete.uid)).unwrap();
                 setSnackbar({ open: true, message: "تم حذف المدير بنجاح!", severity: "success" });
             }
         } catch (err) {
@@ -1540,7 +1348,6 @@ function UsersPage() {
         }
     };
 
-    // Handle Snackbar close
     const handleSnackbarClose = (event, reason) => {
         if (reason === 'clickaway') {
             return;
@@ -1548,8 +1355,7 @@ function UsersPage() {
         setSnackbar({ ...snackbar, open: false });
     };
 
-
-    // Helper to render lists based on status
+    // Helper to render lists based on status and search term
     const renderListContent = (data, status, error, type) => {
         if (status === 'loading') {
             return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}><CircularProgress /></Box>;
@@ -1557,40 +1363,74 @@ function UsersPage() {
         if (status === 'failed') {
             return <Alert severity="error" sx={{ mt: 2 }}>Error: {error}</Alert>;
         }
-        if (!data || data.length === 0) {
-            return <Typography sx={{ mt: 2, textAlign: 'center', color: 'text.secondary' }}>لا توجد بيانات لعرضها.</Typography>;
+        if (!data) {
+            return null;
         }
 
+        const filteredData = data.filter(item => {
+            const name = item.cli_name || item.org_name || item.adm_name;
+            const email = item.email || '';
+            return name?.toLowerCase().includes(searchTerm.toLowerCase()) || email?.toLowerCase().includes(searchTerm.toLowerCase());
+        });
+
+        if (filteredData.length === 0) {
+            return <Typography sx={{ mt: 2, textAlign: 'center', color: 'text.secondary' }}>لا توجد نتائج مطابقة لبحثك.</Typography>;
+        }
+
+        const columns = [
+            { id: 'name', label: 'الاسم' },
+            { id: 'contact', label: 'البريد الإلكتروني / الهاتف' },
+            { id: 'actions', label: 'إجراءات' },
+        ];
+
         return (
-            <List>
-                {data.map((item) => (
-                    <ListItem
-                        key={item.uid} // Use uid as key
-                        disablePadding
-                        secondaryAction={
-                            <Box sx={{ display: 'flex', gap: 1, flexDirection: 'row' }}>
-                                <IconButton edge="start" aria-label="edit" onClick={() => {
-                                    if (type === 'user') handleEditUser(item);
-                                    else if (type === 'organization') handleEditOrg(item);
-                                    else if (type === 'admin') handleEditAdmin(item);
-                                }}>
-                                    <EditIcon sx={{ color: 'purple' }} />
-                                </IconButton>
-                                <IconButton edge="start" aria-label="delete" onClick={() => handleDeleteItem(item.uid, type, item.cli_name || item.org_name || item.adm_name)}>
-                                    <DeleteIcon sx={{ color: 'red' }} />
-                                </IconButton>
-                            </Box>
-                        }
-                    >
-                        <ListItemText
-                            primary={item.cli_name || item.org_name || item.adm_name} // Display appropriate name
-                            secondary={`UID: ${item.uid} | ${item.email ? `Email: ${item.email} | ` : ''}Phone: ${item.phone || 'N/A'}`}
-                        />
-                    </ListItem>
-                ))}
-            </List>
+            <TableContainer sx={{ overflowX: 'auto' }}>
+                <Table>
+                    <TableHead>
+                        <TableRow>
+                            {columns.map((column) => (
+                                <TableCell
+                                    key={column.id}
+                                    sx={{ fontWeight: 'bold', minWidth: isMobile && column.id === 'contact' ? 150 : 'auto' }}
+                                >
+                                    {column.label}
+                                </TableCell>
+                            ))}
+                        </TableRow>
+                    </TableHead>
+                    <TableBody>
+                        {filteredData.map((item) => (
+                            <TableRow key={item.uid}>
+                                <TableCell>
+                                    <Typography variant="body1">{item.cli_name || item.org_name || item.adm_name}</Typography>
+                                </TableCell>
+                                <TableCell>
+                                    <Typography variant="body2" color="text.secondary">
+                                        {item.email ? `Email: ${item.email}` : ''}
+                                        {item.email && item.phone ? ' | ' : ''}
+                                        {item.phone ? `Phone: ${item.phone}` : ''}
+                                    </Typography>
+                                </TableCell>
+                                <TableCell>
+                                    <Stack direction="row" spacing={1}>
+                                        <IconButton
+                                            edge="start"
+                                            aria-label="delete"
+                                            onClick={() => handleDeleteItem(item.uid, type, item.cli_name || item.org_name || item.adm_name)}
+                                            sx={{ color: 'red' }}
+                                        >
+                                            <DeleteIcon />
+                                        </IconButton>
+                                    </Stack>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </TableContainer>
         );
     };
+
 
     return (
         <Box dir={'rtl'} sx={{ p: 3, textAlign: 'right' }}>
@@ -1598,9 +1438,9 @@ function UsersPage() {
                 title="المستخدمين"
                 icon={GroupIcon}
                 showCount={false}
-                
             />
-            <Box sx={{ mb: 2, display: 'flex', gap: 1, flexDirection: 'row' }}>
+
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ mb: 2 }}>
                 <Button
                     variant={activeTab === 'users' ? 'contained' : 'outlined'}
                     onClick={() => setActiveTab('users')}
@@ -1625,25 +1465,41 @@ function UsersPage() {
                 >
                     المدراء
                 </Button>
-            </Box>
+            </Stack>
 
-            <Paper sx={{ p: 2, borderRadius: 2, minHeight: 400, textAlign: 'right' }}>
+            <Paper sx={{ p: { xs: 1, sm: 2 }, borderRadius: 2, minHeight: 400, textAlign: 'right' }}>
                 {activeTab === 'users' && (
                     <>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexDirection: 'row' }}>
+                        <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems="center" mb={2} spacing={2}>
                             <Typography variant="h6" sx={{ fontWeight: 'bold' }} color="text.secondary">قائمة العملاء</Typography>
-                            <Button variant="outlined" startIcon={<AddIcon />} onClick={handleAddUser}>
-                                إضافة عميل
-                            </Button>
-                        </Box>
+                            <Box sx={{ display: 'flex', gap: 1, width: { xs: '100%', sm: 'auto' } }}>
+                                <TextField
+                                    label="بحث بالاسم أو البريد الإلكتروني"
+                                    variant="outlined"
+                                    size="small"
+                                    value={searchTerm}
+                                    onChange={handleSearchChange}
+                                    sx={{ width: { xs: '100%', sm: 300 } }}
+                                    InputProps={{
+                                        endAdornment: (
+                                            <InputAdornment position="end">
+                                                <SearchIcon />
+                                            </InputAdornment>
+                                        ),
+                                    }}
+                                />
+                                <Button variant="outlined" startIcon={<AddIcon />} onClick={handleAddUser}>
+                                    إضافة عميل
+                                </Button>
+                            </Box>
+                        </Stack>
                         {renderListContent(clients, clientsStatus, clientsError, 'user')}
                     </>
                 )}
 
                 {activeTab === 'organizations' && (
                     <>
-                        {/* Sub-tabs for Organizations */}
-                        <Box sx={{ mb: 2, display: 'flex', gap: 1, flexDirection: 'row' }}>
+                        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ mb: 2 }}>
                             <Button
                                 variant={activeOrgSubTab === 'developers' ? 'contained' : 'outlined'}
                                 onClick={() => setActiveOrgSubTab('developers')}
@@ -1658,28 +1514,62 @@ function UsersPage() {
                             >
                                 ممولين عقاريين
                             </Button>
-                        </Box>
+                        </Stack>
 
                         {activeOrgSubTab === 'developers' && (
                             <>
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexDirection: 'row-reverse' }}>
+                                <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems="center" mb={2} spacing={2}>
                                     <Typography variant="h6" color="text.secondary">قائمة المطورين العقاريين</Typography>
-                                    <Button variant="outlined" startIcon={<AddIcon />} onClick={handleAddOrg}>
-                                        إضافة مطور عقاري
-                                    </Button>
-                                </Box>
+                                    <Box sx={{ display: 'flex', gap: 1, width: { xs: '100%', sm: 'auto' } }}>
+                                        <TextField
+                                            label="بحث بالاسم أو البريد الإلكتروني"
+                                            variant="outlined"
+                                            size="small"
+                                            value={searchTerm}
+                                            onChange={handleSearchChange}
+                                            sx={{ width: { xs: '100%', sm: 300 } }}
+                                            InputProps={{
+                                                endAdornment: (
+                                                    <InputAdornment position="end">
+                                                        <SearchIcon />
+                                                    </InputAdornment>
+                                                ),
+                                            }}
+                                        />
+                                        <Button variant="outlined" startIcon={<AddIcon />} onClick={handleAddOrg}>
+                                            إضافة مطور عقاري
+                                        </Button>
+                                    </Box>
+                                </Stack>
                                 {renderListContent(realEstateDevelopers, organizationsStatus, organizationsError, 'organization')}
                             </>
                         )}
 
                         {activeOrgSubTab === 'funders' && (
                             <Box sx={{ mt: 2 }}>
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexDirection: 'row' }}>
+                                <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems="center" mb={2} spacing={2}>
                                     <Typography variant="h6" color="text.secondary">قائمة الممولين العقاريين</Typography>
-                                    <Button variant="outlined" startIcon={<AddIcon />} onClick={handleAddOrg}>
-                                        إضافة ممول عقاري
-                                    </Button>
-                                </Box>
+                                    <Box sx={{ display: 'flex', gap: 1, width: { xs: '100%', sm: 'auto' } }}>
+                                        <TextField
+                                            label="بحث بالاسم أو البريد الإلكتروني"
+                                            variant="outlined"
+                                            size="small"
+                                            value={searchTerm}
+                                            onChange={handleSearchChange}
+                                            sx={{ width: { xs: '100%', sm: 300 } }}
+                                            InputProps={{
+                                                endAdornment: (
+                                                    <InputAdornment position="end">
+                                                        <SearchIcon />
+                                                    </InputAdornment>
+                                                ),
+                                            }}
+                                        />
+                                        <Button variant="outlined" startIcon={<AddIcon />} onClick={handleAddOrg}>
+                                            إضافة ممول عقاري
+                                        </Button>
+                                    </Box>
+                                </Stack>
                                 {renderListContent(realEstateFunders, organizationsStatus, organizationsError, 'organization')}
                             </Box>
                         )}
@@ -1688,37 +1578,46 @@ function UsersPage() {
 
                 {activeTab === 'admins' && (
                     <>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexDirection: 'row' }}>
+                        <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems="center" mb={2} spacing={2}>
                             <Typography variant="h6" color="text.secondary">قائمة المدراء</Typography>
-                            <Button variant="outlined" startIcon={<AddIcon />} onClick={handleAddAdmin}>
-                                إضافة مدير
-                            </Button>
-                        </Box>
+                            <Box sx={{ display: 'flex', gap: 1, width: { xs: '100%', sm: 'auto' } }}>
+                                <TextField
+                                    label="بحث بالاسم أو البريد الإلكتروني"
+                                    variant="outlined"
+                                    size="small"
+                                    value={searchTerm}
+                                    onChange={handleSearchChange}
+                                    sx={{ width: { xs: '100%', sm: 300 } }}
+                                    InputProps={{
+                                        endAdornment: (
+                                            <InputAdornment position="end">
+                                                <SearchIcon />
+                                            </InputAdornment>
+                                        ),
+                                    }}
+                                />
+                                <Button variant="outlined" startIcon={<AddIcon />} onClick={handleAddAdmin}>
+                                    إضافة مدير
+                                </Button>
+                            </Box>
+                        </Stack>
                         {renderListContent(admins, adminsStatus, adminsError, 'admin')}
                     </>
                 )}
             </Paper>
 
-            {/* Modals (ensure these components are correctly imported and defined) */}
+            {/* Modals */}
             <AddUserModal
                 open={isAddUserModalOpen}
                 onClose={() => setIsAddUserModalOpen(false)}
                 onAdd={handleAddUserConfirm}
             />
-            {/* {userToEdit && (
-                <EditUserModal
-                    open={isEditUserModalOpen}
-                    onClose={() => setIsEditUserModalOpen(false)}
-                    onSave={handleEditUserSave}
-                    user={userToEdit}
-                />
-            )} */}
             <ConfirmDeleteModal
                 open={isDeleteConfirmModalOpen}
                 onClose={() => setIsDeleteConfirmModalOpen(false)}
                 onConfirm={handleDeleteConfirm}
                 itemType={itemToDelete?.type}
-                itemId={itemToDelete?.uid} // Use uid for modal
+                itemId={itemToDelete?.uid}
                 itemName={itemToDelete?.name}
             />
             <AddOrgModal
@@ -1727,26 +1626,17 @@ function UsersPage() {
                 onAdd={(data) => handleAddOrgConfirm({ ...data, type: activeOrgSubTab === 'developers' ? 'developer' : 'funder' })}
                 orgType={activeOrgSubTab === 'developers' ? 'developer' : 'funder'}
             />
-            {/* {orgToEdit && (
-                <EditOrgModal
-                    open={isEditOrgModalOpen}
-                    onClose={() => setIsEditOrgModalOpen(false)}
-                    onSave={handleEditOrgSave}
-                    organization={orgToEdit}
-                    orgType={orgToEdit.type_of_organization === 'مطور عقاري' ? 'developer' : 'funder'} // Pass correct type
-                />
-            )} */}
             <AddAdminModal
                 open={isAddAdminModalOpen}
                 onClose={() => setIsAddAdminModalOpen(false)}
-                setSnackbar={setSnackbar} // Pass setSnackbar to AddAdminModal
+                setSnackbar={setSnackbar}
             />
             {adminToEdit && (
                 <EditAdminModal
                     open={isEditAdminModalOpen}
                     onClose={() => setIsEditAdminModalOpen(false)}
                     admin={adminToEdit}
-                    setSnackbar={setSnackbar} // Pass setSnackbar to EditAdminModal
+                    setSnackbar={setSnackbar}
                 />
             )}
 
@@ -1765,33 +1655,6 @@ function UsersPage() {
     );
 }
 
-
-
-
-function PropertiesPage() {
-    return (
-        <Box sx={{ p: 2, textAlign: 'right' }} >
-            <PageHeader
-                title="قائمة العقارات"
-                icon={HomeIcon}
-                showCount={false}
-            />
-            <Paper sx={{ p: 2, borderRadius: 2, minHeight: 400, textAlign: 'right', direction: 'rtl' }}>
-                <Typography variant="h6" color="text.secondary">On sell | Financing | Rent</Typography>
-                <Box sx={{ mt: 2, p: 2, border: '1px dashed #ccc', borderRadius: 1, textAlign: 'right' }}>
-                    <Typography variant="body1" color="text.secondary">
-                        List of Properties
-                    </Typography>
-                    <ul style={{ listStyle: 'none', padding: 0, textAlign: 'right' }}>
-                        <li>#ID: #12345 | Home1 | Address: Damanhour</li>
-                        <li>#ID: #12346 | Villa334 | Address: Alex</li>
-                        <li>#ID: #12347 | Apartment234 | Address: Cairo</li>
-                    </ul>
-                </Box>
-            </Paper>
-        </Box>
-    );
-}
 
 function Mainadvertisment(props) {
     const userProfile = useSelector((state) => state.user.profile);
@@ -2140,9 +2003,23 @@ function Mainadvertisment(props) {
                                     backgroundColor: 'background.paper'
                                 }}
                             >
-                                <Box sx={{ display: 'flex', width: '100%', alignItems: 'center', gap: 2 }}>
+                                <Box sx={{ 
+                                    display: 'flex', 
+                                    width: '100%', 
+                                    flexDirection: { xs: 'column', sm: 'row', md: 'row', lg: 'row' },
+                                    alignItems: { xs: 'flex-start', sm: 'center' },
+                                    gap: 2 
+                                }}>
                                     {/* Ad Image */}
-                                    <Box sx={{ minWidth: 80, height: 80, borderRadius: 1, overflow: 'hidden' }}>
+                                    <Box sx={{ 
+                                        minWidth: 80, 
+                                        width: '100%',
+                                        maxWidth: 120,
+                                        height: 80, 
+                                        borderRadius: 1, 
+                                        overflow: 'hidden',
+                                        alignSelf: { xs: 'center', sm: 'flex-start' }
+                                    }}>
                                         <img
                                             src={ad.image || './home.jpg'}
                                             alt="Ad"
@@ -2151,7 +2028,11 @@ function Mainadvertisment(props) {
                                     </Box>
 
                                     {/* Ad Info */}
-                                    <Box sx={{ flexGrow: 1 }}>
+                                    <Box sx={{ 
+                                        flexGrow: 1, 
+                                        width: '100%',
+                                        textAlign: { xs: 'center', sm: 'left' }
+                                    }}>
                                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                                             <Chip
                                                 label={getStatusLabel(ad.reviewStatus)}
@@ -2190,7 +2071,15 @@ function Mainadvertisment(props) {
                                         )}
                                     </Box>
                                     {/* Receipt and Package Info */}
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                    <Box sx={{ 
+                                        display: 'flex', 
+                                        flexWrap: 'wrap',
+                                        justifyContent: 'center',
+                                        alignItems: 'center', 
+                                        gap: 1,
+                                        mt: { xs: 1, sm: 0 },
+                                        width: { xs: '100%', sm: 'auto' }
+                                    }}>
                                         {/* Receipt Icon */}
                                         {ad.receipt_image && (
                                             <Tooltip title="عرض إيصال الدفع">
@@ -2210,7 +2099,14 @@ function Mainadvertisment(props) {
                                     </Box>
 
                                     {/* Admin Actions */}
-                                <Box sx={{ display: 'flex', gap: 1, flexDirection: 'row' }}>
+                                <Box sx={{ 
+                                    display: 'flex', 
+                                    flexWrap: 'wrap',
+                                    gap: 1, 
+                                    justifyContent: { xs: 'center', sm: 'flex-start' },
+                                    mt: { xs: 2, sm: 0 },
+                                    width: { xs: '100%', sm: 'auto' }
+                                }}>
                                         {/* Approve/Reject buttons for pending ads */}
                                         {ad.reviewStatus === 'pending' && (
                                             <>
@@ -2602,34 +2498,6 @@ function PaidAdvertismentPage() {
         }
     };
 
-    // const handleDeveloperConfirmReject = async () => {
-    //     if (!adToReject || rejectReason.trim() === '') return;
-
-    //     const adTypeLoadingKey = 'developer';
-    //     dispatch(setLoadingDeveloper(true));
-    //     setRejectDialogOpen(false); // Close dialog
-
-    //     try {
-    //         const instance = new RealEstateDeveloperAdvertisement({ id: adToReject.id });
-    //         await instance.reject(rejectReason.trim());
-    //         setSnackbar({
-    //             open: true,
-    //             message: `تم رفض إعلان المطور "${adToReject.developer_name}" بنجاح!`,
-    //             severity: 'success',
-    //         });
-    //         setRejectReason(''); // Clear reason
-    //     } catch (err) {
-    //         console.error(`Failed to reject developer ad for ID ${adToReject.id}:`, err);
-    //         setSnackbar({
-    //             open: true,
-    //             message: `فشل رفض إعلان المطور: ${err.message || 'حدث خطأ غير معروف.'}`,
-    //             severity: 'error',
-    //         });
-    //     } finally {
-    //         dispatch(setLoadingDeveloper(false));
-    //         setAdToReject(null);
-    //     }
-    // };
 
 
     const handleReturnToPending = async (ad) => {
@@ -4184,225 +4052,6 @@ function ClientAdvertismentPage() {
     );
 }
 
-
-// function OrdersPage() {
-//     const dispatch = useDispatch();
-//     const { list: financingRequests, loading, error } = useSelector((state) => state.financialRequests);
-
-//     // Edit dialog state
-//     const [editDialogOpen, setEditDialogOpen] = useState(false);
-//     const [editRow, setEditRow] = useState(null);
-//     const [editAmount, setEditAmount] = useState("");
-//     const [editStatus, setEditStatus] = useState("");
-//     const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
-//     const [rowToDelete, setRowToDelete] = useState(null);
-//     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
-//     useEffect(() => {
-//         dispatch(fetchFinancialRequests());
-//     }, [dispatch]);
-
-//     const handleEditClick = (row) => {
-//         setEditRow(row);
-//         setEditAmount(row.financing_amount || "");
-//         setEditStatus(row.status || "");
-//         setEditDialogOpen(true);
-//     };
-
-//     const handleEditSave = () => {
-//         if (editRow) {
-//             dispatch(updateFinancialRequest({ id: editRow.id, updates: { financing_amount: editAmount, status: editStatus } }));
-//         }
-//         setEditDialogOpen(false);
-//         setEditRow(null);
-//     };
-
-//     const handleEditCancel = () => {
-//         setEditDialogOpen(false);
-//         setEditRow(null);
-//     };
-//     const handleDeleteClick = (row) => {
-//         setRowToDelete(row);
-//         setOpenDeleteDialog(true);
-//     };
-
-//     const handleConfirmDelete = async () => {
-//         if (rowToDelete) {
-//             try {
-//                 await dispatch(deleteFinancialRequest(rowToDelete.id)).unwrap();
-//                 setSnackbar({ open: true, message: "تم حذف الطلب بنجاح!", severity: "success" });
-//             } catch (err) {
-//                 setSnackbar({ open: true, message: `فشل حذف الطلب: ${err.message || 'خطأ غير معروف'}`, severity: "error" });
-//             } finally {
-//                 setOpenDeleteDialog(false);
-//                 setRowToDelete(null);
-//             }
-//         }
-//     };
-
-//     const handleSnackbarClose = (event, reason) => {
-//         if (reason === 'clickaway') return;
-//         setSnackbar({ ...snackbar, open: false });
-//     };
-//     // Define columns for DataGrid
-//     const columns = [
-//         { field: 'id', headerName: 'ID', width: 120 },
-//         { field: 'user_id', headerName: 'معرّف المستخدم', width: 180 },
-//         { field: 'status', headerName: 'الحالة', width: 120 },
-//         { field: 'financing_amount', headerName: 'المبلغ المطلوب', width: 150 },
-//         { field: 'job_title', headerName: 'الوظيفة', width: 150 },
-//         { field: 'monthly_income', headerName: 'الدخل الشهري', width: 150 },
-//         { field: 'age', headerName: 'العمر', width: 100 },
-//         { field: 'marital_status', headerName: 'الحالة الاجتماعية', width: 150 },
-//         { field: 'dependents', headerName: 'المعالون', width: 100 },
-//         { field: 'repayment_years', headerName: 'سنوات السداد', width: 120 },
-//         {
-//             field: 'submitted_at',
-//             headerName: 'تاريخ التقديم',
-//             width: 160,
-//             valueGetter: (params) =>
-//                 params.value && params.value.toDate ? params.value.toDate().toLocaleDateString() : '',
-//         },
-//         {
-//             field: 'actions',
-//             headerName: 'إجراءات',
-//             width: 150,
-//             renderCell: (params) => (
-//                 <Box sx={{ display: 'flex', gap: 0.5 }}>
-//                     <Tooltip title="تعديل الطلب">
-//                         <IconButton
-//                             aria-label="edit"
-//                             size="small"
-//                             onClick={() => handleEditClick(params.row)}
-//                         >
-//                             <EditIcon fontSize="small" />
-//                         </IconButton>
-//                     </Tooltip>
-//                     <Tooltip title="حذف الطلب">
-//                         <IconButton
-//                             aria-label="delete"
-//                             size="small"
-//                             onClick={() => dispatch(deleteFinancialRequest(params.row.id))}
-//                             color="error"
-//                         >
-//                             <DeleteIcon fontSize="small" />
-//                         </IconButton>
-//                     </Tooltip>
-//                 </Box>
-//             ),
-//             sortable: false,
-//             filterable: false,
-//         },
-//     ];
-
-//     return (
-//         <Box sx={{ p: 2, textAlign: "left" }}>
-//             <Typography variant="h4" gutterBottom>
-//                 طلبات التمويل
-//             </Typography>
-//             <Paper dir="rtl" sx={{ p: 2, borderRadius: 2, minHeight: 400, textAlign: "right" }}>
-//                 {error && <Alert severity="error">{error}</Alert>}
-//                 <div style={{ height: 500, width: '100%' }}>
-//                     <DataGrid
-//                         rows={financingRequests.filter(request => request.id !== null && request.id !== undefined)}
-//                         columns={columns}
-//                         loading={loading}
-//                         pageSizeOptions={[5, 10, 20 , 30 ,50]}
-//                         getRowId={(row) => row.id || `temp-${Math.random()}`}
-//                         disableRowSelectionOnClick
-//                         localeText={{
-//                             MuiTablePagination: {
-//                                 labelRowsPerPage: 'صفوف لكل صفحة:',
-//                                 labelDisplayedRows: ({ from, to, count }) =>
-//                                     `${from}-${to} من ${count !== -1 ? count : `أكثر من ${to}`}`,
-//                             },
-//                             columnMenuUnsort: "إلغاء الفرز",
-//                             columnMenuSortAsc: "الفرز تصاعديا",
-//                             columnMenuSortDesc: "الفرز تنازليا",
-//                             columnMenuFilter: "تصفية",
-//                             columnMenuHideColumn: "إخفاء العمود",
-//                             columnMenuShowColumns: "إظهار الأعمدة",
-//                             filterPanelOperators: "العوامل",
-//                             filterPanelColumns: "الأعمدة",
-//                             filterPanelInputLabel: "القيمة",
-//                             filterPanelLogicOperator: "المنطق",
-//                             filterPanelOperatorAnd: "و",
-//                             filterPanelOperatorOr: "أو",
-//                             filterPanelOperatorContains: "يحتوي على",
-//                             filterPanelOperatorEquals: "يساوي",
-//                             filterPanelOperatorStartsWith: "يبدأ بـ",
-//                             filterPanelOperatorEndsWith: "ينتهي بـ",
-//                             filterPanelOperatorIsEmpty: "فارغ",
-//                             filterPanelOperatorIsNotEmpty: "ليس فارغا",
-//                             filterPanelOperatorIsAnyOf: "أي من",
-//                             noRowsLabel: "لا توجد طلبات تمويل.",
-//                             noResultsOverlayLabel: "لم يتم العثور على نتائج.",
-//                         }}
-//                         showToolbar
-//                     />
-//                 </div>
-//                 {/* Edit Dialog */}
-//                 <Dialog open={editDialogOpen} onClose={handleEditCancel}>
-//                     <DialogTitle>تعديل الطلب</DialogTitle>
-//                     <DialogContent>
-//                         <TextField
-//                             label="المبلغ المطلوب"
-//                             fullWidth
-//                             margin="normal"
-//                             value={editAmount}
-//                             onChange={(e) => setEditAmount(e.target.value)}
-//                         />
-//                         <TextField
-//                             label="الحالة"
-//                             fullWidth
-//                             margin="normal"
-//                             value={editStatus}
-//                             onChange={(e) => setEditStatus(e.target.value)}
-//                         />
-//                     </DialogContent>
-//                     <DialogActions>
-//                         <Button onClick={handleEditCancel}>إلغاء</Button>
-//                         <Button onClick={handleEditSave} variant="contained" color="primary">حفظ</Button>
-//                     </DialogActions>
-//                 </Dialog>
-//                 {/* Delete Confirmation Dialog */}
-//                 <Dialog
-//                     open={openDeleteDialog}
-//                     onClose={() => setOpenDeleteDialog(false)}
-//                     aria-labelledby="delete-dialog-title"
-//                     aria-describedby="delete-dialog-description"
-//                     dir="rtl"
-//                 >
-//                     <DialogTitle id="delete-dialog-title">{"تأكيد الحذف"}</DialogTitle>
-//                     <DialogContent>
-//                         <DialogContentText id="delete-dialog-description">
-//                             هل أنت متأكد أنك تريد حذف الطلب: "{rowToDelete?.id}"؟
-//                             هذا الإجراء لا يمكن التراجع عنه.
-//                         </DialogContentText>
-//                     </DialogContent>
-//                     <DialogActions>
-//                         <Button onClick={() => setOpenDeleteDialog(false)} color="primary">
-//                             إلغاء
-//                         </Button>
-//                         <Button onClick={handleConfirmDelete} color="error" autoFocus>
-//                             حذف
-//                         </Button>
-//                     </DialogActions>
-//                 </Dialog>
-//                 {/* Snackbar for Notifications */}
-//                 <Snackbar
-//                     open={snackbar.open || (loading === 'failed' && !!error)} // Show error Snackbar if fetch failed
-//                     autoHideDuration={6000}
-//                     onClose={handleSnackbarClose}
-//                     anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-//                 >
-//                     <Alert onClose={handleSnackbarClose} severity={snackbar.severity || 'error'} sx={{ width: '100%' }}>
-//                         {snackbar.message || error}
-//                     </Alert>
-//                 </Snackbar>
-//             </Paper>
-//         </Box>
-//     );
-// }
 function OrdersPage() {
     const dispatch = useDispatch();
     const { list: financingRequests, loading, error } = useSelector((state) => state.financialRequests);
@@ -4794,22 +4443,6 @@ function OrdersPage() {
                             </Select>
                         </FormControl>
                     </Grid>
-                    {/* <Grid item xs={12} md={6}>
-                        <TextField
-                            fullWidth
-                            size="small"
-                            label="بحث في المعرف، الوظيفة، أو المبلغ"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            InputProps={{
-                                startAdornment: (
-                                    <InputAdornment position="start">
-                                        <SearchIcon />
-                                    </InputAdornment>
-                                ),
-                            }}
-                        />
-                    </Grid> */}
                     <Grid item xs={12} md={2}>
                         <Button
                             fullWidth
@@ -5494,56 +5127,6 @@ function ReportsPage() {
         </Box>
     );
 }
-function SalesPage() {
-    return (
-        <Box sx={{ p: 2, textAlign: 'left' }}>
-            <Typography variant="h4" gutterBottom>Sales Reports</Typography>
-            <Paper dir="rtl" sx={{ p: 2, borderRadius: 2, minHeight: 300, textAlign: 'right' }}>
-                <Typography variant="h6" color="text.secondary">Sales data visualization (placeholder)</Typography>
-                <Box sx={{ mt: 2, p: 2, border: '1px dashed #ccc', borderRadius: 1, textAlign: 'right' }}>
-                    <Typography variant="body1" color="text.secondary">
-                        This section could feature various charts (line, bar, pie) showing sales trends,
-                        revenue by product, or regional sales performance.
-                    </Typography>
-                </Box>
-            </Paper>
-        </Box>
-    );
-}
-
-function TrafficPage() {
-    return (
-        <Box sx={{ p: 2, textAlign: 'right' }}>
-            <Typography variant="h4" gutterBottom>Traffic Reports</Typography>
-            <Paper sx={{ p: 2, borderRadius: 2, minHeight: 300, textAlign: 'right' }}>
-                <Typography variant="h6" color="text.secondary">Website traffic analytics (placeholder)</Typography>
-                <Box sx={{ mt: 2, p: 2, border: '1px dashed #ccc', borderRadius: 1, textAlign: 'right' }}>
-                    <Typography variant="body1" color="text.secondary">
-                        This section might display data on website visits, unique users, page views,
-                        bounce rate, and traffic sources using charts and metrics.
-                    </Typography>
-                </Box>
-            </Paper>
-        </Box>
-    );
-}
-
-function IntegrationsPage() {
-    return (
-        <Box sx={{ p: 2, textAlign: 'right' }}>
-            <Typography variant="h4" gutterBottom>Integrations</Typography>
-            <Paper sx={{ p: 2, borderRadius: 2, minHeight: 200, textAlign: 'right' }}>
-                <Typography variant="h6" color="text.secondary">Manage external service integrations (placeholder)</Typography>
-                <Box sx={{ mt: 2, p: 2, border: '1px dashed #ccc', borderRadius: 1, textAlign: 'right' }}>
-                    <Typography variant="body1" color="text.secondary">
-                        This page could list various integrations (e.g., payment gateways, CRM, marketing tools)
-                        with options to connect or configure them.
-                    </Typography>
-                </Box>
-            </Paper>
-        </Box>
-    );
-}
 
 function useDemoRouter(initialPath) {
     const [pathname, setPathname] = React.useState(initialPath);
@@ -5559,563 +5142,55 @@ function useDemoRouter(initialPath) {
     return router;
 }
 
-// export default function AdminDashboard(props) {
-//     const { window } = props;
-//     const [open, setOpen] = React.useState(true);
-//     const [openReports, setOpenReports] = React.useState(false);
-//     const [mode, setMode] = React.useState('light');
-//     const userProfile = useSelector((state) => state.user.profile);
-//     const authUid = useSelector((state) => state.auth.uid);
-//     const userProfileStatus = useSelector((state) => state.user.status);
-
-//     const theme = React.useMemo(
-//         () =>
-//             createTheme({
-//                 direction: 'rtl',
-//                 palette: {
-//                     mode,
-//                     primary: {
-//                         main: '#6E00FE',
-//                     },
-//                     secondary: {
-//                         main: '#dc004e',
-//                     },
-//                     background: {
-//                         default: mode === 'light' ? '#f4f6f8' : '#121212',
-//                         paper: mode === 'light' ? '#ffffff' : '#1e1e1e',
-//                     },
-//                 },
-//                 typography: {
-//                     fontFamily: 'Inter, Arial, sans-serif',
-//                 },
-//                 shape: {
-//                     borderRadius: 8,
-//                 },
-//                 components: {
-//                     MuiPaper: {
-//                         styleOverrides: {
-//                             root: {
-//                                 boxShadow: mode === 'light' ? '0px 2px 10px rgba(0, 0, 0, 0.05)' : '0px 2px 10px rgba(0, 0, 0, 0.4)',
-//                             },
-//                         },
-//                     },
-//                     MuiButton: {
-//                         styleOverrides: {
-//                             root: {
-//                                 borderRadius: 8,
-//                             },
-//                         },
-//                     },
-//                 },
-//                 breakpoints: {
-//                     values: {
-//                         xs: 0,
-//                         sm: 600,
-//                         md: 900,
-//                         lg: 1200,
-//                         xl: 1536,
-//                     },
-//                 },
-//             }),
-//         [mode]
-//     );
-
-//     const colorMode = React.useMemo(
-//         () => ({
-//             toggleColorMode: () => {
-//                 setMode((prevMode) => (prevMode === 'light' ? 'dark' : 'light'));
-//             },
-//         }),
-//         []
-//     );
-
-//     const router = useDemoRouter('/profile');
-//     const dispatch = useDispatch();
-//     const navigate = useNavigate();
-
-//     // Effect to fetch user profile when component mounts or authUid changes
-//     useEffect(() => {
-//         const loadUserProfile = async () => {
-//             // Ensure authUid is a valid string before fetching
-//             const actualUid = typeof authUid === 'object' && authUid !== null
-//                 ? authUid.uid
-//                 : authUid;
-
-//             console.log("AdminDashboard: useEffect triggered. actualUid:", actualUid, "userProfileStatus:", userProfileStatus, "userProfile:", userProfile);
-
-//             // Fetch if UID is available AND (not already loading AND (profile is missing OR admin name is missing))
-//             if (
-//                 typeof actualUid === 'string' && actualUid.trim() !== '' &&
-//                 userProfileStatus !== 'loading' &&
-//                 (!userProfile || !userProfile.adm_name)
-//             ) {
-//                 try {
-//                     console.log("AdminDashboard: Dispatching fetchUserProfile for UID:", actualUid);
-//                     await dispatch(fetchUserProfile(actualUid));
-//                     console.log("AdminDashboard: fetchUserProfile dispatched successfully.");
-//                 } catch (error) {
-//                     console.error("AdminDashboard: Failed to fetch user profile (caught error):", error);
-//                     // Handle error, e.g., show a snackbar
-//                 }
-//             } else if (userProfileStatus === 'succeeded' && userProfile && userProfile.adm_name) {
-//                 console.log("AdminDashboard: User profile succeeded and admin name is present:", userProfile.adm_name);
-//             } else if (userProfileStatus === 'loading') {
-//                 console.log("AdminDashboard: User profile is currently loading...");
-//             }
-//         };
-//         loadUserProfile();
-//     }, [authUid, userProfile, userProfileStatus, dispatch]);
-//     const handleDrawerToggle = () => {
-//         setOpen(!open);
-//     };
-
-//     const handleReportsClick = () => {
-//         setOpenReports(!openReports);
-//     };
-
-//     const handleLogout = async () => {
-//         console.log('جارى تسجيل الخروج');
-//         try {
-//             await signOut(auth); // Sign out from Firebase
-//             dispatch(logout()); // Dispatch Redux logout action to clear state
-//             setTimeout(() => {
-//                 navigate('/login'); // Redirect to login page
-//             }, 2000);
-//             console.log('تم تسجيل الخروج بنجاح.');
-//         } catch (error) {
-//             console.error('خطأ في تسجيل الخروج:', error);
-//             // You might want to show a Snackbar or Alert here for the user
-//         }
-//     };
-
-//     const Main = styled('main', { shouldForwardProp: (prop) => prop !== 'open' })(
-//         ({ theme, open }) => ({
-//             flexGrow: 1,
-//             overflow: 'auto',
-//             padding: theme.spacing(2),
-//             transition: theme.transitions.create('margin', {
-//                 easing: theme.transitions.easing.sharp,
-//                 duration: theme.transitions.duration.leavingScreen,
-//             }),
-//             marginRight: open ? theme.spacing(2) + drawerWidth : closedDrawerWidth,
-//             [theme.breakpoints.down('sm')]: {
-//                 marginRight: 0,
-//                 paddingRight: theme.spacing(2),
-//                 paddingLeft: theme.spacing(2),
-//             },
-//         })
-//     );
-
-//     const AppBarStyled = styled(AppBar, { shouldForwardProp: (prop) => prop !== 'open' })(
-//         ({ theme, open }) => ({
-//             transition: theme.transitions.create(['margin', 'width'], {
-//                 easing: theme.transitions.easing.sharp,
-//                 duration: theme.transitions.duration.leavingScreen,
-//             }),
-//             width: `calc(100% - ${open ? theme.spacing(2) + drawerWidth : closedDrawerWidth}px)`,
-//             marginLeft: open ? theme.spacing(2) + drawerWidth : closedDrawerWidth,
-//             [theme.breakpoints.down('sm')]: {
-//                 width: '100%',
-//                 marginLeft: 0,
-//             },
-//         })
-//     );
-
-//     const DrawerHeader = styled('div')(({ theme }) => ({
-//         display: 'flex',
-//         alignItems: 'center',
-//         padding: theme.spacing(0, 1),
-//         ...theme.mixins.toolbar,
-//         justifyContent: 'flex-start',
-//     }));
-
-//     let currentPageContent;
-//     switch (router.pathname) {
-//         case '/dashboard':
-//             currentPageContent = <DashboardPage />;
-//             break;
-//         case '/profile':
-//             currentPageContent = <ProfilePage />;
-//             break;
-//         case '/users':
-//             currentPageContent = <UsersPage />;
-//             break;
-//         case '/properties':
-//             currentPageContent = <PropertiesPage />;
-//             break;
-//         case '/mainadvertisment':
-//             currentPageContent = <Mainadvertisment />;
-//             break;
-//         case '/paidadvertisment':
-//             currentPageContent = <PaidAdvertismentPage />;
-//             break;
-//         case '/clientadvertisment':
-//             currentPageContent = <ClientAdvertismentPage />;
-//             break;
-//         case '/orders':
-//             currentPageContent = <OrdersPage />;
-//             break;
-//         case '/reports/sales':
-//             currentPageContent = <SalesPage />;
-//             break;
-//         case '/reports/traffic':
-//             currentPageContent = <TrafficPage />;
-//             break;
-//         case '/integrations':
-//             currentPageContent = <IntegrationsPage />;
-//             break;
-//         default:
-//             currentPageContent = (
-//                 <Box sx={{ p: 2, textAlign: 'right' }}>
-//                     <Typography variant="h5" color="error">لا يوجد صفحة للعرض</Typography>
-//                     <Typography variant="body1">الصفحة المطلوبة  "{router.pathname}" غير موجودة</Typography>
-//                 </Box>
-//             );
-//             break;
-//     }
-//     const userName = userProfile?.adm_name || userProfile?.cli_name || userProfile?.org_name || 'Admin';
-//     console.log("AdminDashboard: userProfile in render:", userProfile);
-//     console.log("AdminDashboard: displayName in render:", userName);
-
-//     // Notification state
-//     const [notifications, setNotifications] = React.useState([]);
-//     const [notificationAnchorEl, setNotificationAnchorEl] = React.useState(null);
-//     const [unreadCount, setUnreadCount] = React.useState(0);
-//     const [snackbarOpen, setSnackbarOpen] = React.useState(false);
-//     const [snackbarMessage, setSnackbarMessage] = React.useState('');
-//     const [snackbarSeverity, setSnackbarSeverity] = React.useState('success');
-
-//     // Notification handlers
-//     const handleNotificationClick = (event) => {
-//         event.preventDefault();
-//         event.stopPropagation();
-//         setNotificationAnchorEl(event.currentTarget);
-//     };
-//     const handleNotificationClose = () => {
-//         setNotificationAnchorEl(null);
-//     };
-//     const handleMarkAsRead = async (notificationId) => {
-//         try {
-//             await Notification.markAsRead(notificationId);
-//             setNotifications(prev => prev.map(notif => notif.id === notificationId ? { ...notif, is_read: true } : notif));
-//             setUnreadCount(prev => Math.max(0, prev - 1));
-//         } catch (error) {
-//             console.error('Error marking notification as read:', error);
-//         }
-//     };
-//     const handleMarkAllAsRead = async () => {
-//         if (!authUid) return;
-//         try {
-//             await Notification.markAllAsRead(authUid);
-//             setNotifications(prev => prev.map(notif => ({ ...notif, is_read: true })));
-//             setUnreadCount(0);
-//         } catch (error) {
-//             console.error('Error marking all notifications as read:', error);
-//         }
-//     };
-//     // Real-time notification effect
-//     React.useEffect(() => {
-//         if (!authUid) return;
-//         const unsubscribeNotifications = Notification.subscribeByUser(authUid, (notifs) => {
-//             setNotifications(notifs);
-//         });
-//         const unsubscribeUnreadCount = Notification.subscribeUnreadCount(authUid, (count) => {
-//             setUnreadCount(count);
-//         });
-//         return () => {
-//             unsubscribeNotifications();
-//             unsubscribeUnreadCount();
-//         };
-//     }, [authUid]);
-
-//     return (
-//         <StyledEngineProvider injectFirst>
-//             <CacheProvider value={cacheRtl}>
-//                 <ColorModeContext.Provider value={colorMode}>
-//                     <ThemeProvider theme={theme}>
-//                         <Box sx={{ display: 'flex', flexDirection: 'row-reverse' }}>
-//                             <CssBaseline />
-//                             <AppBarStyled position="fixed" open={open}>
-//                                 <Toolbar sx={{ flexDirection: 'row-reverse' }}>
-//                                     {!open && (
-//                                         <img
-//                                             src="./logo.png"
-//                                             alt="App Logo"
-//                                             style={{ height: 60, marginRight: 8, scale: 3 }}
-//                                         />
-//                                     )}
-//                                     <Box sx={{ flexGrow: 1 }} />
-//                                     {/* Notification Bell Icon */}
-//                                     <IconButton 
-//                                         sx={{ mr: -1 }} 
-//                                         onClick={handleNotificationClick} 
-//                                         color="inherit"
-//                                     >
-//                                         <Badge badgeContent={unreadCount} color="error">
-//                                             <NotificationsIcon />
-//                                         </Badge>
-//                                     </IconButton>
-//                                     {/* Notification Menu */}
-//                                     {notificationAnchorEl && (
-//                                         <Box sx={{ 
-//                                             position: 'absolute', 
-//                                             top: 60, 
-//                                             right: 20, 
-//                                             width: 400, 
-//                                             maxHeight: 500,
-//                                             backgroundColor: 'white',
-//                                             border: '1px solid #ccc',
-//                                             borderRadius: 1,
-//                                             zIndex: 1000,
-//                                             p: 2
-//                                         }}>
-//                                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-//                                                 <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-//                                                     الإشعارات ({notifications.length})
-//                                                 </Typography>
-//                                                 <Button size="small" onClick={handleMarkAllAsRead} disabled={unreadCount === 0}>
-//                                                     تعليم الكل كمقروء
-//                                                 </Button>
-//                                                 <IconButton size="small" onClick={handleNotificationClose}>
-//                                                     <CloseIcon />
-//                                                 </IconButton>
-//                                             </Box>
-//                                             <Box sx={{ maxHeight: 400, overflow: 'auto' }}>
-//                                                 {notifications.length === 0 ? (
-//                                                     <Box sx={{ p: 3, textAlign: 'center' }}>
-//                                                         <Typography variant="body2" color="text.secondary">
-//                                                             لا توجد إشعارات
-//                                                         </Typography>
-//                                                     </Box>
-//                                                 ) : (
-//                                                     notifications.map((notification) => (
-//                                                         <Card 
-//                                                             key={notification.id}
-//                                                             sx={{ 
-//                                                                 m: 1, 
-//                                                                 cursor: 'pointer',
-//                                                                 backgroundColor: notification.is_read ? 'transparent' : 'action.hover',
-//                                                                 '&:hover': { backgroundColor: 'action.selected' },
-//                                                             }}
-//                                                             onClick={() => handleMarkAsRead(notification.id)}
-//                                                         >
-//                                                             <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-//                                                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-//                                                                     <Typography 
-//                                                                         variant="subtitle2" 
-//                                                                         sx={{ fontWeight: notification.is_read ? 'normal' : 'bold', color: notification.is_read ? 'text.secondary' : 'text.primary' }}
-//                                                                     >
-//                                                                         {notification.title}
-//                                                                     </Typography>
-//                                                                     {!notification.is_read && (
-//                                                                         <Chip label="جديد" size="small" color="error" sx={{ fontSize: '0.6rem', height: 20 }} />
-//                                                                     )}
-//                                                                 </Box>
-//                                                                 <Typography variant="body2" color="text.secondary" sx={{ mb: 1, lineHeight: 1.4 }}>
-//                                                                     {notification.body}
-//                                                                 </Typography>
-//                                                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-//                                                                     <Typography variant="caption" color="text.secondary">
-//                                                                         {notification.timestamp?.toDate ? notification.timestamp.toDate().toLocaleString('ar-EG') : new Date(notification.timestamp).toLocaleString('ar-EG')}
-//                                                                     </Typography>
-//                                                                     {notification.type && (
-//                                                                         <Chip label={notification.type === 'system' ? 'نظام' : notification.type} size="small" variant="outlined" sx={{ fontSize: '0.6rem', height: 20 }} />
-//                                                                     )}
-//                                                                 </Box>
-//                                                             </CardContent>
-//                                                         </Card>
-//                                                     ))
-//                                                 )}
-//                                             </Box>
-//                                         </Box>
-//                                     )}
-//                                     <IconButton
-//                                         sx={{ ml: 1 }}
-//                                         color="inherit"
-//                                         onClick={() => navigate('/home')}
-//                                         title="العودة للصفحة الرئيسية"
-//                                     >
-//                                         <HomeIcon />
-//                                     </IconButton>
-//                                     <IconButton sx={{ mr: 1 }} onClick={colorMode.toggleColorMode} color="inherit">
-//                                         {theme.palette.mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
-//                                     </IconButton>
-//                                     <Button
-//                                         variant="outlined"
-//                                         color="inherit"
-//                                         onClick={handleLogout}
-//                                         endIcon={<LogoutIcon />}
-//                                         sx={{ mr: 2, borderRadius: 2, direction: 'ltr' }}
-//                                     >
-//                                         تسجيل الخروج
-//                                     </Button>
-                                    
-//                                 </Toolbar>
-
-//                             </AppBarStyled>
-
-//                             <Drawer
-//                                 variant="permanent"
-//                                 sx={{
-//                                     width: open ? drawerWidth : closedDrawerWidth,
-//                                     flexShrink: 0,
-//                                     whiteSpace: 'nowrap',
-//                                     boxSizing: 'border-box',
-//                                     transition: theme.transitions.create('width', {
-//                                         easing: theme.transitions.easing.sharp,
-//                                         duration: theme.transitions.duration.enteringScreen,
-//                                     }),
-//                                     '& .MuiDrawer-paper': {
-//                                         width: open ? drawerWidth : closedDrawerWidth,
-//                                         boxSizing: 'border-box',
-//                                         borderRadius: '8px 0 0 8px',
-//                                         overflowX: 'hidden',
-//                                         transition: theme.transitions.create('width', {
-//                                             easing: theme.transitions.easing.sharp,
-//                                             duration: theme.transitions.duration.enteringScreen,
-//                                         }),
-//                                     },
-//                                 }}
-//                                 anchor="left"
-//                                 open={open}
-//                             >
-//                                 <DrawerHeader>
-//                                     {open && (
-//                                         <Box sx={{ flexGrow: 1, textAlign: 'center' }}>
-//                                             <img
-//                                                 src="./logo.png"
-//                                                 alt="App Logo"
-//                                                 style={{ height: 60, scale: 2 }}
-//                                             />
-//                                         </Box>
-//                                     )}
-//                                     <IconButton onClick={handleDrawerToggle}>
-//                                         {open ? <ChevronRightIcon /> : <MenuIcon />}
-//                                     </IconButton>
-//                                 </DrawerHeader>
-//                                 <Divider />
-//                                 {open && (
-//                                     <Box sx={{ my: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', p: 2 }}>
-//                                         <Avatar
-//                                             alt="Admin User"
-//                                             src={userProfile?.image || './admin.jpg'}
-//                                             sx={{ width: 80, height: 80, mb: 1, boxShadow: '0px 0px 8px rgba(0,0,0,0.2)' }}
-//                                         />
-//                                         <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-//                                             Hello, {userName}
-//                                         </Typography>
-//                                         <Typography variant="body2" color="text.secondary">
-//                                             مرحباً بك في لوحة التحكم
-//                                         </Typography>
-//                                     </Box>
-//                                 )}
-//                                 {open && <Divider sx={{ mb: 2 }} />}
-//                                 <List>
-//                                     {NAVIGATION.map((item) => {
-//                                         if (item.kind === 'header') {
-//                                             return open ? (
-//                                                 <List key={item.title} component="nav" sx={{ px: 2, pt: 2, display: 'flex', flexDirection: 'row-reverse' }}>
-//                                                     <Typography variant="overline" color="text.secondary" sx={{ textTransform: 'uppercase', fontWeight: 'bold', fontSize: 18, textAlign: 'right' }} >
-//                                                         {item.title}
-//                                                     </Typography>
-//                                                 </List>
-//                                             ) : null;
-//                                         }
-//                                         if (item.kind === 'divider') {
-//                                             return <Divider key={`divider-${item.kind}`} sx={{ my: 1 }} />;
-//                                         }
-//                                         if (item.children) {
-//                                             const isOpen = item.segment === 'reports' ? openReports : false;
-//                                             return (
-//                                                 <React.Fragment key={item.segment}>
-//                                                     <Tooltip title={item.tooltip} placment='top'>
-//                                                         <ListItemButton
-//                                                             dir='rtl'
-//                                                             onClick={open ? handleReportsClick : () => setOpen(true)}
-//                                                             sx={{
-//                                                                 borderRadius: 2,
-//                                                                 mx: 1,
-//                                                                 justifyContent: open ? 'initial' : 'center',
-//                                                                 px: 2.5,
-//                                                                 '&.Mui-selected': { backgroundColor: 'action.selected' },
-//                                                             }}
-//                                                         >
-//                                                             <ListItemIcon sx={{ minWidth: 0, ml: open ? 3 : 'auto', justifyContent: 'center' }}>
-//                                                                 {item.icon}
-//                                                             </ListItemIcon>
-//                                                             {open && <ListItemText primary={item.title} sx={{ opacity: open ? 1 : 0, textAlign: 'left', pl: 2 }} />}
-//                                                             {open && (isOpen ? <ExpandLess /> : <ExpandMore />)}
-//                                                         </ListItemButton>
-//                                                     </Tooltip>
-//                                                     <Collapse in={isOpen && open} timeout="auto" unmountOnExit>
-//                                                         <List component="div" disablePadding >
-//                                                             {item.children.map((child) => (
-//                                                                 <Tooltip title={child.tooltip} key={child.segment}>
-//                                                                     <ListItem key={child.segment} disablePadding>
-//                                                                         <ListItemButton
-//                                                                             selected={router.pathname === `/reports/${child.segment}`}
-//                                                                             onClick={() => router.navigate(`/reports/${child.segment}`)}
-//                                                                             sx={{
-//                                                                                 pr: open ? 4 : 2.5,
-//                                                                                 borderRadius: 2,
-//                                                                                 mx: 1,
-//                                                                                 justifyContent: open ? 'initial' : 'center',
-//                                                                             }}
-//                                                                         >
-//                                                                             <ListItemIcon sx={{ minWidth: 0, ml: open ? 3 : 'auto', justifyContent: 'center' }}>
-//                                                                                 {child.icon}
-//                                                                             </ListItemIcon>
-//                                                                             {open && <ListItemText primary={child.title} sx={{ opacity: open ? 1 : 0, textAlign: 'right' }} />}
-//                                                                         </ListItemButton>
-//                                                                     </ListItem>
-//                                                                 </Tooltip>
-//                                                             ))}
-//                                                         </List>
-//                                                     </Collapse>
-//                                                 </React.Fragment>
-//                                             );
-//                                         }
-//                                         return (
-//                                             <Tooltip title={item.tooltip} placement='right-end'>
-//                                                 <ListItem key={item.segment} disablePadding dir='rtl'>
-//                                                     <ListItemButton
-//                                                         selected={router.pathname === `/${item.segment}`}
-//                                                         onClick={() => router.navigate(`/${item.segment}`)}
-//                                                         sx={{
-//                                                             borderRadius: 2,
-//                                                             mx: 1,
-//                                                             justifyContent: open ? 'initial' : 'center',
-//                                                             px: 2.5,
-//                                                             '&.Mui-selected': { backgroundColor: 'action.selected' },
-//                                                         }}
-//                                                     >
-//                                                         <ListItemIcon sx={{ minWidth: 0, ml: open ? 3 : 'auto', justifyContent: 'center', }}>
-//                                                             {item.icon}
-//                                                         </ListItemIcon>
-//                                                         {open && <ListItemText primary={item.title} sx={{ opacity: open ? 1 : 0, textAlign: 'left', pl: 2 }} />}
-//                                                     </ListItemButton>
-//                                                 </ListItem>
-//                                             </Tooltip>
-//                                         );
-//                                     })}
-//                                 </List>
-//                             </Drawer>
-//                             <Main open={open}>
-//                                 <DrawerHeader />
-//                                 {currentPageContent}
-//                             </Main>
-//                         </Box>
-//                     </ThemeProvider>
-//                 </ColorModeContext.Provider>
-//             </CacheProvider>
-//         </StyledEngineProvider>
-//     );
-// }
 export default function AdminDashboard(props) {
-    const { window } = props;
+    const { window: windowProp } = props;
+    const [mobileOpen, setMobileOpen] = React.useState(false);
     const [open, setOpen] = React.useState(true);
     const [openReports, setOpenReports] = React.useState(false);
     const [mode, setMode] = React.useState('light');
+    const [isMobile, setIsMobile] = React.useState(false);
+
+    // Set initial mobile state after component mounts (client-side only)
+    React.useEffect(() => {
+        const checkIfMobile = () => window.innerWidth < 750;
+        setIsMobile(checkIfMobile());
+    }, []);
+
+    // Handle reports menu toggle
+    const handleReportsClick = () => {
+        setOpenReports(!openReports);
+    };
+
+    // Handle window resize
+    React.useEffect(() => {
+        const handleResize = () => {
+            const mobile = window.innerWidth < 750;
+            setIsMobile(mobile);
+            // Close drawer on mobile when resizing to larger screens
+            if (!mobile && mobileOpen) {
+                setMobileOpen(false);
+            }
+        };
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, [mobileOpen]);
+
+    // Close drawer when route changes on mobile
+    const handleDrawerToggle = () => {
+        if (isMobile) {
+            setMobileOpen(!mobileOpen);
+        } else {
+            setOpen(!open);
+        }
+    };
+
+    // Close drawer when clicking on a menu item on mobile
+    const handleMenuItemClick = () => {
+        if (isMobile) {
+            setMobileOpen(false);
+        }
+    };
     const userProfile = useSelector((state) => state.user.profile);
     const authUid = useSelector((state) => state.auth.uid);
     const userProfileStatus = useSelector((state) => state.user.status);
@@ -6218,27 +5293,8 @@ export default function AdminDashboard(props) {
         };
         loadUserProfile();
     }, [authUid, userProfile, userProfileStatus, dispatch]);
-    const handleDrawerToggle = () => {
-        setOpen(!open);
-    };
-
-    const handleReportsClick = () => {
-        setOpenReports(!openReports);
-    };
-
     const handleLogout = async () => {
-        console.log('جارى تسجيل الخروج');
-        try {
-            await signOut(auth); // Sign out from Firebase
-            dispatch(logout()); // Dispatch Redux logout action to clear state
-            setTimeout(() => {
-                navigate('/login'); // Redirect to login page
-            }, 2000);
-            console.log('تم تسجيل الخروج بنجاح.');
-        } catch (error) {
-            console.error('خطأ في تسجيل الخروج:', error);
-            // You might want to show a Snackbar or Alert here for the user
-        }
+        await performLogout(dispatch, signOut, auth, navigate);
     };
 
     const Main = styled('main', { shouldForwardProp: (prop) => prop !== 'open' })(
@@ -6250,11 +5306,17 @@ export default function AdminDashboard(props) {
                 easing: theme.transitions.easing.sharp,
                 duration: theme.transitions.duration.leavingScreen,
             }),
-            marginRight: open ? theme.spacing(2) + drawerWidth : closedDrawerWidth,
+            marginRight: open && !isMobile ? theme.spacing(2) + drawerWidth : closedDrawerWidth,
             [theme.breakpoints.down('sm')]: {
                 marginRight: 0,
                 paddingRight: theme.spacing(2),
                 paddingLeft: theme.spacing(2),
+                paddingTop: '50px',
+                marginTop:0,
+            },
+            [theme.breakpoints.up('sm')]: {
+                padding: theme.spacing(3),
+                paddingTop:'4px',
             },
         })
     );
@@ -6265,11 +5327,12 @@ export default function AdminDashboard(props) {
                 easing: theme.transitions.easing.sharp,
                 duration: theme.transitions.duration.leavingScreen,
             }),
-            width: `calc(100% - ${open ? theme.spacing(2) + drawerWidth : closedDrawerWidth}px)`,
-            marginLeft: open ? theme.spacing(2) + drawerWidth : closedDrawerWidth,
+            width: `calc(100% - ${open && !isMobile ? theme.spacing(2) + drawerWidth : closedDrawerWidth}px)`,
+            marginLeft: open && !isMobile ? theme.spacing(2) + drawerWidth : closedDrawerWidth,
             [theme.breakpoints.down('sm')]: {
                 width: '100%',
                 marginLeft: 0,
+                // paddingRight: theme.spacing(1),
             },
         })
     );
@@ -6370,7 +5433,16 @@ export default function AdminDashboard(props) {
                             <CssBaseline />
                             <AppBarStyled position="fixed" open={open}>
                                 <Toolbar sx={{ flexDirection: 'row-reverse' }}>
-                                    {!open && (
+                                    <IconButton
+                                        color="inherit"
+                                        aria-label="open drawer"
+                                        edge="start"
+                                        onClick={handleDrawerToggle}
+                                        sx={{ ml: 2, display: { md: 'none' } }}
+                                    >
+                                        <MenuIcon />
+                                    </IconButton>
+                                    {!open && !isMobile && (
                                         <img
                                             src="./logo.png"
                                             alt="App Logo"
@@ -6450,8 +5522,9 @@ export default function AdminDashboard(props) {
                             </AppBarStyled>
 
                             <Drawer
-                                variant="permanent"
+                                variant={isMobile ? 'temporary' : 'permanent'}
                                 sx={{
+                                    display: { xs: 'block' },
                                     width: open ? drawerWidth : closedDrawerWidth,
                                     flexShrink: 0,
                                     whiteSpace: 'nowrap',
@@ -6461,9 +5534,9 @@ export default function AdminDashboard(props) {
                                         duration: theme.transitions.duration.enteringScreen,
                                     }),
                                     '& .MuiDrawer-paper': {
-                                        width: open ? drawerWidth : closedDrawerWidth,
                                         boxSizing: 'border-box',
-                                        borderRadius: '8px 0 0 8px',
+                                        width: isMobile ? '80%' : (open ? drawerWidth : closedDrawerWidth),
+                                        borderRadius: isMobile ? 0 : '8px 0 0 8px',
                                         overflowX: 'hidden',
                                         transition: theme.transitions.create('width', {
                                             easing: theme.transitions.easing.sharp,
@@ -6472,7 +5545,11 @@ export default function AdminDashboard(props) {
                                     },
                                 }}
                                 anchor="left"
-                                open={open}
+                                open={isMobile ? mobileOpen : open}
+                                onClose={handleDrawerToggle}
+                                ModalProps={{
+                                    keepMounted: true,
+                                }}
                             >
                                 <DrawerHeader>
                                     {open && (
@@ -6494,10 +5571,11 @@ export default function AdminDashboard(props) {
                                         <Avatar
                                             alt="Admin User"
                                             src={userProfile?.image || './admin.jpg'}
-                                            sx={{ width: 80, height: 80, mb: 1, boxShadow: '0px 0px 8px rgba(0,0,0,0.2)' }}
+                                            sx={{ width: 80, height: 80, mb: 1, boxShadow: '0px 0px 8px rgba(0,0,0,0.2)',border: '3px solid',
+                                                borderColor: 'primary.main' }}
                                         />
                                         <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                                            Hello, {userName}
+                                            مرحباً، {userName}
                                         </Typography>
                                         <Typography variant="body2" color="text.secondary">
                                             مرحباً بك في لوحة التحكم

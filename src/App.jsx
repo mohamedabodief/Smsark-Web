@@ -24,7 +24,7 @@ import ModernRealEstateForm from "./pages/ModernRealEstateForm";
 import InboxChats from "./pages/InboxChats";
 import ChatBox from "./pages/privechat";
 import Profile from "./componenents/profile";
-import { Snackbar, Alert, Button, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
+import { Snackbar, Alert, Button, Dialog, DialogTitle, DialogContent, DialogActions, CircularProgress, Box, Typography } from '@mui/material';
 import NotificationService from "./FireBase/MessageAndNotification/Notification";
 import SearchPage from "./pages/SearchPage";
 import ContactUs from "./contactUs/ContactUs";
@@ -37,8 +37,9 @@ import OrganizationDashboard from "./Dashboard/organization/organizationDashboar
 import Analytics from "./pages/Analytics";
 import PrivateRoute from "./PrivateRoute";
 import AuthSync from "./AuthSync";
+import DashboardGuard from "./Dashboard/DashboardGuard";
 // import RequireNotAuth from "./LoginAndRegister/RequireNotAuth";
-import { Fab, Box } from '@mui/material';
+import { Fab } from '@mui/material';
 import { FaRobot } from 'react-icons/fa';
 import { useLocation } from 'react-router-dom';
 
@@ -50,6 +51,44 @@ import RegistrationSuccess from "./LoginAndRegister/componentsLR/RegistrationSuc
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { SearchProvider } from "./context/searchcontext";
+import { useSelector } from 'react-redux';
+
+// Dashboard Router Component - Only for admin users
+function DashboardRouter() {
+  const authUid = useSelector((state) => state.auth.uid);
+  const authUserType = useSelector((state) => state.auth.type_of_user);
+  const userProfile = useSelector((state) => state.user.profile);
+  const userProfileStatus = useSelector((state) => state.user.status);
+  const navigate = useNavigate();
+
+  // Show loading while profile is being fetched
+  if (userProfileStatus === 'loading') {
+    return (
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: 'column',
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        minHeight: '100vh',
+        gap: 2
+      }}>
+        <CircularProgress size={60} />
+        <Typography variant="h6" color="text.secondary">
+          جاري تحميل لوحة التحكم...
+        </Typography>
+      </Box>
+    );
+  }
+
+  // Only admin users should access dashboard routes
+  if (userProfile?.type_of_user === 'admin' || authUserType === 'admin') {
+    return <Navigate to="/admin-dashboard" replace />;
+  }
+  
+  // For non-admin users, redirect to home page
+  return <Navigate to="/home" replace />;
+}
+
 function App() {
   const [notifications, setNotifications] = useState([]);
   const [openSnackbar, setOpenSnackbar] = useState(false);
@@ -228,7 +267,8 @@ function App() {
           <Route path="/AddAdvertisement" element={<ModernRealEstateForm />} />
           {/* صفحات الداشبورد */}
           <Route element={<PrivateRoute />}>
-            <Route path="/admin-dashboard" element={<AdminDashboard />} />
+            <Route path="/dashboard" element={<DashboardRouter />} />
+            <Route path="/admin-dashboard" element={<DashboardGuard><AdminDashboard /></DashboardGuard>} />
             <Route path="/client-dashboard" element={<ClientDashboard />} />
             <Route path="/organization-dashboard" element={<OrganizationDashboard />} />
             <Route path="/analytics" element={<Analytics />} />
