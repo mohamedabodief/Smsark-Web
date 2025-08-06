@@ -51,7 +51,7 @@ import MapPicker from "../LocationComponents/MapPicker";
 import { useNavigate, useLocation } from "react-router-dom";
 import AdPackagesClient from "../../packages/packagesClient";
 import { getAuth } from "firebase/auth";
-import { auth } from "../FireBase/firebaseConfig";
+import { auth } from '../FireBase/firebaseConfig';
 import useReverseGeocoding from "../LocationComponents/useReverseGeocoding";
 
 // Custom styled components
@@ -248,9 +248,9 @@ const ModernRealEstateForm = () => {
   const location = useLocation();
 
   // Debug the location state
-  console.log("[DEBUG] Location state received:", location.state);
-  console.log("[DEBUG] Location state adData:", location.state?.adData);
-  console.log("[DEBUG] Location state editMode:", location.state?.editMode);
+  console.log('[DEBUG] Location state received:', location.state);
+  console.log('[DEBUG] Location state adData:', location.state?.adData);
+  console.log('[DEBUG] Location state editMode:', location.state?.editMode);
 
   // Extract data with proper destructuring
   const { adData, editMode } = location.state || {};
@@ -261,11 +261,11 @@ const ModernRealEstateForm = () => {
   const adId = adData?.id || editData?.id;
 
   // Debug the extracted data
-  console.log("[DEBUG] Extracted editData:", editData);
-  console.log("[DEBUG] Extracted isEditMode:", isEditMode);
-  console.log("[DEBUG] Extracted adId:", adId);
-  console.log("[DEBUG] EditData ID:", editData?.id);
-  console.log("[DEBUG] adData ID:", adData?.id);
+  console.log('[DEBUG] Extracted editData:', editData);
+  console.log('[DEBUG] Extracted isEditMode:', isEditMode);
+  console.log('[DEBUG] Extracted adId:', adId);
+  console.log('[DEBUG] EditData ID:', editData?.id);
+  console.log('[DEBUG] adData ID:', adData?.id);
 
   const prevAddressFromMap = useRef(null);
   const userId = auth.currentUser?.uid;
@@ -283,68 +283,59 @@ const ModernRealEstateForm = () => {
   } = useForm({
     resolver: yupResolver(validationSchema),
     defaultValues: {
-      title: "",
-      propertyType: "",
-      price: "",
-      area: "",
-      buildingDate: "",
-      fullAddress: "",
-      city: "",
-      governorate: "",
-      phone: "",
-      username: "",
-      adType: "",
-      adStatus: "",
-      description: "",
+      title: '',
+      propertyType: '',
+      price: '',
+      area: '',
+      buildingDate: '',
+      fullAddress: '',
+      city: '',
+      governorate: '',
+      phone: '',
+      username: '',
+      adType: '',
+      adStatus: '',
+      description: '',
       adsActivation: false,
       activationDays: 7,
-    },
+    }
   });
 
   // Reset form when editData changes (for edit mode)
   useEffect(() => {
-    console.log(
-      "[DEBUG] useEffect triggered - isEditMode:",
-      isEditMode,
-      "editData:",
-      editData
-    );
-    console.log("[DEBUG] adId in useEffect:", adId);
+    console.log('[DEBUG] useEffect triggered - isEditMode:', isEditMode, 'editData:', editData);
+    console.log('[DEBUG] adId in useEffect:', adId);
 
     if (isEditMode && editData) {
-      console.log("[DEBUG] Resetting form with edit data");
-      console.log("[DEBUG] EditData ID in reset:", editData.id);
-      console.log("[DEBUG] adId in reset:", adId);
-      console.log("[DEBUG] EditData title:", editData.title);
+      console.log('[DEBUG] Resetting form with edit data');
+      console.log('[DEBUG] EditData ID in reset:', editData.id);
+      console.log('[DEBUG] adId in reset:', adId);
+      console.log('[DEBUG] EditData title:', editData.title);
 
       // Validate that we have a valid ID
       if (!adId) {
-        console.error("[DEBUG] No valid ID found for edit mode");
-        console.error("[DEBUG] adData:", adData);
-        console.error("[DEBUG] editData:", editData);
+        console.error('[DEBUG] No valid ID found for edit mode');
+        console.error('[DEBUG] adData:', adData);
+        console.error('[DEBUG] editData:', editData);
         return;
       }
 
       reset({
-        title: editData.title || "",
-        propertyType: editData.type || "",
-        price: editData.price || "",
-        area: editData.area || "",
-        buildingDate: editData.date_of_building || "",
-        fullAddress: editData.address || "",
-        city: editData.city || "",
-        governorate: editData.governorate || "",
-        phone: editData.phone || "",
-        username: editData.user_name || "",
-        adType: editData.ad_type || "",
-        adStatus: editData.ad_status || "",
-        description: editData.description || "",
+        title: editData.title || '',
+        propertyType: editData.type || '',
+        price: editData.price || '',
+        area: editData.area || '',
+        buildingDate: editData.date_of_building || '',
+        fullAddress: editData.address || '',
+        city: editData.city || '',
+        governorate: editData.governorate || '',
+        phone: editData.phone || '',
+        username: editData.user_name || '',
+        adType: editData.ad_type || '',
+        adStatus: editData.ad_status || '',
+        description: editData.description || '',
         adsActivation: editData.ads || false,
-        activationDays: editData.adExpiryTime
-          ? Math.round(
-              (editData.adExpiryTime - Date.now()) / (24 * 60 * 60 * 1000)
-            )
-          : 7,
+        activationDays: editData.adExpiryTime ? Math.round((editData.adExpiryTime - Date.now()) / (24 * 60 * 60 * 1000)) : 7,
       });
     }
   }, [isEditMode, editData, adId, reset]);
@@ -354,8 +345,8 @@ const ModernRealEstateForm = () => {
     if (isEditMode && editData && Array.isArray(editData.images)) {
       setImages([]);
       setImageError("");
-      console.log("[DEBUG] Initializing edit mode with data:", editData);
-      console.log("[DEBUG] Advertisement ID:", editData.id);
+      console.log('[DEBUG] Initializing edit mode with data:', editData);
+      console.log('[DEBUG] Advertisement ID:', editData.id);
 
       // Set coordinates if available
       if (editData.location?.lat && editData.location?.lng) {
@@ -367,17 +358,12 @@ const ModernRealEstateForm = () => {
 
       // Set existing images for display and deletion
       const validImages = editData.images.filter(
-        (img) =>
-          img &&
-          img.trim() !== "" &&
-          img !== "null" &&
-          img !== "undefined" &&
-          img.startsWith("http")
+        (img) => img && img.trim() !== '' && img !== 'null' && img !== 'undefined' && img.startsWith('http')
       );
       setExistingImages(validImages);
 
       // Clear any existing image errors
-      setImageError("");
+      setImageError('');
     }
   }, [isEditMode, editData]);
 
@@ -393,6 +379,8 @@ const ModernRealEstateForm = () => {
       setReceiptPreviewUrl(editData.receipt_image);
     }
   }, [isEditMode, editData]);
+
+
 
   // تحديث حقول العنوان بناءً على addressFromMap
   // Update address fields based on map selection
@@ -450,9 +438,8 @@ const ModernRealEstateForm = () => {
     const fetchCoordinates = async () => {
       if (!addressValue && !cityValue && !governorateValue) return;
       if (enableMapPick) return;
-      const fullAddress = `${addressValue || ""}, ${cityValue || ""}, ${
-        governorateValue || ""
-      }`;
+      const fullAddress = `${addressValue || ""}, ${cityValue || ""}, ${governorateValue || ""
+        }`;
       const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
         fullAddress
       )}&format=json&addressdetails=1`;
@@ -499,9 +486,7 @@ const ModernRealEstateForm = () => {
       return;
     }
 
-    const currentImageCount = isEditMode
-      ? existingImages.length + images.length
-      : images.length;
+    const currentImageCount = isEditMode ? existingImages.length + images.length : images.length;
     if (files.length + currentImageCount > 4) {
       setImageError("يمكنك تحميل 4 صور كحد أقصى");
       return;
@@ -527,11 +512,11 @@ const ModernRealEstateForm = () => {
   };
 
   const onSubmit = async (data) => {
-    console.log("[DEBUG] onSubmit called");
-    console.log("[DEBUG] isEditMode:", isEditMode);
-    console.log("[DEBUG] adId:", adId);
-    console.log("[DEBUG] editData:", editData);
-    console.log("[DEBUG] form data:", data);
+    console.log('[DEBUG] onSubmit called');
+    console.log('[DEBUG] isEditMode:', isEditMode);
+    console.log('[DEBUG] adId:', adId);
+    console.log('[DEBUG] editData:', editData);
+    console.log('[DEBUG] form data:', data);
 
     setLoading(true);
     setSubmitError("");
@@ -577,21 +562,24 @@ const ModernRealEstateForm = () => {
     console.log("[DEBUG] Receipt image before save:", receiptImage);
     if (isEditMode) {
       if (!editData) {
-        setSubmitError("بيانات الإعلان غير متوفرة للتعديل.");
+        setSubmitError('بيانات الإعلان غير متوفرة للتعديل.');
         setLoading(false);
         return;
       }
 
       if (!adId) {
-        console.error("[DEBUG] adId is missing:", adId);
-        setSubmitError("معرف الإعلان غير صالح للتعديل.");
+        console.error('[DEBUG] adId is missing:', adId);
+        setSubmitError('معرف الإعلان غير صالح للتعديل.');
         setLoading(false);
         return;
       }
     }
-    if (isEditMode && (!adId || adId === undefined || adId === null)) {
-      console.error("[DEBUG] Missing advertisement ID for edit mode");
-      console.error("[DEBUG] adId value:", adId);
+    if (
+      isEditMode &&
+      (!adId || adId === undefined || adId === null)
+    ) {
+      console.error('[DEBUG] Missing advertisement ID for edit mode');
+      console.error('[DEBUG] adId value:', adId);
       setSubmitError("لا يمكن تعديل إعلان بدون معرف (ID).");
       setLoading(false);
       return;
@@ -617,26 +605,20 @@ const ModernRealEstateForm = () => {
       let adId;
       if (isEditMode && editData) {
         adId = editData.id; // Set adId from editData
-        console.log("[DEBUG] Starting advertisement update with ID:", adId);
-        console.log("[DEBUG] Using adId:", adId);
+        console.log('[DEBUG] Starting advertisement update with ID:', adId);
+        console.log('[DEBUG] Using adId:', adId);
 
         const adObject = { ...editData, id: adId };
-        console.log(
-          "[DEBUG] Ad object being passed to RealEstateDeveloperAdvertisement constructor:",
-          JSON.stringify(adObject, null, 2)
-        );
-        console.log("[DEBUG] adId value in adObject:", adObject.id);
+        console.log('[DEBUG] Ad object being passed to RealEstateDeveloperAdvertisement constructor:', JSON.stringify(adObject, null, 2));
+        console.log('[DEBUG] adId value in adObject:', adObject.id);
 
         const ad = new ClientAdvertisement(adObject);
-        console.log(
-          "[DEBUG] RealEstateDeveloperAdvertisement instance created with ID:",
-          ad.id
-        );
+        console.log('[DEBUG] RealEstateDeveloperAdvertisement instance created with ID:', ad.id);
 
         // Validate that the advertisement has a valid ID
         if (!ad.id) {
-          console.error("[DEBUG] Advertisement instance has no ID:", ad);
-          setSubmitError("معرف الإعلان غير صالح للتعديل.");
+          console.error('[DEBUG] Advertisement instance has no ID:', ad);
+          setSubmitError('معرف الإعلان غير صالح للتعديل.');
           setLoading(false);
           return;
         }
@@ -676,7 +658,7 @@ const ModernRealEstateForm = () => {
             : null,
           adPackage: selectedPackage ? Number(selectedPackage) : null,
           // Reset status to pending after edit
-          reviewStatus: "pending",
+          reviewStatus: 'pending',
           reviewed_by: null,
           review_note: null,
         };
@@ -704,13 +686,13 @@ const ModernRealEstateForm = () => {
           }
         }
 
-        console.log("[DEBUG] Update data:", updateData);
-        console.log("[DEBUG] Files to upload:", updatedImages);
-        console.log("[DEBUG] Ad instance ID:", ad.id);
-        console.log("[DEBUG] Receipt URL:", receiptUrl);
+        console.log('[DEBUG] Update data:', updateData);
+        console.log('[DEBUG] Files to upload:', updatedImages);
+        console.log('[DEBUG] Ad instance ID:', ad.id);
+        console.log('[DEBUG] Receipt URL:', receiptUrl);
 
         await ad.update(updateData, receiptUrl);
-        console.log("[DEBUG] Advertisement updated successfully:", adId);
+        console.log('[DEBUG] Advertisement updated successfully:', adId);
 
         await ad.returnToPending();
         setShowSuccess(true);
@@ -719,6 +701,7 @@ const ModernRealEstateForm = () => {
         setTimeout(() => {
           navigate(`/detailsForClient/${adId}`);
         }, 1500);
+
       } else {
         const adData = {
           title: data.title,
@@ -749,17 +732,23 @@ const ModernRealEstateForm = () => {
         };
         console.log("[DEBUG] بيانات الإعلان الجديد:", adData);
         const ad = new ClientAdvertisement(adData);
-        
-        // Upload receipt image first if provided
+        adId = await ad.save(imageUrls, null); // Save without receipt initially
+        console.log("[DEBUG] Ad saved with ID:", adId);
+
+        // Upload receipt if provided
         let receiptUrl = null;
         if (receiptImage) {
           try {
             receiptUrl = await uploadReceiptAndGetUrl(
               receiptImage,
               auth.currentUser.uid,
-              `temp_${Date.now()}` // Temporary ID for initial upload
+              adId
             );
-            console.log("[DEBUG] Receipt URL after initial upload:", receiptUrl);
+            await ad.update({ receipt_image: receiptUrl });
+            console.log(
+              "[DEBUG] Receipt URL updated in Firestore:",
+              receiptUrl
+            );
           } catch (error) {
             console.error("[DEBUG] Error uploading receipt image:", error);
             if (error.code === "storage/unauthorized") {
@@ -771,26 +760,6 @@ const ModernRealEstateForm = () => {
             }
             setLoading(false);
             return;
-          }
-        }
-        
-        // Save ad with receipt URL
-        adId = await ad.save(imageUrls, receiptUrl);
-        console.log("[DEBUG] Ad saved with ID:", adId);
-        
-        // If we uploaded with a temporary ID, now update it with the correct ad ID
-        if (receiptUrl && receiptImage) {
-          try {
-            const finalReceiptUrl = await uploadReceiptAndGetUrl(
-              receiptImage,
-              auth.currentUser.uid,
-              adId
-            );
-            await ad.update({ receipt_image: finalReceiptUrl });
-            console.log("[DEBUG] Final receipt URL updated:", finalReceiptUrl);
-          } catch (error) {
-            console.error("[DEBUG] Error updating receipt with final URL:", error);
-            // Don't fail the entire operation if this fails
           }
         }
       }
@@ -1144,49 +1113,44 @@ const ModernRealEstateForm = () => {
 
                       <ImagePreviewBox>
                         {/* Show existing images in edit mode */}
-                        {isEditMode &&
-                          existingImages.map((imageUrl, index) => (
-                            <ImagePreview key={`existing-${index}`}>
-                              <img
-                                src={imageUrl}
-                                alt={`صورة موجودة ${index + 1}`}
-                                style={{
-                                  width: "100%",
-                                  height: "100%",
-                                  objectFit: "cover",
-                                }}
-                              />
-                              <IconButton
-                                size="small"
-                                onClick={() => removeExistingImage(index)}
-                                sx={{
-                                  position: "absolute",
-                                  top: 4,
-                                  right: 4,
-                                  backgroundColor: "rgba(255, 255, 255, 0.8)",
-                                  "&:hover": {
-                                    backgroundColor: "rgba(255, 255, 255, 0.9)",
-                                  },
-                                }}
-                              >
-                                <Delete fontSize="small" />
-                              </IconButton>
-                              <Box
-                                sx={{
-                                  position: "absolute",
-                                  top: 4,
-                                  left: 4,
-                                  backgroundColor: "rgba(0, 0, 0, 0.7)",
-                                  color: "white",
-                                  padding: "2px 6px",
-                                  borderRadius: "4px",
-                                  fontSize: "0.7rem",
-                                }}
-                              >
-                                موجودة
-                              </Box>
-                            </ImagePreview>
-                          ))}
+                        {isEditMode && existingImages.map((imageUrl, index) => (
+                          <ImagePreview key={`existing-${index}`}>
+                            <img
+                              src={imageUrl}
+                              alt={`صورة موجودة ${index + 1}`}
+                              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                            />
+                            <IconButton
+                              size="small"
+                              onClick={() => removeExistingImage(index)}
+                              sx={{
+                                position: "absolute",
+                                top: 4,
+                                right: 4,
+                                backgroundColor: "rgba(255, 255, 255, 0.8)",
+                                "&:hover": {
+                                  backgroundColor: "rgba(255, 255, 255, 0.9)",
+                                },
+                              }}
+                            >
+                              <Delete fontSize="small" />
+                            </IconButton>
+                            <Box
+                              sx={{
+                                position: 'absolute',
+                                top: 4,
+                                left: 4,
+                                backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                                color: 'white',
+                                padding: '2px 6px',
+                                borderRadius: '4px',
+                                fontSize: '0.7rem',
+                              }}
+                            >
+                              موجودة
+                            </Box>
+                          </ImagePreview>
+                        ))}
                         {images.map((image, index) => (
                           <ImagePreview key={index}>
                             <img
@@ -1215,14 +1179,14 @@ const ModernRealEstateForm = () => {
                             </IconButton>
                             <Box
                               sx={{
-                                position: "absolute",
+                                position: 'absolute',
                                 top: 4,
                                 left: 4,
-                                backgroundColor: "rgba(76, 175, 80, 0.9)",
-                                color: "white",
-                                padding: "2px 6px",
-                                borderRadius: "4px",
-                                fontSize: "0.7rem",
+                                backgroundColor: 'rgba(76, 175, 80, 0.9)',
+                                color: 'white',
+                                padding: '2px 6px',
+                                borderRadius: '4px',
+                                fontSize: '0.7rem',
                               }}
                             >
                               جديدة
@@ -1231,8 +1195,7 @@ const ModernRealEstateForm = () => {
                         ))}
                       </ImagePreviewBox>
 
-                      {(images.length > 0 ||
-                        (isEditMode && existingImages.length > 0)) && (
+                      {(images.length > 0 || (isEditMode && existingImages.length > 0)) && (
                         <Typography
                           variant="body2"
                           sx={{
@@ -1241,17 +1204,15 @@ const ModernRealEstateForm = () => {
                             fontSize: "0.75rem",
                             textAlign: "right",
                           }}
-                        >
-                          {isEditMode ? (
-                            <>
-                              الصور الموجودة: {existingImages.length} | الصور
-                              الجديدة: {images.length} | المجموع:{" "}
-                              {existingImages.length + images.length} من 4
-                            </>
-                          ) : (
-                            `تم رفع ${images.length} من 4 صور`
-                          )}
-                        </Typography>
+                        >{isEditMode ? (
+                          <>
+                            الصور الموجودة: {existingImages.length} |
+                            الصور الجديدة: {images.length} |
+                            المجموع: {existingImages.length + images.length} من 4
+                          </>
+                        ) : (
+                          `تم رفع ${images.length} من 4 صور`
+                        )}</Typography>
                       )}
 
                       <Divider sx={{ my: 3 }} />
@@ -1341,6 +1302,8 @@ const ModernRealEstateForm = () => {
                         </Typography>
                       )}
                     </Box>
+
+
                   </Grid>
 
                   <Divider sx={{ my: 3, borderColor: "#e0e0e0" }} />
@@ -1639,6 +1602,7 @@ const ModernRealEstateForm = () => {
                   </Grid>
 
                   <Divider sx={{ my: 3, borderColor: "#e0e0e0" }} />
+
                 </Container>
               </CardContent>
             </StyledCard>
@@ -1675,24 +1639,17 @@ const ModernRealEstateForm = () => {
         receiptPreviewUrl={receiptPreviewUrl}
         removeReceiptImage={removeReceiptImage}
       />
-      {errors.selectedPackage && (
-        <Typography
-          variant="caption"
-          color="error"
-          sx={{ mt: 1, textAlign: "right" }}
-        >
-          {errors.selectedPackage}
-        </Typography>
+
+      {submitError && submitError.includes("باقة إعلانية") && (
+        <Alert severity="error" sx={{ mt: 2, mx: "auto", maxWidth: "lg" }}>
+          {submitError}
+        </Alert>
       )}
-      {errors.receiptImage && (
-        <Typography
-        
-          variant="caption"
-          color="error"
-          sx={{ mt: 1, textAlign: "right" }}
-        >
-          {errors.receiptImage}
-        </Typography>
+
+      {submitError && submitError.includes("صورة الإيصال") && (
+        <Alert severity="error" sx={{ mt: 2, mx: "auto", maxWidth: "lg" }}>
+          {submitError}
+        </Alert>
       )}
 
       <PaymentMethods />
@@ -1729,10 +1686,8 @@ const ModernRealEstateForm = () => {
               <CircularProgress size={20} color="inherit" sx={{ mr: 1 }} />
               {isEditMode ? "جاري تحديث الإعلان..." : "جاري حفظ الإعلان..."}
             </>
-          ) : isEditMode ? (
-            "تحديث الإعلان"
           ) : (
-            "أضف الإعلان"
+            isEditMode ? "تحديث الإعلان" : "أضف الإعلان"
           )}
         </Button>
 
@@ -1769,3 +1724,5 @@ const ModernRealEstateForm = () => {
 };
 
 export default ModernRealEstateForm;
+
+
