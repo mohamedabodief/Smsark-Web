@@ -13,19 +13,19 @@ function SearchResults() {
   const [clientAds, setClientAds] = useState([]);
   const [financingAds, setFinancingAds] = useState([]);
   const [developerAds, setDeveloperAds] = useState([]);
-  const [loading, setLoading] = useState(false);
+  // const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchAll = async () => {
-      setLoading(true);
+      // setLoading(true);
       const clientResults = await ClientAdvertisement.getAll();
       const financingResults = await FinancingAdvertisement.getAll();
       const developerResults = await RealEstateDeveloperAdvertisement.getAll();
       setClientAds(clientResults);
       setFinancingAds(financingResults);
       setDeveloperAds(developerResults);
-      setLoading(false);
+      // setLoading(false);
     };
 
     fetchAll();
@@ -125,11 +125,7 @@ function SearchResults() {
         </Typography>
       </Breadcrumbs>
 
-      {loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mt: 5 }}>
-          <CircularProgress />
-        </Box>
-      ) : (
+      {
         shouldShowResults && (
           <>
             <Box
@@ -209,7 +205,7 @@ function SearchResults() {
               )}
           </>
         )
-      )}
+      }
     </Container>
   );
 }

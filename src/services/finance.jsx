@@ -32,8 +32,8 @@ const FinancingAdsPage = () => {
   const filteredAds = allFinancingAds.filter((ad) => {
     const search = searchInput.trim().toLowerCase();
     return (
-      ad.org_name?.toLowerCase().includes(search) ||
-      ad.description?.toLowerCase().includes(search)
+      ad.org_name?.includes(search)||
+      ad.title.includes(search)
     );
   });
 
@@ -52,12 +52,12 @@ const FinancingAdsPage = () => {
         </Typography>
 
         <TextField
-          placeholder="ادخل اسم الجهة أو وصف العرض"
+          placeholder="ادخل اسم الممول أو عنوان الاعلان"
           variant="outlined"
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
           sx={{
-            width: "50vw",
+          width: { sm: "90vw", lg: "60vw" },
             margin: "20px",
             "& .MuiOutlinedInput-root": {
               borderRadius: "100px",
@@ -146,7 +146,7 @@ const FinancingAdsPage = () => {
           title={ad.title}
           price={`من ${ad.start_limit} إلى ${ad.end_limit}`}
           adress={ad.org_name}
-          image={[ad.image]}
+          image={ad.images}
           type={ad.financing_model}
           id={ad.id}
         />

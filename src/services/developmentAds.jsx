@@ -28,12 +28,11 @@ const DeveloperAdsPage = () => {
     }
   }, [dispatch, allDeveloperAds]);
 
-  const filteredAds = allDeveloperAds.filter((ad) => {
-    const search = searchInput.trim().toLowerCase();
-    return (
-      ad.org_name?.toLowerCase().includes(search) ||
-      ad.description?.toLowerCase().includes(search)
-    );
+ const filteredAds = allDeveloperAds.filter((ad) => {
+  const search = searchInput.trim().toLowerCase();
+  return (
+    (ad.developer_name || "").includes(search) 
+  );
   });
 
   return (
@@ -52,12 +51,12 @@ const DeveloperAdsPage = () => {
     </Typography>
 
     <TextField
-      placeholder="ادخل اسم المطور أو وصف العرض"
+      placeholder="ادخل اسم المطور"
       variant="outlined"
       value={searchInput}
       onChange={(e) => setSearchInput(e.target.value)}
       sx={{
-        width: "50vw",
+       width: { sm: "90vw", lg: "60vw" },
         margin: "20px",
         "& .MuiOutlinedInput-root": {
           borderRadius: "100px",
@@ -131,6 +130,8 @@ const DeveloperAdsPage = () => {
             adress={`${ad.location?.governorate} - ${ad.location?.city}`}
             type={ad.project_types}
             id={ad.id}
+            image={ad.images}
+
           />
         </Link>
       </Box>
