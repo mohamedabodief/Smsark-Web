@@ -108,12 +108,24 @@ const NAVIGATION = [
         kind: 'header',
         title: 'العناصر الرئيسية',
     },
+    // {
+    //     segment: 'dashboard',
+    //     title: 'لوحة التحكم',
+    //     icon: <DashboardIcon />,
+    //     tooltip: 'لوحة التحكم',
+    // },
     {
         segment: 'profile',
         title: 'الملف الشخصي',
         icon: <AccountBoxIcon />,
         tooltip: 'الملف الشخصي',
     },
+    // {
+    //     segment: 'favproperties',
+    //     title: 'المفضلة',
+    //     icon: <FavoriteIcon />,
+    //     tooltip: 'المفضلة',
+    // },
     {
         segment: 'orders',
         title: 'الطلبات',
@@ -744,7 +756,6 @@ function ProfilePage() {
     );
 }
 
-
 function ClientAdvertismentPage() {
     const authUid = useSelector((state) => state.auth.uid);
     const navigate = useNavigate();
@@ -1117,41 +1128,13 @@ function ClientAdvertismentPage() {
             </Typography>
 
             {/* Statistics */}
-            <Box
-                sx={{
-                    mb: 3,
-                    display: 'flex',
-                    gap: { xs: 1, sm: 2, md: 2.5, lg: 3, xl: 3.5 },
-                    flexWrap: 'wrap',
-                    justifyContent: {
-                        xs: 'center',
-                        sm: 'flex-start',
-                        md: 'flex-start',
-                        lg: 'flex-start',
-                        xl: 'flex-start',
-                    },
-                    flexDirection: {
-                        xs: 'column',
-                        sm: 'row',
-                        md: 'row',
-                        lg: 'row',
-                        xl: 'row',
-                    },
-                    alignItems: {
-                        xs: 'stretch',
-                        sm: 'center',
-                        md: 'center',
-                        lg: 'center',
-                        xl: 'center',
-                    },
-                }}
-            >
-                <Chip label={`الكل: ${filteredAdvertisements.length}`} color="primary" sx={{ width: { xs: '100%', sm: 'auto', md: 'auto', lg: 'auto', xl: 'auto' }, mb: { xs: 1, sm: 0, md: 0, lg: 0, xl: 0 } }} />
-                <Chip label={`قيد المراجعة: ${filteredAdvertisements.filter(ad => ad.reviewStatus === 'pending').length}`} color="warning" sx={{ width: { xs: '100%', sm: 'auto', md: 'auto', lg: 'auto', xl: 'auto' }, mb: { xs: 1, sm: 0, md: 0, lg: 0, xl: 0 } }} />
-                <Chip label={`تمت الموافقة: ${filteredAdvertisements.filter(ad => ad.reviewStatus === 'approved').length}`} color="success" sx={{ width: { xs: '100%', sm: 'auto', md: 'auto', lg: 'auto', xl: 'auto' }, mb: { xs: 1, sm: 0, md: 0, lg: 0, xl: 0 } }} />
-                <Chip label={`مرفوض: ${filteredAdvertisements.filter(ad => ad.reviewStatus === 'rejected').length}`} color="error" sx={{ width: { xs: '100%', sm: 'auto', md: 'auto', lg: 'auto', xl: 'auto' }, mb: { xs: 1, sm: 0, md: 0, lg: 0, xl: 0 } }} />
-                <Chip label={`مفعل: ${filteredAdvertisements.filter(ad => ad.ads === true).length}`} color="info" sx={{ width: { xs: '100%', sm: 'auto', md: 'auto', lg: 'auto', xl: 'auto' }, mb: { xs: 1, sm: 0, md: 0, lg: 0, xl: 0 } }} />
-                <Chip label={`غير مفعل: ${filteredAdvertisements.filter(ad => ad.ads === false).length}`} color="default" sx={{ width: { xs: '100%', sm: 'auto', md: 'auto', lg: 'auto', xl: 'auto' }, mb: { xs: 1, sm: 0, md: 0, lg: 0, xl: 0 } }} />
+            <Box sx={{ mb: 3, display: 'flex', gap: 2, flexWrap: 'wrap', justifyContent: 'center' }}>
+                <Chip label={`الكل: ${filteredAdvertisements.length}`} color="primary" />
+                <Chip label={`قيد المراجعة: ${filteredAdvertisements.filter(ad => ad.reviewStatus === 'pending').length}`} color="warning" />
+                <Chip label={`تمت الموافقة: ${filteredAdvertisements.filter(ad => ad.reviewStatus === 'approved').length}`} color="success" />
+                <Chip label={`مرفوض: ${filteredAdvertisements.filter(ad => ad.reviewStatus === 'rejected').length}`} color="error" />
+                <Chip label={`مفعل: ${filteredAdvertisements.filter(ad => ad.ads === true).length}`} color="info" />
+                <Chip label={`غير مفعل: ${filteredAdvertisements.filter(ad => ad.ads === false).length}`} color="default" />
             </Box>
 
             <Paper
@@ -1170,36 +1153,8 @@ function ClientAdvertismentPage() {
                 </Typography>
 
                 {/* Filters */}
-                <Box
-                    sx={{
-                        mb: 3,
-                        display: 'flex',
-                        flexWrap: 'wrap',
-                        gap: { xs: 1, sm: 2, md: 2.5, lg: 3, xl: 3.5 },
-                        flexDirection: {
-                            xs: 'column',
-                            sm: 'row-reverse',
-                            md: 'row-reverse',
-                            lg: 'row-reverse',
-                            xl: 'row-reverse',
-                        },
-                        alignItems: {
-                            xs: 'stretch',
-                            sm: 'flex-start',
-                            md: 'flex-start',
-                            lg: 'center',
-                            xl: 'center',
-                        },
-                        justifyContent: {
-                            xs: 'center',
-                            sm: 'flex-start',
-                            md: 'flex-start',
-                            lg: 'flex-start',
-                            xl: 'flex-start',
-                        },
-                    }}
-                >
-                    <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 160, md: 180, lg: 200, xl: 220 }, flexGrow: { xs: 1, sm: 0, md: 0 } }}>
+                <Box sx={{ mb: 3, display: 'flex', gap: 2, flexDirection: 'row-reverse' }}>
+                    <FormControl size="small" sx={{ minWidth: 150 }}>
                         <InputLabel>حالة المراجعة</InputLabel>
                         <Select
                             value={statusFilter}
@@ -1212,7 +1167,8 @@ function ClientAdvertismentPage() {
                             <MenuItem value="rejected">مرفوض</MenuItem>
                         </Select>
                     </FormControl>
-                    <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 160, md: 180, lg: 200, xl: 220 }, flexGrow: { xs: 1, sm: 0, md: 0 } }}>
+                    
+                    <FormControl size="small" sx={{ minWidth: 150 }}>
                         <InputLabel>حالة التفعيل</InputLabel>
                         <Select
                             value={activationFilter}
@@ -1224,7 +1180,8 @@ function ClientAdvertismentPage() {
                             <MenuItem value="inactive">غير مفعل</MenuItem>
                         </Select>
                     </FormControl>
-                    <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 160, md: 180, lg: 200, xl: 220 }, flexGrow: { xs: 1, sm: 0, md: 0 } }}>
+                    
+                    <FormControl size="small" sx={{ minWidth: 150 }}>
                         <InputLabel>نوع الإعلان</InputLabel>
                         <Select
                             value={adTypeFilter}
@@ -1977,12 +1934,10 @@ function SettingsPage() {
     };
 
     return (
-        <Box dir="rtl" sx={{ p: 2, textAlign: 'right' }}>
-            <PageHeader
-             title="إعدادات الحساب"
-             icon={SettingsIcon}
-             />
-            <Paper sx={{ p: 2, borderRadius: 2, minHeight: 200, textAlign: 'left' }}>
+        <Box sx={{ p: 2, textAlign: 'right' }}>
+            <Typography variant="h4" gutterBottom>إعدادات الحساب</Typography>
+            
+            <Paper sx={{ p: 2, borderRadius: 2, minHeight: 200, textAlign: 'right' }}>
                 <Typography variant="h6" color="text.secondary" gutterBottom>
                     إدارة الحساب
                 </Typography>
@@ -2357,6 +2312,9 @@ export default function ClientDashboard(props) {
         case '/favproperties':
             currentPageContent = <FavPropertiesPage />;
             break;
+        // case '/mainadvertisment':
+        //     currentPageContent = <Mainadvertisment />;
+        //     break;
         case '/clientadvertisment':
             currentPageContent = <ClientAdvertismentPage />;
             break;

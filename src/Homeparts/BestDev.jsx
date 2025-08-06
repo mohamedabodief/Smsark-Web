@@ -33,7 +33,8 @@ export default function BestDev() {
 
   useEffect(() => {
     initializeAds();
-  
+
+    // الاشتراك في تحديثات الإعلانات النشطة لو المستخدم مسجل دخول فقط
     let unsubscribe = () => {};
     unsubscribe = RealEstateDeveloperAdvertisement.subscribeActiveAds((newAds) => {
       const activeAds = newAds.filter(ad => ad.ads === true);

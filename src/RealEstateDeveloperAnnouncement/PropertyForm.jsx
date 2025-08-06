@@ -84,6 +84,7 @@ const PropertyForm = ({
   const [isGeocodingLoading, setIsGeocodingLoading] = useState(false);
   const [geocodingError, setGeocodingError] = useState("");
   const prevAddressFromMap = React.useRef(null);
+  const [receiptPreviewUrl, setReceiptPreviewUrl] = useState(null);
 
   // التمرير إلى الأعلى عند تحميل الصفحة
   React.useEffect(() => {
@@ -113,11 +114,7 @@ const PropertyForm = ({
         setFormData({
           developer_name: initialData.developer_name || "",
           phone: initialData.phone || "",
-          location: initialData.location || {
-            city: "",
-            governorate: "",
-            detailedAddress: "",
-          },
+          location: { ...formData.location, ...initialData.location },
           description: initialData.description || "",
           price_start_from: initialData.price_start_from?.toString() || "",
           price_end_to: initialData.price_end_to?.toString() || "",
@@ -147,6 +144,12 @@ const PropertyForm = ({
         );
         console.log("Valid existing images:", validImages);
         setPreviewUrls(validImages);
+      }
+
+      // إضافة معاينة صورة الإيصال القديمة
+      if (initialData.receipt_image) {
+        setReceiptImage(initialData.receipt_image); // هذا الرابط
+        setReceiptPreviewUrl(initialData.receipt_image);
       }
     }
   }, [isEditMode, initialData, dispatch]);
@@ -483,6 +486,11 @@ const PropertyForm = ({
         setUploading(false);
       }
     }
+  };
+
+  const removeReceiptImage = () => {
+    setReceiptImage(null);
+    setReceiptPreviewUrl(null);
   };
 
   return (
@@ -1160,7 +1168,17 @@ const PropertyForm = ({
               <AdPackages
                 selectedPackageId={selectedPackage}
                 setSelectedPackageId={setSelectedPackage}
-                onReceiptImageChange={setReceiptImage}
+                onReceiptImageChange={(fileOrUrl) => {
+                  setReceiptImage(fileOrUrl);
+                  if (fileOrUrl instanceof File) {
+                    setReceiptPreviewUrl(URL.createObjectURL(fileOrUrl));
+                  } else {
+                    setReceiptPreviewUrl(fileOrUrl);
+                  }
+                }}
+                receiptImage={receiptImage}
+                receiptPreviewUrl={receiptPreviewUrl}
+                removeReceiptImage={removeReceiptImage}
               />
             </Box>
             {errors.selectedPackage && (
@@ -1183,7 +1201,13 @@ const PropertyForm = ({
             )}
           </Grid>
 
+
+
           <PaymentMethods />
+
+
+
+
           <Box
             sx={{
               mt: 4,

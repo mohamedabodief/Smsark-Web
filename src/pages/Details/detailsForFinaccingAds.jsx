@@ -31,7 +31,8 @@ import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import FinancingAdvertisement from "../../FireBase/modelsWithOperations/FinancingAdvertisement";
 import { auth } from "../../FireBase/firebaseConfig";
-
+import Message from "../../FireBase/MessageAndNotification/Message";
+import Notification from "../../FireBase/MessageAndNotification/Notification";
 // أضف هذا بعد الاستيرادات مباشرة
 const PACKAGE_INFO = {
   1: { name: "باقة الأساس", price: 100, duration: 7 },
@@ -49,7 +50,49 @@ function DetailsForFinaccingAds() {
   const [error, setError] = useState(null);
   const navigate = useNavigate();
   const currentUser = auth.currentUser?.uid;
+const handleSend = async () => {
+    if (!message.trim() || !currentUser || !clientAds?.userId) return;
 
+    try {
+      const receiverName = clientAds.org_name;
+      const newMessage = new Message({
+        sender_id: currentUser,
+        receiver_id: clientAds.userId,
+        content: message,
+        reciverName: receiverName,
+        timestamp: new Date(),
+        is_read: false,
+        message_type: "text",
+      });
+
+      console.log("[DEBUG] Sending message to:", {
+        receiver_id: clientAds.userId,
+        reciverName: receiverName,
+      });
+      await newMessage.send();
+
+      const notification = new Notification({
+        receiver_id: clientAds.userId,
+        title: `رسالة جديدة من ${auth.currentUser.email || "مستخدم"}`,
+        body: message || "لقد تلقيت رسالة جديدة!",
+        type: "message",
+        link: `/privateChat/${clientAds.userId}`,
+      });
+      await notification.send();
+
+      alert("تم إرسال الرسالة!");
+      setMessage("");
+      setOpen(false);
+    } catch (error) {
+      console.error("[DEBUG] خطأ أثناء الإرسال:", error);
+      alert("فشل في إرسال الرسالة!");
+    }
+  };
+   const pulse = keyframes`
+    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.4); }
+    70% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(37, 211, 102, 0); }
+    100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(37, 211, 102, 0); }
+  `;
   useEffect(() => {
     const fetchAd = async () => {
       try {
@@ -147,7 +190,7 @@ function DetailsForFinaccingAds() {
       )
     : [];
   const mainImg = mainImage || validImages[0] || "/no-image.svg";
-
+ 
   return (
     <Container maxWidth="lg" dir="rtl">
       {/* أزرار التفاعل */}
@@ -513,7 +556,54 @@ function DetailsForFinaccingAds() {
                     </Box>
 
                     <Divider sx={{ my: 3 }} />
-
+  {/**contact with user */}
+      <Box
+        onClick={() => setOpen(true)}
+        sx={{
+          position: "fixed",
+          bottom: 20,
+          right: 20,
+          backgroundColor: "#1976d2",
+          color: "white",
+          px: 2.5,
+          py: 1,
+          borderRadius: "30px",
+          zIndex: 999,
+          cursor: "pointer",
+          animation: `${pulse} 2s infinite`,
+          transition: "transform 0.3s",
+          "&:hover": { transform: "scale(1.05)" },
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          boxShadow: "0px 4px 12px rgba(0,0,0,0.2)",
+        }}
+      >
+        <ChatBubbleOutlineIcon sx={{ fontSize: 22, mr: 1 }} />
+        <Typography sx={{ fontWeight: "bold", fontSize: "0.9rem" }}>
+          تواصل مع البائع
+        </Typography>
+      </Box>
+      <Dialog open={open} fullWidth dir="rtl" onClose={() => setOpen(false)}>
+        <DialogTitle>تواصل مع البائع بكل سهوله</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="اكتب رسالتك هنا"
+            fullWidth
+            multiline
+            rows={4}
+            variant="outlined"
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpen(false)}>إلغاء</Button>
+          <Button variant="contained" onClick={handleSend}>إرسال</Button>
+        </DialogActions>
+      </Dialog>
                     {/* أزرار التواصل */}
                     <Box
                       sx={{

@@ -17,7 +17,7 @@ function Home() {
         <HeroWithSearch />
         {/* <SimpleHeroSlider/> */}
         <MobilSection />
-        <BestFin/>
+        <BestFin />
         <BestDev />
         <Needs />
         <Advertise />
