@@ -72,7 +72,7 @@ export default function BestFin() {
     // Auto-scrolling logic
     let autoScrollInterval;
     const startAutoScroll = () => {
-      if (sliderRef.current) {
+  if (sliderRef.current) {
         autoScrollInterval = setInterval(() => {
           const container = sliderRef.current;
           const maxScrollLeft = offers.length * scrollAmount;
@@ -84,9 +84,10 @@ export default function BestFin() {
           // Now scroll to the next card smoothly
           container.scrollBy({ left: scrollAmount, behavior: 'smooth' });
 
-        }, 3000); // 3-second interval
+        }, 2500); // 3-second interval
       }
     };
+
     
     // Start auto-scroll
     startAutoScroll();
@@ -123,7 +124,7 @@ export default function BestFin() {
   };
 
   return (
-    <Box sx={{ direction: "rtl", paddingTop: 15, px: 5 }}>
+    <Box sx={{  paddingTop: 15, px: 5 }}>
       <Typography variant="h4" fontWeight="bold" textAlign="center" mb={4}>
         أفضل عروض التمويل
       </Typography>
@@ -167,6 +168,7 @@ export default function BestFin() {
             gap: 3,
             pb: 2,
             pl: 5,
+            // scrollBehavior: "smooth",
             "&::-webkit-scrollbar": { display: "none" },
           }}
         >
