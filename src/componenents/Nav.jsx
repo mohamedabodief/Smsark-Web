@@ -254,6 +254,10 @@ import Notification from "../FireBase/MessageAndNotification/Notification";
 import SearchIcon from "@mui/icons-material/Search";
 import { auth } from "../FireBase/firebaseConfig";
 
+import MenuIcon from '@mui/icons-material/Menu';
+import { useTheme, useMediaQuery, Drawer, List, ListItem, ListItemText } from "@mui/material";
+
+
 export default function Nav({ toggleMode }) {
   const [unreadCount, setUnreadCount] = useState(0);
   const [anchorEl, setAnchorEl] = useState(null);
@@ -265,6 +269,11 @@ export default function Nav({ toggleMode }) {
 
   const location = useLocation();
   const userType = useSelector((state) => state.auth.type_of_user);
+
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md")); // md = 960px
+
 
   useEffect(() => {
     if (currentId) {
@@ -354,6 +363,31 @@ export default function Nav({ toggleMode }) {
         color: "#fff",
       }}
     >
+      <Drawer anchor="right" open={drawerOpen} onClose={() => setDrawerOpen(false)}>
+        <Box sx={{ width: 250 }} role="presentation" onClick={() => setDrawerOpen(false)}>
+          <List>
+            <ListItem button onClick={() => navigate("/home")}>
+              <ListItemText primary="الصفحة الرئيسية" />
+            </ListItem>
+            <ListItem button onClick={() => navigate("/about")}>
+              <ListItemText primary="عن الموقع" />
+            </ListItem>
+            <ListItem button onClick={() => navigate("/search")}>
+              <ListItemText primary="ابحث عن عقارك" />
+            </ListItem>
+            <ListItem button onClick={() => navigate("/contact")}>
+              <ListItemText primary="تواصل معنا" />
+            </ListItem>
+            {!currentId && (
+              <ListItem button onClick={handleLoginClick}>
+                <ListItemText primary="سجّل الدخول أو انضم إلينا" />
+              </ListItem>
+            )}
+          </List>
+        </Box>
+      </Drawer>
+
+
       <Toolbar sx={{ justifyContent: "space-between" }}>
         <Box
           sx={{
@@ -380,54 +414,62 @@ export default function Nav({ toggleMode }) {
             justifyContent: "center",
           }}
         >
-          <Typography
-            variant="button"
-            sx={{ cursor: "pointer", pl: 4 }}
-            onClick={() => navigate("/home")}
-          >
-            الصفحة الرئيسية
-          </Typography>
-          <Typography
-            variant="button"
-            sx={{ cursor: "pointer" }}
-            onClick={() => navigate("/about")}
-          >
-            عن الموقع
-          </Typography>
-          <Typography
-            variant="button"
-            sx={{ cursor: "pointer" }}
-            onClick={() => navigate("/search")}
-          >
-            ابحث عن عقارك
-          </Typography>
-          <Typography
-            variant="button"
-            sx={{ cursor: "pointer" }}
-            onClick={() => navigate("/contact")}
-          >
-            تواصل معنا
-          </Typography>
-          {!currentId && (
-            <Button
-              variant="outlined"
-              sx={{
-                bgcolor: "transparent",
-                color: "#fff",
-                borderColor: "#fff",
-                borderRadius: "25px",
-                // padding: "6px 20px",
-                fontWeight: "bold",
-                "&:hover": {
-                  bgcolor: "#fff",
-                  color: "#6E00FE",
-                  borderColor: "#fff",
-                },
-              }}
-              onClick={handleLoginClick}
-            >
-              سجّل الدخول أو انضم إلينا
-            </Button>
+          {isMobile ? (
+            <IconButton sx={{ color: "#fff" }} onClick={() => setDrawerOpen(true)}>
+              <MenuIcon />
+            </IconButton>
+          ) : (
+            <>
+              <Typography
+                variant="button"
+                sx={{ cursor: "pointer", pl: 4 }}
+                onClick={() => navigate("/home")}
+              >
+                الصفحة الرئيسية
+              </Typography>
+              <Typography
+                variant="button"
+                sx={{ cursor: "pointer" }}
+                onClick={() => navigate("/about")}
+              >
+                عن الموقع
+              </Typography>
+              <Typography
+                variant="button"
+                sx={{ cursor: "pointer" }}
+                onClick={() => navigate("/search")}
+              >
+                ابحث عن عقارك
+              </Typography>
+              <Typography
+                variant="button"
+                sx={{ cursor: "pointer" }}
+                onClick={() => navigate("/contact")}
+              >
+                تواصل معنا
+              </Typography>
+              {!currentId && (
+                <Button
+                  variant="outlined"
+                  sx={{
+                    bgcolor: "transparent",
+                    color: "#fff",
+                    borderColor: "#fff",
+                    borderRadius: "25px",
+                    // padding: "6px 20px",
+                    fontWeight: "bold",
+                    "&:hover": {
+                      bgcolor: "#fff",
+                      color: "#6E00FE",
+                      borderColor: "#fff",
+                    },
+                  }}
+                  onClick={handleLoginClick}
+                >
+                  سجّل الدخول أو انضم إلينا
+                </Button>
+              )}
+            </>
           )}
         </Stack>
 
