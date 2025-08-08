@@ -164,7 +164,7 @@ function SearchResults() {
                     title={ad.title}
                     price={`من ${ad.start_limit} إلى ${ad.end_limit}`}
                     adress={ad.org_name}
-                    image={[ad.image]}
+                    image={ad.images}
                     type={ad.financing_model}
                     id={ad.id}
                     phone={ad.phone}
@@ -180,7 +180,7 @@ function SearchResults() {
                     title={ad.developer_name}
                     price={`من ${ad.price_start_from} إلى ${ad.price_end_to}`}
                     adress={ad.location}
-                    image={[ad.image]}
+                    image={ad.images}
                     type={ad.project_types}
                     id={ad.id}
                     phone={ad.phone}
