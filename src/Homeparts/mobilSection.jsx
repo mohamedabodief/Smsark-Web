@@ -6,7 +6,7 @@ const MobilSection = () => {
   return (
     <Box
       sx={{
-        backgroundColor: "white",
+        // backgroundColor: "white",
         pt: 6,
         // pb: { xs: 6, md: 6 },
         minHeight: "100vh",
@@ -16,7 +16,7 @@ const MobilSection = () => {
     >
         <Box
           component="img"
-          src="/src/assets/mobile-pic.png"
+          src="/src/assets/mobile-pic-nb.png"
           alt="تطبيق سمسارك العقاري"
           sx={{
             width: { xs: "100%", sm: 750 },
