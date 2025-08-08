@@ -53,7 +53,8 @@ function SearchResults() {
         !searchWord ||
         ad.address?.includes(searchWord) ||
         ad.city?.includes(searchWord) ||
-        ad.governorate?.includes(searchWord);
+        ad.governorate?.includes(searchWord)||
+        ad.title?.includes(searchWord);
 
       return matchesPurpose && matchesType && matchesPriceFrom && matchesPriceTo && matchesCity;
     });
