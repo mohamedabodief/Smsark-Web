@@ -233,7 +233,7 @@ export const fetchAnalyticsData = createAsyncThunk(
     const pendingRequests = filteredFinancingAds.filter(ad => ad.reviewStatus === 'pending').length;
 
     // Calculate approval rate
-    const approvalRate = totalFinancingRequests > 0 ? (approvedRequests / totalFinancingRequests) * 100 : 0;
+    const approvalRate = totalFinancingRequests > 0 ? Number(((approvedRequests / totalFinancingRequests) * 100).toFixed(3)) : 0;
 
     // Interest rate analysis
     const interestRateBreakdown = {

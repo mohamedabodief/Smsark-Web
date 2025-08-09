@@ -108,24 +108,12 @@ const NAVIGATION = [
         kind: 'header',
         title: 'العناصر الرئيسية',
     },
-    // {
-    //     segment: 'dashboard',
-    //     title: 'لوحة التحكم',
-    //     icon: <DashboardIcon />,
-    //     tooltip: 'لوحة التحكم',
-    // },
     {
         segment: 'profile',
         title: 'الملف الشخصي',
         icon: <AccountBoxIcon />,
         tooltip: 'الملف الشخصي',
     },
-    // {
-    //     segment: 'favproperties',
-    //     title: 'المفضلة',
-    //     icon: <FavoriteIcon />,
-    //     tooltip: 'المفضلة',
-    // },
     {
         segment: 'orders',
         title: 'الطلبات',
@@ -138,33 +126,6 @@ const NAVIGATION = [
         icon: <SupervisedUserCircleIcon />,
         tooltip: 'الإعلانات',
     },
-    // {
-    //     segment: 'paidclientadvertisment',
-    //     title: 'الإعلانات المدفوعة',
-    //     icon: <PaymentsTwoToneIcon />,
-    //     tooltip: 'الإعلانات المدفوعة',
-    // },
-
-    // {
-    //     kind: 'divider',
-    // },
-    // {
-    //     kind: 'header',
-    //     title: 'التحليلات',
-
-    // },
-    // {
-    //     segment: 'charts',
-    //     title: 'الرسم البيانى',
-    //     icon: <BarChartIcon />,
-    //     tooltip: 'الرسم البيانى',
-    // },
-    // {
-    //     segment: 'reports',
-    //     title: 'التقرير',
-    //     icon: <DescriptionIcon />,
-    //     tooltip: 'التقرير',
-    // },
     {
         segment: 'settings',
         title: 'إعدادات الحساب',
@@ -173,7 +134,7 @@ const NAVIGATION = [
     },
 ];
 
-const ColorModeContext = React.createContext({ toggleColorMode: () => { } });
+import { useTheme } from '../context/ThemeContext';
 
 
 function DashboardPage() {
@@ -1934,10 +1895,10 @@ function SettingsPage() {
     };
 
     return (
-        <Box sx={{ p: 2, textAlign: 'right' }}>
+        <Box dir='rtl' sx={{ p: 2 }}>
             <Typography variant="h4" gutterBottom>إعدادات الحساب</Typography>
             
-            <Paper sx={{ p: 2, borderRadius: 2, minHeight: 200, textAlign: 'right' }}>
+            <Paper dir='rtl' sx={{ p: 2, borderRadius: 2, minHeight: 200, textAlign: 'left' }}>
                 <Typography variant="h6" color="text.secondary" gutterBottom>
                     إدارة الحساب
                 </Typography>
@@ -1946,7 +1907,7 @@ function SettingsPage() {
                     <Typography variant="body1" color="text.secondary" gutterBottom>
                         معلومات الحساب الحالي:
                     </Typography>
-                    <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1, mb: 3 }}>
+                    <Box sx={{ p: 2, bgcolor: 'background.default', border: 1, borderColor: 'divider', borderRadius: 1, mb: 3 }}>
                         <Typography variant="body2">
                             <strong>الاسم:</strong> {userProfile?.cli_name || userProfile?.org_name || userProfile?.adm_name || 'غير محدد'}
                         </Typography>
@@ -2073,7 +2034,7 @@ export default function ClientDashboard(props) {
     const [mobileOpen, setMobileOpen] = React.useState(false);
     const [open, setOpen] = React.useState(true);
     const [openReports, setOpenReports] = React.useState(false);
-    const [mode, setMode] = React.useState('light');
+    const { mode, toggleMode } = useTheme();
     const [isMobile, setIsMobile] = React.useState(false);
 
     // Set initial mobile state after component mounts (client-side only)
@@ -2200,14 +2161,7 @@ export default function ClientDashboard(props) {
         [mode]
     );
 
-    const colorMode = React.useMemo(
-        () => ({
-            toggleColorMode: () => {
-                setMode((prevMode) => (prevMode === 'light' ? 'dark' : 'light'));
-            },
-        }),
-        []
-    );
+
 
     const router = useDemoRouter('/profile');
 
@@ -2260,14 +2214,14 @@ export default function ClientDashboard(props) {
                 duration: theme.transitions.duration.leavingScreen,
             }),
             marginRight: open && !isMobile ? theme.spacing(2) + drawerWidth : closedDrawerWidth,
-            [theme.breakpoints.down('sm')]: {
+            [theme.breakpoints.down('md')]: {
                 marginRight: 0,
                 paddingRight: theme.spacing(2),
                 paddingLeft: theme.spacing(2),
                 paddingTop: '50px',
                 marginTop: 0,
             },
-            [theme.breakpoints.up('sm')]: {
+            [theme.breakpoints.up('md')]: {
                 padding: theme.spacing(3),
                 paddingTop: '4px',
             },
@@ -2282,7 +2236,7 @@ export default function ClientDashboard(props) {
             }),
             width: `calc(100% - ${open && !isMobile ? theme.spacing(2) + drawerWidth : closedDrawerWidth}px)`,
             marginLeft: open && !isMobile ? theme.spacing(2) + drawerWidth : closedDrawerWidth,
-            [theme.breakpoints.down('sm')]: {
+            [theme.breakpoints.down('md')]: {
                 width: '100%',
                 marginLeft: 0,
                 // paddingRight: theme.spacing(1),
@@ -2346,7 +2300,6 @@ export default function ClientDashboard(props) {
     return (
         <StyledEngineProvider injectFirst>
             <CacheProvider value={cacheRtl}>
-                <ColorModeContext.Provider value={colorMode}>
                     <ThemeProvider theme={theme}>
                         <Box sx={{ display: 'flex', flexDirection: 'row-reverse' }}>
                             <CssBaseline />
@@ -2425,7 +2378,7 @@ export default function ClientDashboard(props) {
                                     >
                                         <HomeIcon />
                                     </IconButton>
-                                    <IconButton sx={{ mr: 1 }} onClick={colorMode.toggleColorMode} color="inherit">
+                                    <IconButton sx={{ mr: 1 }} onClick={toggleMode} color="inherit">
                                         {theme.palette.mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
                                     </IconButton>
                                     <Button
@@ -2621,7 +2574,6 @@ export default function ClientDashboard(props) {
                             </Alert>
                         </Snackbar>
                     </ThemeProvider>
-                </ColorModeContext.Provider>
             </CacheProvider>
         </StyledEngineProvider>
     );

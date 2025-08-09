@@ -6,7 +6,7 @@ const MobilSection = () => {
   return (
     <Box
       sx={{
-        backgroundColor: "white",
+        // backgroundColor: "white",
         pt: 6,
         // pb: { xs: 6, md: 6 },
         minHeight: "100vh",

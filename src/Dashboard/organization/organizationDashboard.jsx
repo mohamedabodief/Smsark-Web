@@ -17,7 +17,6 @@ import {
     Chip,
     Badge,
     Popover,
-    useTheme,
     useMediaQuery
 } from '@mui/material';
 import PageHeader from '../../componenents/PageHeader';
@@ -256,7 +255,7 @@ const getNavigationItems = (organizationType) => {
     return baseItems;
 };
 
-const ColorModeContext = React.createContext({ toggleColorMode: () => { } });
+import { useTheme } from '../../context/ThemeContext';
 
 function AddUserModal({ open, onClose, onAdd }) {
     const [name, setName] = React.useState('');
@@ -3931,7 +3930,7 @@ export default function OrganizationDashboard(props) {
     const [mobileOpen, setMobileOpen] = React.useState(false);
     const [open, setOpen] = React.useState(true);
     const [openReports, setOpenReports] = React.useState(false);
-    const [mode, setMode] = React.useState('light');
+    const { mode, toggleMode } = useTheme();
     const [isMobile, setIsMobile] = React.useState(false);
     // Set initial mobile state after component mounts (client-side only)
     React.useEffect(() => {
@@ -4040,14 +4039,7 @@ export default function OrganizationDashboard(props) {
         [mode]
     );
 
-    const colorMode = React.useMemo(
-        () => ({
-            toggleColorMode: () => {
-                setMode((prevMode) => (prevMode === 'light' ? 'dark' : 'light'));
-            },
-        }),
-        []
-    );
+
 
     const router = useDemoRouter('/profile');
     const handleReportsClick = () => {
@@ -4074,14 +4066,14 @@ export default function OrganizationDashboard(props) {
                 duration: theme.transitions.duration.leavingScreen,
             }),
             marginRight: open && !isMobile ? theme.spacing(2) + drawerWidth : closedDrawerWidth,
-            [theme.breakpoints.down('sm')]: {
+            [theme.breakpoints.down('md')]: {
                 marginRight: 0,
                 paddingRight: theme.spacing(2),
                 paddingLeft: theme.spacing(2),
                 paddingTop: '50px',
                 marginTop: 0,
             },
-            [theme.breakpoints.up('sm')]: {
+            [theme.breakpoints.up('md')]: {
                 padding: theme.spacing(3),
                 paddingTop: '4px',
             },
@@ -4096,7 +4088,7 @@ export default function OrganizationDashboard(props) {
             }),
             width: `calc(100% - ${open && !isMobile ? theme.spacing(2) + drawerWidth : closedDrawerWidth}px)`,
             marginLeft: open && !isMobile ? theme.spacing(2) + drawerWidth : closedDrawerWidth,
-            [theme.breakpoints.down('sm')]: {
+            [theme.breakpoints.down('md')]: {
                 width: '100%',
                 marginLeft: 0,
                 // paddingRight: theme.spacing(1),
@@ -4213,7 +4205,6 @@ export default function OrganizationDashboard(props) {
     return (
         <StyledEngineProvider injectFirst>
             <CacheProvider value={cacheRtl}>
-                <ColorModeContext.Provider value={colorMode}>
                     <ThemeProvider theme={theme}>
                         <Box sx={{ display: 'flex', flexDirection: 'row-reverse' }}>
                             <CssBaseline />
@@ -4290,7 +4281,7 @@ export default function OrganizationDashboard(props) {
                                     >
                                         <HomeIcon />
                                     </IconButton>
-                                    <IconButton sx={{ mr: 1 }} onClick={colorMode.toggleColorMode} color="inherit">
+                                    <IconButton sx={{ mr: 1 }} onClick={toggleMode} color="inherit">
                                         {theme.palette.mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
                                     </IconButton>
                                     <Button
@@ -4479,7 +4470,6 @@ export default function OrganizationDashboard(props) {
                             </Main>
                         </Box>
                     </ThemeProvider>
-                </ColorModeContext.Provider>
             </CacheProvider>
         </StyledEngineProvider>
     );

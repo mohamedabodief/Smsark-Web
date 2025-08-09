@@ -1559,7 +1559,7 @@ const Analytics = () => {
       <EnhancedPieChart 
         data={chartData} 
         title="تحليل إعلانات العملاء"
-        colors={[colors.success, colors.grey, colors.warning, colors.success, colors.error]}
+        colors={[colors.success, colors.grey, colors.warning, colors.primary, colors.error]}
       />
     );
   };
@@ -1703,7 +1703,7 @@ const Analytics = () => {
 
     return (
       <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
-        <Typography variant="h5" gutterBottom sx={{ textAlign: 'right', mb: 3 }}>
+        <Typography variant="h5" gutterBottom sx={{ textAlign: 'left', mb: 3 }}>
           ملخص شامل لإعلانات العملاء
         </Typography>
         <Grid container spacing={3}>
@@ -2053,7 +2053,7 @@ const Analytics = () => {
           </Grid>
           <Grid item xs={12}>
             <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
-              <Typography variant="h6" gutterBottom sx={{ textAlign: 'right' }}>
+              <Typography variant="h6" gutterBottom sx={{ textAlign: 'left' }}>
                 إحصائيات مفصلة للإعلانات
               </Typography>
               <Grid container spacing={2}>
