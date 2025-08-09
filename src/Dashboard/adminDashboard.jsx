@@ -1,8 +1,9 @@
 import * as React from 'react';
 import { useState, useEffect, useMemo , useRef } from 'react';
 import { useSelector, useDispatch, shallowEqual } from 'react-redux';
-import { createTheme, ThemeProvider, styled } from '@mui/material/styles';
+import { createTheme, ThemeProvider, styled, useTheme as useMuiTheme } from '@mui/material/styles';
 import { db } from '../FireBase/firebaseConfig';
+
 import {
     Typography, Box, Paper, Tabs, Tab, CssBaseline, AppBar, Toolbar, IconButton, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Divider, Avatar, Button, Collapse, Grid, Dialog, DialogTitle, DialogContent, DialogActions, TextField, ListItemAvatar, Tooltip,
     Snackbar,
@@ -25,7 +26,6 @@ import {
     TableContainer,
     TableHead,
     TableRow,
-    useTheme,
     useMediaQuery
 } from '@mui/material';
 import PeopleIcon from '@mui/icons-material/People'; // Icon for Users
@@ -157,6 +157,7 @@ import AddHomepageAdModal from './adminDashboard/AddHomepageAdModal';
 import EditHomepageAdModal from './adminDashboard/EditHomepageAdModal';
 import RejectionReasonModal from './organization/modals/RejectionReasonModal';
 import Analytics from '../pages/Analytics';
+import { useTheme } from '../context/ThemeContext';
 // Create RTL cache for Emotion
 const cacheRtl = createCache({
     key: 'mui-rtl',
@@ -237,7 +238,7 @@ const NAVIGATION = [
     },
 ];
 
-const ColorModeContext = React.createContext({ toggleColorMode: () => { } });
+// Removed ThemeContext import
 
 function AddUserModal({ open, onClose, onAdd }) {
     const [name, setName] = React.useState('');
@@ -330,16 +331,16 @@ function ConfirmDeleteModal({ open, onClose, onConfirm, itemType, itemId, itemNa
         <Dialog open={open} onClose={onClose}>
             <DialogTitle sx={{ textAlign: 'left' }}>تأكيد الحذف</DialogTitle>
             <DialogContent sx={{ textAlign: 'right' }}>
-                <Typography>
-                    هل أنت متأكد من حذف {itemType}: <strong>{itemName} (ID: {itemId})</strong>?
+                <Typography dir="rtl">
+                    هل أنت متأكد من حذف {itemType}: <strong>{itemName || 'null'} (ID: {itemId})</strong> ؟ 
                 </Typography>
-                <Typography color="error">لا يمكن التراجع عن هذه الإجراء.</Typography>
+                <Typography dir="rtl" color="error">لا يمكن التراجع عن هذه الإجراء.</Typography>
             </DialogContent>
             <DialogActions sx={{ flexDirection: 'row-reverse' }}>
                 <Button onClick={onConfirm} variant="contained" color="error">
                     حذف
                 </Button>
-                <Button onClick={onClose}>إلغاء</Button>
+                <Button variant="contained" onClick={onClose}>إلغاء</Button>
             </DialogActions>
         </Dialog>
     );
@@ -1250,8 +1251,8 @@ function UsersPage() {
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
     // Responsiveness hook
-    const theme = useTheme();
-    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    const theme = useMuiTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
     useEffect(() => {
         if (activeTab === 'users' && (clientsStatus === 'idle' || clientsStatus === 'failed')) {
@@ -1379,19 +1380,34 @@ function UsersPage() {
 
         const columns = [
             { id: 'name', label: 'الاسم' },
-            { id: 'contact', label: 'البريد الإلكتروني / الهاتف' },
-            { id: 'actions', label: 'إجراءات' },
+            { id: 'contact', label: 'معلومات التواصل' },
+            { id: 'actions', label: 'الإجراءات' },
         ];
 
         return (
-            <TableContainer sx={{ overflowX: 'auto' }}>
-                <Table>
+            <TableContainer sx={{ 
+                overflowX: 'auto',
+                border: '1px solid #ccc',
+                borderRadius: '15px',
+                '& .MuiTableCell-root': {
+                    textAlign: 'center',
+                    padding: '12px 16px',
+                },
+                '& .MuiTableHead-root .MuiTableCell-root': {
+                    fontWeight: 'bold',
+                    backgroundColor: (theme) => theme.palette.mode === 'light' ? '#f5f5f5' : '#1e1e1e',
+                },
+                '& .MuiTableRow-hover:hover': {
+                    backgroundColor: (theme) => theme.palette.action.hover,
+                }
+            }}>
+                <Table sx={{ tableLayout: 'fixed' }}>
                     <TableHead>
                         <TableRow>
                             {columns.map((column) => (
                                 <TableCell
                                     key={column.id}
-                                    sx={{ fontWeight: 'bold', minWidth: isMobile && column.id === 'contact' ? 150 : 'auto' }}
+                                    sx={{ width: '33.33%' }}
                                 >
                                     {column.label}
                                 </TableCell>
@@ -1400,28 +1416,48 @@ function UsersPage() {
                     </TableHead>
                     <TableBody>
                         {filteredData.map((item) => (
-                            <TableRow key={item.uid}>
-                                <TableCell>
-                                    <Typography variant="body1">{item.cli_name || item.org_name || item.adm_name}</Typography>
-                                </TableCell>
-                                <TableCell>
-                                    <Typography variant="body2" color="text.secondary">
-                                        {item.email ? `Email: ${item.email}` : ''}
-                                        {item.email && item.phone ? ' | ' : ''}
-                                        {item.phone ? `Phone: ${item.phone}` : ''}
+                            <TableRow 
+                                key={item.uid}
+                                hover
+                                sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+                            >
+                                <TableCell sx={{ width: '33.33%' }}>
+                                    <Typography variant="body1" noWrap>
+                                        {item.cli_name || item.org_name || item.adm_name}
                                     </Typography>
                                 </TableCell>
-                                <TableCell>
-                                    <Stack direction="row" spacing={1}>
-                                        <IconButton
-                                            edge="start"
-                                            aria-label="delete"
-                                            onClick={() => handleDeleteItem(item.uid, type, item.cli_name || item.org_name || item.adm_name)}
-                                            sx={{ color: 'red' }}
-                                        >
-                                            <DeleteIcon />
-                                        </IconButton>
-                                    </Stack>
+                                <TableCell sx={{ width: '33.33%' }}>
+                                    <Box sx={{ 
+                                        display: 'flex', 
+                                        flexDirection: 'column',
+                                        alignItems: 'center',
+                                        gap: 0.5
+                                    }}>
+                                        {item.email && (
+                                            <Typography variant="body2" color="text.secondary" noWrap>
+                                                {item.email}
+                                            </Typography>
+                                        )}
+                                        {item.phone && (
+                                            <Typography variant="body2" color="text.secondary" noWrap>
+                                                {item.phone}
+                                            </Typography>
+                                        )}
+                                    </Box>
+                                </TableCell>
+                                <TableCell sx={{ width: '33.33%' }}>
+                                    <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                                        <Tooltip title='حذف'>
+                                            <IconButton
+                                                edge="start"
+                                                aria-label="delete"
+                                                onClick={() => handleDeleteItem(item.uid, type, item.cli_name || item.org_name || item.adm_name)}
+                                                sx={{ color: 'error.main' }}
+                                            >
+                                                <DeleteIcon />
+                                            </IconButton>
+                                        </Tooltip>
+                                    </Box>
                                 </TableCell>
                             </TableRow>
                         ))}
@@ -1474,7 +1510,7 @@ function UsersPage() {
                             <Typography variant="h6" sx={{ fontWeight: 'bold' }} color="text.secondary">قائمة العملاء</Typography>
                             <Box sx={{ display: 'flex', gap: 1, width: { xs: '100%', sm: 'auto' } }}>
                                 <TextField
-                                    label="بحث بالاسم أو البريد الإلكتروني"
+                                    label="بحث بالاسم"
                                     variant="outlined"
                                     size="small"
                                     value={searchTerm}
@@ -1522,7 +1558,7 @@ function UsersPage() {
                                     <Typography variant="h6" color="text.secondary">قائمة المطورين العقاريين</Typography>
                                     <Box sx={{ display: 'flex', gap: 1, width: { xs: '100%', sm: 'auto' } }}>
                                         <TextField
-                                            label="بحث بالاسم أو البريد الإلكتروني"
+                                            label="بحث بالاسم"
                                             variant="outlined"
                                             size="small"
                                             value={searchTerm}
@@ -1551,7 +1587,7 @@ function UsersPage() {
                                     <Typography variant="h6" color="text.secondary">قائمة الممولين العقاريين</Typography>
                                     <Box sx={{ display: 'flex', gap: 1, width: { xs: '100%', sm: 'auto' } }}>
                                         <TextField
-                                            label="بحث بالاسم أو البريد الإلكتروني"
+                                            label="بحث بالاسم"
                                             variant="outlined"
                                             size="small"
                                             value={searchTerm}
@@ -1582,7 +1618,7 @@ function UsersPage() {
                             <Typography variant="h6" color="text.secondary">قائمة المدراء</Typography>
                             <Box sx={{ display: 'flex', gap: 1, width: { xs: '100%', sm: 'auto' } }}>
                                 <TextField
-                                    label="بحث بالاسم أو البريد الإلكتروني"
+                                    label="بحث بالاسم"
                                     variant="outlined"
                                     size="small"
                                     value={searchTerm}
@@ -2986,7 +3022,7 @@ function PaidAdvertismentPage() {
                     }}
                     autoHeight
                     disableRowSelectionOnClick
-                    sx={{ background: '#fff', borderRadius: 2, mb: 2 }}
+                    sx={{ background: 'background.default', borderRadius: 2, mb: 2 }}
                     showToolbar
                 />
             );
@@ -3003,7 +3039,7 @@ function PaidAdvertismentPage() {
                     }}
                     autoHeight
                     disableRowSelectionOnClick
-                    sx={{ background: '#fff', borderRadius: 2, mb: 2 }}
+                    sx={{ background: 'background.default', borderRadius: 2, mb: 2 }}
                     showToolbar
                 />
             );
@@ -3100,10 +3136,10 @@ function PaidAdvertismentPage() {
                     </DialogContentText>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setOpenDeleteDialog(false)} color="primary" disabled={loading.developer || loading.funder}>
+                    <Button onClick={() => setOpenDeleteDialog(false)} variant="contained" color="primary" disabled={loading.developer || loading.funder}>
                         إلغاء
                     </Button>
-                    <Button onClick={handleConfirmDelete} color="error" autoFocus disabled={loading.developer || loading.funder}>
+                    <Button onClick={handleConfirmDelete}  color="error" autoFocus disabled={loading.developer || loading.funder}>
                         حذف
                     </Button>
                 </DialogActions>
@@ -3135,7 +3171,6 @@ function PaidAdvertismentPage() {
   </DialogActions>
 </Dialog>
 
-            {/* NEW: Activation Duration Menu */}
             <Menu
                 anchorEl={activationMenuAnchorEl}
                 open={Boolean(activationMenuAnchorEl)}
@@ -3721,6 +3756,8 @@ function ClientAdvertismentPage() {
         },
     ];
 
+    const theme = useMuiTheme();
+
     return (
         <Box
             dir={'rtl'}
@@ -3806,8 +3843,11 @@ function ClientAdvertismentPage() {
                             minHeight: 0,
                             overflow: 'auto',
                             '& .MuiDataGrid-columnHeaders': {
-                                backgroundColor: '#f0f0f0',
-                                color: 'rgba(0, 0, 0, 0.87)',
+                                backgroundColor: theme.palette.mode === 'dark' ? theme.palette.background.paper : '#f0f0f0',
+                                color: theme.palette.text.primary,
+                            },
+                            '& .MuiDataGrid-cell': {
+                                color: theme.palette.text.primary,
                             },
                             '& .MuiDataGrid-row:nth-of-type(odd)': {
                                 backgroundColor: 'rgba(0, 0, 0, 0.02)',
@@ -3942,10 +3982,10 @@ function ClientAdvertismentPage() {
                     />
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setOpenRejectDialog(false)} color="primary" disabled={loading}>
+                    <Button onClick={() => setOpenRejectDialog(false)} variant="contained" color="primary" disabled={loading}>
                         إلغاء
                     </Button>
-                    <Button onClick={handleConfirmReject} color="error" autoFocus disabled={loading}>
+                    <Button onClick={handleConfirmReject}  color="error" autoFocus disabled={loading}>
                         رفض
                     </Button>
                 </DialogActions>
@@ -4636,7 +4676,7 @@ function OrdersPage() {
 }
 function ReportsPage() {
     const dispatch = useDispatch();
-    const theme = useTheme(); // Access theme for consistent styling
+    const theme = useMuiTheme();
 
     // Get data from Redux store
     const clients = useSelector((state) => state.adminUsers.clients);
@@ -5147,7 +5187,7 @@ export default function AdminDashboard(props) {
     const [mobileOpen, setMobileOpen] = React.useState(false);
     const [open, setOpen] = React.useState(true);
     const [openReports, setOpenReports] = React.useState(false);
-    const [mode, setMode] = React.useState('light');
+    const { mode, toggleMode } = useTheme();
     const [isMobile, setIsMobile] = React.useState(false);
 
     // Set initial mobile state after component mounts (client-side only)
@@ -5247,14 +5287,7 @@ export default function AdminDashboard(props) {
         [mode]
     );
 
-    const colorMode = React.useMemo(
-        () => ({
-            toggleColorMode: () => {
-                setMode((prevMode) => (prevMode === 'light' ? 'dark' : 'light'));
-            },
-        }),
-        []
-    );
+
 
     const router = useDemoRouter('/profile');
     const dispatch = useDispatch();
@@ -5307,16 +5340,16 @@ export default function AdminDashboard(props) {
                 duration: theme.transitions.duration.leavingScreen,
             }),
             marginRight: open && !isMobile ? theme.spacing(2) + drawerWidth : closedDrawerWidth,
-            [theme.breakpoints.down('sm')]: {
+            [theme.breakpoints.down('md')]: {
                 marginRight: 0,
                 paddingRight: theme.spacing(2),
                 paddingLeft: theme.spacing(2),
                 paddingTop: '50px',
                 marginTop:0,
             },
-            [theme.breakpoints.up('sm')]: {
+            [theme.breakpoints.up('md')]: {
                 padding: theme.spacing(3),
-                paddingTop:'4px',
+                paddingTop:'1px',
             },
         })
     );
@@ -5329,7 +5362,7 @@ export default function AdminDashboard(props) {
             }),
             width: `calc(100% - ${open && !isMobile ? theme.spacing(2) + drawerWidth : closedDrawerWidth}px)`,
             marginLeft: open && !isMobile ? theme.spacing(2) + drawerWidth : closedDrawerWidth,
-            [theme.breakpoints.down('sm')]: {
+            [theme.breakpoints.down('md')]: {
                 width: '100%',
                 marginLeft: 0,
                 // paddingRight: theme.spacing(1),
@@ -5427,7 +5460,6 @@ export default function AdminDashboard(props) {
     return (
         <StyledEngineProvider injectFirst>
             <CacheProvider value={cacheRtl}>
-                <ColorModeContext.Provider value={colorMode}>
                     <ThemeProvider theme={theme}>
                         <Box sx={{ display: 'flex', flexDirection: 'row-reverse' }}>
                             <CssBaseline />
@@ -5504,7 +5536,7 @@ export default function AdminDashboard(props) {
                                     >
                                         <HomeIcon />
                                     </IconButton>
-                                    <IconButton sx={{ mr: 1 }} onClick={colorMode.toggleColorMode} color="inherit">
+                                    <IconButton sx={{ mr: 1 }} onClick={toggleMode} color="inherit">
                                         {theme.palette.mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
                                     </IconButton>
                                     <Button
@@ -5679,7 +5711,6 @@ export default function AdminDashboard(props) {
                             </Main>
                         </Box>
                     </ThemeProvider>
-                </ColorModeContext.Provider>
             </CacheProvider>
         </StyledEngineProvider>
     );

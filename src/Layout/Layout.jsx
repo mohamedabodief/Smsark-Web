@@ -1,12 +1,14 @@
 // src/Layout.jsx
-import React, { useState, useMemo } from "react";
+import React, { useMemo } from "react";
 import { ThemeProvider, createTheme, CssBaseline, Box } from "@mui/material";
 import Nav from "../componenents/Nav";
 import Footer from "../componenents/Footer";
 import { useLocation } from "react-router-dom";
 import { UnreadMessagesProvider } from "../context/unreadMessageContext";
+import { useTheme } from "../context/ThemeContext";
+
 export default function Layout({ children }) {
-  const [mode, setMode] = useState("light");
+  const { mode } = useTheme();
   const location = useLocation();
 
   const theme = useMemo(
@@ -24,10 +26,6 @@ export default function Layout({ children }) {
       }),
     [mode]
   );
-
-  const toggleMode = () => {
-    setMode((prev) => (prev === "light" ? "dark" : "light"));
-  };
 
   // Determine if current route is a dashboard
   const isDashboard = [
@@ -55,7 +53,7 @@ export default function Layout({ children }) {
           minHeight: "100vh",
         }}
         >
-          {!isDashboardNav && <Nav toggleMode={toggleMode} />}
+          {!isDashboardNav && <Nav />}
           <Box component="main" sx={{ mt: { xs: 5, md: 8 }, flex: 1 }}>
             {children}
           </Box>

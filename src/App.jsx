@@ -52,6 +52,7 @@ import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { SearchProvider } from "./context/searchcontext";
 import { useSelector } from 'react-redux';
+import { ThemeProvider } from "./context/ThemeContext";
 
 // Dashboard Router Component - Only for admin users
 function DashboardRouter() {
@@ -225,140 +226,141 @@ function App() {
   return (
     <>
       <AuthSync />
-      <Layout>
-        <Routes>
-          <Route path="/" element={<Navigate to="/home" replace />} />
-          <Route path="/home" element={<Home />} />
-          {/* <Route path="/" element={<Navigate to="/login" replace />} /> */}
-          <Route path="/home" element={<Home />} />
-          {/* صفحات الدخول والتسجيل */}
-          <Route path="login" element={<LoginRegister />} />
-          <Route path="register" element={<LoginRegister />} />
-          <Route path="/registration-success" element={<RegistrationSuccess />} />
-          {/* صفحات عامة */}
-          <Route path="/about" element={<AboutUs />} />
-          <Route path="/contact" element={<ContactUs />} />
-          <Route path="/favorite" element={<Favorite />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/search" element={<SearchPage />} />
-          <Route path="/inbox" element={<InboxChats />} />
-          <Route path="/privateChat/:id" element={<ChatBox />} />
-          {/* خدمات الإعلانات */}
-          <Route path="/services/sell" element={<SellAds />} />
-          <Route path="/services/rent" element={<RentAds />} />
-          <Route path="/services/buy" element={<BuyAds />} />
-          <Route path="/services/finance" element={<FinancingAdsPage />} />
+      <ThemeProvider>
+        <Layout>
+          <Routes>
+            <Route path="/" element={<Navigate to="/home" replace />} />
+            <Route path="/home" element={<Home />} />
+            {/* <Route path="/" element={<Navigate to="/login" replace />} /> */}
+            <Route path="/home" element={<Home />} />
+            {/* صفحات الدخول والتسجيل */}
+            <Route path="login" element={<LoginRegister />} />
+            <Route path="register" element={<LoginRegister />} />
+            <Route path="/registration-success" element={<RegistrationSuccess />} />
+            {/* صفحات عامة */}
+            <Route path="/about" element={<AboutUs />} />
+            <Route path="/contact" element={<ContactUs />} />
+            <Route path="/favorite" element={<Favorite />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/search" element={<SearchPage />} />
+            <Route path="/inbox" element={<InboxChats />} />
+            <Route path="/privateChat/:id" element={<ChatBox />} />
+            {/* خدمات الإعلانات */}
+            <Route path="/services/sell" element={<SellAds />} />
+            <Route path="/services/rent" element={<RentAds />} />
+            <Route path="/services/buy" element={<BuyAds />} />
+            <Route path="/services/finance" element={<FinancingAdsPage />} />
 
-          <Route path="/chat" element={<ChatAiPage />} />
+            <Route path="/chat" element={<ChatAiPage />} />
 
-          {/* <AddMultipleAdsOnce/> */}
-          <Route path="/services/developmentAds" element={<DeveloperAdsPage />} />
-          {/* صفحات الإعلانات العقارية */}
-          <Route path="/RealEstateDeveloperAnnouncement" element={<PropertyPage />} />
-          <Route path="/AdddeveloperAds" element={<PropertyPage />} />
-          {/* صفحات الباقات */}
-          <Route path="/packages" element={<AdPackages />} />
-          <Route path="/Client-packages" element={<AdPackagesClient />} />
-          {/* صفحات الإدخال والنماذج */}
-          <Route path="/add-financing-ad" element={<AddFinancingAdForm />} />
-          {/* <Route path="/insert-finance-data" element={<FinancingAdvExample />} /> */}
-          {/* <Route path="/insert-dev-data" element={<RealEstateDevAdvExample />} /> */}
-          <Route path="/financing-request" element={<FinancingRequestForm />} />
-          <Route path="/AddAdvertisement" element={<ModernRealEstateForm />} />
-          {/* صفحات الداشبورد */}
-          <Route element={<PrivateRoute />}>
-            <Route path="/dashboard" element={<DashboardRouter />} />
-            <Route path="/admin-dashboard" element={<DashboardGuard><AdminDashboard /></DashboardGuard>} />
-            <Route path="/client-dashboard" element={<ClientDashboard />} />
-            <Route path="/organization-dashboard" element={<OrganizationDashboard />} />
-            <Route path="/analytics" element={<Analytics />} />
-          </Route>
-          {/* صفحات التفاصيل */}
-          <Route path="/detailsForDevelopment/:id" element={<DetailsForDevelopment />} />
-          <Route path="/detailsForDevelopment" element={<Navigate to="/RealEstateDeveloperAnnouncement" replace />} />
-          <Route path="/details/financingAds/:id" element={<DetailsForFinancingAds />} />
-          <Route path="/details/clientAds/:id" element={<DetailsForClient />} />
-          <Route path="/details/developmentAds/:id" element={<DetailsForDevelopment />} />
-          <Route path="/detailsForClient/:id" element={<DetailsForClient />} />
-          {/* صفحات التفاصيل القديمة (للتوافق) */}
-          <Route path="details">
-            <Route path="financingAds/:id" element={<DetailsForFinancingAds />} />
-            {/* <Route path="clientAds/:id" element={<DetailsForClient />} /> */}
-            <Route path="developmentAds/:id" element={<DetailsForDevelopment />} />
-          </Route>
-        </Routes>
-        {/* <Footer /> */}
-      </Layout>
-      <Snackbar
-        autoHideDuration={10000}
-        open={openSnackbar}
-        onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+            {/* <AddMultipleAdsOnce/> */}
+            <Route path="/services/developmentAds" element={<DeveloperAdsPage />} />
+            {/* صفحات الإعلانات العقارية */}
+            <Route path="/RealEstateDeveloperAnnouncement" element={<PropertyPage />} />
+            <Route path="/AdddeveloperAds" element={<PropertyPage />} />
+            {/* صفحات الباقات */}
+            <Route path="/packages" element={<AdPackages />} />
+            <Route path="/Client-packages" element={<AdPackagesClient />} />
+            {/* صفحات الإدخال والنماذج */}
+            <Route path="/add-financing-ad" element={<AddFinancingAdForm />} />
+            {/* <Route path="/insert-finance-data" element={<FinancingAdvExample />} /> */}
+            {/* <Route path="/insert-dev-data" element={<RealEstateDevAdvExample />} /> */}
+            <Route path="/financing-request" element={<FinancingRequestForm />} />
+            <Route path="/AddAdvertisement" element={<ModernRealEstateForm />} />
+            {/* صفحات الداشبورد */}
+            <Route element={<PrivateRoute />}>
+              <Route path="/dashboard" element={<DashboardRouter />} />
+              <Route path="/admin-dashboard" element={<DashboardGuard><AdminDashboard /></DashboardGuard>} />
+              <Route path="/client-dashboard" element={<ClientDashboard />} />
+              <Route path="/organization-dashboard" element={<OrganizationDashboard />} />
+              <Route path="/analytics" element={<Analytics />} />
+            </Route>
+            {/* صفحات التفاصيل */}
+            <Route path="/detailsForDevelopment/:id" element={<DetailsForDevelopment />} />
+            <Route path="/detailsForDevelopment" element={<Navigate to="/RealEstateDeveloperAnnouncement" replace />} />
+            <Route path="/details/financingAds/:id" element={<DetailsForFinancingAds />} />
+            <Route path="/details/clientAds/:id" element={<DetailsForClient />} />
+            <Route path="/details/developmentAds/:id" element={<DetailsForDevelopment />} />
+            <Route path="/detailsForClient/:id" element={<DetailsForClient />} />
+            {/* صفحات التفاصيل القديمة (للتوافق) */}
+            <Route path="details">
+              <Route path="financingAds/:id" element={<DetailsForFinancingAds />} />
+              {/* <Route path="clientAds/:id" element={<DetailsForClient />} /> */}
+              <Route path="developmentAds/:id" element={<DetailsForDevelopment />} />
+            </Route>
+          </Routes>
+          {/* <Footer /> */}
+        </Layout>
+        <Snackbar
+          autoHideDuration={10000}
+          open={openSnackbar}
+          onClose={handleCloseSnackbar}
+          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
 
-      >
-        <Alert
-          severity="info"
-          action={
-            <>
-              {/* <Button color="inherit" size="small" sx={{ fontWeight: 'bold', fontSize: '18px' }} onClick={handleOpenChat}>
-                فتح
-              </Button> */}
-              <Button color="inherit" size="small" sx={{ fontWeight: 'bold', fontSize: '18px' }} onClick={handleMarkAsRead}>
-                تحديد كمقروء
-              </Button>
-              <Button color="inherit" size="small" sx={{ fontWeight: 'bold', fontSize: '18px' }} onClick={handleCloseSnackbar}>
-                إغلاق
-              </Button>
-            </>
-          }
-          sx={{
-            width: '100%',
-            maxWidth: '400px',
-            textAlign: 'right',
-            backgroundColor: '#ffffff',
-            borderRadius: '8px',
-            padding: '16px',
-            fontSize: '20px',
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-            '& .MuiAlert-icon': {
-              marginRight: '12px',
-            },
-            '& .MuiAlert-message': {
-              padding: '8px 0',
-            },
-          }}
         >
-          <strong>{currentNotification?.title}</strong>
-          <br />
-          {currentNotification?.body}
-        </Alert>
-      </Snackbar>
-      <Dialog open={openPermissionDialog} onClose={() => setOpenPermissionDialog(false)}>
-        <DialogTitle>🔔 تفعيل إشعارات الصوت</DialogTitle>
-        <DialogContent>
-          هل ترغب في تفعيل الإشعارات حتى يتم إعلامك بالتحديثات؟
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenPermissionDialog(false)} color="error">
-            لا، شكرًا
-          </Button>
-          <Button
-            onClick={async () => {
-              const permission = await Notification.requestPermission();
-              if (permission === "granted") {
-                setSoundEnabled(true);
-                setOpenPermissionDialog(false);
-                notificationSound.play().catch(err => console.error("فشل في تشغيل الصوت:", err));
-              }
+          <Alert
+            severity="info"
+            action={
+              <>
+                {/* <Button color="inherit" size="small" sx={{ fontWeight: 'bold', fontSize: '18px' }} onClick={handleOpenChat}>
+                  فتح
+                </Button> */}
+                <Button color="inherit" size="small" sx={{ fontWeight: 'bold', fontSize: '18px' }} onClick={handleMarkAsRead}>
+                  تحديد كمقروء
+                </Button>
+                <Button color="inherit" size="small" sx={{ fontWeight: 'bold', fontSize: '18px' }} onClick={handleCloseSnackbar}>
+                  إغلاق
+                </Button>
+              </>
+            }
+            sx={{
+              width: '100%',
+              maxWidth: '400px',
+              textAlign: 'right',
+              backgroundColor: '#ffffff',
+              borderRadius: '8px',
+              padding: '16px',
+              fontSize: '20px',
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+              '& .MuiAlert-icon': {
+                marginRight: '12px',
+              },
+              '& .MuiAlert-message': {
+                padding: '8px 0',
+              },
             }}
-            color="primary"
-            autoFocus
           >
-            نعم، فعّل الإشعارات
-          </Button>
-        </DialogActions>
-      </Dialog>
-              {!isFabHidden && (
+            <strong>{currentNotification?.title}</strong>
+            <br />
+            {currentNotification?.body}
+          </Alert>
+        </Snackbar>
+        <Dialog open={openPermissionDialog} onClose={() => setOpenPermissionDialog(false)}>
+          <DialogTitle>🔔 تفعيل إشعارات الصوت</DialogTitle>
+          <DialogContent>
+            هل ترغب في تفعيل الإشعارات حتى يتم إعلامك بالتحديثات؟
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setOpenPermissionDialog(false)} color="error">
+              لا، شكرًا
+            </Button>
+            <Button
+              onClick={async () => {
+                const permission = await Notification.requestPermission();
+                if (permission === "granted") {
+                  setSoundEnabled(true);
+                  setOpenPermissionDialog(false);
+                  notificationSound.play().catch(err => console.error("فشل في تشغيل الصوت:", err));
+                }
+              }}
+              color="primary"
+              autoFocus
+            >
+              نعم، فعّل الإشعارات
+            </Button>
+          </DialogActions>
+        </Dialog>
+                {!isFabHidden && (
           <Box
             sx={{
               position: 'fixed',
@@ -378,6 +380,7 @@ function App() {
           </Box>
         )}
 
+      </ThemeProvider>
     </>
   );
 }
