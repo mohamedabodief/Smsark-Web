@@ -625,7 +625,7 @@ function SearchInput() {
           renderInput={(params) => (
             <TextField
               {...params}
-              placeholder="ادخل اسم المدينة أو المنطقة"
+              placeholder="ادخل اسم المدينة أو المنطقة أو عنوان الاعلان"
               variant="outlined"
               sx={{
                 width: '30vw',
