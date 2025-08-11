@@ -633,8 +633,11 @@ function SearchInput() {
                   borderRadius: '100px',
                   height: '50px',
                   padding: '0 10px',
-                  backgroundColor: '#F7F7F7',
-                  color: '#333',
+                  backgroundColor: (theme) =>
+                    theme.palette.mode === 'light'
+                      ? theme.palette.grey[50]
+                      : theme.palette.grey[900],
+                  color: (theme) => theme.palette.text.primary,
                   transition: 'none',
                   '& fieldset': {
                     border: '0',
@@ -643,15 +646,16 @@ function SearchInput() {
                     border: '0',
                   },
                   '&.Mui-focused fieldset': {
-                    border: '2px solid #1976d2',
+                    border: (theme) => `2px solid ${theme.palette.primary.main}`,
                   },
                   '&.Mui-focused': {
-                    backgroundColor: '#F7F7F7 !important',
+                    backgroundColor: (theme) =>
+                      `${theme.palette.mode === 'light' ? theme.palette.grey[50] : theme.palette.grey[900]} !important`,
                     boxShadow: 'none !important',
                   },
                 },
                 '& input': {
-                  color: '#333',
+                  color: (theme) => theme.palette.text.primary,
                   fontSize: '20px',
                 },
                 'input:-webkit-autofill': {
@@ -679,23 +683,29 @@ function SearchInput() {
               onClick={handleOpenMenu(type)}
               endIcon={<ArrowDropDownIcon />}
               sx={{
-                backgroundColor:
+                backgroundColor: (theme) => {
+                  const isPlaceholder = filters[type] === (type === 'purpose' ? 'الغرض' : 'نوع العقار');
+                  if (isPlaceholder) return theme.palette.background.paper;
+                  return theme.palette.mode === 'light' ? theme.palette.grey[100] : theme.palette.grey[800];
+                },
+                color: (theme) =>
                   filters[type] === (type === 'purpose' ? 'الغرض' : 'نوع العقار')
-                    ? 'white'
-                    : '#F7F7FC',
-                color:
-                  filters[type] === (type === 'purpose' ? 'الغرض' : 'نوع العقار')
-                    ? '#666'
-                    : '#6E00FE',
+                    ? theme.palette.text.secondary
+                    : theme.palette.primary.main,
                 borderRadius: '10px',
                 height: '50px',
                 minWidth: '110px',
                 fontSize: '18px',
                 boxShadow: 'none',
-                border:
+                border: (theme) => `1px solid ${
                   filters[type] !== (type === 'purpose' ? 'الغرض' : 'نوع العقار')
-                    ? '1px solid rgb(178, 128, 245)'
-                    : '1px solid #ccc',
+                    ? theme.palette.primary.light
+                    : theme.palette.divider
+                }`,
+                '&:hover': {
+                  backgroundColor: (theme) =>
+                    theme.palette.mode === 'light' ? theme.palette.grey[100] : theme.palette.grey[800],
+                },
               }}
             >
               {filters[type]}
@@ -708,20 +718,28 @@ function SearchInput() {
               anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
               transformOrigin={{ vertical: 'top', horizontal: 'center' }}
               dir="rtl"
+              PaperProps={{
+                sx: (theme) => ({
+                  bgcolor: theme.palette.background.paper,
+                  color: theme.palette.text.primary,
+                }),
+              }}
             >
               {menuItems[type].map((option) => (
                 <MenuItem
                   key={option}
                   selected={filters[type] === option}
                   onClick={handleSelect(type, option)}
-                  sx={{
-                    backgroundColor: filters[type] === option ? '#f0f0f0' : 'transparent',
-                    color: filters[type] === option ? '#6E00FE' : '#333',
+                  sx={(theme) => ({
+                    backgroundColor:
+                      filters[type] === option ? theme.palette.action.selected : 'transparent',
+                    color:
+                      filters[type] === option ? theme.palette.primary.main : theme.palette.text.primary,
                     fontWeight: filters[type] === option ? 'bold' : 'normal',
                     '&:hover': {
-                      backgroundColor: '#e0e0e0',
+                      backgroundColor: theme.palette.action.hover,
                     },
-                  }}
+                  })}
                 >
                   {option}
                 </MenuItem>
@@ -738,11 +756,24 @@ function SearchInput() {
             sx={{
               height: '50px',
               borderRadius: '10px',
-              color: filters.priceFrom || filters.priceTo ? '#6E00FE' : '#666',
-              border: filters.priceFrom || filters.priceTo ? '1px solid #6E00FE' : '1px solid #ccc',
+              color: (theme) =>
+                (filters.priceFrom || filters.priceTo)
+                  ? theme.palette.primary.main
+                  : theme.palette.text.secondary,
+              border: (theme) => `1px solid ${
+                (filters.priceFrom || filters.priceTo)
+                  ? theme.palette.primary.light
+                  : theme.palette.divider
+              }`,
               fontWeight: 'bold',
-              backgroundColor: 'white',
+              backgroundColor: (theme) => theme.palette.background.paper,
               minWidth: '150px',
+              '&:hover': {
+                backgroundColor: (theme) =>
+                  theme.palette.mode === 'light'
+                    ? theme.palette.grey[100]
+                    : theme.palette.grey[800],
+              },
             }}
           >
             {filters.priceFrom || filters.priceTo

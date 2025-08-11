@@ -2693,7 +2693,7 @@ function PaidAdvertismentPage() {
                 ) : '—'
             ),
         },
-        { field: 'address', headerName: 'العنوان التفصيلي', width: 300 },
+        // { field: 'address', headerName: 'العنوان التفصيلي', width: 300 },
         {
             field: 'actions',
             headerName: 'الإجراءات',
@@ -2841,7 +2841,7 @@ function PaidAdvertismentPage() {
             filterable: false,
         },
         { field: 'phone', headerName: 'رقم الهاتف', width: 150 },
-        { field: 'financing_model', headerName: 'نموذج التمويل', width: 150 },
+        // { field: 'financing_model', headerName: 'نموذج التمويل', width: 150 },
         { field: 'start_limit', headerName: 'حدود التمويل من', width: 120, type: 'number' },
         { field: 'end_limit', headerName: 'حدود التمويل إلى', width: 120, type: 'number' },
         {
@@ -4213,7 +4213,7 @@ function OrdersPage() {
         {
             field: 'id',
             headerName: 'معرف الطلب',
-            width: 120,
+            width: 170,
             renderCell: (params) => (
                 <Chip
                     label={params.value}

@@ -39,7 +39,7 @@ import PaymentsTwoToneIcon from '@mui/icons-material/PaymentsTwoTone';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import NotificationList from '../pages/notificationList';
 import CloseIcon from '@mui/icons-material/Close';
-
+import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
 import LogoutIcon from '@mui/icons-material/Logout';
@@ -512,10 +512,13 @@ function ProfilePage() {
     }
 
     return (
-        <Box sx={{ p: 2, textAlign: 'right' }}>
-            <Typography variant="h3" sx={{ display: 'flex', flexDirection: 'row-reverse', mb: 3 }}>حسابي</Typography>
+        <Box dir="rtl">
+            <PageHeader
+             title="حسابي"
+             icon={AccountCircleIcon}
+             />
             <Paper sx={{ p: 4, borderRadius: 2, minHeight: 400, textAlign: 'right', boxShadow: '0px 0px 8px rgba(0,0,0,0.2)' }}>
-                <Grid container spacing={4} direction="row-reverse">
+                <Grid container spacing={4} direction="row">
                     <Grid item xs={12} md={4} lg={3}> {/* Adjusted column width for avatar */}
                         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
                             <UploadAvatars />
@@ -523,7 +526,7 @@ function ProfilePage() {
                     </Grid>
                     <Grid item xs={12} md={8} lg={9}> {/* Adjusted column width for fields */}
                         <Box>
-                            <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', fontSize: '1.5rem', display: 'flex', flexDirection: 'row-reverse' }}>المعلومات الشخصية</Typography>
+                            <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', fontSize: '1.5rem', display: 'flex', flexDirection: 'row' }}>المعلومات الشخصية</Typography>
 
                             {/* Common Fields */}
                             {userProfile.type_of_user === "client" ? (
@@ -586,7 +589,7 @@ function ProfilePage() {
                                     {resetPasswordLoading ? (
                                         <CircularProgress size={20} color="inherit" />
                                     ) : (
-                                        "إعادة تعيين"
+                                        "إعادة تعيين كلمة المرور"
                                     )}
                                 </Button>
                             </Box>

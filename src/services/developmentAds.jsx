@@ -61,7 +61,10 @@ const DeveloperAdsPage = () => {
         "& .MuiOutlinedInput-root": {
           borderRadius: "100px",
           height: "50px",
-          backgroundColor: "#F7F7F7",
+          backgroundColor: (theme) => 
+            theme.palette.mode === 'light' 
+              ? theme.palette.grey[50] 
+              : theme.palette.grey[900],
           padding: "0 10px",
         },
         "& input": { fontSize: "20px" },
