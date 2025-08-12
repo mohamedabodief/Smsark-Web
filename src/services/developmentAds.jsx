@@ -10,6 +10,8 @@ import {
   TextField,
   InputAdornment,
   Breadcrumbs,
+  Button,
+  Popover,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import { Link } from "react-router-dom";
@@ -17,24 +19,44 @@ import HomeIcon from "@mui/icons-material/Home";
 
 const DeveloperAdsPage = () => {
   const [searchInput, setSearchInput] = useState("");
+   const [priceFrom, setPriceFrom] = useState(""); 
+      const [priceTo, setPriceTo] = useState(""); 
+      const [anchorPrice, setAnchorPrice] = useState(null); 
   const dispatch = useDispatch();
   const { all: allDeveloperAds, loading, error } = useSelector(
     (state) => state.developerAds
   );
+  const handleOpenPrice = (event) => {
+    setAnchorPrice(event.currentTarget);
+  };
 
+  const handleClosePrice = () => {
+    setAnchorPrice(null);
+  };
   useEffect(() => {
     if (allDeveloperAds.length === 0) {
       dispatch(fetchAllDeveloperAds());
     }
   }, [dispatch, allDeveloperAds]);
 
- const filteredAds = allDeveloperAds.filter((ad) => {
-  const search = searchInput.trim().toLowerCase();
-  return (
-    (ad.developer_name || "").includes(search) 
-  );
-  });
+const filteredAds = allDeveloperAds.filter((ad) => {
+    const search = searchInput.trim().toLowerCase();
+    const from = priceFrom ? parseFloat(priceFrom) : null;
+    const to = priceTo ? parseFloat(priceTo) : null;
+    let priceCondition = true;
+    if (from && to) {
+      priceCondition = from <= ad.price_end_to && to >= ad.price_start_from;
+    } else if (from) {
+      priceCondition = ad.price_start_from >= from;
+    } else if (to) {
+      priceCondition = ad.price_end_to <= to;
+    }
 
+    return (
+      ((ad.developer_name || "").toLowerCase().includes(search) || !search) &&
+      priceCondition
+    );
+  });
   return (
   <Container sx={{ mt: "100px" }} dir="rtl">
   {/* الجزء المتمركز في النص */}
@@ -49,7 +71,7 @@ const DeveloperAdsPage = () => {
     <Typography sx={{ m: "20px" }} variant="h3" color="#6E00FE">
       أبرز عروض المطورين
     </Typography>
-
+<Box sx={{ display: "flex", gap: "10px", flexWrap: "wrap", justifyContent: "center" }}>
     <TextField
       placeholder="ادخل اسم المطور"
       variant="outlined"
@@ -77,7 +99,72 @@ const DeveloperAdsPage = () => {
         ),
       }}
     />
-
+     <Button
+                    variant="outlined"
+                    onClick={handleOpenPrice}
+                    sx={{
+                      height: "50px",
+                      borderRadius: "10px",
+                          marginTop: "20px",
+                      color: (theme) =>
+                        priceFrom || priceTo
+                          ? theme.palette.primary.main
+                          : theme.palette.text.secondary,
+                      border: (theme) =>
+                        `1px solid ${
+                          priceFrom || priceTo
+                            ? theme.palette.primary.light
+                            : theme.palette.divider
+                        }`,
+                      fontWeight: "bold",
+                      backgroundColor: (theme) => theme.palette.background.paper,
+                      minWidth: "150px",
+                      "&:hover": {
+                        backgroundColor: (theme) =>
+                          theme.palette.mode === "light"
+                            ? theme.palette.grey[100]
+                            : theme.palette.grey[800],
+                      },
+                    }}
+                  >
+                    {priceFrom || priceTo
+                      ? `من ${priceFrom || "..."} إلى ${priceTo || "..."} ج.م`
+                      : "السعر (جنيه)"}
+                  </Button>
+                  <Popover
+                    open={Boolean(anchorPrice)}
+                    anchorEl={anchorPrice}
+                    onClose={handleClosePrice}
+                    anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+                    transformOrigin={{ vertical: "top", horizontal: "center" }}
+                    dir="rtl"
+                  >
+                    <Box sx={{ padding: "16px", display: "flex", gap: "10px", alignItems: "center", flexDirection: "column" }}>
+                      <TextField
+                        label="من"
+                        type="number"
+                        size="small"
+                        value={priceFrom}
+                        onChange={(e) => setPriceFrom(e.target.value)}
+                      />
+                      <TextField
+                        label="إلى"
+                        type="number"
+                        size="small"
+                        value={priceTo}
+                        onChange={(e) => setPriceTo(e.target.value)}
+                      />
+                      <Button
+                        onClick={handleClosePrice}
+                        variant="contained"
+                        size="small"
+                        sx={{ backgroundColor: "#6E00FE", color: "#fff" }}
+                      >
+                        تم
+                      </Button>
+                    </Box>
+                  </Popover>
+                  </Box>
     <Breadcrumbs
       aria-label="breadcrumb"
       sx={{ mt: 3, mb: 3, width: "100%", maxWidth: "80vw" }}
