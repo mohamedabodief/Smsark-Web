@@ -66,8 +66,10 @@ const SellAds = () => {
               borderRadius: "100px",
               height: "50px",
               padding: "0 10px",
-              backgroundColor: "#F7F7F7",
-              color: "#333",
+              backgroundColor: (theme) => 
+                theme.palette.mode === 'light' 
+                  ? theme.palette.grey[50] 
+                  : theme.palette.grey[900],
               transition: "none",
               "& fieldset": {
                 border: "0",
@@ -76,15 +78,17 @@ const SellAds = () => {
                 border: "0",
               },
               "&.Mui-focused fieldset": {
-                border: "2px solid #1976d2",
+                border: "2px solid#820c99",
               },
               "&.Mui-focused": {
-                backgroundColor: "#F7F7F7 !important",
+                backgroundColor: (theme) => 
+                  theme.palette.mode === 'light' 
+                    ? theme.palette.grey[50] 
+                    : theme.palette.grey[900],
                 boxShadow: "none !important",
               },
             },
             "& input": {
-              color: "#333",
               fontSize: "20px",
             },
             "input:-webkit-autofill": {

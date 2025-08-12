@@ -63,6 +63,37 @@ const Favorite = () => {
   };
 
 
+  // Function to get the correct image URL
+  const getImageUrl = (item) => {
+    if (!item) return '/default-placeholder.png';
+    
+    // Check different possible image properties
+    if (item.image) {
+      // If image is an array, take the first one
+      if (Array.isArray(item.image) && item.image.length > 0) {
+        return item.image[0];
+      }
+      // If it's a string, use it directly
+      if (typeof item.image === 'string') {
+        return item.image;
+      }
+    }
+    
+    // Check for other possible image properties
+    if (item.images && item.images.length > 0) {
+      return Array.isArray(item.images) ? item.images[0] : item.images;
+    }
+    
+    return '/default-placeholder.png';
+  };
+
+  // Handle image error
+  const handleImageError = (e) => {
+    console.log('Image failed to load, using fallback');
+    e.target.onerror = null; // Prevent infinite loop if fallback also fails
+    e.target.src = '/default-placeholder.png';
+  };
+
   return (
     <Box sx={{ p: 4, pt: 13, pb: 8 }}>
       <Typography variant="h4" textAlign="center" fontWeight="bold" mb={4}>
@@ -75,29 +106,33 @@ const Favorite = () => {
         <Typography textAlign="center">لا توجد إعلانات محفوظة في المفضلة.</Typography>
       ) : (
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, justifyContent: 'center' }}>
-          {ads.map((item) => (
-            <Card
-              key={item.id}
-              sx={{
-                width: 320,
-                borderRadius: 3,
-                position: 'relative',
-                cursor: 'pointer',
-              }}
-            >
-              <Box sx={{ position: 'absolute', top: 10, left: 10, zIndex: 10 }} onClick={(e) => e.stopPropagation()}>
-                <FavoriteButton
-                  advertisementId={item.id}
-                // type={item.type}
-                />
-              </Box>
+          {ads.map((item) => {
+            const imageUrl = getImageUrl(item);
+            return (
+              <Card
+              dir="rtl"
+                key={item.id}
+                sx={{
+                  width: 320,
+                  borderRadius: 3,
+                  position: 'relative',
+                  cursor: 'pointer',
+                }}
+              >
+                <Box sx={{ position: 'absolute', top: 10, left: 10, zIndex: 10 }} onClick={(e) => e.stopPropagation()}>
+                  <FavoriteButton
+                    advertisementId={item.id}
+                  />
+                </Box>
 
-              <CardActionArea onClick={() => handleCardClick(item)}>
-                <CardMedia
-                  component="img"
-                  height="160"
-                  image={item.image || '/default-placeholder.png'}
-                />
+                <CardActionArea onClick={() => handleCardClick(item)}>
+                  <CardMedia
+                    component="img"
+                    height="160"
+                    image={imageUrl}
+                    onError={handleImageError}
+                    alt={item.title || 'Property image'}
+                  />
                 <CardContent>
                   {item.price_start_from !== undefined && item.price_end_to !== undefined && (
                     <>
@@ -105,7 +140,12 @@ const Favorite = () => {
                         {item.price_start_from?.toLocaleString()} - {item.price_end_to?.toLocaleString()} ج.م
                       </Typography>
                       <Typography variant="subtitle1">{item.developer_name}</Typography>
-                      <Typography variant="body2" color="text.secondary">{item.location}</Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {item.location ?
+                          `${item.location.governorate || ''} ${item.location.city || ''} ${item.location.detailedAddress || ''}`.trim()
+                          : 'No address available'
+                        }
+                      </Typography>
                       <Typography variant="body2" mt={1}>{item.description}</Typography>
                     </>
                   )}
@@ -131,7 +171,8 @@ const Favorite = () => {
 
               </CardActionArea>
             </Card>
-          ))}
+          );
+        })}
         </Box>
       )}
     </Box>

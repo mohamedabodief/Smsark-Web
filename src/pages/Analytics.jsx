@@ -1602,8 +1602,8 @@ const Analytics = () => {
     const totalRevenue = approvedClientAds.reduce((sum, ad) => sum + (ad.adPackagePrice || 0), 0);
 
     return (
-      <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
-        <Typography variant="h6" gutterBottom sx={{ textAlign: 'right' }}>
+      <Paper direction="rtl" elevation={3} sx={{ p: 3, borderRadius: 2 }}>
+        <Typography variant="h6" gutterBottom sx={{ textAlign: 'left' }}>
           تحليل إعلانات العملاء
         </Typography>
         <Grid container spacing={2}>
