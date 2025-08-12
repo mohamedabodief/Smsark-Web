@@ -457,7 +457,10 @@ function DetailsForClient() {
             sx={{
               border: "1px solid #E7E5F4",
               borderRadius: "20px",
-              backgroundColor: "#F7F7F7",
+              backgroundColor: (theme) => 
+                theme.palette.mode === 'light' 
+                  ? theme.palette.grey[50] 
+                  : theme.palette.grey[900],
               p: 3,
             }}
           >
@@ -575,7 +578,10 @@ function DetailsForClient() {
           </Breadcrumbs>
           <Box
             sx={{
-              backgroundColor: "#F7F7FC",
+              backgroundColor: (theme) => 
+                theme.palette.mode === 'light' 
+                  ? theme.palette.grey[50] 
+                  : theme.palette.grey[900],
               display: "flex",
               gap: "30px",
               height: "20%",

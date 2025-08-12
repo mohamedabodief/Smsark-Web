@@ -493,13 +493,24 @@ const handleSend = async () => {
                 >
                   <Box
                     sx={{
-                      backgroundColor: "#F7F7FC",
+                      backgroundColor: (theme) => 
+                        theme.palette.mode === 'light' 
+                          ? theme.palette.grey[50] 
+                          : theme.palette.grey[900],
                       display: "flex",
                       gap: "30px",
                       height: "20%",
                       width: "100%",
                       padding: "20px",
                       borderRadius: "10px",
+                      border: (theme) => 
+                        `1px solid ${theme.palette.mode === 'light' 
+                          ? theme.palette.grey[200] 
+                          : theme.palette.grey[800]}`,
+                      boxShadow: (theme) =>
+                        theme.palette.mode === 'light'
+                          ? '0 2px 4px rgba(0,0,0,0.05)'
+                          : '0 2px 4px rgba(0,0,0,0.2)',
                     }}
                   >
                     <Avatar

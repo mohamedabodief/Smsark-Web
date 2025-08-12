@@ -73,7 +73,10 @@ function HorizontalCard({ image, title, price, adress, type, status, city, gover
           margin: 'auto',
           marginBottom: '10px',
           '&:hover': {
-            backgroundColor: '#F7F7F7',
+            backgroundColor: (theme) => 
+              theme.palette.mode === 'light' 
+                ? theme.palette.grey[50] 
+                : theme.palette.grey[900],
             transform: 'scale(1.02)',
             boxShadow: '1px 1px 20px rgba(0, 0, 0, 0.1)'
           },
@@ -92,7 +95,10 @@ function HorizontalCard({ image, title, price, adress, type, status, city, gover
             height: 250, 
             position: 'relative',
             overflow: 'hidden', 
-            backgroundColor: '#f0f0f0' 
+            backgroundColor: (theme) => 
+              theme.palette.mode === 'light' 
+                ? theme.palette.grey[50] 
+                : theme.palette.grey[900] 
           }} 
           onClick={(e) => e.stopPropagation()}
         >
@@ -145,7 +151,10 @@ function HorizontalCard({ image, title, price, adress, type, status, city, gover
             display: 'flex',
             justifyContent: 'flex-end',
             alignItems: 'center',
-            backgroundColor: '#FAFAFA',
+            backgroundColor: (theme) => 
+              theme.palette.mode === 'light' 
+                ? theme.palette.grey[50] 
+                : theme.palette.grey[900],
             gap: '10px'
           }}
         >

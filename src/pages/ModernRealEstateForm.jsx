@@ -65,28 +65,41 @@ const StyledCard = styled(Card)(({ theme }) => ({
   marginBottom: theme.spacing(3),
 }));
 
-const StyledTextField = styled(TextField)(({ hasError }) => ({
+const StyledTextField = styled(TextField)(({ theme }) => ({
   "& .MuiInputBase-root": {
     borderRadius: "12px",
-    backgroundColor: "#f8f9fa",
+    backgroundColor:
+      theme.palette.mode === "light"
+        ? theme.palette.grey[50]
+        : theme.palette.grey[900],
+    color: theme.palette.text.primary,
     "&:hover": {
-      backgroundColor: "#f1f3f4",
+      backgroundColor:
+        theme.palette.mode === "light"
+          ? theme.palette.grey[100]
+          : theme.palette.grey[800],
     },
     "&.Mui-focused": {
-      backgroundColor: "#ffffff",
+      backgroundColor:
+        theme.palette.mode === "light"
+          ? theme.palette.common.white
+          : theme.palette.grey[800],
     },
   },
   "& .MuiOutlinedInput-notchedOutline": {
-    borderColor: hasError ? "#d32f2f" : "#e0e0e0",
+    borderColor: theme.palette.divider,
   },
   "&:hover .MuiOutlinedInput-notchedOutline": {
-    borderColor: hasError ? "#d32f2f" : "#1976d2",
+    borderColor: theme.palette.primary.main,
   },
   "& .Mui-focused .MuiOutlinedInput-notchedOutline": {
-    borderColor: hasError ? "#d32f2f" : "#1976d2",
+    borderColor: theme.palette.primary.main,
+  },
+  "& .Mui-error .MuiOutlinedInput-notchedOutline": {
+    borderColor: theme.palette.error.main,
   },
   "& .MuiFormHelperText-root": {
-    color: "#d32f2f",
+    color: theme.palette.error.main,
     fontSize: "0.75rem",
     textAlign: "right",
     marginRight: "14px",
@@ -97,44 +110,62 @@ const StyledTextField = styled(TextField)(({ hasError }) => ({
     right: "auto",
     left: "auto",
     transformOrigin: "right",
+    color: theme.palette.text.secondary,
   },
   "& .MuiInputLabel-shrink": {
     transform: "translate(14px, -9px) scale(0.75)",
   },
 }));
 
-const StyledFormControl = styled(FormControl)(({ hasError }) => ({
+const StyledFormControl = styled(FormControl)(({ theme }) => ({
   "& .MuiInputBase-root": {
     borderRadius: "12px",
-    backgroundColor: "#f8f9fa",
+    backgroundColor:
+      theme.palette.mode === "light"
+        ? theme.palette.grey[50]
+        : theme.palette.grey[900],
+    color: theme.palette.text.primary,
     "&:hover": {
-      backgroundColor: "#f1f3f4",
+      backgroundColor:
+        theme.palette.mode === "light"
+          ? theme.palette.grey[100]
+          : theme.palette.grey[800],
     },
     "&.Mui-focused": {
-      backgroundColor: "#ffffff",
+      backgroundColor:
+        theme.palette.mode === "light"
+          ? theme.palette.common.white
+          : theme.palette.grey[800],
     },
   },
   "& .MuiOutlinedInput-notchedOutline": {
-    borderColor: hasError ? "#d32f2f" : "#e0e0e0",
+    borderColor: theme.palette.divider,
   },
   "&:hover .MuiOutlinedInput-notchedOutline": {
-    borderColor: hasError ? "#d32f2f" : "#1976d2",
+    borderColor: theme.palette.primary.main,
   },
   "& .Mui-focused .MuiOutlinedInput-notchedOutline": {
-    borderColor: hasError ? "#d32f2f" : "#1976d2",
+    borderColor: theme.palette.primary.main,
+  },
+  "& .Mui-error .MuiOutlinedInput-notchedOutline": {
+    borderColor: theme.palette.error.main,
   },
   "& .MuiFormHelperText-root": {
-    color: "#d32f2f",
+    color: theme.palette.error.main,
     fontSize: "0.75rem",
     textAlign: "right",
     marginRight: "14px",
     marginTop: "4px",
+  },
+  "& .MuiSelect-icon": {
+    color: theme.palette.text.secondary,
   },
   "& .MuiInputLabel-root": {
     textAlign: "right",
     right: "auto",
     left: "auto",
     transformOrigin: "right",
+    color: theme.palette.text.secondary,
   },
   "& .MuiInputLabel-shrink": {
     transform: "translate(14px, -9px) scale(0.75)",
@@ -830,7 +861,10 @@ const ModernRealEstateForm = () => {
         className="modern-form-container"
         sx={{
           minHeight: "100vh",
-          backgroundColor: "#f5f5f5",
+          backgroundColor: (theme) => 
+            theme.palette.mode === 'light' 
+              ? theme.palette.grey[50] 
+              : theme.palette.grey[900],
           py: -2,
           direction: "rtl",
         }}
@@ -908,6 +942,11 @@ const ModernRealEstateForm = () => {
                     <Controller
                       name="title"
                       control={control}
+                      backgroundColor={(theme) =>( 
+                        theme.palette.mode === 'light' 
+                          ? theme.palette.grey[50] 
+                          : theme.palette.grey[900]
+                        )}
                       render={({ field }) => (
                         <StyledTextField
                           {...field}
@@ -940,12 +979,32 @@ const ModernRealEstateForm = () => {
                             {...field}
                             displayEmpty
                             error={!!errors.propertyType}
+                            MenuProps={{
+                              PaperProps: {
+                                sx: (theme) => ({
+                                  bgcolor:
+                                    theme.palette.mode === 'light'
+                                      ? theme.palette.background.paper
+                                      : theme.palette.grey[900],
+                                  color: theme.palette.text.primary,
+                                  '& .MuiMenuItem-root': {
+                                    color: theme.palette.text.primary,
+                                  },
+                                  '& .MuiMenuItem-root.Mui-selected': {
+                                    bgcolor: theme.palette.action.selected,
+                                  },
+                                  '& .MuiMenuItem-root.Mui-selected:hover': {
+                                    bgcolor: theme.palette.action.hover,
+                                  },
+                                }),
+                              },
+                            }}
                             renderValue={(selected) => {
                               if (!selected) {
                                 return (
-                                  <span style={{ color: "#999" }}>
+                                  <Box component="span" sx={{ color: (theme) => theme.palette.text.disabled }}>
                                     اختر نوع العقار
-                                  </span>
+                                  </Box>
                                 );
                               }
                               return selected;
