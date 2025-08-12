@@ -18,6 +18,8 @@ import { ShareOutlined as ShareOutlinedIcon } from '@mui/icons-material';
 import FavoriteButton from '../Homeparts/FavoriteButton';
 import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
+import { useMediaQuery } from '@mui/material';
+
 function HorizontalCard({ image, title, price, adress, type, status, city, governoment, phone, onClickCard, id }) {
   const settings = {
     dots: false,
@@ -28,6 +30,7 @@ function HorizontalCard({ image, title, price, adress, type, status, city, gover
     rtl: true,
     arrows: true,
   };
+const isSmallScreen = useMediaQuery(theme => theme.breakpoints.down('sm'));
 
   const handleShare = async (e) => {
     e.stopPropagation();
@@ -58,30 +61,34 @@ function HorizontalCard({ image, title, price, adress, type, status, city, gover
     <>
       <Card
         onClick={onClickCard}
-        sx={{
-          cursor: 'pointer',
-          display: 'flex',
-          flexDirection: 'row-reverse',
-          borderRadius: '10px',
-          mb: 2,
-          maxWidth: 800,
-          height: 'auto',
-          position: 'relative',
-          boxShadow: 'none',
-          border: '1px solid #E3E3E3',
-          transition: 'transform 0.3s ease-in-out',
-          margin: 'auto',
-          marginBottom: '10px',
-          '&:hover': {
-            backgroundColor: (theme) => 
-              theme.palette.mode === 'light' 
-                ? theme.palette.grey[50] 
-                : theme.palette.grey[900],
-            transform: 'scale(1.02)',
-            boxShadow: '1px 1px 20px rgba(0, 0, 0, 0.1)'
-          },
-          flexWrap: 'wrap'
-        }}
+   sx={{
+  cursor: 'pointer',
+  display: 'flex',
+  flexDirection: {  sm: 'row-reverse' },
+  borderRadius: '10px',
+  mb: 2,
+  maxWidth: { xs: '89%', sm: 800 },
+  width: '100%',
+  height: 'auto',
+  position: 'relative',
+  boxShadow: 'none',
+  border: '1px solid #E3E3E3',
+  transition: 'transform 0.3s ease-in-out',
+  marginBottom: '10px',
+  boxSizing: 'border-box', 
+  overflow: 'visible',
+  justifyContent:'center',
+  margin: 'auto',
+  '&:hover': {
+    backgroundColor: (theme) =>
+      theme.palette.mode === 'light'
+        ? theme.palette.grey[50]
+        : theme.palette.grey[900],
+    transform: 'scale(1.02)',
+    boxShadow: '1px 1px 20px rgba(0, 0, 0, 0.1)',
+  },
+  flexWrap: 'wrap',
+}}
         dir="ltr"
       >
         {/* حالتها */}
@@ -89,43 +96,57 @@ function HorizontalCard({ image, title, price, adress, type, status, city, gover
           {status}
         </Box>
 
-        <Box 
-          sx={{ 
-            width: 250, 
+     <Box 
+  sx={{ 
+    width: { xs: '100%', sm: 250 }, 
+    height: 250, 
+    position: 'relative',
+    overflow: 'hidden', 
+    backgroundColor: (theme) => 
+      theme.palette.mode === 'light' 
+        ? theme.palette.grey[50] 
+        : theme.palette.grey[900] 
+  }} 
+  onClick={(e) => e.stopPropagation()}
+>
+  {isSmallScreen ? (
+    <img
+      src={imagesToShow[0]} 
+      alt="صورة الإعلان"
+      style={{ 
+        width: '100%', 
+        height: '100%', 
+        objectFit: 'cover', 
+        display: 'block' 
+      }}
+    />
+  ) : (
+    <Slider {...settings}>
+      {imagesToShow.map((img, index) => (
+        <Box
+          key={index}
+          sx={{
+            width: '100%',
             height: 250, 
-            position: 'relative',
-            overflow: 'hidden', 
-            backgroundColor: (theme) => 
-              theme.palette.mode === 'light' 
-                ? theme.palette.grey[50] 
-                : theme.palette.grey[900] 
-          }} 
-          onClick={(e) => e.stopPropagation()}
+            display: 'flex'
+          }}
         >
-          <Slider {...settings}>
-            {imagesToShow.map((img, index) => (
-              <Box
-                key={index}
-                sx={{
-                  width: '100%',
-                  height: 250, 
-                  display: 'flex'
-                }}
-              >
-                <img
-                  src={img}
-                  alt={`صورة ${index + 1}`}
-                  style={{ 
-                    width: '100%', 
-                    height: '100%', 
-                    objectFit: 'cover', 
-                    display: 'block'
-                  }}
-                />
-              </Box>
-            ))}
-          </Slider>
+          <img
+            src={img}
+            alt={`صورة ${index + 1}`}
+            style={{ 
+              width: '100%', 
+              height: '100%', 
+              objectFit: 'cover', 
+              display: 'block'
+            }}
+          />
         </Box>
+      ))}
+    </Slider>
+  )}
+</Box>
+
 
         <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1 }} dir="rtl" onClick={onClickCard}>
           <CardContent sx={{ flex: '1 0 auto' }}>
@@ -148,14 +169,15 @@ function HorizontalCard({ image, title, price, adress, type, status, city, gover
             borderTop: '1px solid #E3E3E3',
             px: 2,
             py: 1,
-            display: 'flex',
+            display:{sm:'flex',xs:'none'},
             justifyContent: 'flex-end',
             alignItems: 'center',
             backgroundColor: (theme) => 
               theme.palette.mode === 'light' 
                 ? theme.palette.grey[50] 
                 : theme.palette.grey[900],
-            gap: '10px'
+            gap: '10px',
+            
           }}
         >
           <Button
@@ -171,6 +193,7 @@ function HorizontalCard({ image, title, price, adress, type, status, city, gover
               py: 0.5,
               borderRadius: '8px',
               textTransform: 'none',
+              
             }}
             onClick={(e) => {
               e.stopPropagation();

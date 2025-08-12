@@ -22,14 +22,14 @@ const buyAds = () => {
   .filter(ad => {
     const search = serachInput.trim();
     return (
-      ad.address?.includes(search) ||
-      ad.city?.includes(search)
+      ad.address?.toLowerCase().includes(search.toLowerCase()) ||
+      ad.city?.toLowerCase().includes(search.toLowerCase())
     );
   });
 
   return (
     
-    <Container  sx={{mt:'100px'}}  dir='rtl'>
+    <Container  sx={{mt:'80px'}}  dir='rtl'>
       <Typography sx={{m:'20px'}} variant="h3" color="#6E00FE">ابرز العقارات المعروضه للبيع</Typography>
        <TextField
       placeholder="ادخل اسم المدينة أو المنطقة"

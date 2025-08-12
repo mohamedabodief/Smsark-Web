@@ -56,7 +56,7 @@ const aboutUsData = {
       bio: "يقود فريق سمسارك برؤية استراتيجية لتحقيق الريادة في السوق.",
     },
     {
-      name: "الاء",
+      name: "آلاء السيد",
       position: "مدير التسويق",
       bio: "خبير في استراتيجيات التسويق الرقمي وبناء العلامة التجارية.",
     },
@@ -313,7 +313,7 @@ const AboutUs = () => {
               fontWeight: "bold",
               fontSize: { xs: "2.5rem", md: "4rem" },
               mb: 3,
-              textAlign: "right",
+              textAlign: "left",
               width: "100%",
             }}
           >
