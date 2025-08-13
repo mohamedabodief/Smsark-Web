@@ -23,7 +23,6 @@ const NotificationCard = memo(
         borderColor: notif.is_read ? 'transparent' : '#ffca28',
         backgroundColor: notif.is_read ? '#f8f9fa' : '#fff3cd',
         color: notif.is_read ? '#6c757d' : 'inherit',
-        
       }}
       onClick={() => {
         if (notif.link) {
@@ -154,7 +153,7 @@ const NotificationList = ({ userId }) => {
         position: 'fixed',
         right: '80px',
         width: '300px',
-        maxHeight: '80vh', 
+        maxHeight: '80vh', // أقصى ارتفاع عشان لو الإشعارات كتير
         overflowY: 'auto',
         scrollBehavior: 'auto',
         overscrollBehavior: 'contain',
@@ -162,7 +161,6 @@ const NotificationList = ({ userId }) => {
         zIndex: 1400,
         backgroundColor: '#fff',
         boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-        borderRadius:'6px'
       }}
     >
       <Typography variant="h6" align="center" gutterBottom>الإشعارات</Typography>
