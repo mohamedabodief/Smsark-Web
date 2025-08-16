@@ -478,17 +478,20 @@ export default function Advertise() {
   const errorPromptOpen = Boolean(errorPromptAnchorEl);
 
   const getErrorMessage = () => {
-    switch (requestedType) {
-      case 'client':
-        return 'غير مصرح لك بالدخول، يجب التسجيل كـ عميل أولاً';
-      case 'developer':
-        return 'غير مصرح لك بالدخول، يجب التسجيل كـ مطور أولاً';
-      case 'financer':
-        return 'غير مصرح لك بالدخول، يجب التسجيل كـ ممول أولاً';
-      // default:
-        // return 'غير مصرح لك بالدخول لهذا القسم';
-    }
-  };
+  if (!requestedType) return null; // لو مفيش نوع، مفيش رسالة
+  switch (requestedType) {
+    case 'client':
+      return 'غير مصرح لك بالدخول، يجب التسجيل كـ عميل أولاً';
+    case 'developer':
+      return 'غير مصرح لك بالدخول، يجب التسجيل كـ مطور أولاً';
+    case 'financer':
+      return 'غير مصرح لك بالدخول، يجب التسجيل كـ ممول أولاً';
+    default:
+      return null; // مفيش رسالة افتراضية
+  }
+};
+const errorMessage = getErrorMessage();
+
   return (
     <Box sx={{ py: 10, px: { xs: 2, md: 10 }, direction: 'rtl' }}>
       <Grid container spacing={7} justifyContent="center">
@@ -547,47 +550,48 @@ export default function Advertise() {
         ))}
       </Grid>
 
-      <Popover
-        open={loginPromptOpen}
-        anchorEl={loginPromptAnchorEl}
-        anchorOrigin={{
-          vertical: 'top',
-          horizontal: 'center',
-        }}
-        transformOrigin={{
-          vertical: 'top',
-          horizontal: 'center',
-        }}
-        sx={{
-          mt: '64px',
-        }}
-        disableRestoreFocus
-      >
-        <Box sx={{ p: 2, bgcolor: '#fff', borderRadius: '8px' }}>
-          <Typography>يرجى تسجيل الدخول أولاً</Typography>
-        </Box>
-      </Popover>
+      {loginPromptOpen && (
+  <Popover
+    open={loginPromptOpen}
+    anchorEl={loginPromptAnchorEl}
+    anchorOrigin={{
+      vertical: 'top',
+      horizontal: 'center',
+    }}
+    transformOrigin={{
+      vertical: 'top',
+      horizontal: 'center',
+    }}
+    sx={{ mt: '64px' }}
+    disableRestoreFocus
+  >
+    <Box sx={{ p: 2, bgcolor: '#fff', borderRadius: '8px' }}>
+      <Typography>يرجى تسجيل الدخول أولاً</Typography>
+    </Box>
+  </Popover>
+)}
 
-      <Popover
-        open={errorPromptOpen}
-        anchorEl={errorPromptAnchorEl}
-        anchorOrigin={{
-          vertical: 'top',
-          horizontal: 'center',
-        }}
-        transformOrigin={{
-          vertical: 'top',
-          horizontal: 'center',
-        }}
-        sx={{
-          mt: '64px',
-        }}
-        disableRestoreFocus
-      >
-        <Box sx={{ p: 2, bgcolor: '#fff', borderRadius: '8px' }}>
-          <Typography>{getErrorMessage()}</Typography>
-        </Box>
-      </Popover>
+{errorPromptOpen && errorMessage && (
+  <Popover
+    open={errorPromptOpen}
+    anchorEl={errorPromptAnchorEl}
+    anchorOrigin={{
+      vertical: 'top',
+      horizontal: 'center',
+    }}
+    transformOrigin={{
+      vertical: 'top',
+      horizontal: 'center',
+    }}
+    sx={{ mt: '64px' }}
+    disableRestoreFocus
+  >
+    <Box sx={{ p: 2, bgcolor: '#fff', borderRadius: '8px' }}>
+      <Typography>{errorMessage}</Typography>
+    </Box>
+  </Popover>
+)}
+
     </Box>
   );
 }
