@@ -315,7 +315,6 @@
 //     </Box>
 //   );
 // }
-
 import { useEffect, useState } from 'react';
 import { Box, Grid, Typography, Button, Avatar, Popover } from '@mui/material';
 import { SearchRounded, HomeWorkRounded, ApartmentRounded } from '@mui/icons-material';
@@ -326,11 +325,17 @@ import User from '../FireBase/modelsWithOperations/User';
 export default function Advertise() {
   const navigate = useNavigate();
   const [userType, setUserType] = useState(null);
+  const [orgType, setOrgType] = useState(null);
   const [loginPromptAnchorEl, setLoginPromptAnchorEl] = useState(null);
   const [errorPromptAnchorEl, setErrorPromptAnchorEl] = useState(null);
-  const [requestedType, setRequestedType] = useState(null); // نوع القسم الذي تم الضغط عليه
+  const [requestedType, setRequestedType] = useState(null);
 
-  // تعريف options
+  const orgTypeMapping = {
+    'مطور عقاري': 'developer',
+    'ممول': 'financer',
+    'ممول عقاري': 'financer',
+  };
+
   const options = [
     {
       icon: <SearchRounded fontSize="large" sx={{ color: '#1976d2' }} />,
@@ -358,11 +363,40 @@ export default function Advertise() {
   useEffect(() => {
     const fetchUserType = async () => {
       const uid = auth.currentUser?.uid;
-      if (!uid) return;
+      console.log('جلب بيانات المستخدم للمعرف:', uid);
+      if (!uid) {
+        console.log('لا يوجد مستخدم مسجل الدخول');
+        setUserType(null);
+        setOrgType(null);
+        return;
+      }
 
-      const user = await User.getByUid(uid);
-      if (user) {
-        setUserType(user.type_of_user);
+      try {
+        const user = await User.getByUid(uid);
+        console.log('بيانات المستخدم الخام من Firebase:', user);
+        if (user && user.type_of_user) {
+          const normalizedUserType = user.type_of_user.toLowerCase().trim();
+          console.log('نوع المستخدم المنسق:', normalizedUserType);
+          setUserType(normalizedUserType);
+          if (normalizedUserType === 'organization' && user.type_of_organization) {
+            const normalizedOrgType = user.type_of_organization.toLowerCase().trim();
+            console.log('نوع المنظمة المنسق:', normalizedOrgType);
+            
+            const mappedOrgType = orgTypeMapping[normalizedOrgType] || normalizedOrgType;
+            console.log('نوع المنظمة بعد التحويل:', mappedOrgType);
+            setOrgType(mappedOrgType);
+          } else {
+            setOrgType(null);
+          }
+        } else {
+          console.log('لم يتم العثور على بيانات المستخدم أو type_of_user للمعرف:', uid);
+          setUserType(null);
+          setOrgType(null);
+        }
+      } catch (error) {
+        console.error('خطأ في جلب بيانات المستخدم:', error);
+        setUserType(null);
+        setOrgType(null);
       }
     };
 
@@ -375,7 +409,6 @@ export default function Advertise() {
         setLoginPromptAnchorEl(null);
         navigate('/login');
       }, 1000);
-
       return () => clearTimeout(timer);
     }
   }, [loginPromptAnchorEl, navigate]);
@@ -384,33 +417,58 @@ export default function Advertise() {
     if (errorPromptAnchorEl) {
       const timer = setTimeout(() => {
         setErrorPromptAnchorEl(null);
-        setRequestedType(null); // إعادة تعيين النوع المطلوب
+        setRequestedType(null);
       }, 2000);
-
       return () => clearTimeout(timer);
     }
   }, [errorPromptAnchorEl]);
 
   const handleNavigate = (item) => {
+    console.log('تم استدعاء handleNavigate مع العنصر:', item);
+    console.log('نوع المستخدم الحالي:', userType);
+    console.log('نوع المنظمة الحالي:', orgType);
+
     if (!userType) {
+      console.log('لا يوجد نوع مستخدم، عرض رسالة تسجيل الدخول');
       setLoginPromptAnchorEl(document.body);
       return;
     }
 
-    if (userType === 'admin') {
+    const normalizedUserType = userType.toLowerCase().trim();
+    const normalizedItemType = item.type.toLowerCase().trim();
+    const validUserTypes = ['client', 'developer', 'financer', 'admin', 'organization'];
+
+    if (!validUserTypes.includes(normalizedUserType)) {
+      console.log(`نوع المستخدم ${normalizedUserType} غير صالح، عرض رسالة خطأ`);
+      setRequestedType(null);
+      setErrorPromptAnchorEl(document.body);
+      return;
+    }
+
+    if (normalizedUserType === 'admin') {
+      console.log('مستخدم أدمن، يتم التوجيه إلى:', item.route);
       navigate(item.route);
-    } else if (userType === 'organization') {
-      if (item.type === 'developer') {
-        navigate('/AdddeveloperAds');
-      } else if (item.type === 'financer') {
-        navigate('/add-financing-ad');
+    } else if (normalizedUserType === 'organization') {
+      if (!orgType) {
+        console.log('لا يوجد type_of_organization صالح، عرض رسالة خطأ');
+        setRequestedType(null);
+        setErrorPromptAnchorEl(document.body);
+        return;
+      }
+      const normalizedOrgType = orgType.toLowerCase().trim();
+      if (normalizedOrgType === normalizedItemType && (normalizedOrgType === 'developer' || normalizedOrgType === 'financer')) {
+        console.log(`نوع المنظمة ${normalizedOrgType} يتطابق مع نوع العنصر ${normalizedItemType}، يتم التوجيه إلى:`, item.route);
+        navigate(item.route);
       } else {
+        console.log(`نوع المنظمة ${normalizedOrgType} لا يتطابق مع نوع العنصر ${normalizedItemType}، عرض رسالة خطأ`);
         setRequestedType(item.type);
         setErrorPromptAnchorEl(document.body);
       }
-    } else if (userType === item.type) {
+    } else if (normalizedUserType === normalizedItemType) {
+      console.log(`نوع المستخدم ${normalizedUserType} يتطابق مع نوع العنصر ${normalizedItemType}، يتم التوجيه إلى:`, item.route);
       navigate(item.route);
     } else {
+      console.log(`نوع المستخدم ${normalizedUserType} لا يتطابق مع نوع العنصر ${normalizedItemType}، عرض رسالة خطأ`);
       setRequestedType(item.type);
       setErrorPromptAnchorEl(document.body);
     }
@@ -420,6 +478,9 @@ export default function Advertise() {
   const errorPromptOpen = Boolean(errorPromptAnchorEl);
 
   const getErrorMessage = () => {
+    if (!requestedType) {
+      return 'نوع حسابك أو منظمتك غير صالح، يرجى التواصل مع الدعم';
+    }
     switch (requestedType) {
       case 'client':
         return 'غير مصرح لك بالدخول، يجب التسجيل كـ عميل أولاً';
@@ -427,11 +488,10 @@ export default function Advertise() {
         return 'غير مصرح لك بالدخول، يجب التسجيل كـ مطور أولاً';
       case 'financer':
         return 'غير مصرح لك بالدخول، يجب التسجيل كـ ممول أولاً';
-      // default:
-        // return 'غير مصرح لك بالدخول لهذا القسم';
+      default:
+        return 'غير مصرح لك بالدخول لهذا القسم';
     }
   };
-
   return (
     <Box sx={{ py: 10, px: { xs: 2, md: 10 }, direction: 'rtl' }}>
       <Grid container spacing={7} justifyContent="center">
