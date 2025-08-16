@@ -1,4 +1,3 @@
-//scr/pages/Details/detailsForDevelopment.jsx
 import React, { useState, useEffect } from "react";
 import {
   Container,
@@ -51,7 +50,13 @@ import { auth } from "../../FireBase/firebaseConfig";
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
 import Message from "../../FireBase/MessageAndNotification/Message";
 import Notification from "../../FireBase/MessageAndNotification/Notification";
+
 function DetailsForDevelopment() {
+  // إضافة كود التمرير إلى أعلى الصفحة عند تحميل الصفحة
+  React.useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState("");
   const { id } = useParams();
@@ -63,7 +68,7 @@ function DetailsForDevelopment() {
   const [error, setError] = useState(null);
   const currentUser = auth.currentUser?.uid;
 
-const handleSend = async () => {
+  const handleSend = async () => {
     if (!message.trim() || !currentUser || !clientAds?.userId) return;
 
     try {
@@ -101,6 +106,7 @@ const handleSend = async () => {
       alert("فشل في إرسال الرسالة!");
     }
   };
+
   const toggleShow = () => setShowFull((prev) => !prev);
 
   useEffect(() => {
@@ -209,6 +215,7 @@ const handleSend = async () => {
       </Box>
     );
   }
+
   const handleShare = async () => {
     if (navigator.share) {
       try {
@@ -225,6 +232,7 @@ const handleSend = async () => {
       alert("المتصفح لا يدعم خاصية المشاركة.");
     }
   };
+
   if (!clientAds) {
     return (
       <Box
@@ -823,7 +831,6 @@ const handleSend = async () => {
                 </>
               )}
               {/* سطر معلومات الباقة */}
-
               {isOwner && clientAds.adPackage && (
                 <Grid item xs={12} sm={6} mt={3}>
                   <Typography variant="body2" color="text.secondary">
