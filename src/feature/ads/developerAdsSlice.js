@@ -1,27 +1,51 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import RealEstateDeveloperAdvertisement from "../../FireBase/modelsWithOperations/RealEstateDeveloperAdvertisement";
+
+// Ensure we only return plain serializable objects from thunks
+const toPlainDeveloperAd = (ad, index = 0) => ({
+  id: ad.id || `developer-temp-id-${index}`,
+  title: ad.title,
+  description: ad.description,
+  images: ad.images,
+  phone: ad.phone,
+  userId: ad.userId,
+  ads: ad.ads,
+  adExpiryTime: ad.adExpiryTime,
+  reviewStatus: ad.reviewStatus,
+  reviewed_by: ad.reviewed_by,
+  review_note: ad.review_note,
+  status: ad.status,
+  receipt_image: ad.receipt_image,
+  developer_name: ad.developer_name,
+  price_start_from: ad.price_start_from,
+  price_end_to: ad.price_end_to,
+  location: ad.location,
+  rooms: ad.rooms,
+  bathrooms: ad.bathrooms,
+  floor: ad.floor,
+  furnished: ad.furnished,
+  type_of_user: ad.type_of_user,
+  project_types: ad.project_types,
+});
 export const fetchAllDeveloperAds = createAsyncThunk(
   "developerAds/fetchAll",
   async () => {
     const ads = await RealEstateDeveloperAdvertisement.getAll();
-  return ads.map((ad, index) => ({
-      ...ad,
-      id: ad.id || `financing-temp-id-${index}`,
-    }));
+    return ads.map((ad, index) => toPlainDeveloperAd(ad, index));
   }
 );
 export const fetchDeveloperAdsByUser = createAsyncThunk(
   "developerAds/fetchByUser",
   async (userId) => {
     const ads = await RealEstateDeveloperAdvertisement.getByUserId(userId);
-    return ads;
+    return ads.map((ad, index) => toPlainDeveloperAd(ad, index));
   }
 );
 export const fetchActiveDeveloperAdsByUser = createAsyncThunk(
   "developerAds/fetchActiveByUser",
   async (userId) => {
     const ads = await RealEstateDeveloperAdvertisement.getActiveByUser(userId);
-    return ads;
+    return ads.map((ad, index) => toPlainDeveloperAd(ad, index));
   }
 );
 

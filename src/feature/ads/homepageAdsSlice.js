@@ -1,14 +1,35 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import HomepageAdvertisement from "../../FireBase/modelsWithOperations/HomepageAdvertisement"; // Ensure this path is correct
 
+
+// Ensure HomepageAdvertisement instances are converted to plain serializable objects
+const toPlainHomepageAd = (ad, index = 0) => {
+  const id = ad?.id ?? ad?.docId ?? ad?.uid ?? `homepage-temp-id-${index}`;
+  const adExpiryTime = ad?.adExpiryTime;
+  return {
+    id,
+    title: ad?.title ?? "",
+    description: ad?.description ?? "",
+    images: ad?.images ?? [],
+    image: ad?.image ?? null,
+    phone: ad?.phone ?? "",
+    userId: ad?.userId ?? ad?.uid ?? null,
+    ads: ad?.ads ?? false,
+    adExpiryTime: adExpiryTime?.toMillis ? adExpiryTime.toMillis() : (adExpiryTime ?? null),
+    reviewStatus: ad?.reviewStatus ?? null,
+    reviewed_by: ad?.reviewed_by ?? null,
+    review_note: ad?.review_note ?? null,
+    status: ad?.status ?? null,
+    receipt_image: ad?.receipt_image ?? null,
+  };
+};
 // Fetch all homepage ads
 export const fetchAllHomepageAds = createAsyncThunk(
   "homepageAds/fetchAll",
   async (_, { rejectWithValue }) => {
     try {
-      // HomepageAdvertisement.getAll() now returns plain objects directly
       const ads = await HomepageAdvertisement.getAll();
-      return ads; // No need for .map(ad => ({ ...ad })) anymore
+      return ads.map((ad, i) => toPlainHomepageAd(ad, i));
     } catch (error) {
       console.error("Error fetching all homepage ads in thunk:", error);
       return rejectWithValue(error.message || "Failed to fetch homepage ads.");
@@ -21,8 +42,8 @@ export const fetchHomepageAdsByUser = createAsyncThunk(
   "homepageAds/fetchByUser",
   async (userId, { rejectWithValue }) => {
     try {
-      const ads = await HomepageAdvertisement.getAll(); // Assuming getAll is used to then filter
-      return ads.filter(ad => ad.userId === userId);
+      const ads = await HomepageAdvertisement.getAll();
+      return ads.map((ad, i) => toPlainHomepageAd(ad, i)).filter(ad => ad.userId === userId);
     } catch (error) {
       console.error("Error fetching homepage ads by user in thunk:", error);
       return rejectWithValue(error.message || "Failed to fetch user's homepage ads.");
@@ -36,7 +57,7 @@ export const fetchHomepageAdsByStatus = createAsyncThunk(
   async (status, { rejectWithValue }) => {
     try {
       const ads = await HomepageAdvertisement.getByReviewStatus(status);
-      return ads; // Already returns plain objects
+      return ads.map((ad, i) => toPlainHomepageAd(ad, i));
     } catch (error) {
       console.error("Error fetching homepage ads by status in thunk:", error);
       return rejectWithValue(error.message || "Failed to fetch homepage ads by status.");
@@ -50,7 +71,8 @@ export const subscribeToAllHomepageAds = createAsyncThunk(
     try {
       const unsubscribe = HomepageAdvertisement.subscribeToAll((ads) => {
         console.log("HomepageAds subscription callback - received ads:", ads.length);
-        dispatch(setAllHomepageAds(ads));
+        const plain = ads.map((ad, i) => toPlainHomepageAd(ad, i));
+        dispatch(setAllHomepageAds(plain));
       });
       return unsubscribe;
     } catch (error) {
@@ -68,12 +90,12 @@ export const subscribeToUserHomepageAds = createAsyncThunk(
       console.log("subscribeToUserHomepageAds - Setting up subscription for user:", userId);
       const unsubscribe = HomepageAdvertisement.subscribeByUserId(userId, (ads) => {
         console.log("subscribeToUserHomepageAds - Received ads for user:", userId, "Count:", ads.length);
-        dispatch(setUserHomepageAds(ads));
+        const plain = ads.map((ad, i) => toPlainHomepageAd(ad, i));
+        dispatch(setUserHomepageAds(plain));
       });
-      
-      // Store the subscription for cleanup
-      dispatch(setSubscription({ type: 'byUser', unsubscribe }));
-      
+
+      // Return the unsubscribe function but don't store it in Redux state
+      // Components should manage this subscription directly
       return unsubscribe;
     } catch (error) {
       console.error("Error subscribing to user homepage ads:", error);
@@ -88,7 +110,8 @@ export const subscribeToHomepageAdsByStatus = createAsyncThunk(
   async (status, { dispatch }) => {
     try {
       const unsubscribe = HomepageAdvertisement.subscribeByStatus(status, (ads) => {
-        dispatch(setHomepageAdsByStatus(ads));
+        const plain = ads.map((ad, i) => toPlainHomepageAd(ad, i));
+        dispatch(setHomepageAdsByStatus(plain));
       });
       return unsubscribe;
     } catch (error) {
@@ -235,11 +258,7 @@ const homepageAdsSlice = createSlice({
     byStatus: [],
     loading: false,
     error: null,
-    subscriptions: {
-      all: null,
-      byUser: null,
-      byStatus: null,
-  },
+    // Removed subscriptions from state - they should be managed outside Redux
   },
   reducers: {
     clearHomepageAds: (state) => {
@@ -257,20 +276,8 @@ const homepageAdsSlice = createSlice({
     setHomepageAdsByStatus: (state, action) => {
       state.byStatus = action.payload;
     },
-    setSubscription: (state, action) => {
-      const { type, unsubscribe } = action.payload;
-      state.subscriptions[type] = unsubscribe;
-    },
-    clearSubscriptions: (state) => {
-      Object.values(state.subscriptions).forEach(unsubscribe => {
-        if (unsubscribe) unsubscribe();
-      });
-      state.subscriptions = {
-        all: null,
-        byUser: null,
-        byStatus: null,
-      };
-    },
+    // Removed setSubscription and clearSubscriptions reducers
+    // Subscriptions should be managed outside Redux to avoid non-serializable values
   },
   extraReducers: (builder) => {
     builder
@@ -380,10 +387,10 @@ const homepageAdsSlice = createSlice({
         state.error = action.payload || action.error.message;
       })
 
-      // Subscribe to all ads
+      // Subscribe to all ads - subscription management moved outside Redux
       .addCase(subscribeToAllHomepageAds.fulfilled, (state, action) => {
-        // Store the unsubscribe function
-        state.subscriptions.all = action.payload;
+        // Subscription is managed outside Redux to avoid non-serializable values
+        // The subscription callback will update the state via setAllHomepageAds
       })
       .addCase(subscribeToAllHomepageAds.rejected, (state, action) => {
         state.error = action.payload || action.error.message;
@@ -391,12 +398,11 @@ const homepageAdsSlice = createSlice({
   },
 });
 
-export const { 
-  clearHomepageAds, 
-  setAllHomepageAds, 
-  setUserHomepageAds, 
-  setHomepageAdsByStatus,
-  setSubscription,
-  clearSubscriptions
+export const {
+  clearHomepageAds,
+  setAllHomepageAds,
+  setUserHomepageAds,
+  setHomepageAdsByStatus
+  // Removed setSubscription and clearSubscriptions exports
 } = homepageAdsSlice.actions;
 export default homepageAdsSlice.reducer;

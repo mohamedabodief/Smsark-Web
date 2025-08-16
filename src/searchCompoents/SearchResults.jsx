@@ -51,10 +51,10 @@ function SearchResults() {
         !filters.priceTo || ad.price <= parseFloat(filters.priceTo);
       const matchesCity =
         !searchWord ||
-        ad.address?.includes(searchWord) ||
-        ad.city?.includes(searchWord) ||
-        ad.governorate?.includes(searchWord)||
-        ad.title?.includes(searchWord);
+        ad.address?.toLowerCase().includes(searchWord.toLowerCase()) ||
+        ad.city?.toLowerCase().includes(searchWord.toLowerCase()) ||
+        ad.governorate?.toLowerCase().includes(searchWord.toLowerCase())||
+        ad.title?.toLowerCase().includes(searchWord.toLowerCase());
 
       return matchesPurpose && matchesType && matchesPriceFrom && matchesPriceTo && matchesCity;
     });

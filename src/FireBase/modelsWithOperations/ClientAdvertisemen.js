@@ -582,13 +582,24 @@ import {
   uploadBytes,
   getDownloadURL,
   deleteObject,
-  listAll,
 } from "firebase/storage";
 import { db, auth } from "../firebaseConfig";
 import Notification from "../MessageAndNotification/Notification";
 import User from "./User";
 
 console.log("ClientAdvertisement.js loaded");
+
+// Test URL extraction on load (remove in production)
+if (typeof window !== 'undefined') {
+  // Only run in browser environment
+  setTimeout(() => {
+    try {
+      ClientAdvertisement.testUrlExtraction();
+    } catch (e) {
+      console.log('[TEST] URL extraction test skipped:', e.message);
+    }
+  }, 1000);
+}
 
 // Package information
 const PACKAGE_INFO = {
@@ -627,6 +638,18 @@ class ClientAdvertisement {
     this.status = data.status || "تحت العرض";
     this.receipt_image = data.receipt_image || null;
     this.adPackage = data.adPackage !== undefined ? data.adPackage : null;
+
+    // Package information fields from Firestore
+    this.adPackageName = data.adPackageName || null;
+    this.adPackagePrice = data.adPackagePrice || null;
+    this.adPackageDuration = data.adPackageDuration || null;
+
+    // Fallback: Generate package info if missing but adPackage exists
+    if (!this.adPackageName && this.adPackage && PACKAGE_INFO[this.adPackage]) {
+      this.adPackageName = PACKAGE_INFO[this.adPackage].name;
+      this.adPackagePrice = PACKAGE_INFO[this.adPackage].price;
+      this.adPackageDuration = PACKAGE_INFO[this.adPackage].duration;
+    }
   }
 
   get id() {
@@ -721,10 +744,37 @@ class ClientAdvertisement {
 
   async delete() {
     if (!this.#id) throw new Error("الإعلان بدون ID صالح للحذف");
-    await this.deleteAllImages();
-    await this.#deleteReceipt();
+
+    // التحقق من المصادقة
+    if (!auth.currentUser) {
+      throw new Error("يجب تسجيل الدخول أولاً لحذف الإعلان");
+    }
+
+    console.log("[DEBUG] Starting delete process for ad:", this.#id);
+    console.log("[DEBUG] Current user UID:", auth.currentUser.uid);
+    console.log("[DEBUG] Ad owner UID:", this.userId);
+
+    // التحقق من صلاحيات الحذف (المالك أو الأدمن)
+    const currentUser = await User.getByUid(auth.currentUser.uid);
+    const isOwner = this.userId === auth.currentUser.uid;
+    const isAdmin = currentUser.type_of_user === 'admin';
+
+    console.log("[DEBUG] Current user type:", currentUser.type_of_user);
+    console.log("[DEBUG] Is owner:", isOwner);
+    console.log("[DEBUG] Is admin:", isAdmin);
+
+    if (!isOwner && !isAdmin) {
+      throw new Error("ليس لديك صلاحية لحذف هذا الإعلان");
+    }
+
+    console.log("[DEBUG] Authorization passed, deleting images...");
+    await this.deleteSpecificImages();
+    console.log("[DEBUG] Images deleted, deleting receipt...");
+    await this.#deleteSpecificReceipt();
+    console.log("[DEBUG] Receipt deleted, deleting document...");
     const docRef = doc(db, "ClientAdvertisements", this.#id);
     await deleteDoc(docRef);
+    console.log("[DEBUG] Document deleted successfully");
   }
 
   async adsActivation(days) {
@@ -1083,16 +1133,98 @@ class ClientAdvertisement {
     return imageUrls;
   }
 
-  async deleteAllImages() {
-    const storage = getStorage();
-    const dirRef = ref(storage, `property_images/${this.userId}`);
+  // Helper function to extract storage path from download URL
+  #extractStoragePathFromUrl(downloadUrl) {
     try {
-      const list = await listAll(dirRef);
-      for (const itemRef of list.items) {
-        await deleteObject(itemRef);
+      console.log("[DEBUG] Extracting storage path from URL:", downloadUrl);
+      const url = new URL(downloadUrl);
+      console.log("[DEBUG] URL pathname:", url.pathname);
+
+      // Try to extract from the /o/ path format (standard Firebase Storage URL)
+      const pathMatch = url.pathname.match(/\/o\/(.+)$/);
+      if (pathMatch) {
+        const encodedPath = pathMatch[1];
+        // Remove any query parameters that might be in the path
+        const cleanEncodedPath = encodedPath.split('?')[0];
+        const decodedPath = decodeURIComponent(cleanEncodedPath);
+        console.log("[DEBUG] Extracted storage path:", decodedPath);
+        return decodedPath;
       }
-    } catch (err) {
-      console.warn("[DEBUG] فشل حذف الصور:", err.message);
+
+      console.warn("[DEBUG] No path match found in URL:", downloadUrl);
+      return null;
+    } catch (error) {
+      console.warn("[DEBUG] Failed to extract storage path from URL:", downloadUrl, error);
+      return null;
+    }
+  }
+
+  // Test function to verify URL extraction (can be removed in production)
+  static testUrlExtraction() {
+    const testInstance = new ClientAdvertisement({ id: 'test' });
+    const testUrls = [
+      'https://firebasestorage.googleapis.com/v0/b/smsark-alaqary.firebasestorage.app/o/property_images%2FPFciQtB8yZZilbeXM0a4AW7idnF3%2F1234567890_image.jpg?alt=media&token=abc123',
+      'https://firebasestorage.googleapis.com/v0/b/smsark-alaqary.firebasestorage.app/o/property_images%2FPFciQtB8yZZilbeXM0a4AW7idnF3%2FJsiudjwEzggkeicTVpZn_receipt.jpg?alt=media&token=def456'
+    ];
+
+    testUrls.forEach(url => {
+      console.log('[TEST] Testing URL:', url);
+      const path = testInstance.#extractStoragePathFromUrl(url);
+      console.log('[TEST] Extracted path:', path);
+    });
+  }
+
+  async deleteSpecificImages() {
+    // التحقق من المصادقة قبل حذف الصور
+    if (!auth.currentUser) {
+      throw new Error("يجب تسجيل الدخول أولاً لحذف الصور");
+    }
+
+    if (!this.images || this.images.length === 0) {
+      console.log("[DEBUG] No images to delete for this ad");
+      return;
+    }
+
+    const storage = getStorage();
+    const deletePromises = [];
+
+    console.log("[DEBUG] Deleting specific images for ad:", this.#id);
+    console.log("[DEBUG] Image URLs to delete:", this.images);
+
+    for (const imageUrl of this.images) {
+      if (!imageUrl || typeof imageUrl !== 'string') {
+        console.warn("[DEBUG] Invalid image URL:", imageUrl);
+        continue;
+      }
+
+      const storagePath = this.#extractStoragePathFromUrl(imageUrl);
+      if (storagePath) {
+        // Safety check: ensure the path belongs to this user's property_images
+        if (storagePath.startsWith('property_images/') && storagePath.includes(this.userId)) {
+          console.log("[DEBUG] Deleting image at path:", storagePath);
+          const imageRef = ref(storage, storagePath);
+          deletePromises.push(
+            deleteObject(imageRef).catch(err => {
+              console.warn("[DEBUG] Failed to delete image:", storagePath, err.message);
+              return { error: err.message, path: storagePath };
+            })
+          );
+        } else {
+          console.warn("[DEBUG] Skipping deletion - path doesn't belong to this user:", storagePath);
+        }
+      } else {
+        console.warn("[DEBUG] Could not extract storage path from URL:", imageUrl);
+      }
+    }
+
+    if (deletePromises.length > 0) {
+      const results = await Promise.allSettled(deletePromises);
+      const failures = results.filter(result => result.status === 'rejected' || result.value?.error);
+      if (failures.length > 0) {
+        console.warn("[DEBUG] Some images failed to delete:", failures);
+      } else {
+        console.log("[DEBUG] All specific images deleted successfully");
+      }
     }
   }
 
@@ -1107,16 +1239,39 @@ class ClientAdvertisement {
     return url;
   }
 
-  async #deleteReceipt() {
+  async #deleteSpecificReceipt() {
+    // التحقق من المصادقة قبل حذف الإيصال
+    if (!auth.currentUser) {
+      throw new Error("يجب تسجيل الدخول أولاً لحذف الإيصال");
+    }
+
+    if (!this.receipt_image || typeof this.receipt_image !== 'string') {
+      console.log("[DEBUG] No receipt to delete for this ad");
+      return;
+    }
+
     const storage = getStorage();
-    const receiptRef = ref(
-      storage,
-      `property_images/${this.userId}/${this.#id}_receipt.jpg`
-    );
-    try {
-      await deleteObject(receiptRef);
-    } catch (err) {
-      console.warn("[DEBUG] فشل حذف إيصال الدفع:", err.message);
+    const storagePath = this.#extractStoragePathFromUrl(this.receipt_image);
+
+    if (storagePath) {
+      // Safety check: ensure the path belongs to this user's property_images and contains the ad ID
+      if (storagePath.startsWith('property_images/') &&
+          storagePath.includes(this.userId) &&
+          (storagePath.includes(this.#id) || storagePath.includes('_receipt'))) {
+        console.log("[DEBUG] Deleting receipt from path:", storagePath);
+        const receiptRef = ref(storage, storagePath);
+        try {
+          await deleteObject(receiptRef);
+          console.log("[DEBUG] Receipt deleted successfully");
+        } catch (err) {
+          console.warn("[DEBUG] فشل حذف إيصال الدفع:", err.message);
+          // لا نرمي خطأ هنا لأن الملف قد لا يكون موجوداً
+        }
+      } else {
+        console.warn("[DEBUG] Skipping receipt deletion - path doesn't belong to this ad:", storagePath);
+      }
+    } else {
+      console.warn("[DEBUG] Could not extract storage path from receipt URL:", this.receipt_image);
     }
   }
 

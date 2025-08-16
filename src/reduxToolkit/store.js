@@ -40,6 +40,16 @@ const store = configureStore({
           'paidAds.funderAds',
           'advertisements.list',
           'advertisements.currentAd',
+          // Ignore any remaining subscription paths
+          'homepageAds.subscriptions',
+          'developerAds.subscriptions',
+          'financingAds.subscriptions',
+        ],
+        ignoredActions: [
+          // Ignore actions that might contain non-serializable values
+          'homepageAds/subscribeToUser/fulfilled',
+          'homepageAds/subscribeToAll/fulfilled',
+          'homepageAds/subscribeByStatus/fulfilled',
         ],
       },
     }),

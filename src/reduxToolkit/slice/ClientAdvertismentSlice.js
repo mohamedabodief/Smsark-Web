@@ -212,12 +212,48 @@ const fetchAdvertisementById = createAsyncThunk(
 // Async Thunk for deleting an advertisement
 const deleteAdvertisement = createAsyncThunk(
   'advertisements/deleteAdvertisement',
-  async (adId, { rejectWithValue }) => {
+  async (adData, { rejectWithValue }) => {
     try {
-      const adInstance = new ClientAdvertisement({ id: adId });
+      // التحقق من وجود المستخدم المسجل
+      const { auth } = await import('../../FireBase/firebaseConfig');
+      if (!auth.currentUser) {
+        return rejectWithValue('يجب تسجيل الدخول أولاً لحذف الإعلان');
+      }
+
+      // If adData is just a string (adId), fetch the full ad data first
+      let adToDelete;
+      if (typeof adData === 'string') {
+        console.log('[DEBUG] Fetching ad data for deletion:', adData);
+        adToDelete = await ClientAdvertisement.getById(adData);
+        if (!adToDelete) {
+          return rejectWithValue('لم يتم العثور على الإعلان');
+        }
+      } else {
+        adToDelete = adData;
+      }
+
+      console.log('[DEBUG] Deleting ad with data:', {
+        id: adToDelete.id,
+        images: adToDelete.images,
+        receipt_image: adToDelete.receipt_image
+      });
+
+      // Create instance with full data including images and receipt
+      const adInstance = new ClientAdvertisement({
+        id: adToDelete.id,
+        images: adToDelete.images || [],
+        receipt_image: adToDelete.receipt_image,
+        userId: adToDelete.userId
+      });
+
       await adInstance.delete();
-      return adId;
+      return adToDelete.id;
     } catch (error) {
+      console.error('[DEBUG] Delete error:', error);
+      // التعامل مع أخطاء الصلاحيات بشكل خاص
+      if (error.message.includes('صلاحية') || error.message.includes('unauthorized')) {
+        return rejectWithValue('ليس لديك صلاحية لحذف هذا الإعلان');
+      }
       return rejectWithValue(error.message || 'Failed to delete advertisement.');
     }
   }

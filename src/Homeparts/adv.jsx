@@ -435,14 +435,14 @@ export default function Advertise() {
   return (
     <Box sx={{ py: 10, px: { xs: 2, md: 10 }, direction: 'rtl' }}>
       <Grid container spacing={7} justifyContent="center">
-        <Grid item xs={12} md={12} textAlign="center">
+        <Grid size={{ xs: 12, md: 12 }} textAlign="center">
           <Typography variant="h5" fontWeight="bold" mt={10} mb={4}>
             أعلن عن عقارك
           </Typography>
         </Grid>
 
         {options.map((item, index) => (
-          <Grid item xs={12} md={12} key={index}>
+          <Grid size={{ xs: 12, md: 12 }} key={index}>
             <Box
               sx={{
                 borderRadius: 5,
@@ -506,7 +506,7 @@ export default function Advertise() {
         }}
         disableRestoreFocus
       >
-        <Box sx={{ p: 2, bgcolor: '#fff', borderRadius: '8px' }}>
+        <Box sx={{ p: 2, bgcolor: 'primary', borderRadius: '8px' }}>
           <Typography>يرجى تسجيل الدخول أولاً</Typography>
         </Box>
       </Popover>

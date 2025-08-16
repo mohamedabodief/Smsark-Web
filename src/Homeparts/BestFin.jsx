@@ -201,7 +201,7 @@ export default function BestFin() {
                 >
                   <CardMedia
                     component="img"
-                    objectFit="contain"
+                    // objectFit="contain"
                     sx={{ backgroundSize: "contain" }}
                     width="300"
                     height="160"

@@ -188,7 +188,7 @@ const ContactUs = () => {
       {/* Contact Info in 3 Columns */}
       <Box sx={{ px: 3, mb: 6 }}>
         <Grid container spacing={30} justifyContent="center">
-          <Grid item xs={12} md={4}>
+          <Grid size={{ xs: 12, md: 4 }}>
             <Box sx={{ textAlign: "center" }}>
               <LocationOn
                 sx={{ fontSize: 40, color: theme.palette.primary.main, cursor: 'pointer' }}
@@ -206,7 +206,7 @@ const ContactUs = () => {
             </Box>
           </Grid>
 
-          <Grid item xs={12} md={4}>
+          <Grid size={{ xs: 12, md: 4 }}>
             <Box sx={{ textAlign: "center" }}>
               <Phone
                 sx={{ fontSize: 40, color: theme.palette.primary.main, cursor: 'pointer' }}
@@ -224,7 +224,7 @@ const ContactUs = () => {
             </Box>
           </Grid>
 
-          <Grid item xs={12} md={4}>
+          <Grid size={{ xs: 12, md: 4 }}>
             <Box sx={{ textAlign: "center" }}>
               <Email
                 sx={{ fontSize: 40, color: theme.palette.primary.main, cursor: 'pointer' }}

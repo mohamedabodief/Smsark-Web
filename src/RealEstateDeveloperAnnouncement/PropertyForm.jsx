@@ -1129,7 +1129,7 @@ const PropertyForm = ({
 
           {/* عرض رسائل الخطأ في الرفع */}
           {uploadError && (
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <Alert severity="error" sx={{ mb: 2 }}>
                 {uploadError}
                 {uploadError.includes("تسجيل الدخول") && (

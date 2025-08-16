@@ -33,7 +33,7 @@ export default function RegisterStep2LR({ onNext, onBack }) {
         justifyContent="center"
         alignItems="center"
       >
-        <Grid item xs={12} sm={6}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <Button
             fullWidth
             variant={userType === "client" ? "contained" : "outlined"}
@@ -58,7 +58,7 @@ export default function RegisterStep2LR({ onNext, onBack }) {
           </Button>
         </Grid>
 
-        <Grid item xs={12} sm={6}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <Button
             fullWidth
             variant={userType === "organization" ? "contained" : "outlined"}

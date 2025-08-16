@@ -913,7 +913,7 @@ const ModernRealEstateForm = () => {
                   sx={{ display: "flex", flexDirection: "column" }}
                 >
                   {/* Basic Information */}
-                  <Grid item width={"100%"}>
+                  <Grid sx={{ width: "100%" }}>
                     <Typography
                       variant="h6"
                       sx={{ mb: 3, color: "#6E00FE", fontWeight: 600 }}
@@ -1127,7 +1127,7 @@ const ModernRealEstateForm = () => {
                   <Divider sx={{ my: 3, borderColor: "#e0e0e0" }} />
 
                   {/* Images and Location */}
-                  <Grid item xs={12} md={12} lg={12} width={"100%"}>
+                  <Grid size={{ xs: 12, md: 12, lg: 12 }} width={"100%"}>
                     <Typography
                       variant="h6"
                       sx={{ mb: 3, color: "#6E00FE", fontWeight: 600 }}
@@ -1405,7 +1405,7 @@ const ModernRealEstateForm = () => {
                   <Divider sx={{ my: 3, borderColor: "#e0e0e0" }} />
 
                   {/* Location Details */}
-                  <Grid item xs={12} md={12} lg={12} width={"100%"} mt={"20px"}>
+                  <Grid size={{ xs: 12, md: 12, lg: 12 }} width={"100%"} mt={"20px"}>
                     <Typography
                       variant="h6"
                       sx={{ mb: 3, color: "#6E00FE", fontWeight: 600 }}
@@ -1477,7 +1477,7 @@ const ModernRealEstateForm = () => {
                   <Divider sx={{ my: 3, borderColor: "#e0e0e0" }} />
 
                   {/* Contact Information */}
-                  <Grid item xs={12} md={6} width={"100%"}>
+                  <Grid size={{ xs: 12, md: 6 }} width={"100%"}>
                     <Typography
                       variant="h6"
                       sx={{ mb: 3, color: "#6E00FE", fontWeight: 600 }}
@@ -1560,7 +1560,7 @@ const ModernRealEstateForm = () => {
                   <Divider sx={{ my: 3, borderColor: "#e0e0e0" }} />
 
                   {/* Ad Details */}
-                  <Grid item xs={12} md={6} width={"100%"}>
+                  <Grid size={{ xs: 12, md: 6 }} width={"100%"}>
                     <Typography
                       variant="h6"
                       sx={{ mb: 3, color: "#6E00FE", fontWeight: 600 }}

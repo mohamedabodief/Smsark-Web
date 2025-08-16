@@ -26,7 +26,7 @@ const Profile = () => {
       ) : (
         <Grid container spacing={3}>
           {requests.map((req, index) => (
-            <Grid item xs={12} sm={6} md={4} key={index}>
+            <Grid size={{ xs: 12, sm: 6, md: 4 }} key={index}>
               <Card sx={{ borderRadius: 3, boxShadow: 3 }}>
                 <CardContent>
                   <Typography variant="h6" fontWeight="bold" gutterBottom>

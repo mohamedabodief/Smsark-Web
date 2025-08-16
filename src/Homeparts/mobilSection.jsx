@@ -47,7 +47,7 @@ const MobilSection = () => {
           }}
         >
           {/* النص الرئيسي */}
-          <Grid item xs={12} md={12} lg={6} xl={8}>
+          <Grid size={{ xs: 12, md: 12, lg: 6, xl: 8 }}>
             <Box
               sx={{
                 textAlign: { xs: "center", md: "right" },
@@ -82,7 +82,7 @@ const MobilSection = () => {
           </Grid>
 
           {/* الصور */}
-          <Grid item xs={12} md={12} lg={6} xl={4}>
+          <Grid size={{ xs: 12, md: 12, lg: 6, xl: 4 }}>
             <Box
               sx={{
                 display: "flex",
@@ -129,7 +129,7 @@ export default MobilSection;
 //       {/* <Container maxWidth="lg"> */}
 //       <Grid container alignItems="center" dir="rtl">
 //         {/* النص الرئيسي */}
-//         {/* <Grid item xs={12} md={6}> */}
+//         {/* <Grid size={{ xs: 12, md: 6 }}> */}
 //         <Grid size={{ xs: 12, md: 6 }}>
 //           <Box
 //             sx={{

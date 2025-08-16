@@ -118,20 +118,20 @@ import { signOut } from "firebase/auth";
 import { fetchDeveloperAdsByUser } from "../../feature/ads/developerAdsSlice";
 import { fetchFinancingAdsByUser } from "../../feature/ads/financingAdsSlice";
 import {
-    // fetchAllHomepageAds, 
+    // fetchAllHomepageAds,
     fetchHomepageAdsByUser,
     subscribeToUserHomepageAds,
     createHomepageAd,
     updateHomepageAd,
     deleteHomepageAd,
-    returnHomepageAdToPending,
-    clearSubscriptions
+    returnHomepageAdToPending
     // approveHomepageAd,
     // rejectHomepageAd,
     // returnHomepageAdToPending,
     // activateHomepageAd,
     // deactivateHomepageAd
 } from "../../feature/ads/homepageAdsSlice";
+import subscriptionManager from '../../utils/subscriptionManager';
 import { deleteAd, updateAd } from '../../reduxToolkit/slice/paidAdsSlice';
 import Notification from '../../FireBase/MessageAndNotification/Notification';
 import NotificationList from '../../pages/notificationList';
@@ -224,32 +224,32 @@ const getNavigationItems = (organizationType) => {
             icon: <BarChartIcon />,
             tooltip: 'التحليلات والتقارير',
         },
-        {
-            segment: 'reports',
-            title: 'التقارير',
-            icon: <DescriptionIcon />,
-            tooltip: 'التقارير',
-            children: [
-                {
-                    segment: 'sales',
-                    title: 'المبيعات',
-                    icon: <DescriptionIcon />,
-                    tooltip: 'المبيعات',
-                },
-                {
-                    segment: 'traffic',
-                    title: 'حركة مرور الزوار',
-                    icon: <DescriptionIcon />,
-                    tooltip: 'حركة مرور الزوار',
-                },
-            ],
-        },
-        {
-            segment: 'integrations',
-            title: 'إضافات',
-            icon: <LayersIcon />,
-            tooltip: 'إضافات',
-        }
+        // {
+        //     segment: 'reports',
+        //     title: 'التقارير',
+        //     icon: <DescriptionIcon />,
+        //     tooltip: 'التقارير',
+        //     children: [
+        //         {
+        //             segment: 'sales',
+        //             title: 'المبيعات',
+        //             icon: <DescriptionIcon />,
+        //             tooltip: 'المبيعات',
+        //         },
+        //         {
+        //             segment: 'traffic',
+        //             title: 'حركة مرور الزوار',
+        //             icon: <DescriptionIcon />,
+        //             tooltip: 'حركة مرور الزوار',
+        //         },
+        //     ],
+        // },
+        // {
+        //     segment: 'integrations',
+        //     title: 'إضافات',
+        //     icon: <LayersIcon />,
+        //     tooltip: 'إضافات',
+        // }
     );
 
     return baseItems;
@@ -1016,7 +1016,7 @@ function DashboardPage() {
 
                 {/* Main Summary Cards - Arranged for immediate overview */}
                 {/* 1. Total Listed Properties */}
-                <Grid item xs={12} sm={6} md={3}>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                     <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', height: 160, borderRadius: 2, textAlign: 'right', position: 'relative' }}>
                         <HomeOutlinedIcon sx={{ position: 'absolute', left: 16, top: 16, fontSize: 48, color: 'primary.light', opacity: 0.2 }} />
                         <Typography variant="h6" color="text.secondary">إجمالي العقارات</Typography>
@@ -1033,7 +1033,7 @@ function DashboardPage() {
                 </Grid>
 
                 {/* 2. Properties Pending Approval - Given its own card for visibility */}
-                <Grid item xs={12} sm={6} md={3}>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                     <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', height: 160, borderRadius: 2, textAlign: 'right', position: 'relative' }}>
                         <PendingActionsOutlinedIcon sx={{ position: 'absolute', left: 16, top: 16, fontSize: 48, color: 'warning.light', opacity: 0.2 }} />
                         <Typography variant="h6" color="text.secondary">بانتظار الموافقة</Typography>
@@ -1050,7 +1050,7 @@ function DashboardPage() {
                 </Grid>
 
                 {/* 3. Total Revenue */}
-                <Grid item xs={12} sm={6} md={3}>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                     <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', height: 160, borderRadius: 2, textAlign: 'right', position: 'relative' }}>
                         <AttachMoneyOutlinedIcon sx={{ position: 'absolute', left: 16, top: 16, fontSize: 48, color: 'success.light', opacity: 0.2 }} />
                         <Typography variant="h6" color="text.secondary">إجمالي الإيرادات</Typography>
@@ -1067,7 +1067,7 @@ function DashboardPage() {
                 </Grid>
 
                 {/* 4. Total Inquiries/Messages */}
-                <Grid item xs={12} sm={6} md={3}>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                     <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', height: 160, borderRadius: 2, textAlign: 'right', position: 'relative' }}>
                         <MessageOutlinedIcon sx={{ position: 'absolute', left: 16, top: 16, fontSize: 48, color: 'primary.light', opacity: 0.2 }} />
                         <Typography variant="h6" color="text.secondary">الاستفسارات / الرسائل</Typography>
@@ -1084,7 +1084,7 @@ function DashboardPage() {
                 </Grid>
 
                 {/* Separator / Additional Row for More Detailed Panels */}
-                <Grid item xs={12}>
+                <Grid size={{ xs: 12 }}>
                     <Divider sx={{ my: 2 }} /> {/* Add a divider for clearer separation */}
                 </Grid>
 
@@ -1095,7 +1095,7 @@ function DashboardPage() {
                 {/* Number of Agents Card (moved to second row, or keep on first, depending on preference) */}
                 {/* Decided to keep with top row, as it's a high-level summary count. */}
                 {/* If you prefer it here, uncomment below and comment out its Grid item above. */}
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                     <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', borderRadius: 2, height: 160, textAlign: 'right', position: 'relative' }}>
                         <DirectionsWalkOutlinedIcon sx={{ position: 'absolute', left: 16, top: 16, fontSize: 48, color: 'info.light', opacity: 0.2 }} />
                         <Typography variant="h6" gutterBottom>عدد الوكلاء</Typography>
@@ -1111,7 +1111,7 @@ function DashboardPage() {
                 </Grid>
 
                 {/* Placeholder for other charts/insights */}
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                     <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', borderRadius: 2, height: 350, textAlign: 'right' }}>
                         <Typography variant="h6">أداء العقارات (قريباً)</Typography>
                         <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -1139,7 +1139,7 @@ function DashboardPage() {
                 </Grid>
 
                 {/* Most Recently Listed Properties */}
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                     <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', borderRadius: 2, height: 'auto', textAlign: 'right' }}>
                         <Typography variant="h6" gutterBottom>أحدث العقارات المدرجة</Typography>
                         {mostRecentlyListed.length === 0 ? (
@@ -1209,7 +1209,15 @@ function ProfilePage() {
     const currentProfilePic = useSelector((state) => state.profilePic.profilePicUrl);
 
     // Local state for form inputs, initialized from Redux userProfile
-    const [formData, setFormData] = useState({});
+    const [formData, setFormData] = useState({
+        org_name: "",
+        type_of_organization: "",
+        phone: "",
+        email: "",
+        governorate: "",
+        city: "",
+        address: "",
+    });
     const [snackbarOpen, setSnackbarOpen] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState("");
     const [snackbarSeverity, setSnackbarSeverity] = useState("success");
@@ -1475,12 +1483,12 @@ function ProfilePage() {
             <Typography variant="h3" sx={{ display: 'flex', flexDirection: 'row-reverse', mb: 3 }}>حسابي</Typography>
             <Paper sx={{ p: 4, borderRadius: 2, minHeight: 400, textAlign: 'right', boxShadow: '0px 0px 8px rgba(0,0,0,0.2)' }}>
                 <Grid container spacing={4} direction="row-reverse">
-                    <Grid item xs={12} md={4} lg={3}>
+                    <Grid size={{ xs: 12, md: 4, lg: 3 }}>
                         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
                             <UploadAvatars />
                         </Box>
                     </Grid>
-                    <Grid item xs={12} md={8} lg={9}>
+                    <Grid size={{ xs: 12, md: 8, lg: 9 }}>
                         <Box>
                             <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', fontSize: '1.5rem', display: 'flex', flexDirection: 'row-reverse' }}>المعلومات الشخصية</Typography>
 
@@ -1572,7 +1580,7 @@ function ProfilePage() {
                                 fullWidth
                                 margin="normal"
                                 name="city"
-                                value={typeof formData.city === 'object' ? formData.city.full || '' : formData.city}
+                                value={typeof formData.city === 'object' ? formData.city?.full || '' : formData.city || ''}
                                 onChange={handleChange}
                                 InputProps={{ style: { direction: 'rtl' } }}
                             />
@@ -1582,7 +1590,7 @@ function ProfilePage() {
                                 fullWidth
                                 margin="normal"
                                 name="address"
-                                value={typeof formData.address === 'object' ? formData.address.full || '' : formData.address}
+                                value={typeof formData.address === 'object' ? formData.address?.full || '' : formData.address || ''}
                                 onChange={handleChange}
                                 multiline
                                 rows={3}
@@ -2150,15 +2158,15 @@ function PropertiesPage() {
                                     <ListItemText
                                         primary={
                                             <Grid container alignItems="center" spacing={1} direction="row-reverse">
-                                                <Grid item>
+                                                <Grid size="auto">
                                                     <HomeIcon fontSize="small" color="primary" />
                                                 </Grid>
-                                                <Grid item>
+                                                <Grid size="auto">
                                                     <Typography variant="body1" component="span" sx={{ fontWeight: 'bold', fontSize: '1rem' }}>
                                                         {property.name}
                                                     </Typography>
                                                 </Grid>
-                                                <Grid item>
+                                                <Grid size="auto">
                                                     <Chip
                                                         label={property.status}
                                                         size="small"
@@ -2270,12 +2278,24 @@ function Mainadvertisment(props) {
     useEffect(() => {
         if (userProfile?.uid) {
             console.log("Mainadvertisment - Setting up real-time subscription for UID:", userProfile.uid);
-            dispatch(subscribeToUserHomepageAds(userProfile.uid));
+
+            const setupSubscription = async () => {
+                try {
+                    const result = await dispatch(subscribeToUserHomepageAds(userProfile.uid)).unwrap();
+                    if (typeof result === 'function') {
+                        subscriptionManager.add(`org-homepage-ads-${userProfile.uid}`, result);
+                    }
+                } catch (error) {
+                    console.error("Error setting up user homepage ads subscription:", error);
+                }
+            };
+
+            setupSubscription();
 
             // Cleanup subscription on unmount
             return () => {
                 console.log("Mainadvertisment - Cleaning up subscription...");
-                dispatch(clearSubscriptions());
+                subscriptionManager.remove(`org-homepage-ads-${userProfile.uid}`);
             };
         } else {
             console.log("Mainadvertisment - userProfile.uid not available, skipping subscription.");
@@ -4414,7 +4434,7 @@ export default function OrganizationDashboard(props) {
                                                             <List component="div" disablePadding >
                                                                 {item.children.map((child) => (
                                                                     <Tooltip title={child.tooltip} key={child.segment}>
-                                                                        <ListItem key={child.segment} disablePadding>
+                                                                        <ListItem disablePadding>
                                                                             <ListItemButton
                                                                                 selected={router.pathname === `/reports/${child.segment}`}
                                                                                 onClick={() => router.navigate(`/reports/${child.segment}`)}
@@ -4439,7 +4459,7 @@ export default function OrganizationDashboard(props) {
                                                 );
                                             }
                                             return (
-                                                <Tooltip title={item.tooltip} placement='right-end'>
+                                                <Tooltip title={item.tooltip} placement='right-end' key={item.segment}>
                                                     <ListItem key={item.segment} disablePadding dir='rtl'>
                                                         <ListItemButton
                                                             selected={router.pathname === `/${item.segment}`}
@@ -4721,7 +4741,7 @@ function AnalyticsPage() {
                         الفلاتر
                     </Typography>
                     <Grid container spacing={2} direction="row-reverse">
-                        <Grid item xs={12} sm={4}>
+                        <Grid size={{ xs: 12, sm: 4 }}>
                             <FormControl fullWidth size="small">
                                 <InputLabel>المدينة</InputLabel>
                                 <Select
@@ -4736,7 +4756,7 @@ function AnalyticsPage() {
                                 </Select>
                             </FormControl>
                         </Grid>
-                        <Grid item xs={12} sm={4}>
+                        <Grid size={{ xs: 12, sm: 4 }}>
                             <FormControl fullWidth size="small">
                                 <InputLabel>الفترة الزمنية</InputLabel>
                                 <Select
@@ -4751,7 +4771,7 @@ function AnalyticsPage() {
                                 </Select>
                             </FormControl>
                         </Grid>
-                        <Grid item xs={12} sm={4}>
+                        <Grid size={{ xs: 12, sm: 4 }}>
                             <FormControl fullWidth size="small">
                                 <InputLabel>الحالة</InputLabel>
                                 <Select
@@ -4771,7 +4791,7 @@ function AnalyticsPage() {
 
                 {/* Overview Cards */}
                 <Grid container spacing={3} sx={{ mb: 4 }}>
-                    <Grid item xs={12} sm={6} md={3}>
+                    <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                         <Paper sx={{ p: 3, textAlign: 'center', borderRadius: 2 }}>
                             <Typography variant="h6" color="text.secondary">إجمالي الإعلانات</Typography>
                             <Typography variant="h4" sx={{ color: 'primary.main', fontWeight: 'bold' }}>
@@ -4779,7 +4799,7 @@ function AnalyticsPage() {
                             </Typography>
                         </Paper>
                     </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
+                    <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                         <Paper sx={{ p: 3, textAlign: 'center', borderRadius: 2 }}>
                             <Typography variant="h6" color="text.secondary">إجمالي الطلبات</Typography>
                             <Typography variant="h4" sx={{ color: 'success.main', fontWeight: 'bold' }}>
@@ -4787,7 +4807,7 @@ function AnalyticsPage() {
                             </Typography>
                         </Paper>
                     </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
+                    <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                         <Paper sx={{ p: 3, textAlign: 'center', borderRadius: 2 }}>
                             <Typography variant="h6" color="text.secondary">إجمالي مبالغ التمويل</Typography>
                             <Typography variant="h4" sx={{ color: 'info.main', fontWeight: 'bold' }}>
@@ -4795,7 +4815,7 @@ function AnalyticsPage() {
                             </Typography>
                         </Paper>
                     </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
+                    <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                         <Paper sx={{ p: 3, textAlign: 'center', borderRadius: 2 }}>
                             <Typography variant="h6" color="text.secondary">نسبة الموافقة</Typography>
                             <Typography variant="h4" sx={{ color: 'warning.main', fontWeight: 'bold' }}>
@@ -4807,7 +4827,7 @@ function AnalyticsPage() {
 
                 {/* Additional Metrics */}
                 <Grid container spacing={3} sx={{ mb: 4 }}>
-                    <Grid item xs={12} sm={6} md={3}>
+                    <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                         <Paper sx={{ p: 3, textAlign: 'center', borderRadius: 2 }}>
                             <Typography variant="h6" color="text.secondary">متوسط مبلغ الطلب</Typography>
                             <Typography variant="h4" sx={{ color: 'secondary.main', fontWeight: 'bold' }}>
@@ -4815,7 +4835,7 @@ function AnalyticsPage() {
                             </Typography>
                         </Paper>
                     </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
+                    <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                         <Paper sx={{ p: 3, textAlign: 'center', borderRadius: 2 }}>
                             <Typography variant="h6" color="text.secondary">نسبة الرفض</Typography>
                             <Typography variant="h4" sx={{ color: 'error.main', fontWeight: 'bold' }}>
@@ -4823,7 +4843,7 @@ function AnalyticsPage() {
                             </Typography>
                         </Paper>
                     </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
+                    <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                         <Paper sx={{ p: 3, textAlign: 'center', borderRadius: 2 }}>
                             <Typography variant="h6" color="text.secondary">متوسط الطلبات/إعلان</Typography>
                             <Typography variant="h4" sx={{ color: 'success.light', fontWeight: 'bold' }}>
@@ -4831,7 +4851,7 @@ function AnalyticsPage() {
                             </Typography>
                         </Paper>
                     </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
+                    <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                         <Paper sx={{ p: 3, textAlign: 'center', borderRadius: 2 }}>
                             <Typography variant="h6" color="text.secondary">الطلبات المعلقة</Typography>
                             <Typography variant="h4" sx={{ color: 'warning.light', fontWeight: 'bold' }}>
@@ -4844,7 +4864,7 @@ function AnalyticsPage() {
                 {/* Charts */}
                 <Grid dir='rtl' container spacing={3}>
                     {/* Status Distribution */}
-                    <Grid item xs={12} md={6}>
+                    <Grid size={{ xs: 12, md: 6 }}>
                         <Paper sx={{ p: 3, borderRadius: 2 }}>
                             <Typography variant="h6" gutterBottom sx={{ textAlign: 'right' }}>
                                 توزيع حالة الطلبات
@@ -4867,7 +4887,7 @@ function AnalyticsPage() {
                     </Grid>
 
                     {/* Interest Rate Distribution */}
-                    <Grid item xs={12} md={6}>
+                    <Grid size={{ xs: 12, md: 6 }}>
                         <Paper sx={{ p: 3, borderRadius: 2 }}>
                             <Typography variant="h6" gutterBottom sx={{ textAlign: 'right' }}>
                                 توزيع نسب الفائدة
@@ -4890,7 +4910,7 @@ function AnalyticsPage() {
                     </Grid>
 
                     {/* Requests Over Time */}
-                    <Grid item xs={12}>
+                    <Grid size={{ xs: 12 }}>
                         <Paper sx={{ p: 3, borderRadius: 2 }}>
                             <Typography variant="h6" gutterBottom sx={{ textAlign: 'right' }}>
                                 الطلبات عبر الزمن
@@ -5039,7 +5059,7 @@ function AnalyticsPage() {
                         الفلاتر
                     </Typography>
                     <Grid container spacing={2} direction="row-reverse">
-                        <Grid item xs={12} sm={4}>
+                        <Grid size={{ xs: 12, sm: 4 }}>
                             <FormControl fullWidth size="small">
                                 <InputLabel>المدينة</InputLabel>
                                 <Select
@@ -5054,7 +5074,7 @@ function AnalyticsPage() {
                                 </Select>
                             </FormControl>
                         </Grid>
-                        <Grid item xs={12} sm={4}>
+                        <Grid size={{ xs: 12, sm: 4 }}>
                             <FormControl fullWidth size="small">
                                 <InputLabel>نوع العقار</InputLabel>
                                 <Select
@@ -5070,7 +5090,7 @@ function AnalyticsPage() {
                                 </Select>
                             </FormControl>
                         </Grid>
-                        <Grid item xs={12} sm={4}>
+                        <Grid size={{ xs: 12, sm: 4 }}>
                             <FormControl fullWidth size="small">
                                 <InputLabel>الحالة</InputLabel>
                                 <Select
@@ -5090,7 +5110,7 @@ function AnalyticsPage() {
 
                 {/* Overview Cards */}
                 <Grid container spacing={3} sx={{ mb: 4 }}>
-                    <Grid item xs={12} sm={6} md={3}>
+                    <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                         <Paper sx={{ p: 3, textAlign: 'center', borderRadius: 2 }}>
                             <Typography variant="h6" color="text.secondary">إجمالي الإعلانات</Typography>
                             <Typography variant="h4" sx={{ color: 'primary.main', fontWeight: 'bold' }}>
@@ -5098,7 +5118,7 @@ function AnalyticsPage() {
                             </Typography>
                         </Paper>
                     </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
+                    <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                         <Paper sx={{ p: 3, textAlign: 'center', borderRadius: 2 }}>
                             <Typography variant="h6" color="text.secondary">الإعلانات النشطة</Typography>
                             <Typography variant="h4" sx={{ color: 'success.main', fontWeight: 'bold' }}>
@@ -5106,7 +5126,7 @@ function AnalyticsPage() {
                             </Typography>
                         </Paper>
                     </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
+                    <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                         <Paper sx={{ p: 3, textAlign: 'center', borderRadius: 2 }}>
                             <Typography variant="h6" color="text.secondary">متوسط السعر</Typography>
                             <Typography variant="h4" sx={{ color: 'info.main', fontWeight: 'bold' }}>
@@ -5114,7 +5134,7 @@ function AnalyticsPage() {
                             </Typography>
                         </Paper>
                     </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
+                    <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                         <Paper sx={{ p: 3, textAlign: 'center', borderRadius: 2 }}>
                             <Typography variant="h6" color="text.secondary">متوسط المساحة</Typography>
                             <Typography variant="h4" sx={{ color: 'warning.main', fontWeight: 'bold' }}>
@@ -5122,7 +5142,7 @@ function AnalyticsPage() {
                             </Typography>
                         </Paper>
                     </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
+                    <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                         <Paper sx={{ p: 3, textAlign: 'center', borderRadius: 2 }}>
                             <Typography variant="h6" color="text.secondary">متوسط المشاهدات</Typography>
                             <Typography variant="h4" sx={{ color: 'info.main', fontWeight: 'bold' }}>
@@ -5130,7 +5150,7 @@ function AnalyticsPage() {
                             </Typography>
                         </Paper>
                     </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
+                    <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                         <Paper sx={{ p: 3, textAlign: 'center', borderRadius: 2 }}>
                             <Typography variant="h6" color="text.secondary">متوسط التعديلات</Typography>
                             <Typography variant="h4" sx={{ color: 'secondary.main', fontWeight: 'bold' }}>
@@ -5143,7 +5163,7 @@ function AnalyticsPage() {
                 {/* Charts */}
                 <Grid container spacing={3}>
                     {/* Property Type Distribution */}
-                    <Grid item xs={12} md={6}>
+                    <Grid size={{ xs: 12, md: 6 }}>
                         <Paper sx={{ p: 3, borderRadius: 2 }}>
                             <Typography variant="h6" gutterBottom sx={{ textAlign: 'left' }}>
                                 توزيع أنواع العقارات
@@ -5167,7 +5187,7 @@ function AnalyticsPage() {
                     </Grid>
 
                     {/* City Distribution */}
-                    <Grid item xs={12} md={6}>
+                    <Grid size={{ xs: 12, md: 6 }}>
                         <Paper sx={{ p: 3, borderRadius: 2 }}>
                             <Typography variant="h6" gutterBottom sx={{ textAlign: 'left' }}>
                                 توزيع المدن
@@ -5191,7 +5211,7 @@ function AnalyticsPage() {
                     </Grid>
 
                     {/* Ad Performance Over Time */}
-                    <Grid item xs={12}>
+                    <Grid size={{ xs: 12 }}>
                         <Paper sx={{ p: 3, borderRadius: 2 }}>
                             <Typography variant="h6" gutterBottom sx={{ textAlign: 'left' }}>
                                 أداء الإعلانات عبر الزمن
@@ -5338,7 +5358,7 @@ function AnalyticsPage() {
                     أدوات الفلترة
                 </Typography>
                 <Grid container spacing={2} alignItems="center">
-                    <Grid item>
+                    <Grid size="auto">
                         <FormControl size="small" sx={{ minWidth: 120 }}>
                             <InputLabel>المدة الزمنية</InputLabel>
                             <Select
@@ -5356,7 +5376,7 @@ function AnalyticsPage() {
                             </Select>
                         </FormControl>
                     </Grid>
-                    <Grid item>
+                    <Grid size="auto">
                         <FormControl size="small" sx={{ minWidth: 120 }}>
                             <InputLabel>المدينة</InputLabel>
                             <Select
@@ -5374,7 +5394,7 @@ function AnalyticsPage() {
                             </Select>
                         </FormControl>
                     </Grid>
-                    <Grid item>
+                    <Grid size="auto">
                         <FormControl size="small" sx={{ minWidth: 120 }}>
                             <InputLabel>الحالة</InputLabel>
                             <Select
@@ -5391,7 +5411,7 @@ function AnalyticsPage() {
                             </Select>
                         </FormControl>
                     </Grid>
-                    <Grid item>
+                    <Grid size="auto">
                         <Button
                             variant="outlined"
                             startIcon={<RefreshIcon />}

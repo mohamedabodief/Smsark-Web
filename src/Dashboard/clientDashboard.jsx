@@ -146,28 +146,28 @@ function DashboardPage() {
                 showCount={false}
             />
             <Grid container spacing={3} direction="row-reverse">
-                <Grid item xs={12} sm={6} md={4}>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                     <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', height: 140, borderRadius: 2, textAlign: 'right' }}>
                         <Typography variant="h6" color="text.secondary">Total Sales</Typography>
                         <Typography variant="h5" sx={{ mt: 1, fontWeight: 'bold', color: 'primary.main' }}>$12,345.00</Typography>
                         <Typography variant="body2" color="success.main">+15% since last month</Typography>
                     </Paper>
                 </Grid>
-                <Grid item xs={12} sm={6} md={4}>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                     <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', height: 140, borderRadius: 2, textAlign: 'right' }}>
                         <Typography variant="h6" color="text.secondary">New Orders</Typography>
                         <Typography variant="h5" sx={{ mt: 1, fontWeight: 'bold', color: 'secondary.main' }}>245</Typography>
                         <Typography variant="body2" color="error.main">-5% since last month</Typography>
                     </Paper>
                 </Grid>
-                <Grid item xs={12} sm={6} md={4}>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                     <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', height: 140, borderRadius: 2, textAlign: 'right' }}>
                         <Typography variant="h6" color="text.secondary">Customers</Typography>
                         <Typography variant="h5" sx={{ mt: 1, fontWeight: 'bold' }}>1,234</Typography>
                         <Typography variant="body2" color="success.main">+2% since last month</Typography>
                     </Paper>
                 </Grid>
-                <Grid item xs={12}>
+                <Grid size={{ xs: 12 }}>
                     <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', borderRadius: 2, height: 300, textAlign: 'right' }}>
                         <Typography variant="h6">Sales Trend (Placeholder)</Typography>
                         <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -519,12 +519,12 @@ function ProfilePage() {
              />
             <Paper sx={{ p: 4, borderRadius: 2, minHeight: 400, textAlign: 'right', boxShadow: '0px 0px 8px rgba(0,0,0,0.2)' }}>
                 <Grid container spacing={4} direction="row">
-                    <Grid item xs={12} md={4} lg={3}> {/* Adjusted column width for avatar */}
+                    <Grid size={{ xs: 12, md: 4, lg: 3 }}> {/* Adjusted column width for avatar */}
                         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
                             <UploadAvatars />
                         </Box>
                     </Grid>
-                    <Grid item xs={12} md={8} lg={9}> {/* Adjusted column width for fields */}
+                    <Grid size={{ xs: 12, md: 8, lg: 9 }}> {/* Adjusted column width for fields */}
                         <Box>
                             <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', fontSize: '1.5rem', display: 'flex', flexDirection: 'row' }}>المعلومات الشخصية</Typography>
 
@@ -1518,7 +1518,7 @@ function OrdersPage() {
                                                         sx={{ mr: 1 }}
                                                     />
                                                 </Grid>
-                                                {request.status && (
+                                                {/* {request.status && (
                                                 <Grid item>
                                                     <Chip
                                                         label={request.status}
@@ -1527,14 +1527,14 @@ function OrdersPage() {
                                                         sx={{ mr: 1 }}
                                                     />
                                                 </Grid>
-                                                )}
+                                                )} */}
                                             </Grid>
                                         }
                                         secondary={
                                             <Stack direction="column" spacing={0.5} sx={{ mt: 0.5 }}>
-                                                <Typography variant="body2" color="text.primary">
+                                                {/* <Typography variant="body2" color="text.primary">
                                                     معرّف الإعلان: {request.advertisement_id}
-                                                </Typography>
+                                                </Typography> */}
                                                 <Typography variant="body2" color="text.primary">
                                                     الدخل الشهري: {request.monthly_income}
                                                 </Typography>
@@ -1564,9 +1564,9 @@ function OrdersPage() {
                                                         ملاحظة الرفض: {request.review_note}
                                                     </Typography>
                                                 )}
-                                                <Typography variant="caption" color="text.disabled">
+                                                {/* <Typography variant="caption" color="text.disabled">
                                                     ID: {request.id}
-                                                </Typography>
+                                                </Typography> */}
                                             </Stack>
                                         }
                                         primaryTypographyProps={{ component: 'div' }}
@@ -1700,7 +1700,7 @@ function EditFinancialRequestModal({ open, onClose, onSubmit, request, advertise
 
                     {/* Form Fields */}
                     <Grid container spacing={2}>
-                        <Grid item xs={12} sm={6}>
+                        <Grid size={{ xs: 12, sm: 6 }}>
                             <TextField
                                 fullWidth
                                 label="الدخل الشهري"
@@ -1709,7 +1709,7 @@ function EditFinancialRequestModal({ open, onClose, onSubmit, request, advertise
                                 type="number"
                             />
                         </Grid>
-                        <Grid item xs={12} sm={6}>
+                        <Grid size={{ xs: 12, sm: 6 }}>
                             <TextField
                                 fullWidth
                                 label="المسمى الوظيفي"
@@ -1717,7 +1717,7 @@ function EditFinancialRequestModal({ open, onClose, onSubmit, request, advertise
                                 onChange={(e) => handleChange('job_title', e.target.value)}
                             />
                         </Grid>
-                        <Grid item xs={12} sm={6}>
+                        <Grid size={{ xs: 12, sm: 6 }}>
                             <TextField
                                 fullWidth
                                 label="جهة العمل"
@@ -1725,7 +1725,7 @@ function EditFinancialRequestModal({ open, onClose, onSubmit, request, advertise
                                 onChange={(e) => handleChange('employer', e.target.value)}
                             />
                         </Grid>
-                        <Grid item xs={12} sm={6}>
+                        <Grid size={{ xs: 12, sm: 6 }}>
                             <TextField
                                 fullWidth
                                 label="السن"
@@ -1734,7 +1734,7 @@ function EditFinancialRequestModal({ open, onClose, onSubmit, request, advertise
                                 type="number"
                             />
                         </Grid>
-                        <Grid item xs={12} sm={6}>
+                        <Grid size={{ xs: 12, sm: 6 }}>
                             <FormControl fullWidth>
                                 <InputLabel>الحالة الاجتماعية</InputLabel>
                                 <Select
@@ -1749,7 +1749,7 @@ function EditFinancialRequestModal({ open, onClose, onSubmit, request, advertise
                                 </Select>
                             </FormControl>
                         </Grid>
-                        <Grid item xs={12} sm={6}>
+                        <Grid size={{ xs: 12, sm: 6 }}>
                             <TextField
                                 fullWidth
                                 label="عدد المعالين"
@@ -1758,7 +1758,7 @@ function EditFinancialRequestModal({ open, onClose, onSubmit, request, advertise
                                 type="number"
                             />
                         </Grid>
-                        <Grid item xs={12} sm={6}>
+                        <Grid size={{ xs: 12, sm: 6 }}>
                             <TextField
                                 fullWidth
                                 label="مبلغ التمويل"
@@ -1768,7 +1768,7 @@ function EditFinancialRequestModal({ open, onClose, onSubmit, request, advertise
                                 helperText={`يجب أن يكون بين ${advertisement.start_limit} و ${advertisement.end_limit}`}
                             />
                         </Grid>
-                        <Grid item xs={12} sm={6}>
+                        <Grid size={{ xs: 12, sm: 6 }}>
                             <TextField
                                 fullWidth
                                 label="مدة السداد (بالسنوات)"
@@ -1777,7 +1777,7 @@ function EditFinancialRequestModal({ open, onClose, onSubmit, request, advertise
                                 type="number"
                             />
                         </Grid>
-                        <Grid item xs={12}>
+                        <Grid size={{ xs: 12 }}>
                             <TextField
                                 fullWidth
                                 label="رقم الهاتف"
@@ -2522,7 +2522,7 @@ export default function ClientDashboard(props) {
                                                         <List component="div" disablePadding >
                                                             {item.children.map((child) => (
                                                                 <Tooltip title={child.tooltip} key={child.segment}>
-                                                                    <ListItem key={child.segment} disablePadding>
+                                                                    <ListItem disablePadding>
                                                                         <ListItemButton
                                                                             selected={router.pathname === `/reports/${child.segment}`}
                                                                             onClick={() => router.navigate(`/reports/${child.segment}`)}
@@ -2547,7 +2547,7 @@ export default function ClientDashboard(props) {
                                             );
                                         }
                                         return (
-                                            <Tooltip title={item.tooltip} placement='right-end'>
+                                            <Tooltip title={item.tooltip} placement='right-end' key={item.segment}>
                                                 <ListItem key={item.segment} disablePadding dir='rtl'>
                                                     <ListItemButton
                                                         selected={router.pathname === `/${item.segment}`}

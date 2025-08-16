@@ -365,7 +365,7 @@ function DetailsForClient() {
           <Divider sx={{ my: 3 }} />
 
           <Grid container spacing={4}>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <Typography variant="body2" color="text.secondary">
                 المحافظة
               </Typography>
@@ -373,7 +373,7 @@ function DetailsForClient() {
                 {clientAds.governorate || "غير محدد"}
               </Typography>
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <Typography variant="body2" color="text.secondary">
                 المدينة
               </Typography>
@@ -381,7 +381,7 @@ function DetailsForClient() {
                 {clientAds.city || "غير محدد"}
               </Typography>
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <Typography variant="body2" color="text.secondary">
                 العنوان
               </Typography>
@@ -389,7 +389,7 @@ function DetailsForClient() {
                 {clientAds.address || "غير محدد"}
               </Typography>
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <Typography variant="body2" color="text.secondary">
                 المساحة
               </Typography>
@@ -397,7 +397,7 @@ function DetailsForClient() {
                 {clientAds.area ? `${clientAds.area} م²` : "غير محدد"}
               </Typography>
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <Typography variant="body2" color="text.secondary">
                 السعر
               </Typography>
@@ -405,7 +405,7 @@ function DetailsForClient() {
                 {clientAds.price ? `${clientAds.price} ج.م` : "غير محدد"}
               </Typography>
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <Typography variant="body2" color="text.secondary">
                 تاريخ البناء
               </Typography>
@@ -413,7 +413,7 @@ function DetailsForClient() {
                 {clientAds.date_of_building || "غير محدد"}
               </Typography>
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <Typography variant="body2" color="text.secondary">
                 نوع الإعلان
               </Typography>
@@ -421,7 +421,7 @@ function DetailsForClient() {
                 {clientAds.ad_type || "غير محدد"}
               </Typography>
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <Typography variant="body2" color="text.secondary">
                 حالة الإعلان
               </Typography>
@@ -431,7 +431,7 @@ function DetailsForClient() {
             </Grid>
 
             {isOwner && clientAds.adPackage && (
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <Typography variant="body2" color="text.secondary">
                   الباقة المختارة
                 </Typography>

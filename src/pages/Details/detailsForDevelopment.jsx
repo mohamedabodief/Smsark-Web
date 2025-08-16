@@ -530,7 +530,7 @@ const handleSend = async () => {
 
               {/* تفاصيل العقار */}
               <Grid container spacing={3}>
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <Box
                     sx={{
                       display: "flex",
@@ -552,7 +552,7 @@ const handleSend = async () => {
                   </Box>
                 </Grid>
 
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <Box
                     sx={{
                       display: "flex",
@@ -575,7 +575,7 @@ const handleSend = async () => {
                 </Grid>
 
                 {clientAds.rooms && (
-                  <Grid item xs={12} sm={6}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
                     <Box
                       sx={{
                         display: "flex",
@@ -598,7 +598,7 @@ const handleSend = async () => {
                 )}
 
                 {clientAds.bathrooms && (
-                  <Grid item xs={12} sm={6}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
                     <Box
                       sx={{
                         display: "flex",
@@ -621,7 +621,7 @@ const handleSend = async () => {
                 )}
 
                 {clientAds.area && (
-                  <Grid item xs={12} sm={6}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
                     <Box
                       sx={{
                         display: "flex",
@@ -644,7 +644,7 @@ const handleSend = async () => {
                 )}
 
                 {clientAds.floor && (
-                  <Grid item xs={12} sm={6}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
                     <Box
                       sx={{
                         display: "flex",
@@ -666,7 +666,7 @@ const handleSend = async () => {
                   </Grid>
                 )}
 
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <Box
                     sx={{
                       display: "flex",
@@ -687,7 +687,7 @@ const handleSend = async () => {
                   </Box>
                 </Grid>
 
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <Box
                     sx={{
                       display: "flex",
@@ -708,7 +708,7 @@ const handleSend = async () => {
                   </Box>
                 </Grid>
 
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <Box
                     sx={{
                       display: "flex",
@@ -729,7 +729,7 @@ const handleSend = async () => {
                   </Box>
                 </Grid>
 
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <Box
                     sx={{
                       display: "flex",
@@ -751,7 +751,7 @@ const handleSend = async () => {
                 </Grid>
 
                 {clientAds.paymentMethod && (
-                  <Grid item xs={12} sm={6}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
                     <Box
                       sx={{
                         display: "flex",
@@ -774,7 +774,7 @@ const handleSend = async () => {
                 )}
 
                 {clientAds.deliveryTerms && (
-                  <Grid item xs={12}>
+                  <Grid size={{ xs: 12 }}>
                     <Box
                       sx={{
                         display: "flex",
@@ -825,7 +825,7 @@ const handleSend = async () => {
               {/* سطر معلومات الباقة */}
 
               {isOwner && clientAds.adPackage && (
-                <Grid item xs={12} sm={6} mt={3}>
+                <Grid size={{ xs: 12, sm: 6 }} mt={3}>
                   <Typography variant="body2" color="text.secondary">
                     الباقة المختارة
                   </Typography>

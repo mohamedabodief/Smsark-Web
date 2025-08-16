@@ -311,7 +311,7 @@
 //       )}
 //       <form onSubmit={handleSubmit}>
 //         <Grid spacing={2} dir="rtl">
-//           <Grid item xs={12} md={6} mt={2} mb={2} lg={4}>
+//           <Grid size={{ xs: 12, md: 6 }} mt={2} mb={2} lg={4}>
 //             <TextField
 //               fullWidth
 //               label="عنوان الإعلان"
@@ -322,7 +322,7 @@
 //               disabled={loading}
 //             />
 //           </Grid>
-//           {/* <Grid item xs={12} md={6} mt={2} mb={2} lg={4}>
+//           {/* <Grid size={{ xs: 12, md: 6 }} mt={2} mb={2} lg={4}>
 //             <TextField
 //               fullWidth
 //               label="نموذج التمويل"
@@ -333,7 +333,7 @@
 //               disabled={loading}
 //             />
 //           </Grid> */}
-//           <Grid item xs={12} md={6} mt={2} mb={2} lg={4}>
+//           <Grid size={{ xs: 12, md: 6 }} mt={2} mb={2} lg={4}>
 //             <TextField
 //               fullWidth
 //               label="الوصف"
@@ -346,7 +346,7 @@
 //               disabled={loading}
 //             />
 //           </Grid>
-//           <Grid item xs={12} md={6} mt={2} mb={2} lg={4}>
+//           <Grid size={{ xs: 12, md: 6 }} mt={2} mb={2} lg={4}>
 //             <TextField
 //               fullWidth
 //               label="اسم الجهة"
@@ -357,7 +357,7 @@
 //               disabled={loading}
 //             />
 //           </Grid>
-//           <Grid item xs={12} md={6} mt={2} mb={2} lg={4}>
+//           <Grid size={{ xs: 12, md: 6 }} mt={2} mb={2} lg={4}>
 //             <TextField
 //               fullWidth
 //               label="رقم الهاتف"
@@ -368,7 +368,7 @@
 //               disabled={loading}
 //             />
 //           </Grid>
-//           <Grid item xs={12} md={6} mt={2} mb={2} lg={4}>
+//           <Grid size={{ xs: 12, md: 6 }} mt={2} mb={2} lg={4}>
 //             <TextField
 //               fullWidth
 //               label="الحد الأدنى (جنيه)"
@@ -380,7 +380,7 @@
 //               disabled={loading}
 //             />
 //           </Grid>
-//           <Grid item xs={12} md={6} mt={2} mb={2} lg={4}>
+//           <Grid size={{ xs: 12, md: 6 }} mt={2} mb={2} lg={4}>
 //             <TextField
 //               fullWidth
 //               label="الحد الأقصى (جنيه)"
@@ -392,7 +392,7 @@
 //               disabled={loading}
 //             />
 //           </Grid>
-//           <Grid item xs={12} md={4} mt={2} mb={2} lg={4}>
+//           <Grid size={{ xs: 12, md: 4 }} mt={2} mb={2} lg={4}>
 //             <TextField
 //               fullWidth
 //               label="فائدة حتى 5 سنوات (%)"
@@ -404,7 +404,7 @@
 //               disabled={loading}
 //             />
 //           </Grid>
-//           <Grid item xs={12} md={4} mt={2} mb={2} lg={4}>
+//           <Grid size={{ xs: 12, md: 4 }} mt={2} mb={2} lg={4}>
 //             <TextField
 //               fullWidth
 //               label="فائدة حتى 10 سنوات (%)"
@@ -416,7 +416,7 @@
 //               disabled={loading}
 //             />
 //           </Grid>
-//           <Grid item xs={12} md={4} mt={2} mb={2} lg={4}>
+//           <Grid size={{ xs: 12, md: 4 }} mt={2} mb={2} lg={4}>
 //             <TextField
 //               fullWidth
 //               label="فائدة أكثر من 10 سنوات (%)"
@@ -428,7 +428,7 @@
 //               disabled={loading}
 //             />
 //           </Grid>
-//           <Grid item xs={12} mt={2}>
+//           <Grid size={{ xs: 12 }} mt={2}>
 //             <Typography variant="h6" sx={{ color: "#6E00FE", mb: 2, mt: 2, textAlign: "right" }}>
 //               صور الإعلان (حد أقصى 4 صور)
 //             </Typography>
@@ -484,7 +484,7 @@
 //           <AdPackages selectedPackageId={selectedPackage} setSelectedPackageId={setSelectedPackage} onReceiptImageChange={setReceiptImage} />
 //           <PaymentMethods />
 
-//           <Grid item xs={12} sx={{ textAlign: 'center', mt: 2 }}>
+//           <Grid size={{ xs: 12 }} sx={{ textAlign: 'center', mt: 2 }}>
 //             <Button
 //               type="submit"
 //               variant="contained"
@@ -855,7 +855,7 @@ export default function AddFinancingAdForm() {
       </Snackbar>
       <form onSubmit={handleSubmit}>
         <Grid spacing={2} dir="rtl">
-          <Grid item xs={12} md={6} mt={2} mb={2} lg={4}>
+          <Grid size={{ xs: 12, md: 6 }} mt={2} mb={2} lg={4}>
             <TextField
               fullWidth
               label="عنوان الإعلان"
@@ -866,7 +866,7 @@ export default function AddFinancingAdForm() {
               disabled={loading}
             />
           </Grid>
-          <Grid item xs={12} md={6} mt={2} mb={2} lg={4}>
+          <Grid size={{ xs: 12, md: 6 }} mt={2} mb={2} lg={4}>
             <TextField
               fullWidth
               label="الوصف"
@@ -879,7 +879,7 @@ export default function AddFinancingAdForm() {
               disabled={loading}
             />
           </Grid>
-          <Grid item xs={12} md={6} mt={2} mb={2} lg={4}>
+          <Grid size={{ xs: 12, md: 6 }} mt={2} mb={2} lg={4}>
             <TextField
               fullWidth
               label="اسم الجهة"
@@ -890,7 +890,7 @@ export default function AddFinancingAdForm() {
               disabled={loading}
             />
           </Grid>
-          <Grid item xs={12} md={6} mt={2} mb={2} lg={4}>
+          <Grid size={{ xs: 12, md: 6 }} mt={2} mb={2} lg={4}>
             <TextField
               fullWidth
               label="رقم الهاتف"
@@ -901,7 +901,7 @@ export default function AddFinancingAdForm() {
               disabled={loading}
             />
           </Grid>
-          <Grid item xs={12} md={6} mt={2} mb={2} lg={4}>
+          <Grid size={{ xs: 12, md: 6 }} mt={2} mb={2} lg={4}>
             <TextField
               fullWidth
               label="الحد الأدنى (جنيه)"
@@ -913,7 +913,7 @@ export default function AddFinancingAdForm() {
               disabled={loading}
             />
           </Grid>
-          <Grid item xs={12} md={6} mt={2} mb={2} lg={4}>
+          <Grid size={{ xs: 12, md: 6 }} mt={2} mb={2} lg={4}>
             <TextField
               fullWidth
               label="الحد الأقصى (جنيه)"
@@ -925,7 +925,7 @@ export default function AddFinancingAdForm() {
               disabled={loading}
             />
           </Grid>
-          <Grid item xs={12} md={4} mt={2} mb={2} lg={4}>
+          <Grid size={{ xs: 12, md: 4 }} mt={2} mb={2} lg={4}>
             <TextField
               fullWidth
               label="فائدة حتى 5 سنوات (%)"
@@ -937,7 +937,7 @@ export default function AddFinancingAdForm() {
               disabled={loading}
             />
           </Grid>
-          <Grid item xs={12} md={4} mt={2} mb={2} lg={4}>
+          <Grid size={{ xs: 12, md: 4 }} mt={2} mb={2} lg={4}>
             <TextField
               fullWidth
               label="فائدة حتى 10 سنوات (%)"
@@ -949,7 +949,7 @@ export default function AddFinancingAdForm() {
               disabled={loading}
             />
           </Grid>
-          <Grid item xs={12} md={4} mt={2} mb={2} lg={4}>
+          <Grid size={{ xs: 12, md: 4 }} mt={2} mb={2} lg={4}>
             <TextField
               fullWidth
               label="فائدة أكثر من 10 سنوات (%)"
@@ -961,7 +961,7 @@ export default function AddFinancingAdForm() {
               disabled={loading}
             />
           </Grid>
-          <Grid item xs={12} mt={2}>
+          <Grid size={{ xs: 12 }} mt={2}>
             <Typography variant="h6" sx={{ color: "#6E00FE", mb: 2, mt: 2, textAlign: "right" }}>
               صور الإعلان (حد أقصى 4 صور)
             </Typography>
@@ -1014,7 +1014,7 @@ export default function AddFinancingAdForm() {
               )}
             </Box>
           </Grid>
-          <Grid item xs={12}>
+          <Grid size={{ xs: 12 }}>
             <Typography variant="h6" sx={{ color: "#6E00FE", mb: 2, mt: 2, textAlign: "right" }}>
               اختيار الباقة وإيصال الدفع
             </Typography>
@@ -1045,7 +1045,7 @@ export default function AddFinancingAdForm() {
             )}
           </Grid>
           <PaymentMethods />
-          <Grid item xs={12} sx={{ textAlign: 'center', mt: 2 }}>
+          <Grid size={{ xs: 12 }} sx={{ textAlign: 'center', mt: 2 }}>
             <Button
               type="submit"
               variant="contained"

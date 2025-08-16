@@ -165,7 +165,7 @@ const PaymentMethods = () => {
   return (
     <>
       <Grid container sx={{ width: "100%", py: 4, px: 2, borderRadius: 2,display:"flex",justifyContent:"center", mt: 4, mb: 2,marginRight:30 }} dir="rtl">
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <Typography variant="h5" sx={{ color: "#6E00FE",display:"flex",justifyContent:"center", mb: 5, fontWeight: "bold", fontSize: "1.5rem" }}>
             وسائل الدفع المتاحة
           </Typography>
