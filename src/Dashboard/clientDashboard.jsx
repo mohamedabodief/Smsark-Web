@@ -1087,10 +1087,11 @@ function ClientAdvertismentPage() {
                 minHeight: 'calc(100% - 64px - 48px)',
             }}
         >
-            <Typography sx={{ display: 'flex', flexDirection: 'row' }} variant="h4" gutterBottom>
-                إعلاناتى
-            </Typography>
-
+            <PageHeader
+                title="إعلاناتى"
+                icon={BroadcastOnPersonalIcon}
+                showCount={false}
+            />
             {/* Statistics */}
             <Box sx={{ mb: 3, display: 'flex', gap: 2, flexWrap: 'wrap', justifyContent: 'center' }}>
                 <Chip label={`الكل: ${filteredAdvertisements.length}`} color="primary" />
@@ -1471,10 +1472,12 @@ function OrdersPage() {
     };
 
     return (
-        <Box sx={{ p: 2, textAlign: 'right' }}>
-            <Typography variant="h4" sx={{ display: 'flex', flexDirection: 'row-reverse' }} gutterBottom>
-                طلبات التمويل
-            </Typography>
+        <Box dir='rtl' sx={{ p: 2 }}>
+            <PageHeader
+                title="طلبات التمويل"
+                icon={AccountBalanceWalletIcon}
+                showCount={false}
+            />
 
             {/* Main Content Area */}
             <Paper sx={{ p: 2, borderRadius: 2, minHeight: 400, textAlign: 'right', direction: 'rtl' }}>
@@ -1907,10 +1910,14 @@ function SettingsPage() {
 
     return (
         <Box dir='rtl' sx={{ p: 2 }}>
-            <Typography variant="h4" gutterBottom>إعدادات الحساب</Typography>
+            <PageHeader
+                title="إعدادات الحساب"
+                icon={SettingsIcon}
+                showCount={false}
+            />
             
             <Paper dir='rtl' sx={{ p: 2, borderRadius: 2, minHeight: 200, textAlign: 'left' }}>
-                <Typography variant="h6" color="text.secondary" gutterBottom>
+                <Typography variant="h4" color="text.secondary" gutterBottom>
                     إدارة الحساب
                 </Typography>
                 
