@@ -363,9 +363,9 @@ export default function Advertise() {
   useEffect(() => {
     const fetchUserType = async () => {
       const uid = auth.currentUser?.uid;
-      console.log('جلب بيانات المستخدم للمعرف:', uid);
+      // console.log('جلب بيانات المستخدم للمعرف:', uid);
       if (!uid) {
-        console.log('لا يوجد مستخدم مسجل الدخول');
+        // console.log('لا يوجد مستخدم مسجل الدخول');
         setUserType(null);
         setOrgType(null);
         return;
@@ -373,28 +373,28 @@ export default function Advertise() {
 
       try {
         const user = await User.getByUid(uid);
-        console.log('بيانات المستخدم الخام من Firebase:', user);
+        // console.log('بيانات المستخدم الخام من Firebase:', user);
         if (user && user.type_of_user) {
           const normalizedUserType = user.type_of_user.toLowerCase().trim();
-          console.log('نوع المستخدم المنسق:', normalizedUserType);
+          // console.log('نوع المستخدم المنسق:', normalizedUserType);
           setUserType(normalizedUserType);
           if (normalizedUserType === 'organization' && user.type_of_organization) {
             const normalizedOrgType = user.type_of_organization.toLowerCase().trim();
-            console.log('نوع المنظمة المنسق:', normalizedOrgType);
+            // console.log('نوع المنظمة المنسق:', normalizedOrgType);
             
             const mappedOrgType = orgTypeMapping[normalizedOrgType] || normalizedOrgType;
-            console.log('نوع المنظمة بعد التحويل:', mappedOrgType);
+            // console.log('نوع المنظمة بعد التحويل:', mappedOrgType);
             setOrgType(mappedOrgType);
           } else {
             setOrgType(null);
           }
         } else {
-          console.log('لم يتم العثور على بيانات المستخدم أو type_of_user للمعرف:', uid);
+          // console.log('لم يتم العثور على بيانات المستخدم أو type_of_user للمعرف:', uid);
           setUserType(null);
           setOrgType(null);
         }
       } catch (error) {
-        console.error('خطأ في جلب بيانات المستخدم:', error);
+        // console.error('خطأ في جلب بيانات المستخدم:', error);
         setUserType(null);
         setOrgType(null);
       }
@@ -424,12 +424,12 @@ export default function Advertise() {
   }, [errorPromptAnchorEl]);
 
   const handleNavigate = (item) => {
-    console.log('تم استدعاء handleNavigate مع العنصر:', item);
-    console.log('نوع المستخدم الحالي:', userType);
-    console.log('نوع المنظمة الحالي:', orgType);
+    // console.log('تم استدعاء handleNavigate مع العنصر:', item);
+    // console.log('نوع المستخدم الحالي:', userType);
+    // console.log('نوع المنظمة الحالي:', orgType);
 
     if (!userType) {
-      console.log('لا يوجد نوع مستخدم، عرض رسالة تسجيل الدخول');
+      // console.log('لا يوجد نوع مستخدم، عرض رسالة تسجيل الدخول');
       setLoginPromptAnchorEl(document.body);
       return;
     }
@@ -439,36 +439,36 @@ export default function Advertise() {
     const validUserTypes = ['client', 'developer', 'financer', 'admin', 'organization'];
 
     if (!validUserTypes.includes(normalizedUserType)) {
-      console.log(`نوع المستخدم ${normalizedUserType} غير صالح، عرض رسالة خطأ`);
+      // console.log(`نوع المستخدم ${normalizedUserType} غير صالح، عرض رسالة خطأ`);
       setRequestedType(null);
       setErrorPromptAnchorEl(document.body);
       return;
     }
 
     if (normalizedUserType === 'admin') {
-      console.log('مستخدم أدمن، يتم التوجيه إلى:', item.route);
+      // console.log('مستخدم أدمن، يتم التوجيه إلى:', item.route);
       navigate(item.route);
     } else if (normalizedUserType === 'organization') {
       if (!orgType) {
-        console.log('لا يوجد type_of_organization صالح، عرض رسالة خطأ');
+        // console.log('لا يوجد type_of_organization صالح، عرض رسالة خطأ');
         setRequestedType(null);
         setErrorPromptAnchorEl(document.body);
         return;
       }
       const normalizedOrgType = orgType.toLowerCase().trim();
       if (normalizedOrgType === normalizedItemType && (normalizedOrgType === 'developer' || normalizedOrgType === 'financer')) {
-        console.log(`نوع المنظمة ${normalizedOrgType} يتطابق مع نوع العنصر ${normalizedItemType}، يتم التوجيه إلى:`, item.route);
+        // console.log(`نوع المنظمة ${normalizedOrgType} يتطابق مع نوع العنصر ${normalizedItemType}، يتم التوجيه إلى:`, item.route);
         navigate(item.route);
       } else {
-        console.log(`نوع المنظمة ${normalizedOrgType} لا يتطابق مع نوع العنصر ${normalizedItemType}، عرض رسالة خطأ`);
+        // console.log(`نوع المنظمة ${normalizedOrgType} لا يتطابق مع نوع العنصر ${normalizedItemType}، عرض رسالة خطأ`);
         setRequestedType(item.type);
         setErrorPromptAnchorEl(document.body);
       }
     } else if (normalizedUserType === normalizedItemType) {
-      console.log(`نوع المستخدم ${normalizedUserType} يتطابق مع نوع العنصر ${normalizedItemType}، يتم التوجيه إلى:`, item.route);
+      // console.log(`نوع المستخدم ${normalizedUserType} يتطابق مع نوع العنصر ${normalizedItemType}، يتم التوجيه إلى:`, item.route);
       navigate(item.route);
     } else {
-      console.log(`نوع المستخدم ${normalizedUserType} لا يتطابق مع نوع العنصر ${normalizedItemType}، عرض رسالة خطأ`);
+      // console.log(`نوع المستخدم ${normalizedUserType} لا يتطابق مع نوع العنصر ${normalizedItemType}، عرض رسالة خطأ`);
       setRequestedType(item.type);
       setErrorPromptAnchorEl(document.body);
     }
@@ -478,9 +478,6 @@ export default function Advertise() {
   const errorPromptOpen = Boolean(errorPromptAnchorEl);
 
   const getErrorMessage = () => {
-    if (!requestedType) {
-      return 'نوع حسابك أو منظمتك غير صالح، يرجى التواصل مع الدعم';
-    }
     switch (requestedType) {
       case 'client':
         return 'غير مصرح لك بالدخول، يجب التسجيل كـ عميل أولاً';
@@ -488,8 +485,8 @@ export default function Advertise() {
         return 'غير مصرح لك بالدخول، يجب التسجيل كـ مطور أولاً';
       case 'financer':
         return 'غير مصرح لك بالدخول، يجب التسجيل كـ ممول أولاً';
-      default:
-        return 'غير مصرح لك بالدخول لهذا القسم';
+      // default:
+        // return 'غير مصرح لك بالدخول لهذا القسم';
     }
   };
   return (
