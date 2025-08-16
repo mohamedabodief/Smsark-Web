@@ -503,7 +503,7 @@ const handleSend = async () => {
                   WebkitLineClamp: showFull ? "none" : 4,
                   WebkitBoxOrient: "vertical",
                   mb: 3,
-                  color: "#333",
+                  color: "primary",
                 }}
               >
                 {clientAds.description || "لا يوجد وصف متاح"}

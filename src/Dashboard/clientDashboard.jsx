@@ -1848,6 +1848,7 @@ function SettingsPage() {
     const [snackbarOpen, setSnackbarOpen] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState('');
     const [snackbarSeverity, setSnackbarSeverity] = useState('success');
+    const [deleteConfirmText, setDeleteConfirmText] = useState('');
 
     const handleDeleteAccount = () => {
         setDeleteDialogOpen(true);
@@ -1896,6 +1897,13 @@ function SettingsPage() {
         }
         setSnackbarOpen(false);
     };
+
+    // Reset confirmation input when dialog is closed
+    useEffect(() => {
+        if (!deleteDialogOpen) {
+            setDeleteConfirmText('');
+        }
+    }, [deleteDialogOpen]);
 
     return (
         <Box dir='rtl' sx={{ p: 2 }}>
@@ -1980,6 +1988,13 @@ function SettingsPage() {
                         size="small"
                         sx={{ mt: 1 }}
                         id="delete-confirmation"
+                        value={deleteConfirmText}
+                        onChange={(e) => setDeleteConfirmText(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !deleteLoading && deleteConfirmText === 'حذف') {
+                                handleConfirmDelete();
+                            }
+                        }}
                     />
                 </DialogContent>
                 <DialogActions>
@@ -1987,13 +2002,14 @@ function SettingsPage() {
                         onClick={() => setDeleteDialogOpen(false)} 
                         color="primary" 
                         disabled={deleteLoading}
+                        variant='contained'
                     >
                         إلغاء
                     </Button>
                     <Button 
                         onClick={handleConfirmDelete} 
                         color="error" 
-                        disabled={deleteLoading}
+                        disabled={deleteLoading || deleteConfirmText !== 'حذف'}
                         autoFocus
                     >
                         {deleteLoading ? <CircularProgress size={20} /> : 'حذف الحساب نهائياً'}

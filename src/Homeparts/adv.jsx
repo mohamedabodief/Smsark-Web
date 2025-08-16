@@ -527,7 +527,10 @@ export default function Advertise() {
         }}
         disableRestoreFocus
       >
-        <Box sx={{ p: 2, bgcolor: '#fff', borderRadius: '8px' }}>
+        <Box sx={{ p: 2,backgroundColor: (theme) => 
+            theme.palette.mode === 'light' 
+              ? theme.palette.grey[50] 
+              : theme.palette.grey[900], borderRadius: '8px' }}>
           <Typography>{getErrorMessage()}</Typography>
         </Box>
       </Popover>
