@@ -262,6 +262,34 @@ const uploadReceiptAndGetUrl = async (receiptImage, userId, adId) => {
 };
 
 const ModernRealEstateForm = () => {
+  // التمرير إلى أعلى الصفحة عند تحميل الكومبوننت مع حماية وتأخير لضمان التحميل
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      console.log("[DEBUG] Attempting scroll to top");
+      const scrollToTop = () => {
+        try {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          console.log("[DEBUG] Scroll to top executed successfully");
+        } catch (error) {
+          console.error("[DEBUG] خطأ في التمرير إلى أعلى الصفحة:", error);
+          // Fallback to instant scroll if smooth fails
+          try {
+            window.scrollTo(0, 0);
+            console.log("[DEBUG] Fallback scroll to top executed");
+          } catch (fallbackError) {
+            console.error("[DEBUG] خطأ في التمرير الفوري:", fallbackError);
+          }
+        }
+      };
+
+      // Delay execution to ensure DOM is fully loaded
+      const timer = setTimeout(scrollToTop, 100);
+      return () => clearTimeout(timer);
+    } else {
+      console.log("[DEBUG] Window object not available, skipping scroll");
+    }
+  }, []);
+
   const [images, setImages] = useState([]);
   const [existingImages, setExistingImages] = useState([]);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -942,11 +970,6 @@ const ModernRealEstateForm = () => {
                     <Controller
                       name="title"
                       control={control}
-                      backgroundColor={(theme) =>( 
-                        theme.palette.mode === 'light' 
-                          ? theme.palette.grey[50] 
-                          : theme.palette.grey[900]
-                        )}
                       render={({ field }) => (
                         <StyledTextField
                           {...field}
@@ -1745,7 +1768,6 @@ const ModernRealEstateForm = () => {
       )}
       {errors.receiptImage && (
         <Typography
-        
           variant="caption"
           color="error"
           sx={{ mt: 1, textAlign: "right" }}

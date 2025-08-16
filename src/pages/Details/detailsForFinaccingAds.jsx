@@ -33,6 +33,7 @@ import FinancingAdvertisement from "../../FireBase/modelsWithOperations/Financin
 import { auth } from "../../FireBase/firebaseConfig";
 import Message from "../../FireBase/MessageAndNotification/Message";
 import Notification from "../../FireBase/MessageAndNotification/Notification";
+
 // أضف هذا بعد الاستيرادات مباشرة
 const PACKAGE_INFO = {
   1: { name: "باقة الأساس", price: 100, duration: 7 },
@@ -41,6 +42,11 @@ const PACKAGE_INFO = {
 };
 
 function DetailsForFinaccingAds() {
+  // التمرير إلى الأعلى عند تحميل الصفحة
+  React.useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState("");
   const { id } = useParams();
@@ -50,7 +56,8 @@ function DetailsForFinaccingAds() {
   const [error, setError] = useState(null);
   const navigate = useNavigate();
   const currentUser = auth.currentUser?.uid;
-const handleSend = async () => {
+
+  const handleSend = async () => {
     if (!message.trim() || !currentUser || !clientAds?.userId) return;
 
     try {
@@ -88,11 +95,13 @@ const handleSend = async () => {
       alert("فشل في إرسال الرسالة!");
     }
   };
-   const pulse = keyframes`
+
+  const pulse = keyframes`
     0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.4); }
     70% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(37, 211, 102, 0); }
     100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(37, 211, 102, 0); }
   `;
+
   useEffect(() => {
     const fetchAd = async () => {
       try {
@@ -112,6 +121,7 @@ const handleSend = async () => {
     };
     if (id) fetchAd();
   }, [id]);
+
   const handleShare = async () => {
     if (navigator.share) {
       try {
@@ -128,14 +138,17 @@ const handleSend = async () => {
       alert("المتصفح لا يدعم خاصية المشاركة.");
     }
   };
+
   const isOwner =
     auth.currentUser?.uid &&
     clientAds?.userId &&
     auth.currentUser.uid === clientAds.userId;
+
   // Debug
   console.log("auth.currentUser?.uid:", auth.currentUser?.uid);
   console.log("clientAds?.userId:", clientAds?.userId);
   console.log("isOwner:", isOwner);
+
   const toggleShow = () => setShowFull((prev) => !prev);
 
   if (error) {
@@ -190,7 +203,7 @@ const handleSend = async () => {
       )
     : [];
   const mainImg = mainImage || validImages[0] || "/no-image.svg";
- 
+
   return (
     <Container maxWidth="lg" dir="rtl">
       {/* أزرار التفاعل */}
@@ -461,7 +474,6 @@ const handleSend = async () => {
                     </Box>
                   </Grid>
                   {/* عرض اسم الباقة المختارة */}
-
                   {isOwner &&
                     (clientAds.adPackageName ||
                       PACKAGE_INFO[String(clientAds.adPackage)]?.name) && (
@@ -479,7 +491,6 @@ const handleSend = async () => {
                         </Typography>
                       </Grid>
                     )}
-              
                 </Grid>
                 <Divider sx={{ my: 3 }} />
                 <Box
@@ -493,9 +504,9 @@ const handleSend = async () => {
                 >
                   <Box
                     sx={{
-                      backgroundColor: (theme) => 
-                        theme.palette.mode === 'light' 
-                          ? theme.palette.grey[50] 
+                      backgroundColor: (theme) =>
+                        theme.palette.mode === "light"
+                          ? theme.palette.grey[50]
                           : theme.palette.grey[900],
                       display: "flex",
                       gap: "30px",
@@ -503,14 +514,16 @@ const handleSend = async () => {
                       width: "100%",
                       padding: "20px",
                       borderRadius: "10px",
-                      border: (theme) => 
-                        `1px solid ${theme.palette.mode === 'light' 
-                          ? theme.palette.grey[200] 
-                          : theme.palette.grey[800]}`,
+                      border: (theme) =>
+                        `1px solid ${
+                          theme.palette.mode === "light"
+                            ? theme.palette.grey[200]
+                            : theme.palette.grey[800]
+                        }`,
                       boxShadow: (theme) =>
-                        theme.palette.mode === 'light'
-                          ? '0 2px 4px rgba(0,0,0,0.05)'
-                          : '0 2px 4px rgba(0,0,0,0.2)',
+                        theme.palette.mode === "light"
+                          ? "0 2px 4px rgba(0,0,0,0.05)"
+                          : "0 2px 4px rgba(0,0,0,0.2)",
                     }}
                   >
                     <Avatar
@@ -567,54 +580,63 @@ const handleSend = async () => {
                     </Box>
 
                     <Divider sx={{ my: 3 }} />
-  {/**contact with user */}
-      <Box
-        onClick={() => setOpen(true)}
-        sx={{
-          position: "fixed",
-          bottom: 20,
-          right: 20,
-          backgroundColor: "#1976d2",
-          color: "white",
-          px: 2.5,
-          py: 1,
-          borderRadius: "30px",
-          zIndex: 999,
-          cursor: "pointer",
-          animation: `${pulse} 2s infinite`,
-          transition: "transform 0.3s",
-          "&:hover": { transform: "scale(1.05)" },
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          boxShadow: "0px 4px 12px rgba(0,0,0,0.2)",
-        }}
-      >
-        <ChatBubbleOutlineIcon sx={{ fontSize: 22, mr: 1 }} />
-        <Typography sx={{ fontWeight: "bold", fontSize: "0.9rem" }}>
-          تواصل مع البائع
-        </Typography>
-      </Box>
-      <Dialog open={open} fullWidth dir="rtl" onClose={() => setOpen(false)}>
-        <DialogTitle>تواصل مع البائع بكل سهوله</DialogTitle>
-        <DialogContent>
-          <TextField
-            autoFocus
-            margin="dense"
-            label="اكتب رسالتك هنا"
-            fullWidth
-            multiline
-            rows={4}
-            variant="outlined"
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpen(false)}>إلغاء</Button>
-          <Button variant="contained" onClick={handleSend}>إرسال</Button>
-        </DialogActions>
-      </Dialog>
+                    {/**contact with user */}
+                    <Box
+                      onClick={() => setOpen(true)}
+                      sx={{
+                        position: "fixed",
+                        bottom: 20,
+                        right: 20,
+                        backgroundColor: "#1976d2",
+                        color: "white",
+                        px: 2.5,
+                        py: 1,
+                        borderRadius: "30px",
+                        zIndex: 999,
+                        cursor: "pointer",
+                        animation: `${pulse} 2s infinite`,
+                        transition: "transform 0.3s",
+                        "&:hover": { transform: "scale(1.05)" },
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        boxShadow: "0px 4px 12px rgba(0,0,0,0.2)",
+                      }}
+                    >
+                      <ChatBubbleOutlineIcon sx={{ fontSize: 22, mr: 1 }} />
+                      <Typography
+                        sx={{ fontWeight: "bold", fontSize: "0.9rem" }}
+                      >
+                        تواصل مع البائع
+                      </Typography>
+                    </Box>
+                    <Dialog
+                      open={open}
+                      fullWidth
+                      dir="rtl"
+                      onClose={() => setOpen(false)}
+                    >
+                      <DialogTitle>تواصل مع البائع بكل سهوله</DialogTitle>
+                      <DialogContent>
+                        <TextField
+                          autoFocus
+                          margin="dense"
+                          label="اكتب رسالتك هنا"
+                          fullWidth
+                          multiline
+                          rows={4}
+                          variant="outlined"
+                          value={message}
+                          onChange={(e) => setMessage(e.target.value)}
+                        />
+                      </DialogContent>
+                      <DialogActions>
+                        <Button onClick={() => setOpen(false)}>إلغاء</Button>
+                        <Button variant="contained" onClick={handleSend}>
+                          إرسال
+                        </Button>
+                      </DialogActions>
+                    </Dialog>
                     {/* أزرار التواصل */}
                     <Box
                       sx={{
@@ -677,8 +699,6 @@ const handleSend = async () => {
                     </Box>
 
                     <Divider sx={{ my: 3 }} />
-
-               
                   </CardContent>
                 </Paper>
               </Grid>
@@ -722,30 +742,30 @@ const handleSend = async () => {
       )}
       {/* زر انشاء طلب تمويل */}
       {!isOwner && (
-  <Button
-    variant="contained"
-    color="primary"
-    sx={{
-      borderRadius: "15px",
-      fontWeight: "bold",
-      px: 5,
-      py: 1.5,
-      mr: 2,
-      mb: 2,
-      width: "20%",
-      justifyContent: "center",
-      backgroundColor: "#6E00FE",
-      "&:hover": { backgroundColor: "#200D3A" },
-    }}
-    onClick={() =>
-      navigate("/financing-request", {
-        state: { advertisementId: id, adData: clientAds },
-      })
-    }
-  >
-    انشاء طلب تمويل
-  </Button>
-)}
+        <Button
+          variant="contained"
+          color="primary"
+          sx={{
+            borderRadius: "15px",
+            fontWeight: "bold",
+            px: 5,
+            py: 1.5,
+            mr: 2,
+            mb: 2,
+            width: "20%",
+            justifyContent: "center",
+            backgroundColor: "#6E00FE",
+            "&:hover": { backgroundColor: "#200D3A" },
+          }}
+          onClick={() =>
+            navigate("/financing-request", {
+              state: { advertisementId: id, adData: clientAds },
+            })
+          }
+        >
+          انشاء طلب تمويل
+        </Button>
+      )}
     </Container>
   );
 }
