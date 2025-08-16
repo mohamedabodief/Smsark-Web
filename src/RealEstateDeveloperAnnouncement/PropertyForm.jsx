@@ -989,7 +989,7 @@ const PropertyForm = ({
                       backgroundColor: "#f5f5f5",
                     }}
                   >
-                    <Typography variant="caption" textAlign="center">
+                    <Typography variant="caption" color="primary" textAlign="center">
                       لا توجد صور
                     </Typography>
                   </Box>

@@ -1009,7 +1009,7 @@ export default function AddFinancingAdForm() {
               ))}
               {imageMetadata.length === 0 && !loading && (
                 <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100px", height: "100px", border: "2px dashed #ccc", borderRadius: "8px", color: "text.secondary", backgroundColor: "#f5f5f5" }}>
-                  <Typography variant="caption" textAlign="center">لا توجد صور</Typography>
+                  <Typography variant="caption" color="primary" textAlign="center">لا توجد صور</Typography>
                 </Box>
               )}
             </Box>

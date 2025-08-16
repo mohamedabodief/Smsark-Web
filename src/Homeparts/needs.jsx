@@ -53,7 +53,9 @@ export default function Needs() {
         }}
       >
         <Grid
-          size={{ xs: 12, md: 6 }}
+          item
+          xs={12}
+          md={6}
           sx={{
             display: 'flex',
             justifyContent: 'center',
@@ -66,7 +68,9 @@ export default function Needs() {
         </Grid>
 
         <Grid
-          size={{ xs: 12, md: 6 }}
+          item
+          xs={12}
+          md={6}
           sx={{
             display: 'flex',
             flexDirection: 'column',
@@ -84,7 +88,7 @@ export default function Needs() {
             sx={{ maxWidth: 900 }}
           >
             {cards.slice(0, 2).map((item, i) => (
-              <Grid size={{ xs: 12, sm: 6 }} key={i}>
+              <Grid item xs={12} sm={6} key={i}>
                 <Box
                   sx={{
                     borderRadius: 3,
@@ -153,7 +157,7 @@ export default function Needs() {
             sx={{ maxWidth: 900 }}
           >
             {cards.slice(2).map((item, i) => (
-              <Grid size={{ xs: 12, sm: 6 }} key={i}>
+              <Grid item xs={12} sm={6} key={i}>
                 <Box
                   sx={{
                     borderRadius: 3,

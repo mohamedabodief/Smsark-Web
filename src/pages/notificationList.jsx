@@ -11,7 +11,7 @@ const NotificationCard = memo(
       className="notification-card"
       sx={{
         p: 1,
-        height: '90px',
+        height: 'auto',
         overflow: 'hidden',
         display: 'flex',
         alignItems: 'center',
@@ -37,8 +37,8 @@ const NotificationCard = memo(
       <CardContent sx={{ p: 1.5 }}>
         <Stack direction="row" display="flex" justifyContent="space-between" alignItems="flex-start">
           <Box sx={{ flex: 1 }}>
-            <Typography variant="subtitle2" fontWeight="bold">{notif.title}</Typography>
-            <Typography variant="body2" fontSize={13}>{notif.body}</Typography>
+            <Typography variant="subtitle2" color="primary" fontWeight="bold">{notif.title}</Typography>
+            <Typography variant="body2" color="black" fontSize={13}>{notif.body}</Typography>
           </Box>
           <Stack direction="column" spacing={1} ml={6}>
             <Tooltip title="تحديد كمقروء">

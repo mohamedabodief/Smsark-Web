@@ -372,7 +372,7 @@ const handleSend = async () => {
                   )}
                 <Divider sx={{ my: 3 }} />
                 <Grid container spacing={2}>
-                  <Grid size={{ xs: 12, sm: 6 }}>
+                  <Grid item xs={12} sm={6}>
                     <Box
                       sx={{
                         display: "flex",
@@ -389,7 +389,7 @@ const handleSend = async () => {
                       </Typography>
                     </Box>
                   </Grid>
-                  <Grid size={{ xs: 12, sm: 6 }}>
+                  <Grid item xs={12} sm={6}>
                     <Box
                       sx={{
                         display: "flex",
@@ -407,7 +407,7 @@ const handleSend = async () => {
                       </Typography>
                     </Box>
                   </Grid>
-                  <Grid size={{ xs: 12, sm: 6 }}>
+                  <Grid item xs={12} sm={6}>
                     <Box
                       sx={{
                         display: "flex",
@@ -424,7 +424,7 @@ const handleSend = async () => {
                       </Typography>
                     </Box>
                   </Grid>
-                  <Grid size={{ xs: 12, sm: 6 }}>
+                  <Grid item xs={12} sm={6}>
                     <Box
                       sx={{
                         display: "flex",
@@ -441,7 +441,7 @@ const handleSend = async () => {
                       </Typography>
                     </Box>
                   </Grid>
-                  <Grid size={{ xs: 12, sm: 12 }}>
+                  <Grid item xs={12} sm={12}>
                     <Box
                       sx={{
                         display: "flex",
@@ -465,7 +465,7 @@ const handleSend = async () => {
                   {isOwner &&
                     (clientAds.adPackageName ||
                       PACKAGE_INFO[String(clientAds.adPackage)]?.name) && (
-                      <Grid size={{ xs: 12, sm: 6 }} lg={12}>
+                      <Grid item xs={12} sm={6} lg={12}>
                         <Typography variant="body2" color="text.secondary">
                           الباقة المختارة
                         </Typography>

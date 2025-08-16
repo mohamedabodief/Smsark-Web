@@ -165,7 +165,7 @@ const PaymentMethods = () => {
   return (
     <>
       <Grid container sx={{ width: "100%", py: 4, px: 2, borderRadius: 2,display:"flex",justifyContent:"center", mt: 4, mb: 2,marginRight:30 }} dir="rtl">
-        <Grid size={{ xs: 12 }}>
+        <Grid item xs={12}>
           <Typography variant="h5" sx={{ color: "#6E00FE",display:"flex",justifyContent:"center", mb: 5, fontWeight: "bold", fontSize: "1.5rem" }}>
             وسائل الدفع المتاحة
           </Typography>
@@ -201,7 +201,7 @@ const PaymentMethods = () => {
                 <Box sx={{ width: 80, height: 50, display: "flex", alignItems: "center", justifyContent: "center" }}>
                   {method.icon}
                 </Box>
-                <Typography variant="subtitle2" sx={{ mt: 1, fontWeight: "bold", color: "#333" }}>
+                <Typography variant="subtitle2" sx={{ mt: 1, fontWeight: "bold", color: "primary" }}>
                   {method.name}
                 </Typography>
               </Box>
