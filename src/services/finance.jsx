@@ -14,31 +14,57 @@ import {
 import SearchIcon from "@mui/icons-material/Search";
 import { Link } from "react-router-dom";
 import HomeIcon from "@mui/icons-material/Home";
-
+import {
+  Button,
+  Popover,
+} from "@mui/material";
 const FinancingAdsPage = () => {
   const [searchInput, setSearchInput] = useState("");
+  const [priceFrom, setPriceFrom] = useState("");
+const [priceTo, setPriceTo] = useState("");
+const [anchorPrice, setAnchorPrice] = useState(null);
   const dispatch = useDispatch();
   const {
     all: allFinancingAds,
     loading,
     error,
   } = useSelector((state) => state.financingAds);
+const handleOpenPrice = (event) => {
+  setAnchorPrice(event.currentTarget);
+};
 
+const handleClosePrice = () => {
+  setAnchorPrice(null);
+};
   useEffect(() => {
     if (allFinancingAds.length === 0) {
       dispatch(fetchAllFinancingAds());
     }
   }, [dispatch, allFinancingAds]);
-  const filteredAds = allFinancingAds.filter((ad) => {
-    const search = searchInput.trim().toLowerCase();
-    return (
-      ad.org_name?.includes(search)||
-      ad.title.includes(search)
-    );
-  });
+ const filteredAds = allFinancingAds.filter((ad) => {
+  const search = searchInput.trim().toLowerCase();
+  const from = priceFrom ? parseFloat(priceFrom) : null;
+  const to = priceTo ? parseFloat(priceTo) : null;
+  let priceCondition = true;
+  if (from && to) {
+    priceCondition = from <= ad.end_limit && to >= ad.start_limit;
+  } else if (from) {
+    priceCondition = ad.start_limit >= from;
+  } else if (to) {
+    priceCondition = ad.end_limit <= to;
+  }
 
   return (
-    <Container sx={{ mt: "50px" }} dir="rtl">
+    ((ad.org_name || "").toLowerCase().includes(search) ||
+     ad.title.toLowerCase().includes(search) ||
+     !search) &&
+    priceCondition
+  );
+});
+
+  return (
+    <Container sx={{ mt: "50px",px: { xs: 0, sm: 2 }, // إزالة padding الجانبي على الشاشات الصغيرة
+    overflowX: "hidden", }}  dir="rtl">
       <Box
         sx={{
           display: "flex",
@@ -50,7 +76,7 @@ const FinancingAdsPage = () => {
         <Typography sx={{ m: "20px" }} variant="h3" color="#6E00FE">
           أبرز عروض التمويل
         </Typography>
-
+<Box  sx={{ display: "flex", gap: "10px", flexWrap: "wrap", justifyContent: "center" }}>
         <TextField
           placeholder="ادخل اسم الممول أو عنوان الاعلان"
           variant="outlined"
@@ -62,7 +88,10 @@ const FinancingAdsPage = () => {
             "& .MuiOutlinedInput-root": {
               borderRadius: "100px",
               height: "50px",
-              backgroundColor: "#F7F7F7",
+              backgroundColor: (theme) => 
+                theme.palette.mode === 'light' 
+                  ? theme.palette.grey[50] 
+                  : theme.palette.grey[900],
             },
             "& input": { fontSize: "20px" },
           }}
@@ -74,7 +103,72 @@ const FinancingAdsPage = () => {
             ),
           }}
         />
-
+<Button
+  variant="outlined"
+  onClick={handleOpenPrice}
+  sx={{
+    height: "50px",
+    borderRadius: "10px",
+    marginTop: "20px",
+    color: (theme) =>
+      priceFrom || priceTo
+        ? theme.palette.primary.main
+        : theme.palette.text.secondary,
+    border: (theme) =>
+      `1px solid ${
+        priceFrom || priceTo
+          ? theme.palette.primary.light
+          : theme.palette.divider
+      }`,
+    fontWeight: "bold",
+    backgroundColor: (theme) => theme.palette.background.paper,
+    minWidth: "150px",
+    "&:hover": {
+      backgroundColor: (theme) =>
+        theme.palette.mode === "light"
+          ? theme.palette.grey[100]
+          : theme.palette.grey[800],
+    },
+  }}
+>
+  {priceFrom || priceTo
+    ? `من ${priceFrom || "..."} إلى ${priceTo || "..."} ج.م`
+    : "السعر (جنيه)"}
+</Button>
+<Popover
+  open={Boolean(anchorPrice)}
+  anchorEl={anchorPrice}
+  onClose={handleClosePrice}
+  anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+  transformOrigin={{ vertical: "top", horizontal: "center" }}
+  dir="rtl"
+>
+  <Box sx={{ padding: "16px", display: "flex", gap: "10px", alignItems: "center", flexDirection: "column" }}>
+    <TextField
+      label="من"
+      type="number"
+      size="small"
+      value={priceFrom}
+      onChange={(e) => setPriceFrom(e.target.value)}
+    />
+    <TextField
+      label="إلى"
+      type="number"
+      size="small"
+      value={priceTo}
+      onChange={(e) => setPriceTo(e.target.value)}
+    />
+    <Button
+      onClick={handleClosePrice}
+      variant="contained"
+      size="small"
+      sx={{ backgroundColor: "#6E00FE", color: "#fff" }}
+    >
+      تم
+    </Button>
+  </Box>
+</Popover>
+</Box>
         <Breadcrumbs
           aria-label="breadcrumb"
           sx={{ marginTop: "30px", marginBottom: "30px", marginRight: "25px" }}
@@ -127,14 +221,16 @@ const FinancingAdsPage = () => {
   </Box>
 ) : (
   <ul
-    style={{
-      display: "flex",
-      justifyContent: "center",   // وسط الكروت عرضياً
-      listStyle: "none",
-      padding: 0,
-      gap: "20px",
-      flexWrap: "wrap",
-    }}
+   style={{
+    display: "flex",
+    justifyContent: "center",
+    listStyle: "none",
+    padding: 0,
+    gap: "20px",
+    flexWrap: "wrap",
+    width: "100%", 
+    overflowX: "hidden", 
+  }}
   >
     {filteredAds.map((ad) => (
       <Link
