@@ -11,7 +11,7 @@ const NotificationCard = memo(
       className="notification-card"
       sx={{
         p: 1,
-        height: '90px',
+        height: 'auto',
         overflow: 'hidden',
         display: 'flex',
         alignItems: 'center',
