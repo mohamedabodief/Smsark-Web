@@ -215,7 +215,7 @@ function DetailsForClient() {
         sx={{
           display: "flex",
           justifyContent: "space-between",
-          mt: "100px",
+          mt: "10px",
           flexDirection: "row-reverse",
         }}
       >
