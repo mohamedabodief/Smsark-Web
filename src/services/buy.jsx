@@ -29,7 +29,7 @@ const buyAds = () => {
 
   return (
     
-    <Container  sx={{mt:'80px'}}  dir='rtl'>
+    <Container  sx={{ mt: "20px"}}  dir='rtl'>
       <Typography sx={{m:'20px'}} variant="h3" color="#6E00FE">ابرز العقارات المعروضه للبيع</Typography>
        <TextField
       placeholder="ادخل اسم المدينة أو المنطقة"
