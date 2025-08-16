@@ -16,7 +16,7 @@ const MobilSection = () => {
     >
         <Box
           component="img"
-          src="/src/assets/mobile-pic-nb.png"
+          src="/src/assets/mobile-pic.png"
           alt="تطبيق سمسارك العقاري"
           sx={{
             width: { xs: "100%", sm: 750 },

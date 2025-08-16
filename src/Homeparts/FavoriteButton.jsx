@@ -19,8 +19,8 @@ const FavoriteButton = ({ advertisementId, type }) => {
   (fav) => String(fav.advertisement_id) === String(advertisementId)
 );
 
-  // console.log("Favorites in store:", favorites);
-  // console.log("isFavorited:", isFavorited);
+  console.log("Favorites in store:", favorites);
+  console.log("isFavorited:", isFavorited);
   
   const handleToggle = () => {
     if (user?.id) {
