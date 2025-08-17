@@ -63,6 +63,10 @@ class User {
 
     // Admin
     this.adm_name = data.adm_name || null;
+
+    // Timestamps for analytics
+    this.createdAt = data.createdAt || null;
+    this.updatedAt = data.updatedAt || null;
   }
 
   static fromClientData(clientData) {
@@ -81,6 +85,10 @@ class User {
    * حفظ المستخدم + رفع صورة إن وُجدت
    */
   async saveToFirestore(imageFile = null) {
+    // Set creation timestamp
+    this.createdAt = Date.now();
+    this.updatedAt = Date.now();
+
     const docRef = doc(db, 'users', this.uid);
 
     if (imageFile) {
@@ -116,6 +124,10 @@ class User {
       updates.image = newImageUrl;
       this.image = newImageUrl;
     }
+
+    // Set updated timestamp
+    updates.updatedAt = Date.now();
+    this.updatedAt = updates.updatedAt;
 
     await updateDoc(docRef, updates);
   }

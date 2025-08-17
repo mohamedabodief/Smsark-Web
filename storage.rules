@@ -7,14 +7,14 @@ service firebase.storage {
       allow write: if request.auth != null;
       allow delete: if request.auth != null;
     }
-    
+
     // السماح للمستخدمين المسجلين برفع صور إعلانات المطورين
     match /developer_ads/{adId}/{fileName} {
       allow read: if true;
       allow write: if request.auth != null;
       allow delete: if request.auth != null;
     }
-    
+
     // السماح للمستخدمين المسجلين برفع صور العقارات في مجلدات المستخدمين
     match /property_images/{userId}/{fileName} {
       allow read: if true;
@@ -22,7 +22,7 @@ service firebase.storage {
       // السماح للمستخدمين المصادق عليهم بحذف الملفات (سيتم التحقق من صلاحيات الأدمن في التطبيق)
       allow delete: if request.auth != null;
     }
-    
+
     // السماح للمستخدمين المسجلين برفع صور الملف الشخصي
     match /profileImages/{userId}/{fileName} {
       allow read: if true;
@@ -30,7 +30,7 @@ service firebase.storage {
       // السماح للمستخدمين المصادق عليهم بحذف الملفات (سيتم التحقق من صلاحيات الأدمن في التطبيق)
       allow delete: if request.auth != null;
     }
-    
+
     // السماح للمستخدمين المسجلين برفع صور إعلانات العملاء
     match /client_ads/{adId}/{fileName} {
       allow read: if true;
@@ -45,16 +45,24 @@ service firebase.storage {
       allow delete: if request.auth != null;
     }
 
+    // السماح للمستخدمين المسجلين برفع صور إعلانات الواجهة (homepage)
+    match /homepage_ads/{adId}/{fileName} {
+      allow read: if true;
+      allow write: if request.auth != null;
+      allow delete: if request.auth != null;
+    }
+
+
     // السماح للمستخدمين المسجلين برفع صور التمويل في مجلدات المستخدمين
     match /financing_images/{userId}/{fileName} {
       allow read: if true;
       allow write: if request.auth != null && request.auth.uid == userId;
       allow delete: if request.auth != null;
     }
-    
+
     // القاعدة الافتراضية - رفض جميع الوصولات الأخرى
     match /{allPaths=**} {
       allow read, write: if false;
     }
   }
-} 
+}

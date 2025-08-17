@@ -23,8 +23,7 @@ export function AdsProvider({ children }) {
     }
 
     // 2. الاشتراك مع Firebase لمتابعة التحديثات
-    const unsubscribe = RealEstateDeveloperAdvertisement.subscribeActiveAds((ads) => {
-      const activeAds = ads.filter(ad => ad.ads === true);
+    const unsubscribe = RealEstateDeveloperAdvertisement.subscribeActiveAds((activeAds) => {
       const oldCache = JSON.stringify(localStorage.getItem('devAdsCache'));
       const newCache = JSON.stringify(activeAds);
 

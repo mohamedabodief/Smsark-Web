@@ -140,6 +140,7 @@ import { fetchUserProfile, updateUserProfile, uploadAndSaveProfileImage, clearPr
 import sendResetPasswordEmail from "../FireBase/authService/sendResetPasswordEmail";
 import { collection, doc, getDoc, getDocs } from "firebase/firestore";
 import { fetchFinancialRequests, deleteFinancialRequest, updateFinancialRequest } from '../reduxToolkit/slice/financialRequestSlice';
+import FinancingRequest from '../FireBase/modelsWithOperations/FinancingRequest';
 import {
     fetchAllHomepageAds,
     subscribeToAllHomepageAds,
@@ -338,7 +339,7 @@ function ConfirmDeleteModal({ open, onClose, onConfirm, itemType, itemId, itemNa
             <DialogTitle sx={{ textAlign: 'left' }}>تأكيد الحذف</DialogTitle>
             <DialogContent sx={{ textAlign: 'right' }}>
                 <Typography dir="rtl">
-                    هل أنت متأكد من حذف {itemType}: <strong>{itemName || 'null'} (ID: {itemId})</strong> ؟ 
+                    هل أنت متأكد من حذف {itemType}: <strong>{itemName || 'null'} (ID: {itemId})</strong> ؟
                 </Typography>
                 <Typography dir="rtl" color="error">لا يمكن التراجع عن هذه الإجراء.</Typography>
             </DialogContent>
@@ -706,7 +707,7 @@ function EditAdminModal({ open, onClose, admin, setSnackbar }) { // Added setSna
             setNameError(false);
         }
 
-    
+
 
         // Add validation for phone if needed
         if (!phone.trim()) {
@@ -858,6 +859,8 @@ function ProfilePage() {
     const [snackbarMessage, setSnackbarMessage] = useState("");
     const [snackbarSeverity, setSnackbarSeverity] = useState("success");
     const [resetPasswordLoading, setResetPasswordLoading] = useState(false);
+    const [saving, setSaving] = useState(false);
+
 
     // Determine the actual UID to use, prioritizing the string if passed as object
     const actualUid = typeof authUid === 'object' && authUid !== null
@@ -922,6 +925,8 @@ function ProfilePage() {
 
     // Handle saving changes
     const handleSave = async () => {
+        if (saving) return; // guard against double clicks
+        setSaving(true);
         // Basic validation for admin fields
         if (!formData.adm_name || !formData.phone || !formData.gender) {
             setSnackbarMessage("الرجاء ملء جميع الحقول المطلوبة.");
@@ -953,6 +958,10 @@ function ProfilePage() {
             setSnackbarSeverity("error");
             setSnackbarOpen(true);
         }
+        finally {
+            setSaving(false);
+        }
+
     };
 
     // UploadAvatars sub-component (remains the same as it's generic)
@@ -1054,8 +1063,17 @@ function ProfilePage() {
         }
     };
 
+    // Only show full-screen loader on the very first profile fetch, not during updates
+    const profileInitialLoadDoneRef = React.useRef(false);
+    React.useEffect(() => {
+        if (userProfileStatus === "succeeded" && userProfile) {
+            profileInitialLoadDoneRef.current = true;
+        }
+    }, [userProfileStatus, userProfile]);
+    const isInitialProfileLoading = userProfileStatus === "loading" && !profileInitialLoadDoneRef.current;
+
     // Loading and Error states
-    if (authStatus === "loading" || userProfileStatus === "loading") {
+    if (isInitialProfileLoading) {
         return (
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
                 <CircularProgress />
@@ -1102,7 +1120,7 @@ function ProfilePage() {
 
     return (
         <Box dir='rtl' sx={{ p: 2, textAlign: 'left' }}>
-            <PageHeader 
+            <PageHeader
                 title={"حسابي"}
                 icon={AccountBoxIcon}
             />
@@ -1169,7 +1187,7 @@ function ProfilePage() {
                                     onClick={handleResetPassword}
                                     disabled={resetPasswordLoading}
                                     sx={{ m: 1, minWidth: 120 }}
-                                    
+
                                 >
                                     {resetPasswordLoading ? (
                                         <CircularProgress size={20} color="inherit" />
@@ -1197,8 +1215,12 @@ function ProfilePage() {
                                 </Select>
                             </FormControl>
 
-                            <Button variant="contained" color="primary" onClick={handleSave} sx={{ marginTop: 2, fontSize: '1.2rem' }}>
+                            <Button variant="contained" color="primary" onClick={handleSave} disabled={saving} sx={{ marginTop: 2, fontSize: '1.2rem', minWidth: 160, position: 'relative' }}>
                                 حفظ التغييرات
+                                {saving && (
+                                    <CircularProgress size={20} color="inherit" sx={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)' }} />
+                                )}
+
                             </Button>
                         </Box>
                     </Grid>
@@ -1391,7 +1413,7 @@ function UsersPage() {
         ];
 
         return (
-            <TableContainer sx={{ 
+            <TableContainer sx={{
                 overflowX: 'auto',
                 border: '1px solid #ccc',
                 borderRadius: '15px',
@@ -1422,7 +1444,7 @@ function UsersPage() {
                     </TableHead>
                     <TableBody>
                         {filteredData.map((item) => (
-                            <TableRow 
+                            <TableRow
                                 key={item.uid}
                                 hover
                                 sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
@@ -1433,8 +1455,8 @@ function UsersPage() {
                                     </Typography>
                                 </TableCell>
                                 <TableCell sx={{ width: '33.33%' }}>
-                                    <Box sx={{ 
-                                        display: 'flex', 
+                                    <Box sx={{
+                                        display: 'flex',
                                         flexDirection: 'column',
                                         alignItems: 'center',
                                         gap: 0.5
@@ -1918,10 +1940,10 @@ function Mainadvertisment(props) {
     // Get activation days display text
     const getActivationDaysText = (ad) => {
         if (!ad.adExpiryTime) return null;
-        
+
         const remainingDays = calculateRemainingDays(ad.adExpiryTime);
         if (remainingDays === null) return null;
-        
+
         if (remainingDays === 0) {
             return 'منتهي الصلاحية';
         } else if (remainingDays === 1) {
@@ -1944,9 +1966,11 @@ function Mainadvertisment(props) {
         console.log("Mainadvertisment - Filtering ads. Current homepageAds:", homepageAds);
         const filtered = homepageAds.filter(ad => {
             const statusMatch = statusFilter === 'all' || ad.reviewStatus === statusFilter;
+            // An ad is considered "active" only if it's both ads=true AND reviewStatus='approved'
+            const isActuallyActive = ad.ads && ad.reviewStatus === 'approved';
             const activationMatch = activationFilter === 'all' ||
-                (activationFilter === 'active' && ad.ads) ||
-                (activationFilter === 'inactive' && !ad.ads);
+                (activationFilter === 'active' && isActuallyActive) ||
+                (activationFilter === 'inactive' && !isActuallyActive);
             return statusMatch && activationMatch;
         });
         console.log("Mainadvertisment - Filtered ads result:", filtered);
@@ -1959,8 +1983,9 @@ function Mainadvertisment(props) {
         pending: homepageAds.filter(ad => ad.reviewStatus === 'pending').length,
         approved: homepageAds.filter(ad => ad.reviewStatus === 'approved').length,
         rejected: homepageAds.filter(ad => ad.reviewStatus === 'rejected').length,
-        active: homepageAds.filter(ad => ad.ads).length,
-        inactive: homepageAds.filter(ad => !ad.ads).length,
+        // An ad is considered "active" only if it's both ads=true AND reviewStatus='approved'
+        active: homepageAds.filter(ad => ad.ads && ad.reviewStatus === 'approved').length,
+        inactive: homepageAds.filter(ad => !ad.ads || ad.reviewStatus !== 'approved').length,
     }), [homepageAds]);
     const [receiptImage, setReceiptImage] = useState(null);
     return (
@@ -2057,20 +2082,20 @@ function Mainadvertisment(props) {
                                     backgroundColor: 'background.paper'
                                 }}
                             >
-                                <Box sx={{ 
-                                    display: 'flex', 
-                                    width: '100%', 
+                                <Box sx={{
+                                    display: 'flex',
+                                    width: '100%',
                                     flexDirection: { xs: 'column', sm: 'row', md: 'row', lg: 'row' },
                                     alignItems: { xs: 'flex-start', sm: 'center' },
-                                    gap: 2 
+                                    gap: 2
                                 }}>
                                     {/* Ad Image */}
-                                    <Box sx={{ 
-                                        minWidth: 80, 
+                                    <Box sx={{
+                                        minWidth: 80,
                                         width: '100%',
                                         maxWidth: 120,
-                                        height: 80, 
-                                        borderRadius: 1, 
+                                        height: 80,
+                                        borderRadius: 1,
                                         overflow: 'hidden',
                                         alignSelf: { xs: 'center', sm: 'flex-start' }
                                     }}>
@@ -2082,8 +2107,8 @@ function Mainadvertisment(props) {
                                     </Box>
 
                                     {/* Ad Info */}
-                                    <Box sx={{ 
-                                        flexGrow: 1, 
+                                    <Box sx={{
+                                        flexGrow: 1,
                                         width: '100%',
                                         textAlign: { xs: 'center', sm: 'left' }
                                     }}>
@@ -2094,8 +2119,8 @@ function Mainadvertisment(props) {
                                                 size="small"
                                             />
                                             <Chip
-                                                label={ad.ads ? 'مفعل' : 'غير مفعل'}
-                                                color={ad.ads ? 'success' : 'default'}
+                                                label={(ad.ads && ad.reviewStatus === 'approved') ? 'مفعل' : 'غير مفعل'}
+                                                color={(ad.ads && ad.reviewStatus === 'approved') ? 'success' : 'default'}
                                                 size="small"
                                             />
                                         </Box>
@@ -2125,11 +2150,11 @@ function Mainadvertisment(props) {
                                         )}
                                     </Box>
                                     {/* Receipt and Package Info */}
-                                    <Box sx={{ 
-                                        display: 'flex', 
+                                    <Box sx={{
+                                        display: 'flex',
                                         flexWrap: 'wrap',
                                         justifyContent: 'center',
-                                        alignItems: 'center', 
+                                        alignItems: 'center',
                                         gap: 1,
                                         mt: { xs: 1, sm: 0 },
                                         width: { xs: '100%', sm: 'auto' }
@@ -2153,10 +2178,10 @@ function Mainadvertisment(props) {
                                     </Box>
 
                                     {/* Admin Actions */}
-                                <Box sx={{ 
-                                    display: 'flex', 
+                                <Box sx={{
+                                    display: 'flex',
                                     flexWrap: 'wrap',
-                                    gap: 1, 
+                                    gap: 1,
                                     justifyContent: { xs: 'center', sm: 'flex-start' },
                                     mt: { xs: 2, sm: 0 },
                                     width: { xs: '100%', sm: 'auto' }
@@ -2612,7 +2637,7 @@ function PaidAdvertismentPage() {
           dispatch(type === 'developer' ? setLoadingDeveloper(false) : setLoadingFunder(false));
         }
       };
-      
+
       const handleDeactivate = async (ad) => {
         const adType = activeTab === 'developerAds' ? 'developer' : 'funder';
         console.log('Deactivating ad:', { id: ad.id, type: adType });
@@ -2688,13 +2713,16 @@ function PaidAdvertismentPage() {
             field: 'ads',
             headerName: 'التفعيل',
             width: 100,
-            renderCell: (params) => (
-                <Chip
-                    label={params.value ? 'مفعل' : 'غير مفعل'}
-                    color={params.value ? 'success' : 'default'}
-                    size="small"
-                />
-            ),
+            renderCell: (params) => {
+                const isActuallyActive = params.value && params.row.reviewStatus === 'approved';
+                return (
+                    <Chip
+                        label={isActuallyActive ? 'مفعل' : 'غير مفعل'}
+                        color={isActuallyActive ? 'success' : 'default'}
+                        size="small"
+                    />
+                );
+            },
         },
         {
             field: 'adPackageName',
@@ -2746,7 +2774,7 @@ function PaidAdvertismentPage() {
                             </IconButton>
                         </span>
                     </Tooltip>
-                    <Tooltip title="إعادة للمراجعة">
+                    {/* <Tooltip title="إعادة للمراجعة">
                         <span>
                             <IconButton
                                 aria-label="return to pending"
@@ -2758,7 +2786,7 @@ function PaidAdvertismentPage() {
                                 <PendingIcon fontSize="small" />
                             </IconButton>
                         </span>
-                    </Tooltip>
+                    </Tooltip> */}
                     <Tooltip title="تفعيل">
                         <span>
                             <IconButton
@@ -2779,7 +2807,7 @@ function PaidAdvertismentPage() {
                                 size="small"
                                 onClick={() => handleDeactivate(params.row)}
                                 color="secondary"
-                                disabled={!params.row.ads || loading.developer}
+                                disabled={!params.row.ads || params.row.reviewStatus !== 'approved' || loading.developer}
                             >
                                 <BlockIcon fontSize="small" />
                             </IconButton>
@@ -2844,8 +2872,8 @@ function PaidAdvertismentPage() {
             width: 100,
             renderCell: (params) => {
                 // Handle the case where images is an array
-                const imageUrl = Array.isArray(params.value) && params.value.length > 0 
-                    ? params.value[0] 
+                const imageUrl = Array.isArray(params.value) && params.value.length > 0
+                    ? params.value[0]
                     : params.value || 'https://placehold.co/50x50/E0E0E0/FFFFFF?text=No+Image';
                 return (
                     <Avatar
@@ -2878,18 +2906,21 @@ function PaidAdvertismentPage() {
             field: 'ads',
             headerName: 'التفعيل',
             width: 100,
-            renderCell: (params) => (
-                <Chip
-                    label={params.value ? 'مفعل' : 'غير مفعل'}
-                    color={params.value ? 'success' : 'default'}
-                    size="small"
-                />
-            ),
+            renderCell: (params) => {
+                const isActuallyActive = params.value && params.row.reviewStatus === 'approved';
+                return (
+                    <Chip
+                        label={isActuallyActive ? 'مفعل' : 'غير مفعل'}
+                        color={isActuallyActive ? 'success' : 'default'}
+                        size="small"
+                    />
+                );
+            },
         },
-                { 
-            field: 'adPackageName', 
-            headerName: 'الباقة المختارة', 
-            width: 150, 
+                {
+            field: 'adPackageName',
+            headerName: 'الباقة المختارة',
+            width: 150,
             renderCell: (params) => {
                 if (params.value) {
                     return (
@@ -2971,7 +3002,7 @@ function PaidAdvertismentPage() {
                                 size="small"
                                 onClick={() => handleDeactivate(params.row)}
                                 color="secondary"
-                                disabled={!params.row.ads || loading.funder}
+                                disabled={!params.row.ads || params.row.reviewStatus !== 'approved' || loading.funder}
                             >
                                 <BlockIcon fontSize="small" />
                             </IconButton>
@@ -3032,7 +3063,7 @@ function PaidAdvertismentPage() {
                 <DataGrid
                     rows={filteredDeveloperAds.filter(ad => ad.id !== null && ad.id !== undefined)}
                     columns={developerColumns}
-                    pageSizeOptions={[5, 10, 20, 30,50]}
+                    pageSizeOptions={[5, 10, 20,25, 30,50]}
                     initialState={{
                         pagination: {
                             paginationModel: { pageSize: 10 },
@@ -3049,7 +3080,7 @@ function PaidAdvertismentPage() {
                 <DataGrid
                     rows={filteredFunderAds.filter(ad => ad.id !== null && ad.id !== undefined)}
                     columns={funderColumns}
-                    pageSizeOptions={[5, 10, 20 , 30 , 50]}
+                    pageSizeOptions={[5, 10, 20 , 25, 30 , 50]}
                     initialState={{
                         pagination: {
                             paginationModel: { pageSize: 10 },
@@ -3607,13 +3638,16 @@ function ClientAdvertismentPage() {
             field: 'ads',
             headerName: 'التفعيل',
             width: 100,
-            renderCell: (params) => (
-                <Chip
-                    label={params.value ? 'مفعل' : 'غير مفعل'}
-                    color={params.value ? 'success' : 'default'}
-                    size="small"
-                />
-            ),
+            renderCell: (params) => {
+                const isActuallyActive = params.value && params.row.reviewStatus === 'approved';
+                return (
+                    <Chip
+                        label={isActuallyActive ? 'مفعل' : 'غير مفعل'}
+                        color={isActuallyActive ? 'success' : 'default'}
+                        size="small"
+                    />
+                );
+            },
         },
         {
             field: 'adPackageName',
@@ -3669,7 +3703,7 @@ function ClientAdvertismentPage() {
                             </span>
                         </Tooltip>
                         {/* Return to Pending */}
-                        <Tooltip title="إعادة للمراجعة">
+                        {/* <Tooltip title="إعادة للمراجعة">
                             <span>
                                 <IconButton
                                     aria-label="return to pending"
@@ -3681,7 +3715,7 @@ function ClientAdvertismentPage() {
                                     <PendingIcon fontSize="small" />
                                 </IconButton>
                             </span>
-                        </Tooltip>
+                        </Tooltip> */}
                         {/* Activate */}
                         <Tooltip title="تفعيل الإعلان">
                             <span>
@@ -3736,14 +3770,14 @@ function ClientAdvertismentPage() {
                                     size="small"
                                     onClick={() => handleDeactivateClick(ad)}
                                     color="warning"
-                                    disabled={!ad.ads || ad.loading}
+                                    disabled={!ad.ads || ad.reviewStatus !== 'approved' || ad.loading}
                                 >
                                     <BlockIcon fontSize="small" />
                                 </IconButton>
                             </span>
                         </Tooltip>
                         {/* Edit */}
-                        {/*                         
+                        {/*
                         <Tooltip title="تعديل الإعلان">
                             <span>
                                 <IconButton
@@ -3829,7 +3863,7 @@ function ClientAdvertismentPage() {
                     <Typography variant="h6" color="text.secondary">
                     قائمة الإعلانات الحالية
                 </Typography>
-                    
+
                     {/* Filter Controls */}
                     <Box sx={{ display: 'flex', gap: 2 }}>
                         <FormControl size="small" sx={{ minWidth: 150 }}>
@@ -3901,7 +3935,7 @@ function ClientAdvertismentPage() {
                                     id: ad.id || `temp-${Math.random().toString(36).substr(2, 9)}`
                                 }))}
                             columns={columns}
-                            pageSizeOptions={[5, 10, 20, 30, 50]}
+                            pageSizeOptions={[5, 10, 20,25,  30, 50]}
                             initialState={{
                                 pagination: {
                                     paginationModel: { pageSize: 10, page: 0 },
@@ -4133,6 +4167,23 @@ function OrdersPage() {
     const dispatch = useDispatch();
     const { list: financingRequests, loading, error } = useSelector((state) => state.financialRequests);
 
+    // Add CSS animation for pulse effect
+    const pulseAnimation = `
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+    `;
+
+    // Inject the CSS animation
+    React.useEffect(() => {
+        const style = document.createElement('style');
+        style.textContent = pulseAnimation;
+        document.head.appendChild(style);
+        return () => document.head.removeChild(style);
+    }, []);
+
     // Edit dialog state
     const [editDialogOpen, setEditDialogOpen] = useState(false);
     const [editRow, setEditRow] = useState(null);
@@ -4148,9 +4199,71 @@ function OrdersPage() {
 
     useEffect(() => {
         if (financingRequests.length === 0 && !loading) {
-        dispatch(fetchFinancialRequests());
+            dispatch(fetchFinancialRequests());
         }
     }, [dispatch, financingRequests.length, loading]);
+
+    // Add real-time subscription to financial requests for automatic updates
+    useEffect(() => {
+        const subscriptionKey = 'admin-financial-requests';
+
+        try {
+            // Create Firebase subscription directly
+            const unsubscribe = FinancingRequest.subscribeAllRequests((requests) => {
+                try {
+                    // Map class instances to plain serializable objects
+                    const plainRequests = requests.map(r => ({
+                        id: r.id,
+                        user_id: r.user_id,
+                        advertisement_id: r.advertisement_id,
+                        monthly_income: r.monthly_income,
+                        job_title: r.job_title,
+                        employer: r.employer,
+                        age: r.age,
+                        marital_status: r.marital_status,
+                        dependents: r.dependents,
+                        financing_amount: r.financing_amount,
+                        repayment_years: r.repayment_years,
+                        phone_number: r.phone_number,
+                        status: r.status,
+                        reviewStatus: r.reviewStatus,
+                        // Convert Firestore Timestamp to millis (number) for serializability
+                        submitted_at: r.submitted_at && typeof r.submitted_at.toMillis === 'function'
+                            ? r.submitted_at.toMillis()
+                            : r.submitted_at || null,
+                    }));
+
+                    // Update the Redux store with real-time data
+                    dispatch({
+                        type: 'financialRequests/setList',
+                        payload: plainRequests
+                    });
+                    console.log('Financial requests updated:', plainRequests.length);
+                } catch (error) {
+                    console.error('Error updating financial requests state:', error);
+                    setSnackbar({
+                        open: true,
+                        message: 'خطأ في تحديث طلبات التمويل',
+                        severity: 'error'
+                    });
+                }
+            });
+
+            // Track the subscription
+            subscriptionManager.add(subscriptionKey, unsubscribe);
+        } catch (error) {
+            console.error('Error setting up financial requests subscription:', error);
+            setSnackbar({
+                open: true,
+                message: 'خطأ في إعداد تحديثات طلبات التمويل',
+                severity: 'error'
+            });
+        }
+
+        return () => {
+            subscriptionManager.remove(subscriptionKey);
+        };
+    }, [dispatch]);
 
     // Helper functions for status
     const getStatusColor = (status) => {
@@ -4173,7 +4286,17 @@ function OrdersPage() {
 
     // Filter requests based on status and search term
     const filteredRequests = financingRequests.filter(request => {
-        const statusMatch = statusFilter === 'all' || request.status === statusFilter;
+        let statusMatch = false;
+
+        if (statusFilter === 'all') {
+            statusMatch = true;
+        } else if (statusFilter === 'orgApproved') {
+            // Show only requests approved by organizations
+            statusMatch = request.status === 'approved' && request.reviewStatus === 'approved';
+        } else {
+            statusMatch = request.status === statusFilter;
+        }
+
         const searchMatch = !searchTerm ||
             request.id?.toString().includes(searchTerm) ||
             request.user_id?.toString().includes(searchTerm) ||
@@ -4188,6 +4311,7 @@ function OrdersPage() {
         pending: financingRequests.filter(req => req.status === 'pending').length,
         approved: financingRequests.filter(req => req.status === 'approved').length,
         rejected: financingRequests.filter(req => req.status === 'rejected').length,
+        orgApproved: financingRequests.filter(req => req.status === 'approved' && req.reviewStatus === 'approved').length,
     };
 
     const handleEditClick = (row) => {
@@ -4273,15 +4397,31 @@ function OrdersPage() {
         {
             field: 'status',
             headerName: 'الحالة',
-            width: 140,
-            renderCell: (params) => (
-                <Chip
-                    label={getStatusLabel(params.value)}
-                    color={getStatusColor(params.value)}
-                    size="small"
-                    sx={{ fontWeight: 'bold' }}
-                />
-            )
+            width: 160,
+            renderCell: (params) => {
+                const isApprovedByOrg = params.value === 'approved' && params.row.reviewStatus === 'approved';
+                return (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        <Chip
+                            label={getStatusLabel(params.value)}
+                            color={getStatusColor(params.value)}
+                            size="small"
+                            sx={{ fontWeight: 'bold' }}
+                        />
+                        {isApprovedByOrg && (
+                            <Tooltip title="تمت الموافقة من قبل المؤسسة التمويلية">
+                                <CheckCircleIcon
+                                    sx={{
+                                        color: 'success.main',
+                                        fontSize: 16,
+                                        animation: 'pulse 2s infinite'
+                                    }}
+                                />
+                            </Tooltip>
+                        )}
+                    </Box>
+                );
+            }
         },
         {
             field: 'financing_amount',
@@ -4482,13 +4622,16 @@ function OrdersPage() {
                 <Grid size={{ xs: 6, sm: 3 }}>
                     <Chip
                         label={
-                            <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                                {filteredRequests.length} - عرض النتائج
-                            </Typography>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                <CheckCircleIcon sx={{ fontSize: 16 }} />
+                                <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                                    {stats.orgApproved} - موافقة المؤسسات
+                                </Typography>
+                            </Box>
                         }
                         sx={{
-                            bgcolor: 'info.light',
-                            color: 'info.contrastText',
+                            bgcolor: 'success.light',
+                            color: 'success.contrastText',
                             px: 2,
                             py: 1,
                             borderRadius: 2,
@@ -4517,6 +4660,7 @@ function OrdersPage() {
                                 <MenuItem value="pending">قيد المراجعة</MenuItem>
                                 <MenuItem value="approved">مقبول</MenuItem>
                                 <MenuItem value="rejected">مرفوض</MenuItem>
+                                <MenuItem value="orgApproved">موافقة المؤسسات</MenuItem>
                             </Select>
                         </FormControl>
                     </Grid>
@@ -4595,7 +4739,7 @@ function OrdersPage() {
                             rows={filteredRequests.filter(request => request.id !== null && request.id !== undefined)}
                         columns={columns}
                         loading={loading}
-                            pageSizeOptions={[10, 20, 30, 50]}
+                            pageSizeOptions={[10, 20,25,30, 50]}
                             initialState={{
                                 pagination: {
                                     paginationModel: { pageSize: 25 },
@@ -4719,7 +4863,7 @@ function ReportsPage() {
     const clients = useSelector((state) => state.adminUsers.clients);
     const organizations = useSelector((state) => state.adminUsers.organizations);
     const admins = useSelector((state) => state.adminUsers.admins);
-    
+
     // Get loading states
     const clientsStatus = useSelector((state) => state.adminUsers.clientsStatus);
     const organizationsStatus = useSelector((state) => state.adminUsers.organizationsStatus);
@@ -4775,32 +4919,36 @@ function ReportsPage() {
                 pending: homepageAds.filter(ad => ad.reviewStatus === 'pending').length,
                 approved: homepageAds.filter(ad => ad.reviewStatus === 'approved').length,
                 rejected: homepageAds.filter(ad => ad.reviewStatus === 'rejected').length,
-                active: homepageAds.filter(ad => ad.ads).length,
-                inactive: homepageAds.filter(ad => !ad.ads).length
+                // An ad is considered "active" only if it's both ads=true AND reviewStatus='approved'
+                active: homepageAds.filter(ad => ad.ads && ad.reviewStatus === 'approved').length,
+                inactive: homepageAds.filter(ad => !ad.ads || ad.reviewStatus !== 'approved').length
             },
             client: {
                 total: clientAds.length,
                 pending: clientAds.filter(ad => ad.reviewStatus === 'pending').length,
                 approved: clientAds.filter(ad => ad.reviewStatus === 'approved').length,
                 rejected: clientAds.filter(ad => ad.reviewStatus === 'rejected').length,
-                active: clientAds.filter(ad => ad.ads).length,
-                inactive: clientAds.filter(ad => !ad.ads).length
+                // An ad is considered "active" only if it's both ads=true AND reviewStatus='approved'
+                active: clientAds.filter(ad => ad.ads && ad.reviewStatus === 'approved').length,
+                inactive: clientAds.filter(ad => !ad.ads || ad.reviewStatus !== 'approved').length
             },
             developer: {
                 total: developerAds.length,
                 pending: developerAds.filter(ad => ad.reviewStatus === 'pending').length,
                 approved: developerAds.filter(ad => ad.reviewStatus === 'approved').length,
                 rejected: developerAds.filter(ad => ad.reviewStatus === 'rejected').length,
-                active: developerAds.filter(ad => ad.ads).length,
-                inactive: developerAds.filter(ad => !ad.ads).length
+                // An ad is considered "active" only if it's both ads=true AND reviewStatus='approved'
+                active: developerAds.filter(ad => ad.ads && ad.reviewStatus === 'approved').length,
+                inactive: developerAds.filter(ad => !ad.ads || ad.reviewStatus !== 'approved').length
             },
             funder: {
                 total: funderAds.length,
                 pending: funderAds.filter(ad => ad.reviewStatus === 'pending').length,
                 approved: funderAds.filter(ad => ad.reviewStatus === 'approved').length,
                 rejected: funderAds.filter(ad => ad.reviewStatus === 'rejected').length,
-                active: funderAds.filter(ad => ad.ads).length,
-                inactive: funderAds.filter(ad => !ad.ads).length
+                // An ad is considered "active" only if it's both ads=true AND reviewStatus='approved'
+                active: funderAds.filter(ad => ad.ads && ad.reviewStatus === 'approved').length,
+                inactive: funderAds.filter(ad => !ad.ads || ad.reviewStatus !== 'approved').length
             }
         };
 
@@ -5386,7 +5534,7 @@ export default function AdminDashboard(props) {
             },
             [theme.breakpoints.up('md')]: {
                 padding: theme.spacing(3),
-                paddingTop:'1px',
+                paddingTop:'0px',
             },
         })
     );
@@ -5520,13 +5668,13 @@ export default function AdminDashboard(props) {
                                     )}
                                     <Box sx={{ flexGrow: 1 }} />
                                     {/* Notification Bell Icon */}
-                                    <IconButton 
-                                        sx={{ mr: -1 }} 
-                                        onClick={handleNotificationClick} 
+                                    <IconButton
+                                        sx={{ mr: -1 }}
+                                        onClick={handleNotificationClick}
                                         color="inherit"
                                     >
-                                        <Badge 
-                                            badgeContent={unreadCount} 
+                                        <Badge
+                                            badgeContent={unreadCount}
                                             color="error"
                                             sx={{
                                                 "& .MuiBadge-badge": {
@@ -5585,7 +5733,7 @@ export default function AdminDashboard(props) {
                                     >
                                         تسجيل الخروج
                                     </Button>
-                                    
+
                                 </Toolbar>
 
                             </AppBarStyled>

@@ -88,7 +88,14 @@ const financialRequestSlice = createSlice({
     loading: false,
     error: null,
   },
-  reducers: {},
+  reducers: {
+    // Add reducer for real-time updates from admin dashboard
+    setList: (state, action) => {
+      state.list = action.payload;
+      state.loading = false;
+      state.error = null;
+    },
+  },
   extraReducers: (builder) => {
     builder
       .addCase(fetchFinancialRequests.pending, (state) => {

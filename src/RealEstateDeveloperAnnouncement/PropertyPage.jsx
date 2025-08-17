@@ -150,7 +150,15 @@ const PropertyPage = () => {
           id: editData.id, // تأكيد تمرير الـ ID الأصلي
           userId: editData.userId || currentUser.uid, // تأكيد userId
           adPackage: formData.adPackage, // استخدم القيمة الجديدة من الفورم
-          receiptImage: editData.receiptImage || null, // تأكيد receiptImage
+          receipt_image: editData.receipt_image || null, // تأكيد receipt_image (not receiptImage)
+          // Ensure all required fields are present and not undefined
+          developer_name: otherData.developer_name || editData.developer_name,
+          description: otherData.description || editData.description || "",
+          area: otherData.area || editData.area,
+          deliveryTerms: otherData.deliveryTerms || editData.deliveryTerms,
+          paymentMethod: otherData.paymentMethod || editData.paymentMethod,
+          negotiable: otherData.negotiable !== undefined ? otherData.negotiable : editData.negotiable,
+          features: otherData.features || editData.features || [],
         };
         console.log('Updated data with ID:', updatedData.id);
         const advertisement = new RealEstateDeveloperAdvertisement(updatedData);

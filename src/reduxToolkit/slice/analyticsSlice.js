@@ -4,8 +4,9 @@ import FinancingAdvertisement from '../../FireBase/modelsWithOperations/Financin
 import ClientAdvertisement from '../../FireBase/modelsWithOperations/ClientAdvertisemen';
 import User from '../../FireBase/modelsWithOperations/User';
 
-    // Async thunk to fetch comprehensive analytics data using model classes
+    // Async thunk to fetch comprehensive analytics data using model classes - REAL DATA ONLY
 // This replaces the previous direct Firestore calls with model class methods
+// All mock/fake data generation has been removed to ensure accurate analytics
 export const fetchAnalyticsData = createAsyncThunk(
   'analytics/fetchData',
   async ({ userRole, userId, filters = {} }, { rejectWithValue }) => {
@@ -74,6 +75,16 @@ export const fetchAnalyticsData = createAsyncThunk(
         );
 
         console.log('Processed analytics data:', processedData);
+        console.log('Time-based data summary:', {
+            totalDays: processedData.timeBasedData.length,
+            daysWithAds: processedData.timeBasedData.filter(d => d.adsCreated > 0).length,
+            totalAdsInTimeSeries: processedData.timeBasedData.reduce((sum, d) => sum + d.adsCreated, 0)
+        });
+        console.log('User growth data summary:', {
+            totalDays: processedData.userGrowthData.length,
+            daysWithUsers: processedData.userGrowthData.filter(d => d.usersRegistered > 0).length,
+            totalUsersInTimeSeries: processedData.userGrowthData.reduce((sum, d) => sum + d.usersRegistered, 0)
+        });
         return processedData;
         } catch (error) {
         console.error('Error fetching analytics data:', error);
@@ -114,16 +125,21 @@ export const fetchAnalyticsData = createAsyncThunk(
     }
     );
 
-    // Helper function to safely parse dates
+    // Helper function to safely parse dates from various timestamp fields
     const safeParseDate = (dateValue) => {
     if (!dateValue) return null;
-    
+
     try {
         // Handle Firestore Timestamp
         if (dateValue.toDate && typeof dateValue.toDate === 'function') {
         return dateValue.toDate();
         }
-        
+
+        // Handle timestamp numbers (milliseconds)
+        if (typeof dateValue === 'number') {
+        return new Date(dateValue);
+        }
+
         // Handle regular date strings/objects
         const date = new Date(dateValue);
         return !isNaN(date.getTime()) ? date : null;
@@ -131,6 +147,22 @@ export const fetchAnalyticsData = createAsyncThunk(
         console.warn('Failed to parse date:', dateValue, error);
         return null;
     }
+    };
+
+    // Helper function to get creation date from various possible fields
+    const getCreationDate = (item) => {
+    // Try different possible timestamp field names
+    const possibleFields = ['createdAt', 'created_at', 'submitted_at', 'timestamp'];
+
+    for (const field of possibleFields) {
+        if (item[field]) {
+        const date = safeParseDate(item[field]);
+        if (date) return date;
+        }
+    }
+
+    // If no timestamp field found, return null (will be excluded from time-based analytics)
+    return null;
     };
 
     // Helper function to process analytics data using model class instances
@@ -149,12 +181,16 @@ export const fetchAnalyticsData = createAsyncThunk(
         filteredFinancingAds = financingAds.filter(ad => ad.userId === userId);
         filteredClientAds = clientAds.filter(ad => ad.userId === userId);
     } else if (userRole === 'organization') {
-        // For organization users, filter financing ads by userId
+        // For organization users, filter both developer and financing ads by userId
+        filteredDeveloperAds = developerAds.filter(ad => ad.userId === userId);
         filteredFinancingAds = financingAds.filter(ad => ad.userId === userId);
         console.log('Organization filtering:', {
             userId,
+            totalDeveloperAds: developerAds.length,
+            filteredDeveloperAds: filteredDeveloperAds.length,
             totalFinancingAds: financingAds.length,
             filteredFinancingAds: filteredFinancingAds.length,
+            developerAdsUserIds: developerAds.map(ad => ad.userId),
             financingAdsUserIds: financingAds.map(ad => ad.userId)
         });
     } else if (userRole === 'client') {
@@ -252,41 +288,64 @@ export const fetchAnalyticsData = createAsyncThunk(
         if (rateAbove > 0) interestRateBreakdown['>10%']++;
     });
 
-    // Revenue tracking (mock calculation based on approved ads)
+    // Revenue tracking (real calculation based on approved ads' package prices)
     const totalRevenue = filteredFinancingAds
         .filter(ad => ad.reviewStatus === 'approved')
         .reduce((sum, ad) => sum + (ad.adPackagePrice || 0), 0);
 
     // Time-based data
     const timeBasedData = [];
+    console.log('Processing time-based data for', daysAgo, 'days');
+    console.log('Sample ads for timestamp analysis:', {
+        developerAds: filteredDeveloperAds.slice(0, 2).map(ad => ({ id: ad.id, createdAt: ad.createdAt, created_at: ad.created_at })),
+        financingAds: filteredFinancingAds.slice(0, 2).map(ad => ({ id: ad.id, createdAt: ad.createdAt, created_at: ad.created_at })),
+        clientAds: filteredClientAds.slice(0, 2).map(ad => ({ id: ad.id, createdAt: ad.createdAt, created_at: ad.created_at }))
+    });
+
     for (let i = daysAgo - 1; i >= 0; i--) {
         const date = new Date(startDate.getTime() + i * 24 * 60 * 60 * 1000);
         const dateStr = date.toISOString().split('T')[0];
-        
+
         const adsCreated = [...filteredDeveloperAds, ...filteredFinancingAds, ...filteredClientAds]
         .filter(ad => {
-            const adDate = safeParseDate(ad.created_at);
+            const adDate = getCreationDate(ad);
             return adDate && adDate.toISOString().split('T')[0] === dateStr;
+        }).length;
+
+        // Calculate approvals and rejections for this date
+        const approvals = [...filteredDeveloperAds, ...filteredFinancingAds, ...filteredClientAds]
+        .filter(ad => {
+            const adDate = getCreationDate(ad);
+            return adDate && adDate.toISOString().split('T')[0] === dateStr && ad.reviewStatus === 'approved';
+        }).length;
+
+        const rejections = [...filteredDeveloperAds, ...filteredFinancingAds, ...filteredClientAds]
+        .filter(ad => {
+            const adDate = getCreationDate(ad);
+            return adDate && adDate.toISOString().split('T')[0] === dateStr && ad.reviewStatus === 'rejected';
         }).length;
 
         timeBasedData.push({
         date: dateStr,
         adsCreated,
         requestsCreated: adsCreated, // Using ads as proxy for requests
-        approvals: 0,
-        rejections: 0
+        approvals,
+        rejections
         });
     }
 
     // User growth data
     const userGrowthData = [];
+    console.log('Processing user growth data');
+    console.log('Sample users for timestamp analysis:', filteredUsers.slice(0, 3).map(user => ({ uid: user.uid, createdAt: user.createdAt, created_at: user.created_at })));
+
     for (let i = daysAgo - 1; i >= 0; i--) {
         const date = new Date(startDate.getTime() + i * 24 * 60 * 60 * 1000);
         const dateStr = date.toISOString().split('T')[0];
-        
+
         const usersRegistered = filteredUsers
         .filter(user => {
-            const userDate = safeParseDate(user.created_at);
+            const userDate = getCreationDate(user);
             return userDate && userDate.toISOString().split('T')[0] === dateStr;
         }).length;
 
@@ -319,7 +378,7 @@ export const fetchAnalyticsData = createAsyncThunk(
       approvalRate,
       interestRateBreakdown,
       totalRevenue,
-      // Per-ad analytics for funders
+      // Per-ad analytics for funders (using real data only)
       perAdAnalytics: filteredFinancingAds.map(ad => ({
         id: ad.id,
         title: ad.title,
@@ -327,10 +386,10 @@ export const fetchAnalyticsData = createAsyncThunk(
         createdAt: ad.createdAt,
         interestRate: ad.interest_rate_upto_5 ? '≤5%' : ad.interest_rate_upto_10 ? '≤10%' : '>10%',
         location: ad.location?.city || 'غير محدد',
-        // Mock data for requests per ad (in real implementation, this would come from FinancingRequest model)
-        totalRequests: Math.floor(Math.random() * 10) + 1,
-        approvedRequests: Math.floor(Math.random() * 5) + 1,
-        averageAmount: Math.floor(Math.random() * 50000) + 10000
+        // Real data only - no mock values
+        totalRequests: 0, // This would need to be calculated from actual FinancingRequest model
+        approvedRequests: 0, // This would need to be calculated from actual FinancingRequest model
+        averageAmount: 0 // This would need to be calculated from actual FinancingRequest model
       }))
     },
     timeBasedData,
@@ -359,9 +418,9 @@ export const fetchAnalyticsData = createAsyncThunk(
       updatedAt: ad.updatedAt,
       // Calculate time since published
       daysSincePublished: Math.floor((new Date() - new Date(ad.createdAt?.toDate?.() || ad.createdAt)) / (1000 * 60 * 60 * 24)),
-      // Mock data for views and edits (in real implementation, this would be tracked in the database)
-      views: Math.floor(Math.random() * 100) + 10,
-      edits: Math.floor(Math.random() * 5) + 1,
+      // Real data only - these would need to be tracked in the database
+      views: 0, // This would need to be tracked in the database
+      edits: 0, // This would need to be tracked in the database
       lastEdited: ad.updatedAt?.toDate?.() || ad.updatedAt || ad.createdAt
     })),
     financingAds: filteredFinancingAds.map(ad => ({

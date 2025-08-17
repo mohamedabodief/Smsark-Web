@@ -632,6 +632,9 @@ class ClientAdvertisement {
     this.ads = data.ads !== undefined ? data.ads : false;
     this.adExpiryTime = data.adExpiryTime || null;
     this.description = data.description;
+    // Add timestamp fields for analytics
+    this.createdAt = data.createdAt || null;
+    this.updatedAt = data.updatedAt || null;
     this.reviewed_by = data.reviewed_by || null;
     this.review_note = data.review_note || null;
     this.reviewStatus = data.reviewStatus || "pending";
@@ -663,6 +666,11 @@ class ClientAdvertisement {
       "receiptUrl:",
       receiptUrl
     );
+
+    // Set creation timestamp
+    this.createdAt = Date.now();
+    this.updatedAt = Date.now();
+
     const colRef = collection(db, "ClientAdvertisements");
     // Package information
     let adPackageName = null,
@@ -914,6 +922,7 @@ class ClientAdvertisement {
     const admin = await User.getByUid(auth.currentUser.uid);
     const updates = {
       reviewStatus: "pending",
+      ads: false, // Deactivate the ad when returning to pending status
       reviewed_by: {
         uid: admin.uid,
         name: admin.adm_name,
@@ -965,6 +974,7 @@ class ClientAdvertisement {
   async clientReturnToPending() {
     const updates = {
       reviewStatus: "pending",
+      ads: false, // Deactivate the ad when returning to pending status
       reviewed_by: null,
       review_note: null,
     };
@@ -1316,6 +1326,8 @@ class ClientAdvertisement {
       adPackageName,
       adPackagePrice,
       adPackageDuration,
+      createdAt: this.createdAt,
+      updatedAt: this.updatedAt,
     };
   }
 }

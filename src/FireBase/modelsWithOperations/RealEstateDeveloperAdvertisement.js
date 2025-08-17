@@ -70,6 +70,9 @@ class RealEstateDeveloperAdvertisement {
     this.reviewed_by = data.reviewed_by || null;
     this.review_note = data.review_note || null;
     this.adPackage = data.adPackage !== undefined ? data.adPackage : null;
+    // Add timestamp fields for analytics
+    this.createdAt = data.createdAt || null;
+    this.updatedAt = data.updatedAt || null;
   }
 
   // ✅ getter للـ ID
@@ -92,7 +95,11 @@ class RealEstateDeveloperAdvertisement {
     }
     
     console.log('Saving advertisement for user:', currentUser.uid);
-    
+
+    // Set creation timestamp
+    this.createdAt = Date.now();
+    this.updatedAt = Date.now();
+
     const colRef = collection(db, 'RealEstateDeveloperAdvertisements');
     const docRef = await addDoc(colRef, this.#getAdData());
     this.#id = docRef.id;
@@ -224,7 +231,7 @@ class RealEstateDeveloperAdvertisement {
     await new Notification({
       receiver_id: this.userId,
       title: '✅ تمت الموافقة على إعلانك العقاري',
-      body: `تمت الموافقة على إعلانك "${this.developer_name}" وسيظهر في الواجهة.`,
+      body: `تمت الموافقة على إعلانك "${this.developer_name}". يمكن للإدارة الآن تفعيله ليظهر في الواجهة.`,
       type: 'system',
       link: `/client/developer-ads/${this.#id}`,
     }).send();
@@ -265,6 +272,7 @@ class RealEstateDeveloperAdvertisement {
     const admin = await User.getByUid(auth.currentUser.uid);
     await this.update({
       reviewStatus: 'pending',
+      ads: false, // Deactivate the ad when returning to pending status
       reviewed_by: {
         uid: admin.uid,
         name: admin.adm_name,
@@ -439,17 +447,18 @@ class RealEstateDeveloperAdvertisement {
     });
   }
 
-  // ✅ جلب الإعلانات المفعّلة فقط
+  // ✅ جلب الإعلانات المفعّلة فقط (ads=true AND reviewStatus='approved')
   static async getActiveAds() {
     // // التحقق من حالة تسجيل الدخول
     // const currentUser = auth.currentUser;
     // if (!currentUser) {
     //   throw new Error("يجب تسجيل الدخول أولاً قبل جلب العقارات المفعلة");
     // }
-    
+
     const q = query(
       collection(db, 'RealEstateDeveloperAdvertisements'),
-      where('ads', '==', true)
+      where('ads', '==', true),
+      where('reviewStatus', '==', 'approved')
     );
     const snap = await getDocs(q);
     return snap.docs.map((d) => {
@@ -490,17 +499,18 @@ class RealEstateDeveloperAdvertisement {
     });
   }
 
-  // 🔁 استماع لحظي للإعلانات المفعلة
+  // 🔁 استماع لحظي للإعلانات المفعلة (ads=true AND reviewStatus='approved')
   static subscribeActiveAds(callback) {
     // // التحقق من حالة تسجيل الدخول
     // const currentUser = auth.currentUser;
     // if (!currentUser) {
     //   throw new Error("يجب تسجيل الدخول أولاً قبل الاشتراك في العقارات المفعلة");
     // }
-    
+
     const q = query(
       collection(db, 'RealEstateDeveloperAdvertisements'),
-      where('ads', '==', true)
+      where('ads', '==', true),
+      where('reviewStatus', '==', 'approved')
     );
     return onSnapshot(q, (snap) => {
       const ads = snap.docs.map((d) => {
@@ -751,13 +761,15 @@ async #deleteAllImages() {
       adPackageName,
       adPackagePrice,
       adPackageDuration,
+      createdAt: this.createdAt,
+      updatedAt: this.updatedAt,
     };
-    
+
     // إضافة الـ ID إذا كان موجوداً
     if (this.#id) {
       data.id = this.#id;
     }
-    
+
     return data;
   }
 }

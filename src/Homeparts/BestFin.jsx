@@ -30,13 +30,12 @@ export default function BestFin() {
     try {
       const cachedAds = getCachedAds(CACHE_KEY);
       if (cachedAds) {
-        setOffers(cachedAds.filter((ad) => ad.ads === true));
+        setOffers(cachedAds);
         setLoading(false);
       }
 
       if (!cachedAds) {
-        const freshAds = await FinancingAdvertisement.getActiveAds();
-        const activeAds = freshAds.filter((ad) => ad.ads === true);
+        const activeAds = await FinancingAdvertisement.getActiveAds();
         setOffers(activeAds);
         saveAdsToCache(CACHE_KEY, activeAds);
         setLoading(false);
@@ -50,9 +49,7 @@ export default function BestFin() {
   useEffect(() => {
     initializeAds();
     let unsubscribe = () => {};
-     unsubscribe = FinancingAdvertisement.subscribeActiveAds((newAds) => {
-      const activeAds = newAds.filter(ad => ad.ads === true);
-
+     unsubscribe = FinancingAdvertisement.subscribeActiveAds((activeAds) => {
       setOffers((prevOffers) => {
         const currentAds =
           prevOffers.length > 0 ? prevOffers : getCachedAds(CACHE_KEY);
