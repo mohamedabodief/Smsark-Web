@@ -13,19 +13,19 @@ function SearchResults() {
   const [clientAds, setClientAds] = useState([]);
   const [financingAds, setFinancingAds] = useState([]);
   const [developerAds, setDeveloperAds] = useState([]);
-   const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchAll = async () => {
-       setLoading(true);
+      setLoading(true);
       const clientResults = await ClientAdvertisement.getAll();
       const financingResults = await FinancingAdvertisement.getAll();
       const developerResults = await RealEstateDeveloperAdvertisement.getAll();
       setClientAds(clientResults);
       setFinancingAds(financingResults);
       setDeveloperAds(developerResults);
-       setLoading(false);
+      setLoading(false);
     };
 
     fetchAll();
@@ -38,7 +38,7 @@ function SearchResults() {
     filters.priceFrom !== '' ||
     filters.priceTo !== '';
 
-  ///for client ads
+  // For client ads
   const filteredClientAds = useMemo(() => {
     return clientAds.filter((ad) => {
       const matchesPurpose =
@@ -53,14 +53,14 @@ function SearchResults() {
         !searchWord ||
         ad.address?.toLowerCase().includes(searchWord.toLowerCase()) ||
         ad.city?.toLowerCase().includes(searchWord.toLowerCase()) ||
-        ad.governorate?.toLowerCase().includes(searchWord.toLowerCase())||
+        ad.governorate?.toLowerCase().includes(searchWord.toLowerCase()) ||
         ad.title?.toLowerCase().includes(searchWord.toLowerCase());
 
       return matchesPurpose && matchesType && matchesPriceFrom && matchesPriceTo && matchesCity;
     });
   }, [clientAds, filters, searchWord]);
 
-  //  تمويل
+  // Financing ads
   const filteredFinancingAds = useMemo(() => {
     if (filters.purpose !== 'ممول عقارى') return [];
 
@@ -80,7 +80,7 @@ function SearchResults() {
     });
   }, [financingAds, filters, searchWord]);
 
-  //  المطور العقارى
+  // Developer ads
   const filteredDeveloperAds = useMemo(() => {
     if (filters.purpose !== 'مطور عقارى') return [];
     return developerAds.filter((ad) => {
@@ -126,87 +126,95 @@ function SearchResults() {
         </Typography>
       </Breadcrumbs>
 
-      {
-        shouldShowResults && (
-          <>
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'center',   // وسط الكروت عرضياً
-                flexWrap: 'wrap',           // يسمح للكروت تنزل سطر جديد لو ضاقت الشاشة
-                gap: 3,                     // مسافة بين الكروت
-                
-              }}
-            >
-              {['بيع', 'إيجار', 'الغرض'].includes(filters.purpose) &&
-                filteredClientAds.map((ad) => (
-                  <HorizontalCard
-                    // adv={ad}
-                    key={ad.id}
-                    title={ad.title}
-                    price={ad.price}
-                    adress={ad.address}
-                    image={ad.images}
-                    type={ad.type}
-                    status={ad.ad_status}
-                    city={ad.city}
-                    governoment={ad.governoment}
-                    phone={ad.phone}
-                    id={ad.id}
-                    onClickCard={() => navigate(`/details/clientAds/${ad.id}`)}
-                  />
-                ))}
+      {!shouldShowResults ? (
+        <Typography
+          variant="h6"
+          color="text.primary"
+          textAlign="center"
+          mt={4}
+          marginBottom={6}
+        >
+          🏡 ابحث عن عقارك المفضل! أدخل اسم المحافظة أو نوع العقار أو الغرض لبدء البحث.
+        </Typography>
+      ) : loading ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+          <CircularProgress />
+        </Box>
+      ) : (
+        <>
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'center',
+              flexWrap: 'wrap',
+              gap: 3,
+            }}
+          >
+            {['بيع', 'إيجار', 'الغرض'].includes(filters.purpose) &&
+              filteredClientAds.map((ad) => (
+                <HorizontalCard
+                  key={ad.id}
+                  title={ad.title}
+                  price={ad.price}
+                  adress={ad.address}
+                  image={ad.images}
+                  type={ad.type}
+                  status={ad.ad_status}
+                  city={ad.city}
+                  governoment={ad.governoment}
+                  phone={ad.phone}
+                  id={ad.id}
+                  onClickCard={() => navigate(`/details/clientAds/${ad.id}`)}
+                />
+              ))}
 
-              {/* إعلانات التمويل */}
-              {filters.purpose === 'ممول عقارى' &&
-                filteredFinancingAds.map((ad, idx) => (
-                  <HorizontalCard
-                    key={ad.id ?? idx}
-                    title={ad.title}
-                    price={`من ${ad.start_limit} إلى ${ad.end_limit}`}
-                    adress={ad.org_name}
-                    image={ad.images}
-                    type={ad.financing_model}
-                    id={ad.id}
-                    phone={ad.phone}
-                    onClickCard={() => navigate(`/details/financingAds/${ad.id}`)}
-                  />
-                ))}
+            {filters.purpose === 'ممول عقارى' &&
+              filteredFinancingAds.map((ad, idx) => (
+                <HorizontalCard
+                  key={ad.id ?? idx}
+                  title={ad.title}
+                  price={`من ${ad.start_limit} إلى ${ad.end_limit}`}
+                  adress={ad.org_name}
+                  image={ad.images}
+                  type={ad.financing_model}
+                  id={ad.id}
+                  phone={ad.phone}
+                  onClickCard={() => navigate(`/details/financingAds/${ad.id}`)}
+                />
+              ))}
 
-              {/* إعلانات المطورين */}
-              {filters.purpose === 'مطور عقارى' &&
-                filteredDeveloperAds.map((ad, idx) => (
-                  <HorizontalCard
-                    key={ad.id ?? idx}
-                    title={ad.developer_name}
-                    price={`من ${ad.price_start_from} إلى ${ad.price_end_to}`}
-                    adress={ad.location}
-                    image={ad.images}
-                    type={ad.project_types}
-                    id={ad.id}
-                    phone={ad.phone}
-                    onClickCard={() => navigate(`/details/developmentAds/${ad.id}`)}
-                  />
-                ))}
-            </Box>
+            {filters.purpose === 'مطور عقارى' &&
+              filteredDeveloperAds.map((ad, idx) => (
+                <HorizontalCard
+                  key={ad.id ?? idx}
+                  title={ad.developer_name}
+                  price={`من ${ad.price_start_from} إلى ${ad.price_end_to}`}
+                  adress={ad.location}
+                  image={ad.images}
+                  type={ad.project_types}
+                  id={ad.id}
+                  phone={ad.phone}
+                  onClickCard={() => navigate(`/details/developmentAds/${ad.id}`)}
+                />
+              ))}
+          </Box>
 
-            {filteredClientAds.length === 0 &&
-              filteredFinancingAds.length === 0 &&
-              filteredDeveloperAds.length === 0 && (
-                <Typography
-                  variant="h6"
-                  color="error"
-                  textAlign="center"
-                  mt={4}
-                >
-                  {searchWord
-                    ? `لا توجد نتائج تطابق "${searchWord}"`
-                    : 'لا توجد نتائج مطابقة لبحثك'}
-                </Typography>
-              )}
-          </>
-        )
-      }
+          {filteredClientAds.length === 0 &&
+            filteredFinancingAds.length === 0 &&
+            filteredDeveloperAds.length === 0 && (
+              <Typography
+                variant="h6"
+                color="error"
+                textAlign="center"
+                mt={4}
+              >
+                {searchWord
+                  ? `لا توجد نتائج تطابق "${searchWord}"`
+                  : 'لا توجد نتائج مطابقة لبحثك'}
+              </Typography>
+            )}
+        </>
+      )}
     </Container>
   );
 }
