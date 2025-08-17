@@ -2947,7 +2947,7 @@ function PaidAdvertismentPage() {
 
     // Define columns for financing ads
     const financingColumns = [
-        { field: 'id', headerName: 'ID', width: 90 },
+        // { field: 'id', headerName: 'ID', width: 90 },
         { field: 'title', headerName: 'عنوان الإعلان', width: 200 },
         {
             field: 'images',
@@ -3014,16 +3014,16 @@ function PaidAdvertismentPage() {
                 );
             }
         },
-        {
-            field: 'adExpiryTime', headerName: 'تاريخ انتهاء التفعيل', width: 150,
-            renderCell: (params) => {
-                if (!params.value) return '-';
-                const expiryDate = new Date(params.value);
-                const now = new Date();
-                const remainingDays = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
-                return remainingDays > 0 ? `${remainingDays} يوم` : 'منتهي';
-            }
-        },
+        // {
+        //     field: 'adExpiryTime', headerName: 'تاريخ انتهاء التفعيل', width: 150,
+        //     renderCell: (params) => {
+        //         if (!params.value) return '-';
+        //         const expiryDate = new Date(params.value);
+        //         const now = new Date();
+        //         const remainingDays = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
+        //         return remainingDays > 0 ? `${remainingDays} يوم` : 'منتهي';
+        //     }
+        // },
         {
             field: 'actions', headerName: 'الإجراءات', width: 180, sortable: false, filterable: false,
             renderCell: (params) => (
@@ -3623,6 +3623,30 @@ function OrdersPage() {
     // New state for filters and search
     const [statusFilters, setStatusFilters] = useState({}); // { [adId]: 'all' }
     const [searchTerm, setSearchTerm] = useState('');
+    // New state for storing user data
+    const [usersData, setUsersData] = useState({}); // { [userId]: { cli_name, phone, email } }
+
+    // Function to fetch user data by user ID
+    const fetchUserData = async (userId) => {
+        if (usersData[userId]) return usersData[userId]; // Return cached data if available
+
+        try {
+            const userData = await User.getByUid(userId);
+            if (userData) {
+                console.log('Fetched user data for', userId, ':', userData); // Debug log
+                const userInfo = {
+                    cli_name: userData.cli_name || userData.org_name || userData.adm_name || 'غير محدد',
+                    phone: userData.phone || 'غير محدد',
+                    email: userData.email || 'لم يتم تحديد الإيميل'
+                };
+                setUsersData(prev => ({ ...prev, [userId]: userInfo }));
+                return userInfo;
+            }
+        } catch (error) {
+            console.error('Error fetching user data for userId:', userId, error);
+        }
+        return { cli_name: 'غير محدد', phone: 'غير محدد', email: 'غير محدد' };
+    };
 
     // Real-time listeners for ads and requests
     useEffect(() => {
@@ -3638,8 +3662,17 @@ function OrdersPage() {
         });
 
         // Subscribe to all financing requests (we'll filter by ad ID in the component)
-        const unsubscribeRequests = FinancingRequest.subscribeAllRequests((requestsData) => {
+        const unsubscribeRequests = FinancingRequest.subscribeAllRequests(async (requestsData) => {
             setRequests(requestsData);
+
+            // Fetch user data for all unique user IDs in the requests
+            const uniqueUserIds = [...new Set(requestsData.map(req => req.user_id))];
+            for (const userId of uniqueUserIds) {
+                if (userId && !usersData[userId]) {
+                    await fetchUserData(userId);
+                }
+            }
+
             setLoadingRequests(false);
         });
 
@@ -3649,6 +3682,22 @@ function OrdersPage() {
             unsubscribeRequests();
         };
     }, [userProfile?.uid]);
+
+    // Effect to fetch user data when requests change
+    useEffect(() => {
+        const fetchMissingUserData = async () => {
+            const uniqueUserIds = [...new Set(requests.map(req => req.user_id))];
+            for (const userId of uniqueUserIds) {
+                if (userId && !usersData[userId]) {
+                    await fetchUserData(userId);
+                }
+            }
+        };
+
+        if (requests.length > 0) {
+            fetchMissingUserData();
+        }
+    }, [requests]);
 
     // Approval action for requests (org approval, not admin)
     const handleOrgApproveRequest = async (req, ad) => {
@@ -3740,7 +3789,7 @@ function OrdersPage() {
     // Helper function to get ad status label
     const getAdStatusLabel = (status) => {
         switch (status) {
-            case 'pending': return 'قيد المراجعة';
+            case 'pending': return 'قيد مراجعة المدير';
             case 'approved': return 'موافق عليه';
             case 'rejected': return 'مرفوض';
             default: return status;
@@ -3766,31 +3815,38 @@ function OrdersPage() {
         }
         if (searchTerm.trim()) {
             const term = searchTerm.trim().toLowerCase();
-            filtered = filtered.filter(r =>
-                (r.user_id && r.user_id.toLowerCase().includes(term)) ||
-                (r.financing_amount && String(r.financing_amount).includes(term)) ||
-                (r.repayment_years && String(r.repayment_years).includes(term))
-            );
+            filtered = filtered.filter(r => {
+                const userData = usersData[r.user_id];
+                return (
+                    (r.user_id && r.user_id.toLowerCase().includes(term)) ||
+                    (userData?.cli_name && userData.cli_name.toLowerCase().includes(term)) ||
+                    (userData?.phone && userData.phone.includes(term)) ||
+                    (userData?.email && userData.email.toLowerCase().includes(term)) ||
+                    (r.financing_amount && String(r.financing_amount).includes(term)) ||
+                    (r.repayment_years && String(r.repayment_years).includes(term))
+                );
+            });
         }
         return filtered;
     };
 
     return (
-        <Box sx={{ p: 2, textAlign: 'left' }}>
+        <Box dir='rtl' sx={{ p: 2 }}>
             <PageHeader
-                title="طلبات التمويل على إعلاناتك"
+                title="طلبات التمويل على الإعلانات"
                 icon={AccountBalanceWalletIcon}
                 showCount={false}
+                dir='ltr'
             />
             {/* Search input */}
             <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end' }}>
                 <TextField
-                    label="بحث عن طلبات التمويل (المستخدم، المبلغ، السنوات)"
+                    label="بحث عن طلبات التمويل (الاسم، الهاتف، الإيميل، المبلغ، السنوات)"
                     variant="outlined"
                     size="small"
                     value={searchTerm}
                     onChange={e => setSearchTerm(e.target.value)}
-                    sx={{ minWidth: 300 }}
+                    sx={{ minWidth: 400 }}
                 />
             </Box>
             <Paper sx={{ p: 2, borderRadius: 2, minHeight: 400, textAlign: 'right' }}>
@@ -3814,7 +3870,7 @@ function OrdersPage() {
                         const filteredRequests = filterAndSearchRequests(requestsForAd, ad.id);
                         return (
                             <Box key={ad.id} sx={{ mb: 4, border: '1px solid #eee', borderRadius: 2, p: 2 }}>
-                                <Box dir='ltr' sx={{ textAlign: 'left', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <Box dir='rtl' sx={{ textAlign: 'left', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                     <Box>
                                         <Typography variant="h6" color="primary" sx={{ mb: 1 }}>{ad.title}</Typography>
                                         <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>الحد الأدنى: {ad.start_limit} | الحد الأقصى: {ad.end_limit}</Typography>
@@ -3847,33 +3903,66 @@ function OrdersPage() {
                                 </Box>
                                 {filteredRequests.length > 0 ? (
                                     <List>
-                                        {filteredRequests.map((req) => (
-                                            <ListItem key={req.id} sx={{ borderBottom: '1px solid #eee', flexDirection: 'row-reverse' }}>
-                                                <ListItemText
-                                                    primary={<>
-                                                        <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>مقدم الطلب: {req.user_id}</Typography>
-                                                        <Typography variant="body2">المبلغ المطلوب: {req.financing_amount} | سنوات السداد: {req.repayment_years}</Typography>
-                                                        <Typography variant="body2">الحالة: {req.reviewStatus}</Typography>
-                                                    </>}
-                                                    secondary={<>
-                                                        <Typography variant="caption" color="text.secondary">ID: {req.id}</Typography>
-                                                    </>}
-                                                />
-                                                <Stack direction="row" spacing={1.5}>
-                                                    {/* Org Approval Button */}
-                                                    {req.reviewStatus !== 'approved' && (
-                                                        <IconButton
-                                                            color="success"
-                                                            size="small"
-                                                            disabled={actionLoading[req.id]}
-                                                            onClick={() => handleOrgApproveRequest(req, ad)}
-                                                        >
-                                                            <Tooltip title='موافقة'>
-                                                                <CheckCircleIcon sx={{ border: '1px solid green', borderRadius: '50%' }} />
-                                                            </Tooltip>
-                                                        </IconButton>
-                                                    )}
-                                                    <IconButton
+                                        {filteredRequests.map((req) => {
+                                            const userData = usersData[req.user_id] || { cli_name: 'جاري التحميل...', phone: 'جاري التحميل...', email: 'جاري التحميل...' };
+                                            return (
+                                                <ListItem dir='rtl' key={req.id} sx={{ borderBottom: '1px solid #eee' }}>
+                                                    <ListItemText
+                                                        primary={<>
+                                                            <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+                                                                اسم العميل: {userData.cli_name}
+                                                            </Typography>
+                                                            <Typography variant="body2" sx={{ mt: 0.5 }}>
+                                                                رقم الهاتف: {userData.phone}
+                                                            </Typography>
+                                                            <Typography variant="body2" sx={{ mt: 0.5 }}>
+                                                                الإيميل: {userData.email}
+                                                            </Typography>
+                                                            <Typography variant="body2" sx={{ mt: 0.5 }}>
+                                                                الوظيفة: {req.job_title}
+                                                            </Typography>
+                                                            <Typography variant="body2" sx={{ mt: 0.5 }}>
+                                                                جهة العمل: {req.employer}
+                                                            </Typography>
+                                                            <Typography variant="body2" sx={{ mt: 0.5 }}>
+                                                                الدخل: {req.monthly_income}
+                                                            </Typography>
+                                                            <Typography variant="body2" sx={{ mt: 0.5 }}>
+                                                                عدد المعالين: {req.dependents}
+                                                            </Typography>
+                                                            <Typography variant="body2" sx={{ mt: 0.5 }}>
+                                                                المبلغ المطلوب: {req.financing_amount?.toLocaleString()} ج.م | سنوات السداد: {req.repayment_years}
+                                                            </Typography>
+                                                            <Typography variant="body2" sx={{ mt: 0.5 }}>
+                                                                الحالة: {req.reviewStatus}
+                                                            </Typography>
+                                                        </>}
+                                                    // secondary={<>
+                                                    //     <Typography variant="caption" color="text.secondary">
+                                                    //         معرف الطلب: {req.id}
+                                                    //     </Typography>
+                                                    //     {req.phone_number && (
+                                                    //         <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                                                    //             هاتف إضافي: {req.phone_number}
+                                                    //         </Typography>
+                                                    //     )}
+                                                    // </>}
+                                                    />
+                                                    <Stack direction="row-reverse" spacing={1.5}>
+                                                        {/* Org Approval Button */}
+                                                        {req.reviewStatus !== 'approved' && (
+                                                            <IconButton
+                                                                color="success"
+                                                                size="small"
+                                                                disabled={actionLoading[req.id]}
+                                                                onClick={() => handleOrgApproveRequest(req, ad)}
+                                                            >
+                                                                <Tooltip title='موافقة'>
+                                                                    <CheckCircleIcon sx={{ border: '1px solid green', borderRadius: '50%' }} />
+                                                                </Tooltip>
+                                                            </IconButton>
+                                                        )}
+                                                        {/* <IconButton
                                                         color="warning"
                                                         size="small"
                                                         disabled={actionLoading[req.id]}
@@ -3882,30 +3971,31 @@ function OrdersPage() {
                                                         <Tooltip title='إعادة للمراجعة'>
                                                             <MessageIcon />
                                                         </Tooltip>
-                                                    </IconButton>
-                                                    <IconButton
-                                                        color="error"
-                                                        size="small"
-                                                        disabled={actionLoading[req.id]}
-                                                        onClick={() => handleRequestAction(req.id, 'reject', ad.id, 'تم الرفض من قبل المؤسسة')}
-                                                    >
-                                                        <Tooltip title='رفض'>
-                                                            <CloseIcon sx={{ border: '1px solid red', borderRadius: '50%' }} />
-                                                        </Tooltip>
-                                                    </IconButton>
-                                                    <IconButton
-                                                        color="secondary"
-                                                        size="small"
-                                                        disabled={actionLoading[req.id]}
-                                                        onClick={() => handleRequestAction(req.id, 'delete', ad.id)}
-                                                    >
-                                                        <Tooltip title='حذف'>
-                                                            <DeleteIcon />
-                                                        </Tooltip>
-                                                    </IconButton>
-                                                </Stack>
-                                            </ListItem>
-                                        ))}
+                                                    </IconButton> */}
+                                                        <IconButton
+                                                            color="error"
+                                                            size="small"
+                                                            disabled={actionLoading[req.id]}
+                                                            onClick={() => handleRequestAction(req.id, 'reject', ad.id, 'تم الرفض من قبل المؤسسة')}
+                                                        >
+                                                            <Tooltip title='رفض'>
+                                                                <CloseIcon sx={{ border: '1px solid red', borderRadius: '50%' }} />
+                                                            </Tooltip>
+                                                        </IconButton>
+                                                        <IconButton
+                                                            color="secondary"
+                                                            size="small"
+                                                            disabled={actionLoading[req.id]}
+                                                            onClick={() => handleRequestAction(req.id, 'delete', ad.id)}
+                                                        >
+                                                            <Tooltip title='حذف'>
+                                                                <DeleteIcon />
+                                                            </Tooltip>
+                                                        </IconButton>
+                                                    </Stack>
+                                                </ListItem>
+                                            );
+                                        })}
                                     </List>
                                 ) : (
                                     <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
@@ -4288,245 +4378,196 @@ export default function OrganizationDashboard(props) {
     return (
         <StyledEngineProvider injectFirst>
             <CacheProvider value={cacheRtl}>
-                    <ThemeProvider theme={theme}>
-                        <Box sx={{ display: 'flex', flexDirection: 'row-reverse' }}>
-                            <CssBaseline />
-                            <AppBarStyled position="fixed" open={open}>
-                                <Toolbar sx={{ flexDirection: 'row-reverse' }}>
-                                    <IconButton
-                                        color="inherit"
-                                        aria-label="open drawer"
-                                        edge="start"
-                                        onClick={handleDrawerToggle}
-                                        sx={{ ml: 2, display: { md: 'none' } }}
-                                    >
-                                        <MenuIcon />
-                                    </IconButton>
-                                    {!open && !isMobile && (
-                                        <img
-                                            src="./logo.png"
-                                            alt="App Logo"
-                                            style={{ height: 60, marginRight: 8, scale: 3 }}
-                                        />
-                                    )}
-                                    <Box sx={{ flexGrow: 1 }} />
-                                    {/* Notification Bell Icon */}
-                                    <IconButton
-                                        sx={{ mr: -1 }}
-                                        onClick={handleNotificationClick}
-                                        color="inherit"
-                                    >
-                                        <Badge
-                                            badgeContent={unreadCount}
-                                            color="error"
-                                            sx={{
-                                                "& .MuiBadge-badge": {
-                                                    top: "0px",
-                                                    right: "0px",
-                                                    backgroundColor: "#d1d1d1ff",
-                                                    color: "black",
-                                                    fontWeight: "bold",
-                                                    minWidth: "20px",
-                                                    height: "20px",
-                                                    borderRadius: "50%",
-                                                    display: "flex",
-                                                    alignItems: "center",
-                                                    justifyContent: "center",
-                                                    fontSize: "14px",
-                                                    zIndex: "10000",
-                                                },
-                                            }}
-                                        >
-                                            <NotificationsIcon />
-                                        </Badge>
-                                    </IconButton>
-                                    {/* Notification Popover */}
-                                    <Popover
-                                        open={Boolean(notificationAnchorEl)}
-                                        anchorEl={notificationAnchorEl}
-                                        onClose={handleNotificationClose}
-                                        anchorOrigin={{
-                                            vertical: 'bottom',
-                                            horizontal: 'left',
-                                        }}
-                                        transformOrigin={{
-                                            vertical: 'top',
-                                            horizontal: 'right',
+                <ThemeProvider theme={theme}>
+                    <Box sx={{ display: 'flex', flexDirection: 'row-reverse' }}>
+                        <CssBaseline />
+                        <AppBarStyled position="fixed" open={open}>
+                            <Toolbar sx={{ flexDirection: 'row-reverse' }}>
+                                <IconButton
+                                    color="inherit"
+                                    aria-label="open drawer"
+                                    edge="start"
+                                    onClick={handleDrawerToggle}
+                                    sx={{ ml: 2, display: { md: 'none' } }}
+                                >
+                                    <MenuIcon />
+                                </IconButton>
+                                {!open && !isMobile && (
+                                    <img
+                                        src="./logo.png"
+                                        alt="App Logo"
+                                        style={{ height: 60, marginRight: 8, scale: 3 }}
+                                    />
+                                )}
+                                <Box sx={{ flexGrow: 1 }} />
+                                {/* Notification Bell Icon */}
+                                <IconButton
+                                    sx={{ mr: -1 }}
+                                    onClick={handleNotificationClick}
+                                    color="inherit"
+                                >
+                                    <Badge
+                                        badgeContent={unreadCount}
+                                        color="error"
+                                        sx={{
+                                            "& .MuiBadge-badge": {
+                                                top: "0px",
+                                                right: "0px",
+                                                backgroundColor: "#d1d1d1ff",
+                                                color: "black",
+                                                fontWeight: "bold",
+                                                minWidth: "20px",
+                                                height: "20px",
+                                                borderRadius: "50%",
+                                                display: "flex",
+                                                alignItems: "center",
+                                                justifyContent: "center",
+                                                fontSize: "14px",
+                                                zIndex: "10000",
+                                            },
                                         }}
                                     >
-                                        <NotificationList userId={authUid} />
-                                    </Popover>
-                                    <IconButton
-                                        sx={{ ml: 1 }}
-                                        color="inherit"
-                                        onClick={() => navigate('/home')}
-                                        title="العودة للصفحة الرئيسية"
-                                    >
-                                        <HomeIcon />
-                                    </IconButton>
-                                    <IconButton sx={{ mr: 1 }} onClick={toggleMode} color="inherit">
-                                        {theme.palette.mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
-                                    </IconButton>
-                                    <Button
-                                        variant="outlined"
-                                        color="inherit"
-                                        onClick={handleLogout}
-                                        endIcon={<LogoutIcon />}
-                                        sx={{ mr: 2, borderRadius: 2, direction: 'ltr' }}
-                                    >
-                                        تسجيل الخروج
-                                    </Button>
+                                        <NotificationsIcon />
+                                    </Badge>
+                                </IconButton>
+                                {/* Notification Popover */}
+                                <Popover
+                                    open={Boolean(notificationAnchorEl)}
+                                    anchorEl={notificationAnchorEl}
+                                    onClose={handleNotificationClose}
+                                    anchorOrigin={{
+                                        vertical: 'bottom',
+                                        horizontal: 'left',
+                                    }}
+                                    transformOrigin={{
+                                        vertical: 'top',
+                                        horizontal: 'right',
+                                    }}
+                                >
+                                    <NotificationList userId={authUid} />
+                                </Popover>
+                                <IconButton
+                                    sx={{ ml: 1 }}
+                                    color="inherit"
+                                    onClick={() => navigate('/home')}
+                                    title="العودة للصفحة الرئيسية"
+                                >
+                                    <HomeIcon />
+                                </IconButton>
+                                <IconButton sx={{ mr: 1 }} onClick={toggleMode} color="inherit">
+                                    {theme.palette.mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
+                                </IconButton>
+                                <Button
+                                    variant="outlined"
+                                    color="inherit"
+                                    onClick={handleLogout}
+                                    endIcon={<LogoutIcon />}
+                                    sx={{ mr: 2, borderRadius: 2, direction: 'ltr' }}
+                                >
+                                    تسجيل الخروج
+                                </Button>
 
-                                </Toolbar>
-                            </AppBarStyled>
+                            </Toolbar>
+                        </AppBarStyled>
 
-                            <Drawer
-                                variant={isMobile ? 'temporary' : 'permanent'}
-                                sx={{
-                                    display: { xs: 'block' },
-                                    width: open ? drawerWidth : closedDrawerWidth,
-                                    flexShrink: 0,
-                                    whiteSpace: 'nowrap',
+                        <Drawer
+                            variant={isMobile ? 'temporary' : 'permanent'}
+                            sx={{
+                                display: { xs: 'block' },
+                                width: open ? drawerWidth : closedDrawerWidth,
+                                flexShrink: 0,
+                                whiteSpace: 'nowrap',
+                                boxSizing: 'border-box',
+                                transition: theme.transitions.create('width', {
+                                    easing: theme.transitions.easing.sharp,
+                                    duration: theme.transitions.duration.enteringScreen,
+                                }),
+                                '& .MuiDrawer-paper': {
                                     boxSizing: 'border-box',
+                                    width: isMobile ? '80%' : (open ? drawerWidth : closedDrawerWidth),
+                                    borderRadius: isMobile ? 0 : '8px 0 0 8px',
+                                    overflowX: 'hidden',
                                     transition: theme.transitions.create('width', {
                                         easing: theme.transitions.easing.sharp,
                                         duration: theme.transitions.duration.enteringScreen,
                                     }),
-                                    '& .MuiDrawer-paper': {
-                                        boxSizing: 'border-box',
-                                        width: isMobile ? '80%' : (open ? drawerWidth : closedDrawerWidth),
-                                        borderRadius: isMobile ? 0 : '8px 0 0 8px',
-                                        overflowX: 'hidden',
-                                        transition: theme.transitions.create('width', {
-                                            easing: theme.transitions.easing.sharp,
-                                            duration: theme.transitions.duration.enteringScreen,
-                                        }),
-                                    },
-                                }}
-                                anchor="left"
-                                open={isMobile ? mobileOpen : open}
-                                onClose={handleDrawerToggle}
-                                ModalProps={{
-                                    keepMounted: true,
-                                }}
-                            >
-                                <DrawerHeader>
-                                    {open && (
-                                        <Box sx={{ flexGrow: 1, textAlign: 'center' }}>
-                                            <img
-                                                src="./logo.png"
-                                                alt="App Logo"
-                                                style={{ height: 60, scale: 2 }}
-                                            />
-                                        </Box>
-                                    )}
-                                    <IconButton onClick={handleDrawerToggle}>
-                                        {open ? <ChevronRightIcon /> : <MenuIcon />}
-                                    </IconButton>
-                                </DrawerHeader>
-                                <Divider />
+                                },
+                            }}
+                            anchor="left"
+                            open={isMobile ? mobileOpen : open}
+                            onClose={handleDrawerToggle}
+                            ModalProps={{
+                                keepMounted: true,
+                            }}
+                        >
+                            <DrawerHeader>
                                 {open && (
-                                    <Box sx={{ my: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', p: 2 }}>
-                                        <Avatar
-                                            alt={userName}
-                                            src={userProfile?.image || profilePicInDrawer || './admin.jpg'}
-                                            sx={{
-                                                width: 80,
-                                                height: 80,
-                                                mb: 1,
-                                                boxShadow: '0px 0px 8px rgba(0,0,0,0.2)',
-                                                border: '3px solid',
-                                                borderColor: 'primary.main'
-                                            }}
+                                    <Box sx={{ flexGrow: 1, textAlign: 'center' }}>
+                                        <img
+                                            src="./logo.png"
+                                            alt="App Logo"
+                                            style={{ height: 60, scale: 2 }}
                                         />
-                                        <Typography variant="h6" sx={{ fontWeight: 'bold', textAlign: 'center' }}>
-                                            مرحباً، {userName}
-                                        </Typography>
-                                        <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
-                                            {userProfile?.type_of_organization ? `${userProfile.type_of_organization}` : 'منظمة'}
-                                        </Typography>
                                     </Box>
                                 )}
-                                {open && <Divider sx={{ mb: 2 }} />}
-                                <List>
-                                    {!isProfileLoaded ? (
-                                        // Show loading state while profile is being loaded
-                                        <Box sx={{ p: 2, textAlign: 'center' }}>
-                                            <Typography variant="body2" color="text.secondary">
-                                                جاري التحميل...
-                                            </Typography>
-                                        </Box>
-                                    ) : (
-                                        NAVIGATION.map((item) => {
-                                            if (item.kind === 'header') {
-                                                return open ? (
-                                                    <List key={item.title} component="nav" sx={{ px: 2, pt: 2, display: 'flex', flexDirection: 'row-reverse' }}>
-                                                        <Typography variant="overline" color="text.secondary" sx={{ textTransform: 'uppercase', fontWeight: 'bold', fontSize: 18, textAlign: 'right' }} >
-                                                            {item.title}
-                                                        </Typography>
-                                                    </List>
-                                                ) : null;
-                                            }
-                                            if (item.kind === 'divider') {
-                                                return <Divider key={`divider-${item.kind}`} sx={{ my: 1 }} />;
-                                            }
-                                            if (item.children) {
-                                                const isOpen = item.segment === 'reports' ? openReports : false;
-                                                return (
-                                                    <React.Fragment key={item.segment}>
-                                                        <Tooltip title={item.tooltip} placment='top'>
-                                                            <ListItemButton
-                                                                dir='rtl'
-                                                                onClick={open ? handleReportsClick : () => setOpen(true)}
-                                                                sx={{
-                                                                    borderRadius: 2,
-                                                                    mx: 1,
-                                                                    justifyContent: open ? 'initial' : 'center',
-                                                                    px: 2.5,
-                                                                    '&.Mui-selected': { backgroundColor: 'action.selected' },
-                                                                }}
-                                                            >
-                                                                <ListItemIcon sx={{ minWidth: 0, ml: open ? 3 : 'auto', justifyContent: 'center' }}>
-                                                                    {item.icon}
-                                                                </ListItemIcon>
-                                                                {open && <ListItemText primary={item.title} sx={{ opacity: open ? 1 : 0, textAlign: 'left', pl: 2 }} />}
-                                                                {open && (isOpen ? <ExpandLess /> : <ExpandMore />)}
-                                                            </ListItemButton>
-                                                        </Tooltip>
-                                                        <Collapse in={isOpen && open} timeout="auto" unmountOnExit>
-                                                            <List component="div" disablePadding >
-                                                                {item.children.map((child) => (
-                                                                    <Tooltip title={child.tooltip} key={child.segment}>
-                                                                        <ListItem disablePadding>
-                                                                            <ListItemButton
-                                                                                selected={router.pathname === `/reports/${child.segment}`}
-                                                                                onClick={() => router.navigate(`/reports/${child.segment}`)}
-                                                                                sx={{
-                                                                                    pr: open ? 4 : 2.5,
-                                                                                    borderRadius: 2,
-                                                                                    mx: 1,
-                                                                                    justifyContent: open ? 'initial' : 'center',
-                                                                                }}
-                                                                            >
-                                                                                <ListItemIcon sx={{ minWidth: 0, ml: open ? 3 : 'auto', justifyContent: 'center' }}>
-                                                                                    {child.icon}
-                                                                                </ListItemIcon>
-                                                                                {open && <ListItemText primary={child.title} sx={{ opacity: open ? 1 : 0, textAlign: 'right' }} />}
-                                                                            </ListItemButton>
-                                                                        </ListItem>
-                                                                    </Tooltip>
-                                                                ))}
-                                                            </List>
-                                                        </Collapse>
-                                                    </React.Fragment>
-                                                );
-                                            }
+                                <IconButton onClick={handleDrawerToggle}>
+                                    {open ? <ChevronRightIcon /> : <MenuIcon />}
+                                </IconButton>
+                            </DrawerHeader>
+                            <Divider />
+                            {open && (
+                                <Box sx={{ my: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', p: 2 }}>
+                                    <Avatar
+                                        alt={userName}
+                                        src={userProfile?.image || profilePicInDrawer || './admin.jpg'}
+                                        sx={{
+                                            width: 80,
+                                            height: 80,
+                                            mb: 1,
+                                            boxShadow: '0px 0px 8px rgba(0,0,0,0.2)',
+                                            border: '3px solid',
+                                            borderColor: 'primary.main'
+                                        }}
+                                    />
+                                    <Typography variant="h6" sx={{ fontWeight: 'bold', textAlign: 'center' }}>
+                                        مرحباً، {userName}
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
+                                        {userProfile?.type_of_organization ? `${userProfile.type_of_organization}` : 'منظمة'}
+                                    </Typography>
+                                </Box>
+                            )}
+                            {open && <Divider sx={{ mb: 2 }} />}
+                            <List>
+                                {!isProfileLoaded ? (
+                                    // Show loading state while profile is being loaded
+                                    <Box sx={{ p: 2, textAlign: 'center' }}>
+                                        <Typography variant="body2" color="text.secondary">
+                                            جاري التحميل...
+                                        </Typography>
+                                    </Box>
+                                ) : (
+                                    NAVIGATION.map((item) => {
+                                        if (item.kind === 'header') {
+                                            return open ? (
+                                                <List key={item.title} component="nav" sx={{ px: 2, pt: 2, display: 'flex', flexDirection: 'row-reverse' }}>
+                                                    <Typography variant="overline" color="text.secondary" sx={{ textTransform: 'uppercase', fontWeight: 'bold', fontSize: 18, textAlign: 'right' }} >
+                                                        {item.title}
+                                                    </Typography>
+                                                </List>
+                                            ) : null;
+                                        }
+                                        if (item.kind === 'divider') {
+                                            return <Divider key={`divider-${item.kind}`} sx={{ my: 1 }} />;
+                                        }
+                                        if (item.children) {
+                                            const isOpen = item.segment === 'reports' ? openReports : false;
                                             return (
-                                                <Tooltip title={item.tooltip} placement='right-end' key={item.segment}>
-                                                    <ListItem key={item.segment} disablePadding dir='rtl'>
+                                                <React.Fragment key={item.segment}>
+                                                    <Tooltip title={item.tooltip} placment='top'>
                                                         <ListItemButton
-                                                            selected={router.pathname === `/${item.segment}`}
-                                                            onClick={() => router.navigate(`/${item.segment}`)}
+                                                            dir='rtl'
+                                                            onClick={open ? handleReportsClick : () => setOpen(true)}
                                                             sx={{
                                                                 borderRadius: 2,
                                                                 mx: 1,
@@ -4535,24 +4576,73 @@ export default function OrganizationDashboard(props) {
                                                                 '&.Mui-selected': { backgroundColor: 'action.selected' },
                                                             }}
                                                         >
-                                                            <ListItemIcon sx={{ minWidth: 0, ml: open ? 3 : 'auto', justifyContent: 'center', }}>
+                                                            <ListItemIcon sx={{ minWidth: 0, ml: open ? 3 : 'auto', justifyContent: 'center' }}>
                                                                 {item.icon}
                                                             </ListItemIcon>
                                                             {open && <ListItemText primary={item.title} sx={{ opacity: open ? 1 : 0, textAlign: 'left', pl: 2 }} />}
+                                                            {open && (isOpen ? <ExpandLess /> : <ExpandMore />)}
                                                         </ListItemButton>
-                                                    </ListItem>
-                                                </Tooltip>
+                                                    </Tooltip>
+                                                    <Collapse in={isOpen && open} timeout="auto" unmountOnExit>
+                                                        <List component="div" disablePadding >
+                                                            {item.children.map((child) => (
+                                                                <Tooltip title={child.tooltip} key={child.segment}>
+                                                                    <ListItem disablePadding>
+                                                                        <ListItemButton
+                                                                            selected={router.pathname === `/reports/${child.segment}`}
+                                                                            onClick={() => router.navigate(`/reports/${child.segment}`)}
+                                                                            sx={{
+                                                                                pr: open ? 4 : 2.5,
+                                                                                borderRadius: 2,
+                                                                                mx: 1,
+                                                                                justifyContent: open ? 'initial' : 'center',
+                                                                            }}
+                                                                        >
+                                                                            <ListItemIcon sx={{ minWidth: 0, ml: open ? 3 : 'auto', justifyContent: 'center' }}>
+                                                                                {child.icon}
+                                                                            </ListItemIcon>
+                                                                            {open && <ListItemText primary={child.title} sx={{ opacity: open ? 1 : 0, textAlign: 'right' }} />}
+                                                                        </ListItemButton>
+                                                                    </ListItem>
+                                                                </Tooltip>
+                                                            ))}
+                                                        </List>
+                                                    </Collapse>
+                                                </React.Fragment>
                                             );
-                                        })
-                                    )}
-                                </List>
-                            </Drawer>
-                            <Main open={open}>
-                                <DrawerHeader />
-                                {currentPageContent}
-                            </Main>
-                        </Box>
-                    </ThemeProvider>
+                                        }
+                                        return (
+                                            <Tooltip title={item.tooltip} placement='right-end' key={item.segment}>
+                                                <ListItem key={item.segment} disablePadding dir='rtl'>
+                                                    <ListItemButton
+                                                        selected={router.pathname === `/${item.segment}`}
+                                                        onClick={() => router.navigate(`/${item.segment}`)}
+                                                        sx={{
+                                                            borderRadius: 2,
+                                                            mx: 1,
+                                                            justifyContent: open ? 'initial' : 'center',
+                                                            px: 2.5,
+                                                            '&.Mui-selected': { backgroundColor: 'action.selected' },
+                                                        }}
+                                                    >
+                                                        <ListItemIcon sx={{ minWidth: 0, ml: open ? 3 : 'auto', justifyContent: 'center', }}>
+                                                            {item.icon}
+                                                        </ListItemIcon>
+                                                        {open && <ListItemText primary={item.title} sx={{ opacity: open ? 1 : 0, textAlign: 'left', pl: 2 }} />}
+                                                    </ListItemButton>
+                                                </ListItem>
+                                            </Tooltip>
+                                        );
+                                    })
+                                )}
+                            </List>
+                        </Drawer>
+                        <Main open={open}>
+                            <DrawerHeader />
+                            {currentPageContent}
+                        </Main>
+                    </Box>
+                </ThemeProvider>
             </CacheProvider>
         </StyledEngineProvider>
     );
@@ -5128,8 +5218,8 @@ function AnalyticsPage() {
                                     : 'غير محدد';
 
                             const interestRate = ad.interest_rate_upto_5 ? '≤5%' :
-                                               ad.interest_rate_upto_10 ? '≤10%' :
-                                               ad.interest_rate_above_10 ? '>10%' : 'غير محدد';
+                                ad.interest_rate_upto_10 ? '≤10%' :
+                                    ad.interest_rate_above_10 ? '>10%' : 'غير محدد';
 
                             return {
                                 id: ad.id || `fund-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
@@ -5148,21 +5238,21 @@ function AnalyticsPage() {
                             { field: 'title', headerName: 'عنوان الإعلان', width: 200 },
                             { field: 'orgName', headerName: 'اسم المؤسسة', width: 150 },
                             { field: 'financingRange', headerName: 'نطاق التمويل', width: 180 },
-                            { field: 'totalRequests', headerName: 'إجمالي الطلبات', width: 120 },
-                            { field: 'approvedRequests', headerName: 'الطلبات المقبولة', width: 120 },
-                            {
-                                field: 'averageAmount', headerName: 'متوسط المبلغ', width: 150,
-                                valueFormatter: (params) => params?.value ? `${params.value.toLocaleString('ar-EG')} ج.م` : '0 ج.م'
-                            },
-                            { field: 'interestRate', headerName: 'نسبة الفائدة', width: 120 },
-                            { field: 'status', headerName: 'الحالة', width: 120 },
-                            { field: 'createdAt', headerName: 'تاريخ الإنشاء', width: 150 }
+                            // { field: 'totalRequests', headerName: 'إجمالي الطلبات', width: 120 },
+                            // { field: 'approvedRequests', headerName: 'الطلبات المقبولة', width: 120 },
+                            // {
+                            //     field: 'averageAmount', headerName: 'متوسط المبلغ', width: 150,
+                            //     valueFormatter: (params) => params?.value ? `${params.value.toLocaleString('ar-EG')} ج.م` : '0 ج.م'
+                            // },
+                            // { field: 'interestRate', headerName: 'نسبة الفائدة', width: 120 },
+                            // { field: 'status', headerName: 'الحالة', width: 120 },
+                            // { field: 'createdAt', headerName: 'تاريخ الإنشاء', width: 150 }
                         ]}
                         pageSize={5}
                         rowsPerPageOptions={[5, 10, 25]}
                         disableSelectionOnClick
                         getRowId={(row) => row.id || `fund-${Math.random().toString(36).substr(2, 9)}`}
-                        sx={{ direction: 'rtl' }}
+                    // sx={{ direction: 'rtl' }}
                     />
                 </Paper>
             </Box>
@@ -5308,7 +5398,7 @@ function AnalyticsPage() {
                             </Typography>
                         </Paper>
                     </Grid>
-                    <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                    {/* <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                         <Paper sx={{ p: 3, textAlign: 'center', borderRadius: 2 }}>
                             <Typography variant="h6" color="text.secondary">متوسط المشاهدات</Typography>
                             <Typography variant="h4" sx={{ color: 'info.main', fontWeight: 'bold' }}>
@@ -5323,7 +5413,7 @@ function AnalyticsPage() {
                                 {data.averageEdits ? data.averageEdits.toFixed(1) : '0'}
                             </Typography>
                         </Paper>
-                    </Grid>
+                    </Grid> */}
                 </Grid>
 
                 {/* Charts */}
@@ -5486,15 +5576,15 @@ function AnalyticsPage() {
                         })}
                         columns={[
                             { field: 'title', headerName: 'عنوان الإعلان', width: 200 },
-                            { field: 'propertyType', headerName: 'نوع العقار', width: 120 },
-                            { field: 'price', headerName: 'السعر', width: 120 },
-                            { field: 'area', headerName: 'المساحة', width: 100 },
-                            { field: 'city', headerName: 'المدينة', width: 120 },
-                            { field: 'status', headerName: 'الحالة', width: 120 },
-                            { field: 'views', headerName: 'المشاهدات', width: 100 },
-                            { field: 'edits', headerName: 'التعديلات', width: 100 },
-                            { field: 'daysSincePublished', headerName: 'أيام منذ النشر', width: 150 },
-                            { field: 'createdAt', headerName: 'تاريخ الإنشاء', width: 150 }
+                            { field: 'propertyType', headerName: 'نوع العقار', width: 180 },
+                            { field: 'price', headerName: 'السعر', width: 240 },
+                            // { field: 'area', headerName: 'المساحة', width: 100 },
+                            { field: 'city', headerName: 'المدينة', width: 160 },
+                            { field: 'status', headerName: 'الحالة', width: 160 },
+                            // { field: 'views', headerName: 'المشاهدات', width: 100 },
+                            // { field: 'edits', headerName: 'التعديلات', width: 100 },
+                            // { field: 'daysSincePublished', headerName: 'أيام منذ النشر', width: 150 },   
+                            // { field: 'createdAt', headerName: 'تاريخ الإنشاء', width: 150 }
                         ]}
                         pageSize={5}
                         rowsPerPageOptions={[5, 10, 25]}

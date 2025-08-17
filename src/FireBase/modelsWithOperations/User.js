@@ -45,6 +45,7 @@ class User {
 
     this.uid = uid;
     this.type_of_user = data.type_of_user || null;
+    this.email = data.email || null;
 
     this.phone = data.phone || null;
     this.image = data.image || null;

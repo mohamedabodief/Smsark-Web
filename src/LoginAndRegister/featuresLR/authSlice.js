@@ -162,13 +162,18 @@ export const loginUser = createAsyncThunk(
               type_of_user: "client", // قيمة افتراضية
               createdAt: new Date().toISOString()
             });
-            
+
             await newUser.saveToFirestore();
             userData = await User.getByUid(res.uid);
-            
+
             if (!userData) {
               return rejectWithValue("Failed to create user profile");
             }
+          } else if (!userData.email) {
+            // 4. إذا كان المستخدم موجود لكن بدون إيميل، نحدث الإيميل
+            console.warn("User profile exists but missing email, updating...");
+            await userData.updateInFirestore({ email: email });
+            userData.email = email;
           }
 
           return {
@@ -206,11 +211,11 @@ export const registerUser = createAsyncThunk(
         // إنشاء ملف مستخدم جديد في Firestore
         const newUser = new User({
           uid: res.uid,
-          email: email,
+          email: email, // ✅ حفظ الإيميل
           type_of_user: userType,
           createdAt: new Date().toISOString()
         });
-        
+
         await newUser.saveToFirestore();
         return res.uid;
       } else {

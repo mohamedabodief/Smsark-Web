@@ -2865,7 +2865,6 @@ function PaidAdvertismentPage() {
     const funderColumns = [
         { field: 'org_name', headerName: 'المؤسسة', width: 200 },
         { field: 'title', headerName: 'العنوان', width: 200 },
-        { field: 'description', headerName: 'الوصف', width: 300 },
         {
             field: 'images',
             headerName: 'الصورة',
@@ -2886,6 +2885,7 @@ function PaidAdvertismentPage() {
             sortable: false,
             filterable: false,
         },
+        { field: 'description', headerName: 'الوصف', width: 300 },
         { field: 'phone', headerName: 'رقم الهاتف', width: 150 },
         // { field: 'financing_model', headerName: 'نموذج التمويل', width: 150 },
         { field: 'start_limit', headerName: 'حدود التمويل من', width: 120, type: 'number' },
@@ -2969,7 +2969,7 @@ function PaidAdvertismentPage() {
                             </IconButton>
                         </span>
                     </Tooltip>
-                    <Tooltip title="إعادة للمراجعة">
+                    {/* <Tooltip title="إعادة للمراجعة">
                         <span>
                             <IconButton
                                 aria-label="return to pending"
@@ -2981,7 +2981,7 @@ function PaidAdvertismentPage() {
                                 <PendingIcon fontSize="small" />
                             </IconButton>
                         </span>
-                    </Tooltip>
+                    </Tooltip> */}
                     <Tooltip title="تفعيل">
                         <span>
                             <IconButton
@@ -4371,29 +4371,29 @@ function OrdersPage() {
 
     // Define columns for DataGrid
     const columns = [
-        {
-            field: 'id',
-            headerName: 'معرف الطلب',
-            width: 170,
-            renderCell: (params) => (
-                <Chip
-                    label={params.value}
-                    size="small"
-                    variant="outlined"
-                    sx={{ fontWeight: 'bold' }}
-                />
-            )
-        },
-        {
-            field: 'user_id',
-            headerName: 'معرّف المستخدم',
-            width: 180,
-            renderCell: (params) => (
-                <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
-                    {params.value}
-                </Typography>
-            )
-        },
+        // {
+        //     field: 'id',
+        //     headerName: 'معرف الطلب',
+        //     width: 170,
+        //     renderCell: (params) => (
+        //         <Chip
+        //             label={params.value}
+        //             size="small"
+        //             variant="outlined"
+        //             sx={{ fontWeight: 'bold' }}
+        //         />
+        //     )
+        // },
+        // {
+        //     field: 'user_id',
+        //     headerName: 'معرّف المستخدم',
+        //     width: 180,
+        //     renderCell: (params) => (
+        //         <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
+        //             {params.value}
+        //         </Typography>
+        //     )
+        // },
         {
             field: 'status',
             headerName: 'الحالة',

@@ -32,6 +32,7 @@ export default async function registerWithEmailAndPassword(email, password) {
     // ✅ إنشاء كائن مستخدم جديد داخل Firestore لو ما كانش موجود
     const newUser = new User({
       uid,
+      email: email, // ✅ حفظ الإيميل في مستند المستخدم
       type_of_user: "client", // 👈 عدّل حسب نوع المستخدم
       phone: null,
       cli_name: null,

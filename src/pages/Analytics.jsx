@@ -1415,54 +1415,54 @@ const Analytics = () => {
   };
 
   // Interest Rate Analysis Chart
-  const InterestRateAnalysisChart = () => {
-    const chartData = Object.entries(data.financialInsights.interestRateBreakdown || {})
-      .map(([rate, count]) => ({
-        name: rate,
-        value: count
-      }))
-      .filter(item => item.value > 0);
+  // const InterestRateAnalysisChart = () => {
+  //   const chartData = Object.entries(data.financialInsights.interestRateBreakdown || {})
+  //     .map(([rate, count]) => ({
+  //       name: rate,
+  //       value: count
+  //     }))
+  //     .filter(item => item.value > 0);
 
-    return (
-      <EnhancedBarChart 
-        data={chartData} 
-        title="تحليل معدلات الفائدة"
-        color={colors.teal}
-      />
-    );
-  };
+  //   return (
+  //     <EnhancedBarChart 
+  //       data={chartData} 
+  //       title="تحليل معدلات الفائدة"
+  //       color={colors.teal}
+  //     />
+  //   );
+  // };
 
   // Time Series Chart
-  const TimeSeriesChart = () => {
-    const chartData = data.timeBasedData.map(item => ({
-      name: item.date,
-      value: item.adsCreated
-    }));
+  // const TimeSeriesChart = () => {
+  //   const chartData = data.timeBasedData.map(item => ({
+  //     name: item.date,
+  //     value: item.adsCreated
+  //   }));
 
-    return (
-      <EnhancedBarChart 
-        data={chartData} 
-        title="الإعلانات المُنشأة عبر الزمن"
-        color={colors.primary}
-      />
-    );
-  };
+  //   return (
+  //     <EnhancedBarChart 
+  //       data={chartData} 
+  //       title="الإعلانات المُنشأة عبر الزمن"
+  //       color={colors.primary}
+  //     />
+  //   );
+  // };
 
-  // User Growth Chart
-  const UserGrowthChart = () => {
-    const chartData = data.userGrowthData.map(item => ({
-      name: item.date,
-      value: item.usersRegistered
-    }));
+  // // User Growth Chart
+  // const UserGrowthChart = () => {
+  //   const chartData = data.userGrowthData.map(item => ({
+  //     name: item.date,
+  //     value: item.usersRegistered
+  //   }));
 
-    return (
-      <EnhancedBarChart 
-        data={chartData} 
-        title="نمو المستخدمين"
-        color={colors.info}
-      />
-    );
-  };
+  //   return (
+  //     <EnhancedBarChart 
+  //       data={chartData} 
+  //       title="نمو المستخدمين"
+  //       color={colors.info}
+  //     />
+  //   );
+  // };
 
   // Ad Type Breakdown Chart
   const AdTypeBreakdownChart = () => {
@@ -1793,9 +1793,9 @@ const Analytics = () => {
           </Paper>
       </Grid>
       
-      <Grid size={{ xs: 12, md: 6 }}>
+      {/* <Grid size={{ xs: 12, md: 6 }}>
         <InterestRateAnalysisChart />
-      </Grid>
+      </Grid> */}
       <Grid size={{ xs: 12, md: 6 }}>
         <ClientAdsRevenueChart />
       </Grid>
@@ -1964,7 +1964,7 @@ const Analytics = () => {
         <Tab label="تحليل الإعلانات" icon={<AnalyticsIcon />} />
         <Tab label="تفاعل المستخدمين" icon={<PeopleIcon />} />
         <Tab label="الرؤى المالية" icon={<AccountBalanceIcon />} />
-        <Tab label="التقارير الزمنية" icon={<TimelineIcon />} />
+        {/* <Tab label="التقارير الزمنية" icon={<TimelineIcon />} /> */}
         <Tab label="جدول الإعلانات" icon={<TableChartIcon />} />
       </Tabs>
 
@@ -1985,9 +1985,9 @@ const Analytics = () => {
           <Grid size={{ xs: 12, md: 6 }}>
             <ClientAdsAnalysisChart />
           </Grid>
-          <Grid size={{ xs: 12 }}>
+          {/* <Grid size={{ xs: 12 }}>
             <TimeSeriesChart />
-          </Grid>
+          </Grid> */}
           <Grid size={{ xs: 12 }}>
             <ClientAdsSummarySection />
           </Grid>
@@ -2113,9 +2113,9 @@ const Analytics = () => {
           <Grid size={{ xs: 12, md: 6 }}>
             <UserEngagementChart />
           </Grid>
-          <Grid size={{ xs: 12, md: 6 }}>
+          {/* <Grid size={{ xs: 12, md: 6 }}>
             <UserGrowthChart />
-          </Grid>
+          </Grid> */}
           <Grid size={{ xs: 12, md: 6 }}>
             <ClientAdsAnalysisChart />
           </Grid>
@@ -2129,11 +2129,11 @@ const Analytics = () => {
         <FinancialInsights />
       )}
 
-      {activeTab === 6 && (
+       {/* {activeTab === 6 && (
         <Grid container spacing={3}>
-          <Grid size={{ xs: 12, md: 6 }}>
-            <TimeSeriesChart />
-          </Grid>
+          // <Grid size={{ xs: 12, md: 6 }}>
+          //   <TimeSeriesChart />
+          // </Grid>
           <Grid size={{ xs: 12, md: 6 }}>
             <UserGrowthChart />
           </Grid>
@@ -2144,9 +2144,9 @@ const Analytics = () => {
             <ClientAdsAnalysisChart />
           </Grid>
         </Grid>
-      )}
+      )}  */}
 
-      {activeTab === 7 && (
+      {activeTab === 6 && (
         <Box dir={'rtl'} sx={{ p: { xs: 1, md: 3 }, textAlign: 'right', display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
           <Paper dir={'rtl'} sx={{ p: { xs: 1, md: 3 }, borderRadius: 2, minHeight: 400, textAlign: 'right', flexGrow: 1 }}>
             <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
