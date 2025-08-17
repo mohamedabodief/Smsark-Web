@@ -339,11 +339,12 @@ const SellAds = () => {
     display: "flex",
     justifyContent: "center",
     listStyle: "none",
-    padding: 0,
+     paddingTop: 10,
     gap: "20px",
     flexWrap: "wrap",
     width: "100%", 
     overflowX: "hidden", 
+       paddingBottom: 10,
   }}
         >
           {sellAds.map((ad) => (

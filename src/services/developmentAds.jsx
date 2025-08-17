@@ -204,7 +204,7 @@ const filteredAds = allDeveloperAds.filter((ad) => {
 
   </Typography>
 ) : (
-  <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+  <Box sx={{ display: "flex", flexDirection: "column", gap: 2 , paddingBottom: 10,}}>
     {filteredAds.map((ad) => (
       <Box key={ad.id} sx={{ display: "flex", justifyContent: "center" }}>
         <Link

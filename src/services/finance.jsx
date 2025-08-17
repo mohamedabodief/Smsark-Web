@@ -200,7 +200,7 @@ const handleClosePrice = () => {
         </Breadcrumbs>
       </Box>
       {loading && (
-        <Box sx={{ width: "100%", display: "flex", alignItems: "center" }}>
+        <Box sx={{ width: "100%", display: "flex", alignItems: "center" ,justifyContent:'center',height:'100%'}}>
           <CircularProgress />
         </Box>
       )}
@@ -227,11 +227,12 @@ const handleClosePrice = () => {
     display: "flex",
     justifyContent: "center",
     listStyle: "none",
-    padding: 0,
+    paddingTop: 10,
     gap: "20px",
     flexWrap: "wrap",
     width: "100%", 
-    overflowX: "hidden", 
+    overflowX: "hidden",
+      paddingBottom: 10,
   }}
   >
     {filteredAds.map((ad) => (

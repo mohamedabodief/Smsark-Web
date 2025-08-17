@@ -361,16 +361,15 @@ const RentAds = () => {
       ) : (
         <ul
           style={{
-            display: "flex",
-            justifyContent: "center",
-            listStyle: "none",
-            padding: 0,
-            gap: "20px",
-            flexWrap: "wrap",
-            width: "100%",
-            maxWidth: "100%",
-            overflowX: "hidden",
-            overflowY: "hidden",
+           display: "flex",
+              justifyContent: "center",
+              listStyle: "none",
+               paddingTop: 10,
+                paddingBottom: 10,
+              gap: "20px",
+              flexWrap: "wrap",
+              width: "100%", 
+              overflowX: "hidden", 
           }}
         >
           {buyAds.map((ad) => (
@@ -379,11 +378,7 @@ const RentAds = () => {
               key={ad.id}
               style={{ 
                 textDecoration: "none", 
-                color: "inherit",
-                overflow: "hidden",
-                display: "block",
-                maxWidth: "100%",
-                boxSizing: "border-box",
+                color: "inherit"
               }}
             >
               <HorizontalCard
