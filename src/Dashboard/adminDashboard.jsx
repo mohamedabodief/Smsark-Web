@@ -150,9 +150,9 @@ import {
     rejectHomepageAd,
     returnHomepageAdToPending,
     activateHomepageAd,
-    deactivateHomepageAd,
-    clearSubscriptions
+    deactivateHomepageAd
 } from '../feature/ads/homepageAdsSlice';
+import subscriptionManager from '../utils/subscriptionManager';
 import AddHomepageAdModal from './adminDashboard/AddHomepageAdModal';
 import EditHomepageAdModal from './adminDashboard/EditHomepageAdModal';
 import RejectionReasonModal from './organization/modals/RejectionReasonModal';
@@ -217,25 +217,31 @@ const NAVIGATION = [
 
     },
     {
-        segment: 'reports',
-        title: 'التقارير',
-        icon: <BarChartIcon />,
-        tooltip: 'التقارير',
-        children: [
-            {
-                segment: 'reports',
-                title: 'التقارير',
-                icon: <DescriptionIcon />,
-                tooltip: 'التقارير',
-            },
-            {
-                segment: 'analytics',
-                title: 'التحليلات والتقارير',
-                icon: <AnalyticsIcon />,
-                tooltip: 'التحليلات والتقارير',
-            },
-        ],
+        segment: 'analytics',
+        title: 'التحليلات',
+        icon: <AnalyticsIcon />,
+        tooltip: 'التحليلات',
     },
+    // {
+    //     segment: 'reports',
+    //     title: 'التقارير',
+    //     icon: <BarChartIcon />,
+    //     tooltip: 'التقارير',
+    //     children: [
+    //         {
+    //             segment: 'reports',
+    //             title: 'التقارير',
+    //             icon: <DescriptionIcon />,
+    //             tooltip: 'التقارير',
+    //         },
+    //         {
+    //             segment: 'analytics',
+    //             title: 'التحليلات والتقارير',
+    //             icon: <AnalyticsIcon />,
+    //             tooltip: 'التحليلات والتقارير',
+    //         },
+    //     ],
+    // },
 ];
 
 // Removed ThemeContext import
@@ -795,28 +801,28 @@ function EditAdminModal({ open, onClose, admin, setSnackbar }) { // Added setSna
 //                 showCount={false}
 //             />
 //             <Grid container spacing={3} direction="row-reverse">
-//                 <Grid item xs={12} sm={6} md={4}>
+//                 <Grid size={{ xs: 12, sm: 6, md: 4 }}>
 //                     <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', height: 140, borderRadius: 2, textAlign: 'right' }}>
 //                         <Typography variant="h6" color="text.secondary">Total Sales</Typography>
 //                         <Typography variant="h5" sx={{ mt: 1, fontWeight: 'bold', color: 'primary.main' }}>$12,345.00</Typography>
 //                         <Typography variant="body2" color="success.main">+15% since last month</Typography>
 //                     </Paper>
 //                 </Grid>
-//                 <Grid item xs={12} sm={6} md={4}>
+//                 <Grid size={{ xs: 12, sm: 6, md: 4 }}>
 //                     <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', height: 140, borderRadius: 2, textAlign: 'right' }}>
 //                         <Typography variant="h6" color="text.secondary">New Orders</Typography>
 //                         <Typography variant="h5" sx={{ mt: 1, fontWeight: 'bold', color: 'secondary.main' }}>245</Typography>
 //                         <Typography variant="body2" color="error.main">-5% since last month</Typography>
 //                     </Paper>
 //                 </Grid>
-//                 <Grid item xs={12} sm={6} md={4}>
+//                 <Grid size={{ xs: 12, sm: 6, md: 4 }}>
 //                     <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', height: 140, borderRadius: 2, textAlign: 'right' }}>
 //                         <Typography variant="h6" color="text.secondary">Customers</Typography>
 //                         <Typography variant="h5" sx={{ mt: 1, fontWeight: 'bold' }}>1,234</Typography>
 //                         <Typography variant="body2" color="success.main">+2% since last month</Typography>
 //                     </Paper>
 //                 </Grid>
-//                 <Grid item xs={12}>
+//                 <Grid size={{ xs: 12 }}>
 //                     <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', borderRadius: 2, height: 300, textAlign: 'right' }}>
 //                         <Typography variant="h6">Sales Trend (Placeholder)</Typography>
 //                         <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -1102,12 +1108,12 @@ function ProfilePage() {
             />
             <Paper sx={{ p: 4, borderRadius: 2, minHeight: 400, boxShadow: '0px 0px 8px rgba(0,0,0,0.2)' }}>
                 <Grid container spacing={4} >
-                    <Grid item xs={12} md={4} lg={3}>
+                    <Grid size={{ xs: 12, md: 4, lg: 3 }}>
                         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
                             <UploadAvatars />
                         </Box>
                     </Grid>
-                    <Grid item xs={12} md={8} lg={9}>
+                    <Grid size={{ xs: 12, md: 8, lg: 9 }}>
                         <Box >
                             <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', fontSize: '1.5rem', display: 'flex', flexDirection: 'row' }}>المعلومات الشخصية</Typography>
 
@@ -1733,12 +1739,24 @@ function Mainadvertisment(props) {
     // Subscribe to real-time updates for all homepage ads
     useEffect(() => {
         console.log("Mainadvertisment - Setting up real-time subscription...");
-        dispatch(subscribeToAllHomepageAds());
-        
+
+        const setupSubscription = async () => {
+            try {
+                const result = await dispatch(subscribeToAllHomepageAds()).unwrap();
+                if (typeof result === 'function') {
+                    subscriptionManager.add('admin-homepage-ads-all', result);
+                }
+            } catch (error) {
+                console.error("Error setting up homepage ads subscription:", error);
+            }
+        };
+
+        setupSubscription();
+
         // Cleanup subscription on unmount
         return () => {
             console.log("Mainadvertisment - Cleaning up subscription...");
-            dispatch(clearSubscriptions());
+            subscriptionManager.remove('admin-homepage-ads-all');
         };
     }, [dispatch]);
     // Handle add ad
@@ -2697,7 +2715,7 @@ function PaidAdvertismentPage() {
         {
             field: 'actions',
             headerName: 'الإجراءات',
-            width: 350,
+            width: 320,
             sortable: false,
             filterable: false,
             renderCell: (params) => (
@@ -2767,7 +2785,7 @@ function PaidAdvertismentPage() {
                             </IconButton>
                         </span>
                     </Tooltip>
-                    <Tooltip title="تعديل">
+                    {/* <Tooltip title="تعديل">
                         <span>
                             <IconButton
                                 aria-label="edit"
@@ -2779,7 +2797,7 @@ function PaidAdvertismentPage() {
                                 <EditIcon fontSize="small" />
                             </IconButton>
                         </span>
-                    </Tooltip>
+                    </Tooltip> */}
                     <Tooltip title="حذف">
                         <span>
                             <IconButton
@@ -2868,10 +2886,28 @@ function PaidAdvertismentPage() {
                 />
             ),
         },
+                { 
+            field: 'adPackageName', 
+            headerName: 'الباقة المختارة', 
+            width: 150, 
+            renderCell: (params) => {
+                if (params.value) {
+                    return (
+                        <Chip
+                            label={params.value}
+                            color="primary"
+                            size="small"
+                            variant="outlined"
+                        />
+                    );
+                }
+                return '—';
+            }
+        },
         {
             field: 'actions',
             headerName: 'الإجراءات',
-            width: 350,
+            width: 320,
             sortable: false,
             filterable: false,
             renderCell: (params) => (
@@ -2941,7 +2977,7 @@ function PaidAdvertismentPage() {
                             </IconButton>
                         </span>
                     </Tooltip>
-                    <Tooltip title="تعديل">
+                   {/* <Tooltip title="تعديل">
                         <span>
                             <IconButton
                                 aria-label="edit"
@@ -2953,7 +2989,7 @@ function PaidAdvertismentPage() {
                                 <EditIcon fontSize="small" />
                             </IconButton>
                         </span>
-                    </Tooltip>
+                    </Tooltip> */}
                     <Tooltip title="حذف">
                         <span>
                             <IconButton
@@ -2985,24 +3021,6 @@ function PaidAdvertismentPage() {
                     )}
                 </Box>
             ),
-        },
-        { 
-            field: 'adPackageName', 
-            headerName: 'الباقة المختارة', 
-            width: 150, 
-            renderCell: (params) => {
-                if (params.value) {
-                    return (
-                        <Chip
-                            label={params.value}
-                            color="primary"
-                            size="small"
-                            variant="outlined"
-                        />
-                    );
-                }
-                return '—';
-            }
         },
         { field: 'adExpiryTime', headerName: 'تاريخ الانتهاء', width: 150, renderCell: (params) => params.value ? new Date(params.value).toLocaleDateString('ar-EG') : '—' },
     ];
@@ -3239,6 +3257,9 @@ function PaidAdvertismentPage() {
     );
 }
 function ClientAdvertismentPage() {
+    // Redux dispatch hook
+    const dispatch = useDispatch();
+
     // Local state for real-time data
     const [advertisements, setAdvertisements] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -3295,6 +3316,20 @@ function ClientAdvertismentPage() {
         setError(null);
 
         const unsubscribe = ClientAdvertisement.subscribeAll((adsData) => {
+            console.log('[DEBUG] Client ads loaded:', adsData.length, 'ads');
+            // Debug: Check if adPackageName is present
+            adsData.forEach((ad, index) => {
+                if (index < 3) { // Log first 3 ads for debugging
+                    console.log(`[DEBUG] Ad ${index + 1}:`, {
+                        id: ad.id,
+                        title: ad.title,
+                        adPackage: ad.adPackage,
+                        adPackageName: ad.adPackageName,
+                        adPackagePrice: ad.adPackagePrice,
+                        adPackageDuration: ad.adPackageDuration
+                    });
+                }
+            });
             setAdvertisements(adsData);
             setLoading(false);
         });
@@ -3314,8 +3349,9 @@ function ClientAdvertismentPage() {
     const handleConfirmDelete = async () => {
         if (adToDelete) {
             try {
-                const adInstance = await ClientAdvertisement.getById(adToDelete.id);
-                await adInstance.delete();
+                console.log('[DEBUG] Deleting ad from admin dashboard:', adToDelete);
+                // Use Redux action for consistent state management and proper file deletion
+                await dispatch(deleteAdvertisement(adToDelete)).unwrap();
                 setSnackbar({ open: true, message: "الإعلان تم حذفه بنجاح!", severity: "success" });
             } catch (err) {
                 console.error("Error deleting advertisement:", err);
@@ -3707,6 +3743,7 @@ function ClientAdvertismentPage() {
                             </span>
                         </Tooltip>
                         {/* Edit */}
+                        {/*                         
                         <Tooltip title="تعديل الإعلان">
                             <span>
                                 <IconButton
@@ -3719,7 +3756,7 @@ function ClientAdvertismentPage() {
                                     <EditIcon fontSize="small" />
                                 </IconButton>
                             </span>
-                        </Tooltip>
+                        </Tooltip> */}
                         {/* Delete */}
                         <Tooltip title="حذف الإعلان">
                             <span>
@@ -4286,19 +4323,19 @@ function OrdersPage() {
                 </Typography>
             )
         },
-        {
-            field: 'marital_status',
-            headerName: 'الحالة الاجتماعية',
-            width: 150,
-            renderCell: (params) => (
-                <Chip
-                    label={params.value || 'غير محدد'}
-                    size="small"
-                    variant="outlined"
-                    color="info"
-                />
-            )
-        },
+        // {
+        //     field: 'marital_status',
+        //     headerName: 'الحالة الاجتماعية',
+        //     width: 150,
+        //     renderCell: (params) => (
+        //         <Chip
+        //             label={params.value || 'غير محدد'}
+        //             size="small"
+        //             variant="outlined"
+        //             color="info"
+        //         />
+        //     )
+        // },
         {
             field: 'dependents',
             headerName: 'المعالون',
@@ -4319,25 +4356,25 @@ function OrdersPage() {
                 </Typography>
             )
         },
-        {
-            field: 'submitted_at',
-            headerName: 'تاريخ التقديم',
-            width: 160,
-            valueGetter: (params) =>
-                params.value && params.value.toDate ? params.value.toDate().toLocaleDateString('ar-EG') : '',
-            renderCell: (params) => (
-                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                    {params.value}
-                </Typography>
-            )
-        },
+        // {
+        //     field: 'submitted_at',
+        //     headerName: 'تاريخ التقديم',
+        //     width: 160,
+        //     valueGetter: (params) =>
+        //         params.value && params.value.toDate ? params.value.toDate().toLocaleDateString('ar-EG') : '',
+        //     renderCell: (params) => (
+        //         <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+        //             {params.value}
+        //         </Typography>
+        //     )
+        // },
         {
             field: 'actions',
             headerName: 'الإجراءات',
             width: 180,
             renderCell: (params) => (
                 <Box sx={{ display: 'flex', gap: 1 }}>
-                    <Tooltip title="تعديل الطلب" arrow>
+                    {/* <Tooltip title="تعديل الطلب" arrow>
                         <IconButton
                             aria-label="edit"
                             size="small"
@@ -4352,7 +4389,7 @@ function OrdersPage() {
                         >
                             <EditIcon fontSize="small" />
                         </IconButton>
-                    </Tooltip>
+                    </Tooltip> */}
                     <Tooltip title="حذف الطلب" arrow>
                         <IconButton
                             aria-label="delete"
@@ -4388,7 +4425,7 @@ function OrdersPage() {
 
             {/* Stats Cards */}
             <Grid container spacing={2} sx={{ mb: 3 }}>
-                <Grid item xs={6} sm={3}>
+                <Grid size={{ xs: 6, sm: 3 }}>
                     <Chip
                         label={
                             <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
@@ -4406,7 +4443,7 @@ function OrdersPage() {
                         }}
                     />
                 </Grid>
-                <Grid item xs={6} sm={3}>
+                <Grid size={{ xs: 6, sm: 3 }}>
                     <Chip
                         label={
                             <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
@@ -4424,7 +4461,7 @@ function OrdersPage() {
                         }}
                     />
                 </Grid>
-                <Grid item xs={6} sm={3}>
+                <Grid size={{ xs: 6, sm: 3 }}>
                     <Chip
                         label={
                             <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
@@ -4442,7 +4479,7 @@ function OrdersPage() {
                         }}
                     />
                 </Grid>
-                <Grid item xs={6} sm={3}>
+                <Grid size={{ xs: 6, sm: 3 }}>
                     <Chip
                         label={
                             <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
@@ -4468,7 +4505,7 @@ function OrdersPage() {
                     فلاتر البحث
                 </Typography>
                 <Grid container spacing={2} alignItems="center">
-                    <Grid item xs={12} md={4}>
+                    <Grid size={{ xs: 12, md: 4 }}>
                         <FormControl fullWidth size="small">
                             <InputLabel>حالة الطلب</InputLabel>
                             <Select
@@ -4483,7 +4520,7 @@ function OrdersPage() {
                             </Select>
                         </FormControl>
                     </Grid>
-                    <Grid item xs={12} md={2}>
+                    <Grid size={{ xs: 12, md: 2 }}>
                         <Button
                             fullWidth
                             variant="outlined"
@@ -4558,7 +4595,7 @@ function OrdersPage() {
                             rows={filteredRequests.filter(request => request.id !== null && request.id !== undefined)}
                         columns={columns}
                         loading={loading}
-                            pageSizeOptions={[10, 20,30, 50]}
+                            pageSizeOptions={[10, 20, 30, 50]}
                             initialState={{
                                 pagination: {
                                     paginationModel: { pageSize: 25 },
@@ -4886,7 +4923,7 @@ function ReportsPage() {
 
             {/* Key Metrics Cards */}
             <Grid dir='rtl' container spacing={3} sx={{ mb: 4 }}>
-                <Grid item xs={12} sm={6} md={3}>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                     <Paper elevation={3} sx={{ p: 3, textAlign: 'center', borderRadius: 2, bgcolor: theme.palette.primary.main, color: 'white', transition: 'transform 0.2s', '&:hover': { transform: 'translateY(-5px)' } }}>
                         <PeopleIcon sx={{ fontSize: 40, mb: 1 }} />
                         <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 1 }}>
@@ -4898,7 +4935,7 @@ function ReportsPage() {
                         </Typography>
                     </Paper>
                 </Grid>
-                <Grid item xs={12} sm={6} md={3}>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                     <Paper elevation={3} sx={{ p: 3, textAlign: 'center', borderRadius: 2, bgcolor: theme.palette.secondary.main, color: 'white', transition: 'transform 0.2s', '&:hover': { transform: 'translateY(-5px)' } }}>
                         <CampaignIcon sx={{ fontSize: 40, mb: 1 }} />
                         <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 1 }}>
@@ -4910,7 +4947,7 @@ function ReportsPage() {
                         </Typography>
                     </Paper>
                 </Grid>
-                <Grid item xs={12} sm={6} md={3}>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                     <Paper elevation={3} sx={{ p: 3, textAlign: 'center', borderRadius: 2, bgcolor: theme.palette.success.main, color: 'white', transition: 'transform 0.2s', '&:hover': { transform: 'translateY(-5px)' } }}>
                         <RequestQuoteIcon sx={{ fontSize: 40, mb: 1 }} />
                         <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 1 }}>
@@ -4922,7 +4959,7 @@ function ReportsPage() {
                         </Typography>
                     </Paper>
                 </Grid>
-                <Grid item xs={12} sm={6} md={3}>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                     <Paper elevation={3} sx={{ p: 3, textAlign: 'center', borderRadius: 2, bgcolor: theme.palette.warning.main, color: 'white', transition: 'transform 0.2s', '&:hover': { transform: 'translateY(-5px)' } }}>
                         <AttachMoneyIcon sx={{ fontSize: 40, mb: 1 }} />
                         <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 1 }}>
@@ -4939,7 +4976,7 @@ function ReportsPage() {
             {/* Charts Section */}
             <Grid dir='rtl' container spacing={3}>
                 {/* User Distribution Chart */}
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                     <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
                         <Typography variant="h6" sx={{ mb: 2, textAlign: 'left' }}>
                             توزيع المستخدمين
@@ -4964,7 +5001,7 @@ function ReportsPage() {
                 </Grid>
 
                 {/* Advertisement Types Chart */}
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                     <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
                         <Typography variant="h6" sx={{ mb: 2, textAlign: 'left' }}>
                             أنواع الإعلانات
@@ -4989,7 +5026,7 @@ function ReportsPage() {
                 </Grid>
 
                 {/* Status Distribution Chart */}
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                     <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
                         <Typography variant="h6" sx={{ mb: 2, textAlign: 'left' }}>
                             حالة الإعلانات
@@ -5014,7 +5051,7 @@ function ReportsPage() {
                 </Grid>
 
                 {/* Geographic Distribution */}
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                     <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
                         <Typography variant="h6" sx={{ mb: 2, textAlign: 'left' }}>
                             <LocationOnIcon sx={{ verticalAlign: 'middle', ml: 1 }} /> {/* Icon for geographic */}
@@ -5038,7 +5075,7 @@ function ReportsPage() {
             {/* Detailed Statistics Tables */}
             <Grid dir='rtl' container spacing={3} sx={{ mt: 2 }}>
                 {/* Advertisement Status Details */}
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                     <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
                         <Typography variant="h6" sx={{ mb: 2, textAlign: 'left' }}>
                             تفاصيل حالة الإعلانات
@@ -5109,7 +5146,7 @@ function ReportsPage() {
                 </Grid>
 
                 {/* Financial Requests Status */}
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                     <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
                         <Typography variant="h6" sx={{ mb: 2, textAlign: 'left' }}>
                             حالة طلبات التمويل
@@ -5138,25 +5175,25 @@ function ReportsPage() {
                     تفصيل الإيرادات حسب النوع
                 </Typography>
                 <Grid container spacing={2}>
-                    <Grid item xs={6} sm={3}>
+                    <Grid size={{ xs: 6, sm: 3 }}>
                         <Box sx={{ textAlign: 'center', p: 2, bgcolor: theme.palette.primary.light, borderRadius: 1, color: 'white' }}>
                             <Typography variant="h6">{analytics.revenueData.byType.homepageAds.toLocaleString()} ج.م</Typography>
                             <Typography variant="body2">إعلانات الصفحة الرئيسية</Typography>
                         </Box>
                     </Grid>
-                    <Grid item xs={6} sm={3}>
+                    <Grid size={{ xs: 6, sm: 3 }}>
                         <Box sx={{ textAlign: 'center', p: 2, bgcolor: theme.palette.secondary.light, borderRadius: 1, color: 'white' }}>
                             <Typography variant="h6">{analytics.revenueData.byType.developerAds.toLocaleString()} ج.م</Typography>
                             <Typography variant="body2">إعلانات المطورين</Typography>
                         </Box>
                     </Grid>
-                    <Grid item xs={6} sm={3}>
+                    <Grid size={{ xs: 6, sm: 3 }}>
                         <Box sx={{ textAlign: 'center', p: 2, bgcolor: theme.palette.success.light, borderRadius: 1, color: 'white' }}>
                             <Typography variant="h6">{analytics.revenueData.byType.funderAds.toLocaleString()} ج.م</Typography>
                             <Typography variant="body2">إعلانات الممولين</Typography>
                         </Box>
                     </Grid>
-                    <Grid item xs={6} sm={3}>
+                    <Grid size={{ xs: 6, sm: 3 }}>
                         <Box sx={{ textAlign: 'center', p: 2, bgcolor: theme.palette.warning.light, borderRadius: 1, color: 'white' }}>
                             <Typography variant="h6">{analytics.revenueData.byType.clientAds.toLocaleString()} ج.م</Typography>
                             <Typography variant="body2">إعلانات العملاء</Typography>
@@ -5404,13 +5441,13 @@ export default function AdminDashboard(props) {
         case '/orders':
             currentPageContent = <OrdersPage />;
             break;
-        case '/reports/reports':
-            currentPageContent = <ReportsPage />;
-            break;
-        case '/reports/traffic':
-            currentPageContent = <TrafficPage />;
-            break;
-        case '/reports/analytics':
+        // case '/reports/reports':
+        //     currentPageContent = <ReportsPage />;
+        //     break;
+        // case '/reports/traffic':
+        //     currentPageContent = <TrafficPage />;
+        //     break;
+        case '/analytics':
             currentPageContent = <Analytics />;
             break;
         case '/integrations':
@@ -5656,7 +5693,7 @@ export default function AdminDashboard(props) {
                                                         <List component="div" disablePadding >
                                                             {item.children.map((child) => (
                                                                 <Tooltip title={child.tooltip} key={child.segment}>
-                                                                    <ListItem key={child.segment} disablePadding>
+                                                                    <ListItem disablePadding>
                                                                         <ListItemButton
                                                                             selected={router.pathname === `/reports/${child.segment}`}
                                                                             onClick={() => router.navigate(`/reports/${child.segment}`)}
@@ -5681,7 +5718,7 @@ export default function AdminDashboard(props) {
                                             );
                                         }
                                         return (
-                                            <Tooltip title={item.tooltip} placement='right-end'>
+                                            <Tooltip title={item.tooltip} placement='right-end' key={item.segment}>
                                                 <ListItem key={item.segment} disablePadding dir='rtl'>
                                                     <ListItemButton
                                                         selected={router.pathname === `/${item.segment}`}

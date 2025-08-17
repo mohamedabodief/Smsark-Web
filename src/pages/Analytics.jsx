@@ -1296,7 +1296,7 @@ const Analytics = () => {
   // Overview Widgets
   const OverviewWidgets = () => (
     <Grid container spacing={3} mb={3}>
-      <Grid item xs={12} sm={6} md={3}>
+      <Grid size={{ xs: 12, sm: 6, md: 3 }}>
         <Paper elevation={3} sx={{ p: 3, textAlign: 'center', borderRadius: 2, bgcolor: theme.palette.primary.main, color: 'white', transition: 'transform 0.2s', '&:hover': { transform: 'translateY(-5px)' } }}>
           <HomeIcon sx={{ fontSize: 40, mb: 1 }} />
           <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 1 }}>
@@ -1309,7 +1309,7 @@ const Analytics = () => {
         </Paper>
       </Grid>
 
-      <Grid item xs={12} sm={6} md={3}>
+      <Grid size={{ xs: 12, sm: 6, md: 3 }}>
         <Paper elevation={3} sx={{ p: 3, textAlign: 'center', borderRadius: 2, bgcolor: theme.palette.secondary.main, color: 'white', transition: 'transform 0.2s', '&:hover': { transform: 'translateY(-5px)' } }}>
           <MoneyIcon sx={{ fontSize: 40, mb: 1 }} />
           <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 1 }}>
@@ -1322,7 +1322,7 @@ const Analytics = () => {
         </Paper>
       </Grid>
 
-      <Grid item xs={12} sm={6} md={3}>
+      <Grid size={{ xs: 12, sm: 6, md: 3 }}>
         <Paper elevation={3} sx={{ p: 3, textAlign: 'center', borderRadius: 2, bgcolor: colors.warning, color: 'white', transition: 'transform 0.2s', '&:hover': { transform: 'translateY(-5px)' } }}>
           <PersonIcon sx={{ fontSize: 40, mb: 1 }} />
           <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 1 }}>
@@ -1335,7 +1335,7 @@ const Analytics = () => {
         </Paper>
       </Grid>
 
-      <Grid item xs={12} sm={6} md={3}>
+      <Grid size={{ xs: 12, sm: 6, md: 3 }}>
         <Paper elevation={3} sx={{ p: 3, textAlign: 'center', borderRadius: 2, bgcolor: colors.info, color: 'white', transition: 'transform 0.2s', '&:hover': { transform: 'translateY(-5px)' } }}>
           <PeopleIcon sx={{ fontSize: 40, mb: 1 }} />
           <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 1 }}>
@@ -1348,7 +1348,7 @@ const Analytics = () => {
         </Paper>
       </Grid>
 
-      <Grid item xs={12} sm={6} md={3}>
+      <Grid size={{ xs: 12, sm: 6, md: 3 }}>
         <Paper elevation={3} sx={{ p: 3, textAlign: 'center', borderRadius: 2, bgcolor: colors.success, color: 'white', transition: 'transform 0.2s', '&:hover': { transform: 'translateY(-5px)' } }}>
           <CheckCircleIcon sx={{ fontSize: 40, mb: 1 }} />
           <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 1 }}>
@@ -1607,7 +1607,7 @@ const Analytics = () => {
           تحليل إعلانات العملاء
         </Typography>
         <Grid container spacing={2}>
-          <Grid item xs={6}>
+          <Grid size={{ xs: 6 }}>
             <Box textAlign="center">
               <Typography variant="h4" color="primary">
                 {clientAds.length}
@@ -1617,7 +1617,7 @@ const Analytics = () => {
               </Typography>
             </Box>
           </Grid>
-          <Grid item xs={6}>
+          <Grid size={{ xs: 6 }}>
             <Box textAlign="center">
               <Typography variant="h4" style={{ color: colors.success }}>
                 {totalRevenue}
@@ -1707,43 +1707,43 @@ const Analytics = () => {
           ملخص شامل لإعلانات العملاء
         </Typography>
         <Grid container spacing={3}>
-          <Grid item xs={12} md={3}>
+          <Grid size={{ xs: 12, md: 3 }}>
             <Box textAlign="center" p={2} bgcolor="primary.light" borderRadius={2} color="white">
               <Typography variant="h4">{stats.totalClientAds}</Typography>
               <Typography variant="body2">إجمالي الإعلانات</Typography>
             </Box>
           </Grid>
-          <Grid item xs={12} md={3}>
+          <Grid size={{ xs: 12, md: 3 }}>
             <Box textAlign="center" p={2} bgcolor="success.light" borderRadius={2} color="white">
               <Typography variant="h4">{stats.activeClientAds}</Typography>
               <Typography variant="body2">إعلانات نشطة</Typography>
             </Box>
           </Grid>
-          <Grid item xs={12} md={3}>
+          <Grid size={{ xs: 12, md: 3 }}>
             <Box textAlign="center" p={2} bgcolor="warning.light" borderRadius={2} color="white">
               <Typography variant="h4">{stats.pendingClientAds}</Typography>
               <Typography variant="body2">قيد المراجعة</Typography>
             </Box>
           </Grid>
-          <Grid item xs={12} md={3}>
+          <Grid size={{ xs: 12, md: 3 }}>
             <Box textAlign="center" p={2} bgcolor="info.light" borderRadius={2} color="white">
               <Typography variant="h4">{stats.totalClientUsers}</Typography>
               <Typography variant="body2">إجمالي العملاء</Typography>
             </Box>
           </Grid>
-          <Grid item xs={12} md={4}>
+          <Grid size={{ xs: 12, md: 4 }}>
             <Box textAlign="center" p={2} bgcolor="secondary.light" borderRadius={2} color="white">
               <Typography variant="h4">{stats.approvedClientAds}</Typography>
               <Typography variant="body2">إعلانات مُوافق عليها</Typography>
             </Box>
           </Grid>
-          <Grid item xs={12} md={4}>
+          <Grid size={{ xs: 12, md: 4 }}>
             <Box textAlign="center" p={2} bgcolor="error.light" borderRadius={2} color="white">
               <Typography variant="h4">{stats.rejectedClientAds}</Typography>
               <Typography variant="body2">إعلانات مرفوضة</Typography>
             </Box>
           </Grid>
-          <Grid item xs={12} md={4}>
+          <Grid size={{ xs: 12, md: 4 }}>
             <Box textAlign="center" p={2} bgcolor="grey.500" borderRadius={2} color="white">
               <Typography variant="h4">{stats.averageAdsPerClient}</Typography>
               <Typography variant="body2">متوسط الإعلانات لكل عميل</Typography>
@@ -1757,13 +1757,13 @@ const Analytics = () => {
   // Financial Insights
   const FinancialInsights = () => (
     <Grid container spacing={3}>
-      <Grid item xs={12} md={6}>
+      <Grid size={{ xs: 12, md: 6 }}>
         <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
           <Typography variant="h6" gutterBottom sx={{ textAlign: 'right' }}>
             ملخص التمويل
           </Typography>
             <Grid container spacing={2}>
-              <Grid item xs={6}>
+              <Grid size={{ xs: 6 }}>
                 <Box textAlign="center">
                   <Typography variant="h4" color="primary">
                     {data.financialInsights.totalFinancingRequests || 0}
@@ -1773,7 +1773,7 @@ const Analytics = () => {
                   </Typography>
                 </Box>
               </Grid>
-              <Grid item xs={6}>
+              <Grid size={{ xs: 6 }}>
                 <Box textAlign="center">
                   <Typography variant="h4" style={{ color: colors.success }}>
                     {data.financialInsights.approvedRequests || 0}
@@ -1783,7 +1783,7 @@ const Analytics = () => {
                   </Typography>
                 </Box>
               </Grid>
-              <Grid item xs={6}>
+              <Grid size={{ xs: 6 }}>
                 <Box textAlign="center">
                   <Typography variant="h4" style={{ color: colors.error }}>
                     {data.financialInsights.rejectedRequests || 0}
@@ -1793,7 +1793,7 @@ const Analytics = () => {
                   </Typography>
                 </Box>
               </Grid>
-              <Grid item xs={6}>
+              <Grid size={{ xs: 6 }}>
                 <Box textAlign="center">
                   <Typography variant="h4" style={{ color: colors.warning }}>
                     {data.financialInsights.pendingRequests || 0}
@@ -1816,10 +1816,10 @@ const Analytics = () => {
           </Paper>
       </Grid>
       
-      <Grid item xs={12} md={6}>
+      <Grid size={{ xs: 12, md: 6 }}>
         <InterestRateAnalysisChart />
       </Grid>
-      <Grid item xs={12} md={6}>
+      <Grid size={{ xs: 12, md: 6 }}>
         <ClientAdsRevenueChart />
       </Grid>
     </Grid>
@@ -1832,7 +1832,7 @@ const Analytics = () => {
         أدوات التحكم والفلترة
       </Typography>
       <Grid container spacing={2} alignItems="center">
-        <Grid item>
+        <Grid size="auto">
           <FormControl size="small" sx={{ minWidth: 120 }}>
             <InputLabel>المدة الزمنية</InputLabel>
             <Select
@@ -1847,7 +1847,7 @@ const Analytics = () => {
             </Select>
           </FormControl>
         </Grid>
-        <Grid item>
+        <Grid size="auto">
           <FormControl size="small" sx={{ minWidth: 120 }}>
             <InputLabel>المدينة</InputLabel>
             <Select
@@ -1863,7 +1863,7 @@ const Analytics = () => {
             </Select>
           </FormControl>
         </Grid>
-        <Grid item>
+        <Grid size="auto">
           <FormControl size="small" sx={{ minWidth: 120 }}>
             <InputLabel>الحالة</InputLabel>
             <Select
@@ -1878,7 +1878,7 @@ const Analytics = () => {
             </Select>
           </FormControl>
         </Grid>
-        <Grid item>
+        <Grid size="auto">
           <FormControl size="small" sx={{ minWidth: 120 }}>
             <InputLabel>نوع الإعلان</InputLabel>
             <Select
@@ -1893,7 +1893,7 @@ const Analytics = () => {
             </Select>
           </FormControl>
         </Grid>
-        <Grid item>
+        <Grid size="auto">
           <Button
             variant="outlined"
             startIcon={<RefreshIcon />}
@@ -1903,7 +1903,7 @@ const Analytics = () => {
             تحديث البيانات
           </Button>
         </Grid>
-        <Grid item>
+        <Grid size="auto">
           <Button
             variant="outlined"
             color="secondary"
@@ -1916,7 +1916,7 @@ const Analytics = () => {
             جلب البيانات يدوياً
           </Button>
         </Grid>
-        <Grid item>
+        <Grid size="auto">
           <Button
             variant="contained"
             startIcon={<DownloadIcon />}
@@ -1925,7 +1925,7 @@ const Analytics = () => {
             تصدير التقرير
           </Button>
         </Grid>
-        <Grid item>
+        <Grid size="auto">
           <Button
             variant={useMockData ? "contained" : "outlined"}
             color={useMockData ? "secondary" : "primary"}
@@ -2002,25 +2002,25 @@ const Analytics = () => {
 
       {activeTab === 0 && (
         <Grid container spacing={3}>
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <StatusDistributionChart />
           </Grid>
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <CategoryDistributionChart />
           </Grid>
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <AdTypeBreakdownChart />
           </Grid>
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <AdStatusSummaryChart />
           </Grid>
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <ClientAdsAnalysisChart />
           </Grid>
-          <Grid item xs={12}>
+          <Grid size={{ xs: 12 }}>
             <TimeSeriesChart />
           </Grid>
-          <Grid item xs={12}>
+          <Grid size={{ xs: 12 }}>
             <ClientAdsSummarySection />
           </Grid>
         </Grid>
@@ -2028,16 +2028,16 @@ const Analytics = () => {
 
       {activeTab === 1 && (
         <Grid container spacing={3}>
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <CategoryDistributionChart />
           </Grid>
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <CityDistributionChart />
           </Grid>
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <StatusDistributionChart />
           </Grid>
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <ClientAdsAnalysisChart />
           </Grid>
         </Grid>
@@ -2045,19 +2045,19 @@ const Analytics = () => {
 
       {activeTab === 2 && (
         <Grid container spacing={3}>
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <AdTypeBreakdownChart />
           </Grid>
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <AdStatusByTypeChart />
           </Grid>
-          <Grid item xs={12}>
+          <Grid size={{ xs: 12 }}>
             <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
               <Typography variant="h6" gutterBottom sx={{ textAlign: 'left' }}>
                 إحصائيات مفصلة للإعلانات
               </Typography>
               <Grid container spacing={2}>
-                <Grid item xs={12} md={4}>
+                <Grid size={{ xs: 12, md: 4 }}>
                   <Box textAlign="center" p={2} bgcolor="primary.light" borderRadius={2} color="white">
                     <Typography variant="h4">{data.overview.totalRealEstateAds || 0}</Typography>
                     <Typography variant="body2">إعلانات المطورين العقاريين</Typography>
@@ -2067,7 +2067,7 @@ const Analytics = () => {
                     </Typography>
                   </Box>
                 </Grid>
-                <Grid item xs={12} md={4}>
+                <Grid size={{ xs: 12, md: 4 }}>
                   <Box textAlign="center" p={2} bgcolor="success.light" borderRadius={2} color="white">
                     <Typography variant="h4">{data.overview.totalFinancingAds || 0}</Typography>
                     <Typography variant="body2">إعلانات التمويل</Typography>
@@ -2077,7 +2077,7 @@ const Analytics = () => {
                     </Typography>
                   </Box>
                 </Grid>
-                <Grid item xs={12} md={4}>
+                <Grid size={{ xs: 12, md: 4 }}>
                   <Box textAlign="center" p={2} bgcolor="warning.light" borderRadius={2} color="white">
                     <Typography variant="h4">{data.overview.totalClientAds || 0}</Typography>
                     <Typography variant="body2">إعلانات العملاء</Typography>
@@ -2095,40 +2095,40 @@ const Analytics = () => {
 
       {activeTab === 3 && (
         <Grid container spacing={3}>
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <AdStatusSummaryChart />
           </Grid>
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <AdStatusByTypeChart />
           </Grid>
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <ClientAdsAnalysisChart />
           </Grid>
-          <Grid item xs={12}>
+          <Grid size={{ xs: 12 }}>
             <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
               <Typography variant="h6" gutterBottom sx={{ textAlign: 'right' }}>
                 تحليل مفصل لحالة الإعلانات
               </Typography>
               <Grid container spacing={2}>
-                <Grid item xs={12} md={3}>
+                <Grid size={{ xs: 12, md: 3 }}>
                   <Box textAlign="center" p={2} bgcolor="warning.light" borderRadius={2} color="white">
                     <Typography variant="h4">{statusBreakdown.pending}</Typography>
                     <Typography variant="body2">قيد المراجعة</Typography>
                   </Box>
                 </Grid>
-                <Grid item xs={12} md={3}>
+                <Grid size={{ xs: 12, md: 3 }}>
                   <Box textAlign="center" p={2} bgcolor="success.light" borderRadius={2} color="white">
                     <Typography variant="h4">{statusBreakdown.approved}</Typography>
                     <Typography variant="body2">مُوافق عليه</Typography>
                   </Box>
                 </Grid>
-                <Grid item xs={12} md={3}>
+                <Grid size={{ xs: 12, md: 3 }}>
                   <Box textAlign="center" p={2} bgcolor="error.light" borderRadius={2} color="white">
                     <Typography variant="h4">{statusBreakdown.rejected}</Typography>
                     <Typography variant="body2">مرفوض</Typography>
                   </Box>
                 </Grid>
-                <Grid item xs={12} md={3}>
+                <Grid size={{ xs: 12, md: 3 }}>
                   <Box textAlign="center" p={2} bgcolor="info.light" borderRadius={2} color="white">
                     <Typography variant="h4">{totalRealEstateAds + totalFinancingAds + totalClientAds}</Typography>
                     <Typography variant="body2">إجمالي الإعلانات</Typography>
@@ -2142,16 +2142,16 @@ const Analytics = () => {
 
       {activeTab === 4 && (
         <Grid container spacing={3}>
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <UserEngagementChart />
           </Grid>
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <UserGrowthChart />
           </Grid>
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <ClientAdsAnalysisChart />
           </Grid>
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <ClientUserAnalysisChart />
           </Grid>
         </Grid>
@@ -2163,16 +2163,16 @@ const Analytics = () => {
 
       {activeTab === 6 && (
         <Grid container spacing={3}>
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <TimeSeriesChart />
           </Grid>
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <UserGrowthChart />
           </Grid>
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <ClientAdsTimeSeriesChart />
           </Grid>
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <ClientAdsAnalysisChart />
           </Grid>
         </Grid>

@@ -197,7 +197,7 @@ const PaymentMethods = () => {
                 <Box sx={{ width: 80, height: 50, display: "flex", alignItems: "center", justifyContent: "center" }}>
                   {method.icon}
                 </Box>
-                <Typography variant="subtitle2" sx={{ mt: 1, fontWeight: "bold", color: "#333" }}>
+                <Typography variant="subtitle2" sx={{ mt: 1, fontWeight: "bold", color: "primary" }}>
                   {method.name}
                 </Typography>
               </Box>

@@ -565,7 +565,7 @@ const errorMessage = getErrorMessage();
     sx={{ mt: '64px' }}
     disableRestoreFocus
   >
-    <Box sx={{ p: 2, bgcolor: '#fff', borderRadius: '8px' }}>
+    <Box sx={{ p: 2, bgcolor: 'primary', borderRadius: '8px' }}>
       <Typography>يرجى تسجيل الدخول أولاً</Typography>
     </Box>
   </Popover>
@@ -586,7 +586,10 @@ const errorMessage = getErrorMessage();
     sx={{ mt: '64px' }}
     disableRestoreFocus
   >
-    <Box sx={{ p: 2, bgcolor: '#fff', borderRadius: '8px' }}>
+        <Box sx={{ p: 2,backgroundColor: (theme) => 
+            theme.palette.mode === 'light' 
+              ? theme.palette.grey[50] 
+              : theme.palette.grey[900], borderRadius: '8px' }}>
       <Typography>{errorMessage}</Typography>
     </Box>
   </Popover>
