@@ -125,13 +125,11 @@ function App() {
         if (Notification.permission === "granted") {
           setSoundEnabled(true);
           setPermissionChecked(true);
-          console.log("الإشعارات مفعلة مسبقًا، تم تفعيل الصوت");
         } else if (Notification.permission !== "granted") {
           setOpenPermissionDialog(true);
           setPermissionChecked(true);
         }
       } else if (!("Notification" in window)) {
-        console.warn("الإشعارات غير مدعومة في هذا المتصفح");
         setSoundEnabled(true);
         setPermissionChecked(true);
       }
@@ -139,7 +137,6 @@ function App() {
     checkNotificationPermission();
     requestPermissionAndSaveToken();
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      console.log("Auth state changed:", user ? user.uid : "No user");
       setUser(user);
       setLoading(false);
     });
@@ -147,7 +144,6 @@ function App() {
   }, []);
   useEffect(() => {
     onMessage(messaging, (payload) => {
-      console.log("📩 إشعار مستلم:", payload);
       const { title, body } = payload.notification || {};
       if (
         title &&
@@ -158,7 +154,6 @@ function App() {
         new Notification(title, { body });
         if (soundEnabled) {
           notificationSound.play().catch((error) => {
-            console.error("خطأ في تشغيل صوت الإشعار:", error);
           });
         }
       }
@@ -174,7 +169,6 @@ function App() {
           setOpenSnackbar(true);
           if (soundEnabled) {
             notificationSound.play().catch((error) => {
-              console.error("خطأ في تشغيل صوت الإشعار:", error);
             });
           }
         }
@@ -197,14 +191,12 @@ function App() {
         setSoundEnabled(true);
         toast.dismiss();
         notificationSound.play().catch((error) => {
-          console.error("خطأ في تشغيل صوت الإشعار:", error);
         });
       }
     } else {
       setSoundEnabled(true);
       toast.dismiss();
       notificationSound.play().catch((error) => {
-        console.error("خطأ في تشغيل صوت الإشعار:", error);
       });
     }
   };
@@ -353,27 +345,20 @@ function App() {
                 try {
                   if ("Notification" in window) {
                     const permission = await Notification.requestPermission();
-                    console.log("حالة إذن الإشعارات:", permission);
                     if (permission === "granted") {
                       setSoundEnabled(true);
                       await notificationSound.play();
-                      console.log("تم تشغيل الصوت بنجاح بعد منح الإذن");
                     } else {
-                      console.log("تم رفض إذن الإشعارات أو إغلاق النافذة");
                       setSoundEnabled(true);
                       await notificationSound.play().catch(err => {
-                        console.error("فشل تشغيل الصوت بعد الرفض:", err);
                       });
                     }
                   } else {
-                    console.warn("الإشعارات غير مدعومة في هذا المتصفح");
                     setSoundEnabled(true);
                     await notificationSound.play().catch(err => {
-                      console.error("فشل تشغيل الصوت:", err);
                     });
                   }
                 } catch (err) {
-                  console.error("خطأ في طلب إذن الإشعارات أو تشغيل الصوت:", err);
                 } finally {
                   setOpenPermissionDialog(false);
                 }

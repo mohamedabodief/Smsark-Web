@@ -26,17 +26,13 @@ const [loading, setLoading] = useState(true);
 
   const getUserNameById = async (userId) => {
   try {
-    console.log(`Fetching user name for userId: ${userId}`);
     const userDoc = await getDoc(doc(db, "users", userId));
     if (userDoc.exists()) {
       const userData = userDoc.data();
-      console.log(`User data for ${userId}:`, userData);
       return userData.cli_name || "Unknown User"; 
     }
-    console.log(`No user document found for ${userId}`);
     return "Unknown User";
   } catch (err) {
-    console.error(`Error fetching user name for ${userId}:`, err);
     return "Unknown User";
   }
 };
@@ -46,7 +42,6 @@ const [loading, setLoading] = useState(true);
       if (user) {
         setCurrentUserEmail(user.email);
         setCurrentUserId(user.uid);
-        console.log('Current User ID:', user.uid);
       }
     });
     return () => unsubscribe();
@@ -64,7 +59,6 @@ const [loading, setLoading] = useState(true);
     );
 
     const unsubscribe = onSnapshot(q, async (snapshot) => {
-      console.log('Raw messages:', snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       const conversationsMap = {};
 
       for (const msg of snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))) {
@@ -107,7 +101,6 @@ const [loading, setLoading] = useState(true);
       setTotalUnreadCount(totalUnread);
        setLoading(false); 
     }, (err) => {
-      console.error('Error fetching conversations:', err);
        setLoading(false); 
     });
 
