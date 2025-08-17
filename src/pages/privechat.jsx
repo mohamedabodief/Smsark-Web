@@ -84,9 +84,7 @@ function ChatBox() {
           });
         });
         await Promise.all(updates);
-        console.log("Messages marked as read");
       } catch (err) {
-        console.error("Error marking messages as read:", err);
       }
     };
 
@@ -120,7 +118,7 @@ function ChatBox() {
       //////////////
       setNewMessage("");
     } catch (err) {
-      console.error("خطأ في إرسال الرسالة:", err);
+
     }
   };
 
