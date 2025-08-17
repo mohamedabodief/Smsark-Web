@@ -38,8 +38,8 @@ export default function Needs() {
       sx={{
         backgroundColor: '#200D3A',
         color: 'white',
-        px: { xs: 2, md: 2 },
-        py: 5,
+        px: { xs: 2, sm: 4, md: 6 },
+        py: { xs: 4, sm: 6, md: 8 },
         width: '100%',
         direction: 'rtl',
       }}
@@ -49,7 +49,14 @@ export default function Needs() {
         alignItems="stretch"
         sx={{
           gap: { xs: 4, sm: 6, md: 10 },
-          pr: { xs: '60px' },
+          // pr: { xs: '60px' },
+          // pl: { xs: '20px', sm: '40px', md: '60px' },
+          // pt: { xs: '20px', sm: '40px', md: '60px' },
+          // pb: { xs: '20px', sm: '40px', md: '60px' },
+          display: 'flex',
+          flexDirection: { xs: 'column', sm: 'row' },
+          justifyContent: 'center',
+          alignItems: 'center',
         }}
       >
         <Grid
@@ -96,7 +103,7 @@ export default function Needs() {
                 <Box
                   sx={{
                     borderRadius: 3,
-                    px: 3,
+                    px: 5,
                     py: 5,
                     minHeight: 230,
                     height: '100%',
