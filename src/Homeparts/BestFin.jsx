@@ -30,13 +30,12 @@ export default function BestFin() {
     try {
       const cachedAds = getCachedAds(CACHE_KEY);
       if (cachedAds) {
-        setOffers(cachedAds.filter((ad) => ad.ads === true));
+        setOffers(cachedAds);
         setLoading(false);
       }
 
       if (!cachedAds) {
-        const freshAds = await FinancingAdvertisement.getActiveAds();
-        const activeAds = freshAds.filter((ad) => ad.ads === true);
+        const activeAds = await FinancingAdvertisement.getActiveAds();
         setOffers(activeAds);
         saveAdsToCache(CACHE_KEY, activeAds);
         setLoading(false);
@@ -50,9 +49,7 @@ export default function BestFin() {
   useEffect(() => {
     initializeAds();
     let unsubscribe = () => {};
-     unsubscribe = FinancingAdvertisement.subscribeActiveAds((newAds) => {
-      const activeAds = newAds.filter(ad => ad.ads === true);
-
+     unsubscribe = FinancingAdvertisement.subscribeActiveAds((activeAds) => {
       setOffers((prevOffers) => {
         const currentAds =
           prevOffers.length > 0 ? prevOffers : getCachedAds(CACHE_KEY);
@@ -209,7 +206,7 @@ export default function BestFin() {
                   />
                   <FavoriteButton advertisementId={item?.id} />
 
-                  <CardContent>
+                  <CardContent dir='rtl'>
                     <Typography color="primary" fontWeight="bold">
                       {item?.start_limit?.toLocaleString()} -{" "}
                       {item?.end_limit?.toLocaleString()} ج.م
@@ -217,6 +214,9 @@ export default function BestFin() {
                     <Typography variant="subtitle1">{item?.org_name}</Typography>
                     <Typography variant="body2" color="text.secondary">
                       {item?.financing_model}
+                    </Typography>
+                    <Typography variant="body2" mt={1} sx={{ overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                      {item?.description}
                     </Typography>
                   </CardContent>
                 </Card>

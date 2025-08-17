@@ -134,8 +134,9 @@ import {
 import subscriptionManager from '../../utils/subscriptionManager';
 import { deleteAd, updateAd } from '../../reduxToolkit/slice/paidAdsSlice';
 import Notification from '../../FireBase/MessageAndNotification/Notification';
+import User from '../../FireBase/modelsWithOperations/User';
 import NotificationList from '../../pages/notificationList';
-// financing 
+// financing
 import FinancingRequest from '../../FireBase/modelsWithOperations/FinancingRequest';
 // analytics
 import { fetchAnalyticsData } from '../../reduxToolkit/slice/analyticsSlice';
@@ -1479,10 +1480,14 @@ function ProfilePage() {
     }
 
     return (
-        <Box sx={{ p: 2, textAlign: 'right' }}>
-            <Typography variant="h3" sx={{ display: 'flex', flexDirection: 'row-reverse', mb: 3 }}>حسابي</Typography>
+        <Box dir='rtl' sx={{ p: 2 }}>
+            <PageHeader
+                title="حسابي"
+                icon={AccountBoxIcon}
+                showCount={false}
+            />
             <Paper sx={{ p: 4, borderRadius: 2, minHeight: 400, textAlign: 'right', boxShadow: '0px 0px 8px rgba(0,0,0,0.2)' }}>
-                <Grid container spacing={4} direction="row-reverse">
+                <Grid container spacing={4} direction="row">
                     <Grid size={{ xs: 12, md: 4, lg: 3 }}>
                         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
                             <UploadAvatars />
@@ -1490,7 +1495,7 @@ function ProfilePage() {
                     </Grid>
                     <Grid size={{ xs: 12, md: 8, lg: 9 }}>
                         <Box>
-                            <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', fontSize: '1.5rem', display: 'flex', flexDirection: 'row-reverse' }}>المعلومات الشخصية</Typography>
+                            <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', fontSize: '1.5rem', display: 'flex', flexDirection: 'row' }}>المعلومات الشخصية</Typography>
 
                             {/* Organization Name */}
                             <TextField
@@ -2247,9 +2252,11 @@ function Mainadvertisment(props) {
     // Memoize filteredAds based on the 'byUser' slice and local filters
     const filteredAds = useMemo(() => homepageAds.filter(ad => {
         const statusMatch = statusFilter === 'all' || ad.reviewStatus === statusFilter;
+        // An ad is considered "active" only if it's both ads=true AND reviewStatus='approved'
+        const isActuallyActive = ad.ads && ad.reviewStatus === 'approved';
         const activationMatch = activationFilter === 'all' ||
-            (activationFilter === 'active' && ad.ads) ||
-            (activationFilter === 'inactive' && !ad.ads);
+            (activationFilter === 'active' && isActuallyActive) ||
+            (activationFilter === 'inactive' && !isActuallyActive);
         return statusMatch && activationMatch;
     }), [homepageAds, statusFilter, activationFilter]); // Depend on homepageAds (which is now byUser)
 
@@ -2259,8 +2266,9 @@ function Mainadvertisment(props) {
         pending: homepageAds.filter(ad => ad.reviewStatus === 'pending').length,
         approved: homepageAds.filter(ad => ad.reviewStatus === 'approved').length,
         rejected: homepageAds.filter(ad => ad.reviewStatus === 'rejected').length,
-        active: homepageAds.filter(ad => ad.ads).length,
-        inactive: homepageAds.filter(ad => !ad.ads).length,
+        // An ad is considered "active" only if it's both ads=true AND reviewStatus='approved'
+        active: homepageAds.filter(ad => ad.ads && ad.reviewStatus === 'approved').length,
+        inactive: homepageAds.filter(ad => !ad.ads || ad.reviewStatus !== 'approved').length,
     }), [homepageAds]); // Depend on homepageAds (which is now byUser)
 
 
@@ -2544,8 +2552,8 @@ function Mainadvertisment(props) {
                                                 size="small"
                                             />
                                             <Chip
-                                                label={ad.ads ? 'مفعل' : 'غير مفعل'}
-                                                color={ad.ads ? 'success' : 'default'}
+                                                label={(ad.ads && ad.reviewStatus === 'approved') ? 'مفعل' : 'غير مفعل'}
+                                                color={(ad.ads && ad.reviewStatus === 'approved') ? 'success' : 'default'}
                                                 size="small"
                                             />
                                         </Box>
@@ -2750,6 +2758,24 @@ function PaidAdvertismentPage() {
         }
     }, [dispatch, userProfile?.uid, userProfile?.type_of_organization]);
 
+    // Refresh data when returning to the dashboard (e.g., after editing an ad)
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (!document.hidden && userProfile?.uid) {
+                // Page became visible again, refresh the data
+                const orgType = userProfile.type_of_organization;
+                if (orgType === "مطور عقاري" || orgType === "مطور عقارى") {
+                    dispatch(fetchDeveloperAdsByUser(userProfile.uid));
+                } else if (orgType === "ممول عقاري" || orgType === "ممول عقارى") {
+                    dispatch(fetchFinancingAdsByUser(userProfile.uid));
+                }
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    }, [dispatch, userProfile?.uid, userProfile?.type_of_organization]);
+
     // Handler for tab changes
     const handleTabChange = (event, newValue) => {
         setActiveTab(newValue);
@@ -2788,7 +2814,7 @@ function PaidAdvertismentPage() {
 
     // Define columns for developer ads
     const developerColumns = [
-        { field: 'id', headerName: 'ID', width: 90 },
+        // { field: 'id', headerName: 'ID', width: 90 },
         { field: 'developer_name', headerName: 'اسم المطور', width: 200 },
         {
             field: 'images',
@@ -2823,13 +2849,16 @@ function PaidAdvertismentPage() {
         },
         {
             field: 'ads', headerName: 'مفعل', width: 100,
-            renderCell: (params) => (
-                <Chip
-                    label={params.value ? 'نعم' : 'لا'}
-                    color={params.value ? 'success' : 'default'}
-                    size="small"
-                />
-            )
+            renderCell: (params) => {
+                const isActuallyActive = params.value && params.row.reviewStatus === 'approved';
+                return (
+                    <Chip
+                        label={isActuallyActive ? 'نعم' : 'لا'}
+                        color={isActuallyActive ? 'success' : 'default'}
+                        size="small"
+                    />
+                );
+            }
         },
         {
             field: 'reviewStatus', headerName: 'حالة المراجعة', width: 120,
@@ -2918,7 +2947,7 @@ function PaidAdvertismentPage() {
 
     // Define columns for financing ads
     const financingColumns = [
-        { field: 'id', headerName: 'ID', width: 90 },
+        // { field: 'id', headerName: 'ID', width: 90 },
         { field: 'title', headerName: 'عنوان الإعلان', width: 200 },
         {
             field: 'images',
@@ -2956,13 +2985,16 @@ function PaidAdvertismentPage() {
         { field: 'phone', headerName: 'رقم الهاتف', width: 120 },
         {
             field: 'ads', headerName: 'مفعل', width: 100,
-            renderCell: (params) => (
-                <Chip
-                    label={params?.value ? 'نعم' : 'لا'}
-                    color={params?.value ? 'success' : 'default'}
-                    size="small"
-                />
-            )
+            renderCell: (params) => {
+                const isActuallyActive = params?.value && params.row.reviewStatus === 'approved';
+                return (
+                    <Chip
+                        label={isActuallyActive ? 'نعم' : 'لا'}
+                        color={isActuallyActive ? 'success' : 'default'}
+                        size="small"
+                    />
+                );
+            }
         },
         {
             field: 'reviewStatus', headerName: 'حالة المراجعة', width: 120,
@@ -2982,16 +3014,16 @@ function PaidAdvertismentPage() {
                 );
             }
         },
-        {
-            field: 'adExpiryTime', headerName: 'تاريخ انتهاء التفعيل', width: 150,
-            renderCell: (params) => {
-                if (!params.value) return '-';
-                const expiryDate = new Date(params.value);
-                const now = new Date();
-                const remainingDays = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
-                return remainingDays > 0 ? `${remainingDays} يوم` : 'منتهي';
-            }
-        },
+        // {
+        //     field: 'adExpiryTime', headerName: 'تاريخ انتهاء التفعيل', width: 150,
+        //     renderCell: (params) => {
+        //         if (!params.value) return '-';
+        //         const expiryDate = new Date(params.value);
+        //         const now = new Date();
+        //         const remainingDays = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
+        //         return remainingDays > 0 ? `${remainingDays} يوم` : 'منتهي';
+        //     }
+        // },
         {
             field: 'actions', headerName: 'الإجراءات', width: 180, sortable: false, filterable: false,
             renderCell: (params) => (
@@ -3591,6 +3623,30 @@ function OrdersPage() {
     // New state for filters and search
     const [statusFilters, setStatusFilters] = useState({}); // { [adId]: 'all' }
     const [searchTerm, setSearchTerm] = useState('');
+    // New state for storing user data
+    const [usersData, setUsersData] = useState({}); // { [userId]: { cli_name, phone, email } }
+
+    // Function to fetch user data by user ID
+    const fetchUserData = async (userId) => {
+        if (usersData[userId]) return usersData[userId]; // Return cached data if available
+
+        try {
+            const userData = await User.getByUid(userId);
+            if (userData) {
+                console.log('Fetched user data for', userId, ':', userData); // Debug log
+                const userInfo = {
+                    cli_name: userData.cli_name || userData.org_name || userData.adm_name || 'غير محدد',
+                    phone: userData.phone || 'غير محدد',
+                    email: userData.email || 'لم يتم تحديد الإيميل'
+                };
+                setUsersData(prev => ({ ...prev, [userId]: userInfo }));
+                return userInfo;
+            }
+        } catch (error) {
+            console.error('Error fetching user data for userId:', userId, error);
+        }
+        return { cli_name: 'غير محدد', phone: 'غير محدد', email: 'غير محدد' };
+    };
 
     // Real-time listeners for ads and requests
     useEffect(() => {
@@ -3606,8 +3662,17 @@ function OrdersPage() {
         });
 
         // Subscribe to all financing requests (we'll filter by ad ID in the component)
-        const unsubscribeRequests = FinancingRequest.subscribeAllRequests((requestsData) => {
+        const unsubscribeRequests = FinancingRequest.subscribeAllRequests(async (requestsData) => {
             setRequests(requestsData);
+
+            // Fetch user data for all unique user IDs in the requests
+            const uniqueUserIds = [...new Set(requestsData.map(req => req.user_id))];
+            for (const userId of uniqueUserIds) {
+                if (userId && !usersData[userId]) {
+                    await fetchUserData(userId);
+                }
+            }
+
             setLoadingRequests(false);
         });
 
@@ -3618,13 +3683,33 @@ function OrdersPage() {
         };
     }, [userProfile?.uid]);
 
+    // Effect to fetch user data when requests change
+    useEffect(() => {
+        const fetchMissingUserData = async () => {
+            const uniqueUserIds = [...new Set(requests.map(req => req.user_id))];
+            for (const userId of uniqueUserIds) {
+                if (userId && !usersData[userId]) {
+                    await fetchUserData(userId);
+                }
+            }
+        };
+
+        if (requests.length > 0) {
+            fetchMissingUserData();
+        }
+    }, [requests]);
+
     // Approval action for requests (org approval, not admin)
     const handleOrgApproveRequest = async (req, ad) => {
         setActionLoading((prev) => ({ ...prev, [req.id]: true }));
         try {
-            // Update reviewStatus to approved
+            // Update both reviewStatus and status to approved for admin orders page compatibility
             const reqInstance = await FinancingRequest.getById(req.id);
-            await reqInstance.update({ reviewStatus: 'approved' });
+            await reqInstance.update({
+                reviewStatus: 'approved',
+                status: 'approved' // This ensures admin orders page shows the updated status
+            });
+
             // Send notification to the user
             const notif = new Notification({
                 receiver_id: req.user_id,
@@ -3634,7 +3719,26 @@ function OrdersPage() {
                 link: `/client/financing-requests/${req.id}`,
             });
             await notif.send();
-            setSnackbar({ open: true, message: 'تمت الموافقة على الطلب وإشعار العميل', severity: 'success' });
+
+            // Send notifications to all admins about the approval
+            try {
+                const admins = await User.getAllUsersByType('admin');
+                await Promise.all(
+                    admins.map((admin) =>
+                        new Notification({
+                            receiver_id: admin.uid,
+                            title: '✅ موافقة مؤسسة على طلب تمويل',
+                            body: `تمت الموافقة على طلب التمويل من قبل ${ad.org_name || 'مؤسسة تمويلية'} للعميل: ${req.user_name || 'غير محدد'}`,
+                            type: 'system',
+                            link: `/admin/orders`,
+                        }).send()
+                    )
+                );
+            } catch (notifError) {
+                console.warn('فشل إرسال إشعارات للأدمنز:', notifError);
+            }
+
+            setSnackbar({ open: true, message: 'تمت الموافقة على الطلب وإشعار العميل والإدارة', severity: 'success' });
             // No need to dispatch - onSnapshot will automatically update the state
         } catch (e) {
             setSnackbar({ open: true, message: e.message || 'خطأ أثناء الاعتماد', severity: 'error' });
@@ -3651,11 +3755,19 @@ function OrdersPage() {
 
             switch (action) {
                 case 'pending':
-                    await reqInstance.update({ reviewStatus: 'pending', review_note: null });
+                    await reqInstance.update({
+                        reviewStatus: 'pending',
+                        status: 'pending',
+                        review_note: null
+                    });
                     setSnackbar({ open: true, message: 'تم إعادة الطلب للمراجعة', severity: 'success' });
                     break;
                 case 'reject':
-                    await reqInstance.update({ reviewStatus: 'rejected', review_note: rejectionReason });
+                    await reqInstance.update({
+                        reviewStatus: 'rejected',
+                        status: 'rejected',
+                        review_note: rejectionReason
+                    });
                     setSnackbar({ open: true, message: 'تم رفض الطلب', severity: 'success' });
                     break;
                 case 'delete':
@@ -3677,7 +3789,7 @@ function OrdersPage() {
     // Helper function to get ad status label
     const getAdStatusLabel = (status) => {
         switch (status) {
-            case 'pending': return 'قيد المراجعة';
+            case 'pending': return 'قيد مراجعة المدير';
             case 'approved': return 'موافق عليه';
             case 'rejected': return 'مرفوض';
             default: return status;
@@ -3703,31 +3815,38 @@ function OrdersPage() {
         }
         if (searchTerm.trim()) {
             const term = searchTerm.trim().toLowerCase();
-            filtered = filtered.filter(r =>
-                (r.user_id && r.user_id.toLowerCase().includes(term)) ||
-                (r.financing_amount && String(r.financing_amount).includes(term)) ||
-                (r.repayment_years && String(r.repayment_years).includes(term))
-            );
+            filtered = filtered.filter(r => {
+                const userData = usersData[r.user_id];
+                return (
+                    (r.user_id && r.user_id.toLowerCase().includes(term)) ||
+                    (userData?.cli_name && userData.cli_name.toLowerCase().includes(term)) ||
+                    (userData?.phone && userData.phone.includes(term)) ||
+                    (userData?.email && userData.email.toLowerCase().includes(term)) ||
+                    (r.financing_amount && String(r.financing_amount).includes(term)) ||
+                    (r.repayment_years && String(r.repayment_years).includes(term))
+                );
+            });
         }
         return filtered;
     };
 
     return (
-        <Box sx={{ p: 2, textAlign: 'left' }}>
+        <Box dir='rtl' sx={{ p: 2 }}>
             <PageHeader
-                title="طلبات التمويل على إعلاناتك"
+                title="طلبات التمويل على الإعلانات"
                 icon={AccountBalanceWalletIcon}
                 showCount={false}
+                dir='ltr'
             />
             {/* Search input */}
             <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end' }}>
                 <TextField
-                    label="بحث عن طلبات التمويل (المستخدم، المبلغ، السنوات)"
+                    label="بحث عن طلبات التمويل (الاسم، الهاتف، الإيميل، المبلغ، السنوات)"
                     variant="outlined"
                     size="small"
                     value={searchTerm}
                     onChange={e => setSearchTerm(e.target.value)}
-                    sx={{ minWidth: 300 }}
+                    sx={{ minWidth: 400 }}
                 />
             </Box>
             <Paper sx={{ p: 2, borderRadius: 2, minHeight: 400, textAlign: 'right' }}>
@@ -3751,7 +3870,7 @@ function OrdersPage() {
                         const filteredRequests = filterAndSearchRequests(requestsForAd, ad.id);
                         return (
                             <Box key={ad.id} sx={{ mb: 4, border: '1px solid #eee', borderRadius: 2, p: 2 }}>
-                                <Box dir='ltr' sx={{ textAlign: 'left', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <Box dir='rtl' sx={{ textAlign: 'left', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                     <Box>
                                         <Typography variant="h6" color="primary" sx={{ mb: 1 }}>{ad.title}</Typography>
                                         <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>الحد الأدنى: {ad.start_limit} | الحد الأقصى: {ad.end_limit}</Typography>
@@ -3784,33 +3903,66 @@ function OrdersPage() {
                                 </Box>
                                 {filteredRequests.length > 0 ? (
                                     <List>
-                                        {filteredRequests.map((req) => (
-                                            <ListItem key={req.id} sx={{ borderBottom: '1px solid #eee', flexDirection: 'row-reverse' }}>
-                                                <ListItemText
-                                                    primary={<>
-                                                        <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>مقدم الطلب: {req.user_id}</Typography>
-                                                        <Typography variant="body2">المبلغ المطلوب: {req.financing_amount} | سنوات السداد: {req.repayment_years}</Typography>
-                                                        <Typography variant="body2">الحالة: {req.reviewStatus}</Typography>
-                                                    </>}
-                                                    secondary={<>
-                                                        <Typography variant="caption" color="text.secondary">ID: {req.id}</Typography>
-                                                    </>}
-                                                />
-                                                <Stack direction="row" spacing={1.5}>
-                                                    {/* Org Approval Button */}
-                                                    {req.reviewStatus !== 'approved' && (
-                                                        <IconButton
-                                                            color="success"
-                                                            size="small"
-                                                            disabled={actionLoading[req.id]}
-                                                            onClick={() => handleOrgApproveRequest(req, ad)}
-                                                        >
-                                                            <Tooltip title='موافقة'>
-                                                                <CheckCircleIcon sx={{ border: '1px solid green', borderRadius: '50%' }} />
-                                                            </Tooltip>
-                                                        </IconButton>
-                                                    )}
-                                                    <IconButton
+                                        {filteredRequests.map((req) => {
+                                            const userData = usersData[req.user_id] || { cli_name: 'جاري التحميل...', phone: 'جاري التحميل...', email: 'جاري التحميل...' };
+                                            return (
+                                                <ListItem dir='rtl' key={req.id} sx={{ borderBottom: '1px solid #eee' }}>
+                                                    <ListItemText
+                                                        primary={<>
+                                                            <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+                                                                اسم العميل: {userData.cli_name}
+                                                            </Typography>
+                                                            <Typography variant="body2" sx={{ mt: 0.5 }}>
+                                                                رقم الهاتف: {userData.phone}
+                                                            </Typography>
+                                                            <Typography variant="body2" sx={{ mt: 0.5 }}>
+                                                                الإيميل: {userData.email}
+                                                            </Typography>
+                                                            <Typography variant="body2" sx={{ mt: 0.5 }}>
+                                                                الوظيفة: {req.job_title}
+                                                            </Typography>
+                                                            <Typography variant="body2" sx={{ mt: 0.5 }}>
+                                                                جهة العمل: {req.employer}
+                                                            </Typography>
+                                                            <Typography variant="body2" sx={{ mt: 0.5 }}>
+                                                                الدخل: {req.monthly_income}
+                                                            </Typography>
+                                                            <Typography variant="body2" sx={{ mt: 0.5 }}>
+                                                                عدد المعالين: {req.dependents}
+                                                            </Typography>
+                                                            <Typography variant="body2" sx={{ mt: 0.5 }}>
+                                                                المبلغ المطلوب: {req.financing_amount?.toLocaleString()} ج.م | سنوات السداد: {req.repayment_years}
+                                                            </Typography>
+                                                            <Typography variant="body2" sx={{ mt: 0.5 }}>
+                                                                الحالة: {req.reviewStatus}
+                                                            </Typography>
+                                                        </>}
+                                                    // secondary={<>
+                                                    //     <Typography variant="caption" color="text.secondary">
+                                                    //         معرف الطلب: {req.id}
+                                                    //     </Typography>
+                                                    //     {req.phone_number && (
+                                                    //         <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                                                    //             هاتف إضافي: {req.phone_number}
+                                                    //         </Typography>
+                                                    //     )}
+                                                    // </>}
+                                                    />
+                                                    <Stack direction="row-reverse" spacing={1.5}>
+                                                        {/* Org Approval Button */}
+                                                        {req.reviewStatus !== 'approved' && (
+                                                            <IconButton
+                                                                color="success"
+                                                                size="small"
+                                                                disabled={actionLoading[req.id]}
+                                                                onClick={() => handleOrgApproveRequest(req, ad)}
+                                                            >
+                                                                <Tooltip title='موافقة'>
+                                                                    <CheckCircleIcon sx={{ border: '1px solid green', borderRadius: '50%' }} />
+                                                                </Tooltip>
+                                                            </IconButton>
+                                                        )}
+                                                        {/* <IconButton
                                                         color="warning"
                                                         size="small"
                                                         disabled={actionLoading[req.id]}
@@ -3819,30 +3971,31 @@ function OrdersPage() {
                                                         <Tooltip title='إعادة للمراجعة'>
                                                             <MessageIcon />
                                                         </Tooltip>
-                                                    </IconButton>
-                                                    <IconButton
-                                                        color="error"
-                                                        size="small"
-                                                        disabled={actionLoading[req.id]}
-                                                        onClick={() => handleRequestAction(req.id, 'reject', ad.id, 'تم الرفض من قبل المؤسسة')}
-                                                    >
-                                                        <Tooltip title='رفض'>
-                                                            <CloseIcon sx={{ border: '1px solid red', borderRadius: '50%' }} />
-                                                        </Tooltip>
-                                                    </IconButton>
-                                                    <IconButton
-                                                        color="secondary"
-                                                        size="small"
-                                                        disabled={actionLoading[req.id]}
-                                                        onClick={() => handleRequestAction(req.id, 'delete', ad.id)}
-                                                    >
-                                                        <Tooltip title='حذف'>
-                                                            <DeleteIcon />
-                                                        </Tooltip>
-                                                    </IconButton>
-                                                </Stack>
-                                            </ListItem>
-                                        ))}
+                                                    </IconButton> */}
+                                                        <IconButton
+                                                            color="error"
+                                                            size="small"
+                                                            disabled={actionLoading[req.id]}
+                                                            onClick={() => handleRequestAction(req.id, 'reject', ad.id, 'تم الرفض من قبل المؤسسة')}
+                                                        >
+                                                            <Tooltip title='رفض'>
+                                                                <CloseIcon sx={{ border: '1px solid red', borderRadius: '50%' }} />
+                                                            </Tooltip>
+                                                        </IconButton>
+                                                        <IconButton
+                                                            color="secondary"
+                                                            size="small"
+                                                            disabled={actionLoading[req.id]}
+                                                            onClick={() => handleRequestAction(req.id, 'delete', ad.id)}
+                                                        >
+                                                            <Tooltip title='حذف'>
+                                                                <DeleteIcon />
+                                                            </Tooltip>
+                                                        </IconButton>
+                                                    </Stack>
+                                                </ListItem>
+                                            );
+                                        })}
                                     </List>
                                 ) : (
                                     <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
@@ -4225,245 +4378,196 @@ export default function OrganizationDashboard(props) {
     return (
         <StyledEngineProvider injectFirst>
             <CacheProvider value={cacheRtl}>
-                    <ThemeProvider theme={theme}>
-                        <Box sx={{ display: 'flex', flexDirection: 'row-reverse' }}>
-                            <CssBaseline />
-                            <AppBarStyled position="fixed" open={open}>
-                                <Toolbar sx={{ flexDirection: 'row-reverse' }}>
-                                    <IconButton
-                                        color="inherit"
-                                        aria-label="open drawer"
-                                        edge="start"
-                                        onClick={handleDrawerToggle}
-                                        sx={{ ml: 2, display: { md: 'none' } }}
-                                    >
-                                        <MenuIcon />
-                                    </IconButton>
-                                    {!open && !isMobile && (
-                                        <img
-                                            src="./logo.png"
-                                            alt="App Logo"
-                                            style={{ height: 60, marginRight: 8, scale: 3 }}
-                                        />
-                                    )}
-                                    <Box sx={{ flexGrow: 1 }} />
-                                    {/* Notification Bell Icon */}
-                                    <IconButton
-                                        sx={{ mr: -1 }}
-                                        onClick={handleNotificationClick}
-                                        color="inherit"
-                                    >
-                                        <Badge
-                                            badgeContent={unreadCount}
-                                            color="error"
-                                            sx={{
-                                                "& .MuiBadge-badge": {
-                                                    top: "0px",
-                                                    right: "0px",
-                                                    backgroundColor: "#d1d1d1ff",
-                                                    color: "black",
-                                                    fontWeight: "bold",
-                                                    minWidth: "20px",
-                                                    height: "20px",
-                                                    borderRadius: "50%",
-                                                    display: "flex",
-                                                    alignItems: "center",
-                                                    justifyContent: "center",
-                                                    fontSize: "14px",
-                                                    zIndex: "10000",
-                                                },
-                                            }}
-                                        >
-                                            <NotificationsIcon />
-                                        </Badge>
-                                    </IconButton>
-                                    {/* Notification Popover */}
-                                    <Popover
-                                        open={Boolean(notificationAnchorEl)}
-                                        anchorEl={notificationAnchorEl}
-                                        onClose={handleNotificationClose}
-                                        anchorOrigin={{
-                                            vertical: 'bottom',
-                                            horizontal: 'left',
-                                        }}
-                                        transformOrigin={{
-                                            vertical: 'top',
-                                            horizontal: 'right',
+                <ThemeProvider theme={theme}>
+                    <Box sx={{ display: 'flex', flexDirection: 'row-reverse' }}>
+                        <CssBaseline />
+                        <AppBarStyled position="fixed" open={open}>
+                            <Toolbar sx={{ flexDirection: 'row-reverse' }}>
+                                <IconButton
+                                    color="inherit"
+                                    aria-label="open drawer"
+                                    edge="start"
+                                    onClick={handleDrawerToggle}
+                                    sx={{ ml: 2, display: { md: 'none' } }}
+                                >
+                                    <MenuIcon />
+                                </IconButton>
+                                {!open && !isMobile && (
+                                    <img
+                                        src="./logo.png"
+                                        alt="App Logo"
+                                        style={{ height: 60, marginRight: 8, scale: 3 }}
+                                    />
+                                )}
+                                <Box sx={{ flexGrow: 1 }} />
+                                {/* Notification Bell Icon */}
+                                <IconButton
+                                    sx={{ mr: -1 }}
+                                    onClick={handleNotificationClick}
+                                    color="inherit"
+                                >
+                                    <Badge
+                                        badgeContent={unreadCount}
+                                        color="error"
+                                        sx={{
+                                            "& .MuiBadge-badge": {
+                                                top: "0px",
+                                                right: "0px",
+                                                backgroundColor: "#d1d1d1ff",
+                                                color: "black",
+                                                fontWeight: "bold",
+                                                minWidth: "20px",
+                                                height: "20px",
+                                                borderRadius: "50%",
+                                                display: "flex",
+                                                alignItems: "center",
+                                                justifyContent: "center",
+                                                fontSize: "14px",
+                                                zIndex: "10000",
+                                            },
                                         }}
                                     >
-                                        <NotificationList userId={authUid} />
-                                    </Popover>
-                                    <IconButton
-                                        sx={{ ml: 1 }}
-                                        color="inherit"
-                                        onClick={() => navigate('/home')}
-                                        title="العودة للصفحة الرئيسية"
-                                    >
-                                        <HomeIcon />
-                                    </IconButton>
-                                    <IconButton sx={{ mr: 1 }} onClick={toggleMode} color="inherit">
-                                        {theme.palette.mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
-                                    </IconButton>
-                                    <Button
-                                        variant="outlined"
-                                        color="inherit"
-                                        onClick={handleLogout}
-                                        endIcon={<LogoutIcon />}
-                                        sx={{ mr: 2, borderRadius: 2, direction: 'ltr' }}
-                                    >
-                                        تسجيل الخروج
-                                    </Button>
+                                        <NotificationsIcon />
+                                    </Badge>
+                                </IconButton>
+                                {/* Notification Popover */}
+                                <Popover
+                                    open={Boolean(notificationAnchorEl)}
+                                    anchorEl={notificationAnchorEl}
+                                    onClose={handleNotificationClose}
+                                    anchorOrigin={{
+                                        vertical: 'bottom',
+                                        horizontal: 'left',
+                                    }}
+                                    transformOrigin={{
+                                        vertical: 'top',
+                                        horizontal: 'right',
+                                    }}
+                                >
+                                    <NotificationList userId={authUid} />
+                                </Popover>
+                                <IconButton
+                                    sx={{ ml: 1 }}
+                                    color="inherit"
+                                    onClick={() => navigate('/home')}
+                                    title="العودة للصفحة الرئيسية"
+                                >
+                                    <HomeIcon />
+                                </IconButton>
+                                <IconButton sx={{ mr: 1 }} onClick={toggleMode} color="inherit">
+                                    {theme.palette.mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
+                                </IconButton>
+                                <Button
+                                    variant="outlined"
+                                    color="inherit"
+                                    onClick={handleLogout}
+                                    endIcon={<LogoutIcon />}
+                                    sx={{ mr: 2, borderRadius: 2, direction: 'ltr' }}
+                                >
+                                    تسجيل الخروج
+                                </Button>
 
-                                </Toolbar>
-                            </AppBarStyled>
+                            </Toolbar>
+                        </AppBarStyled>
 
-                            <Drawer
-                                variant={isMobile ? 'temporary' : 'permanent'}
-                                sx={{
-                                    display: { xs: 'block' },
-                                    width: open ? drawerWidth : closedDrawerWidth,
-                                    flexShrink: 0,
-                                    whiteSpace: 'nowrap',
+                        <Drawer
+                            variant={isMobile ? 'temporary' : 'permanent'}
+                            sx={{
+                                display: { xs: 'block' },
+                                width: open ? drawerWidth : closedDrawerWidth,
+                                flexShrink: 0,
+                                whiteSpace: 'nowrap',
+                                boxSizing: 'border-box',
+                                transition: theme.transitions.create('width', {
+                                    easing: theme.transitions.easing.sharp,
+                                    duration: theme.transitions.duration.enteringScreen,
+                                }),
+                                '& .MuiDrawer-paper': {
                                     boxSizing: 'border-box',
+                                    width: isMobile ? '80%' : (open ? drawerWidth : closedDrawerWidth),
+                                    borderRadius: isMobile ? 0 : '8px 0 0 8px',
+                                    overflowX: 'hidden',
                                     transition: theme.transitions.create('width', {
                                         easing: theme.transitions.easing.sharp,
                                         duration: theme.transitions.duration.enteringScreen,
                                     }),
-                                    '& .MuiDrawer-paper': {
-                                        boxSizing: 'border-box',
-                                        width: isMobile ? '80%' : (open ? drawerWidth : closedDrawerWidth),
-                                        borderRadius: isMobile ? 0 : '8px 0 0 8px',
-                                        overflowX: 'hidden',
-                                        transition: theme.transitions.create('width', {
-                                            easing: theme.transitions.easing.sharp,
-                                            duration: theme.transitions.duration.enteringScreen,
-                                        }),
-                                    },
-                                }}
-                                anchor="left"
-                                open={isMobile ? mobileOpen : open}
-                                onClose={handleDrawerToggle}
-                                ModalProps={{
-                                    keepMounted: true,
-                                }}
-                            >
-                                <DrawerHeader>
-                                    {open && (
-                                        <Box sx={{ flexGrow: 1, textAlign: 'center' }}>
-                                            <img
-                                                src="./logo.png"
-                                                alt="App Logo"
-                                                style={{ height: 60, scale: 2 }}
-                                            />
-                                        </Box>
-                                    )}
-                                    <IconButton onClick={handleDrawerToggle}>
-                                        {open ? <ChevronRightIcon /> : <MenuIcon />}
-                                    </IconButton>
-                                </DrawerHeader>
-                                <Divider />
+                                },
+                            }}
+                            anchor="left"
+                            open={isMobile ? mobileOpen : open}
+                            onClose={handleDrawerToggle}
+                            ModalProps={{
+                                keepMounted: true,
+                            }}
+                        >
+                            <DrawerHeader>
                                 {open && (
-                                    <Box sx={{ my: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', p: 2 }}>
-                                        <Avatar
-                                            alt={userName}
-                                            src={userProfile?.image || profilePicInDrawer || './admin.jpg'}
-                                            sx={{
-                                                width: 80,
-                                                height: 80,
-                                                mb: 1,
-                                                boxShadow: '0px 0px 8px rgba(0,0,0,0.2)',
-                                                border: '3px solid',
-                                                borderColor: 'primary.main'
-                                            }}
+                                    <Box sx={{ flexGrow: 1, textAlign: 'center' }}>
+                                        <img
+                                            src="./logo.png"
+                                            alt="App Logo"
+                                            style={{ height: 60, scale: 2 }}
                                         />
-                                        <Typography variant="h6" sx={{ fontWeight: 'bold', textAlign: 'center' }}>
-                                            مرحباً، {userName}
-                                        </Typography>
-                                        <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
-                                            {userProfile?.type_of_organization ? `${userProfile.type_of_organization}` : 'منظمة'}
-                                        </Typography>
                                     </Box>
                                 )}
-                                {open && <Divider sx={{ mb: 2 }} />}
-                                <List>
-                                    {!isProfileLoaded ? (
-                                        // Show loading state while profile is being loaded
-                                        <Box sx={{ p: 2, textAlign: 'center' }}>
-                                            <Typography variant="body2" color="text.secondary">
-                                                جاري التحميل...
-                                            </Typography>
-                                        </Box>
-                                    ) : (
-                                        NAVIGATION.map((item) => {
-                                            if (item.kind === 'header') {
-                                                return open ? (
-                                                    <List key={item.title} component="nav" sx={{ px: 2, pt: 2, display: 'flex', flexDirection: 'row-reverse' }}>
-                                                        <Typography variant="overline" color="text.secondary" sx={{ textTransform: 'uppercase', fontWeight: 'bold', fontSize: 18, textAlign: 'right' }} >
-                                                            {item.title}
-                                                        </Typography>
-                                                    </List>
-                                                ) : null;
-                                            }
-                                            if (item.kind === 'divider') {
-                                                return <Divider key={`divider-${item.kind}`} sx={{ my: 1 }} />;
-                                            }
-                                            if (item.children) {
-                                                const isOpen = item.segment === 'reports' ? openReports : false;
-                                                return (
-                                                    <React.Fragment key={item.segment}>
-                                                        <Tooltip title={item.tooltip} placment='top'>
-                                                            <ListItemButton
-                                                                dir='rtl'
-                                                                onClick={open ? handleReportsClick : () => setOpen(true)}
-                                                                sx={{
-                                                                    borderRadius: 2,
-                                                                    mx: 1,
-                                                                    justifyContent: open ? 'initial' : 'center',
-                                                                    px: 2.5,
-                                                                    '&.Mui-selected': { backgroundColor: 'action.selected' },
-                                                                }}
-                                                            >
-                                                                <ListItemIcon sx={{ minWidth: 0, ml: open ? 3 : 'auto', justifyContent: 'center' }}>
-                                                                    {item.icon}
-                                                                </ListItemIcon>
-                                                                {open && <ListItemText primary={item.title} sx={{ opacity: open ? 1 : 0, textAlign: 'left', pl: 2 }} />}
-                                                                {open && (isOpen ? <ExpandLess /> : <ExpandMore />)}
-                                                            </ListItemButton>
-                                                        </Tooltip>
-                                                        <Collapse in={isOpen && open} timeout="auto" unmountOnExit>
-                                                            <List component="div" disablePadding >
-                                                                {item.children.map((child) => (
-                                                                    <Tooltip title={child.tooltip} key={child.segment}>
-                                                                        <ListItem disablePadding>
-                                                                            <ListItemButton
-                                                                                selected={router.pathname === `/reports/${child.segment}`}
-                                                                                onClick={() => router.navigate(`/reports/${child.segment}`)}
-                                                                                sx={{
-                                                                                    pr: open ? 4 : 2.5,
-                                                                                    borderRadius: 2,
-                                                                                    mx: 1,
-                                                                                    justifyContent: open ? 'initial' : 'center',
-                                                                                }}
-                                                                            >
-                                                                                <ListItemIcon sx={{ minWidth: 0, ml: open ? 3 : 'auto', justifyContent: 'center' }}>
-                                                                                    {child.icon}
-                                                                                </ListItemIcon>
-                                                                                {open && <ListItemText primary={child.title} sx={{ opacity: open ? 1 : 0, textAlign: 'right' }} />}
-                                                                            </ListItemButton>
-                                                                        </ListItem>
-                                                                    </Tooltip>
-                                                                ))}
-                                                            </List>
-                                                        </Collapse>
-                                                    </React.Fragment>
-                                                );
-                                            }
+                                <IconButton onClick={handleDrawerToggle}>
+                                    {open ? <ChevronRightIcon /> : <MenuIcon />}
+                                </IconButton>
+                            </DrawerHeader>
+                            <Divider />
+                            {open && (
+                                <Box sx={{ my: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', p: 2 }}>
+                                    <Avatar
+                                        alt={userName}
+                                        src={userProfile?.image || profilePicInDrawer || './admin.jpg'}
+                                        sx={{
+                                            width: 80,
+                                            height: 80,
+                                            mb: 1,
+                                            boxShadow: '0px 0px 8px rgba(0,0,0,0.2)',
+                                            border: '3px solid',
+                                            borderColor: 'primary.main'
+                                        }}
+                                    />
+                                    <Typography variant="h6" sx={{ fontWeight: 'bold', textAlign: 'center' }}>
+                                        مرحباً، {userName}
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
+                                        {userProfile?.type_of_organization ? `${userProfile.type_of_organization}` : 'منظمة'}
+                                    </Typography>
+                                </Box>
+                            )}
+                            {open && <Divider sx={{ mb: 2 }} />}
+                            <List>
+                                {!isProfileLoaded ? (
+                                    // Show loading state while profile is being loaded
+                                    <Box sx={{ p: 2, textAlign: 'center' }}>
+                                        <Typography variant="body2" color="text.secondary">
+                                            جاري التحميل...
+                                        </Typography>
+                                    </Box>
+                                ) : (
+                                    NAVIGATION.map((item) => {
+                                        if (item.kind === 'header') {
+                                            return open ? (
+                                                <List key={item.title} component="nav" sx={{ px: 2, pt: 2, display: 'flex', flexDirection: 'row-reverse' }}>
+                                                    <Typography variant="overline" color="text.secondary" sx={{ textTransform: 'uppercase', fontWeight: 'bold', fontSize: 18, textAlign: 'right' }} >
+                                                        {item.title}
+                                                    </Typography>
+                                                </List>
+                                            ) : null;
+                                        }
+                                        if (item.kind === 'divider') {
+                                            return <Divider key={`divider-${item.kind}`} sx={{ my: 1 }} />;
+                                        }
+                                        if (item.children) {
+                                            const isOpen = item.segment === 'reports' ? openReports : false;
                                             return (
-                                                <Tooltip title={item.tooltip} placement='right-end' key={item.segment}>
-                                                    <ListItem key={item.segment} disablePadding dir='rtl'>
+                                                <React.Fragment key={item.segment}>
+                                                    <Tooltip title={item.tooltip} placment='top'>
                                                         <ListItemButton
-                                                            selected={router.pathname === `/${item.segment}`}
-                                                            onClick={() => router.navigate(`/${item.segment}`)}
+                                                            dir='rtl'
+                                                            onClick={open ? handleReportsClick : () => setOpen(true)}
                                                             sx={{
                                                                 borderRadius: 2,
                                                                 mx: 1,
@@ -4472,36 +4576,88 @@ export default function OrganizationDashboard(props) {
                                                                 '&.Mui-selected': { backgroundColor: 'action.selected' },
                                                             }}
                                                         >
-                                                            <ListItemIcon sx={{ minWidth: 0, ml: open ? 3 : 'auto', justifyContent: 'center', }}>
+                                                            <ListItemIcon sx={{ minWidth: 0, ml: open ? 3 : 'auto', justifyContent: 'center' }}>
                                                                 {item.icon}
                                                             </ListItemIcon>
                                                             {open && <ListItemText primary={item.title} sx={{ opacity: open ? 1 : 0, textAlign: 'left', pl: 2 }} />}
+                                                            {open && (isOpen ? <ExpandLess /> : <ExpandMore />)}
                                                         </ListItemButton>
-                                                    </ListItem>
-                                                </Tooltip>
+                                                    </Tooltip>
+                                                    <Collapse in={isOpen && open} timeout="auto" unmountOnExit>
+                                                        <List component="div" disablePadding >
+                                                            {item.children.map((child) => (
+                                                                <Tooltip title={child.tooltip} key={child.segment}>
+                                                                    <ListItem disablePadding>
+                                                                        <ListItemButton
+                                                                            selected={router.pathname === `/reports/${child.segment}`}
+                                                                            onClick={() => router.navigate(`/reports/${child.segment}`)}
+                                                                            sx={{
+                                                                                pr: open ? 4 : 2.5,
+                                                                                borderRadius: 2,
+                                                                                mx: 1,
+                                                                                justifyContent: open ? 'initial' : 'center',
+                                                                            }}
+                                                                        >
+                                                                            <ListItemIcon sx={{ minWidth: 0, ml: open ? 3 : 'auto', justifyContent: 'center' }}>
+                                                                                {child.icon}
+                                                                            </ListItemIcon>
+                                                                            {open && <ListItemText primary={child.title} sx={{ opacity: open ? 1 : 0, textAlign: 'right' }} />}
+                                                                        </ListItemButton>
+                                                                    </ListItem>
+                                                                </Tooltip>
+                                                            ))}
+                                                        </List>
+                                                    </Collapse>
+                                                </React.Fragment>
                                             );
-                                        })
-                                    )}
-                                </List>
-                            </Drawer>
-                            <Main open={open}>
-                                <DrawerHeader />
-                                {currentPageContent}
-                            </Main>
-                        </Box>
-                    </ThemeProvider>
+                                        }
+                                        return (
+                                            <Tooltip title={item.tooltip} placement='right-end' key={item.segment}>
+                                                <ListItem key={item.segment} disablePadding dir='rtl'>
+                                                    <ListItemButton
+                                                        selected={router.pathname === `/${item.segment}`}
+                                                        onClick={() => router.navigate(`/${item.segment}`)}
+                                                        sx={{
+                                                            borderRadius: 2,
+                                                            mx: 1,
+                                                            justifyContent: open ? 'initial' : 'center',
+                                                            px: 2.5,
+                                                            '&.Mui-selected': { backgroundColor: 'action.selected' },
+                                                        }}
+                                                    >
+                                                        <ListItemIcon sx={{ minWidth: 0, ml: open ? 3 : 'auto', justifyContent: 'center', }}>
+                                                            {item.icon}
+                                                        </ListItemIcon>
+                                                        {open && <ListItemText primary={item.title} sx={{ opacity: open ? 1 : 0, textAlign: 'left', pl: 2 }} />}
+                                                    </ListItemButton>
+                                                </ListItem>
+                                            </Tooltip>
+                                        );
+                                    })
+                                )}
+                            </List>
+                        </Drawer>
+                        <Main open={open}>
+                            <DrawerHeader />
+                            {currentPageContent}
+                        </Main>
+                    </Box>
+                </ThemeProvider>
             </CacheProvider>
         </StyledEngineProvider>
     );
 }
 
+// Organization Analytics Page - REAL DATA ONLY
+// This component displays analytics specific to each organization type (developer/funder)
+// All data is filtered by organization ID and uses real database data via Redux analytics slice
 function AnalyticsPage() {
     const dispatch = useDispatch();
     const userProfile = useSelector((state) => state.user.profile);
     const organizationType = userProfile?.type_of_organization;
     const authUid = useSelector((state) => state.auth.uid);
 
-    // Get analytics data from Redux store (same as admin analytics)
+    // Get analytics data from Redux store - data is already filtered by organization ID
     const analyticsData = useSelector((state) => state.analytics?.data);
     const analyticsLoading = useSelector((state) => state.analytics?.loading);
     const analyticsError = useSelector((state) => state.analytics?.error);
@@ -4525,7 +4681,9 @@ function AnalyticsPage() {
         console.log('Fetching analytics data for organization:', {
             uid: userProfile.uid,
             organizationType,
-            filters
+            filters,
+            isDeveloper: organizationType === 'مطور عقاري' || organizationType === 'مطور عقارى',
+            isFunder: organizationType === 'ممول عقاري' || organizationType === 'ممول عقارى'
         });
 
         // Use the same fetchAnalyticsData thunk as admin analytics
@@ -4541,6 +4699,8 @@ function AnalyticsPage() {
         console.log('Organization Analytics Debug:', {
             userProfile: userProfile?.uid,
             organizationType,
+            isFunder: isFunderOrganization(),
+            isDeveloper: isDeveloperOrganization(),
             analyticsDataAvailable: !!analyticsData,
             analyticsLoading,
             analyticsError,
@@ -4548,12 +4708,24 @@ function AnalyticsPage() {
             overview: analyticsData?.overview,
             financialInsights: analyticsData?.financialInsights,
             developerAds: analyticsData?.developerAds?.length,
-            financingAds: analyticsData?.financingAds?.length
+            financingAds: analyticsData?.financingAds?.length,
+            timeBasedData: analyticsData?.timeBasedData?.length,
+            userGrowthData: analyticsData?.userGrowthData?.length
         });
     }, [userProfile?.uid, organizationType, analyticsData, analyticsLoading, analyticsError]);
 
     // Real-time data subscription is now handled by Redux store
     // The fetchAnalyticsData thunk will handle real-time updates
+
+    // Helper function to check if user is a funder organization
+    const isFunderOrganization = () => {
+        return organizationType === 'ممول عقاري' || organizationType === 'ممول عقارى';
+    };
+
+    // Helper function to check if user is a developer organization
+    const isDeveloperOrganization = () => {
+        return organizationType === 'مطور عقاري' || organizationType === 'مطور عقارى';
+    };
 
     // Helper functions for data processing
     const processFunderAnalytics = () => {
@@ -4571,16 +4743,19 @@ function AnalyticsPage() {
             statusBreakdown: { pending: 0, approved: 0, rejected: 0 }
         };
 
-        // Get financing ads for this organization
-        const financingAds = analyticsData.financingAds?.filter(ad => ad.userId === userProfile.uid) || [];
+        // Get financing ads for this organization - the analytics data should already be filtered by the Redux slice
+        const financingAds = analyticsData.financingAds || [];
 
         // Debug logging for financing ads
         console.log('Funder Analytics Debug:', {
             userProfileUid: userProfile.uid,
-            allFinancingAds: analyticsData.financingAds?.length || 0,
-            filteredFinancingAds: financingAds.length,
-            allFinancingAdsData: analyticsData.financingAds?.map(ad => ({ id: ad.id, userId: ad.userId, title: ad.title })) || [],
-            filteredFinancingAdsData: financingAds.map(ad => ({ id: ad.id, userId: ad.userId, title: ad.title })) || []
+            organizationType: userProfile?.type_of_organization,
+            financingAdsCount: financingAds.length,
+            financingAdsData: financingAds.map(ad => ({ id: ad.id, userId: ad.userId, title: ad.title, reviewStatus: ad.reviewStatus })) || [],
+            analyticsOverview: analyticsData.overview,
+            financialInsights: analyticsData.financialInsights,
+            timeBasedDataCount: analyticsData.timeBasedData?.length || 0,
+            timeBasedDataSample: analyticsData.timeBasedData?.slice(0, 3) || []
         });
 
         // Calculate metrics
@@ -4590,28 +4765,41 @@ function AnalyticsPage() {
         const averageFinancingAmount = totalRequests > 0 ? totalFinancingAmount / totalRequests : 0;
         const averageRequestAmount = averageFinancingAmount; // Same value for consistency
 
-        // Interest rate distribution from analytics data
+        // Interest rate distribution (calculated from user's ads only)
         const interestRateDistribution = {
-            'upTo5': Number(analyticsData.financialInsights?.interestRateBreakdown?.['≤5%']) || 0,
-            'upTo10': Number(analyticsData.financialInsights?.interestRateBreakdown?.['≤10%']) || 0,
-            'above10': Number(analyticsData.financialInsights?.interestRateBreakdown?.['>10%']) || 0
+            'upTo5': 0,
+            'upTo10': 0,
+            'above10': 0
         };
+        financingAds.forEach(ad => {
+            if (ad.interest_rate_upto_5) {
+                interestRateDistribution.upTo5++;
+            } else if (ad.interest_rate_upto_10) {
+                interestRateDistribution.upTo10++;
+            } else {
+                interestRateDistribution.above10++;
+            }
+        });
 
-        // Approval and rejection rates
-        const approvedRequests = Number(analyticsData.financialInsights?.approvedRequests) || 0;
-        const rejectedRequests = Number(analyticsData.financialInsights?.rejectedRequests) || 0;
-        const approvalRate = Number(analyticsData.financialInsights?.approvalRate) || 0;
-        const rejectionRate = totalRequests > 0 ? (rejectedRequests / totalRequests) * 100 : 0;
-
-        // Location distribution (from overview)
-        const locationDistribution = analyticsData.overview?.cityBreakdown || {};
-
-        // Status breakdown
+        // Status breakdown (calculated from user's ads only)
         const statusBreakdown = {
-            pending: analyticsData.financialInsights?.pendingRequests || 0,
-            approved: approvedRequests,
-            rejected: rejectedRequests
+            pending: financingAds.filter(ad => ad.reviewStatus === 'pending').length,
+            approved: financingAds.filter(ad => ad.reviewStatus === 'approved').length,
+            rejected: financingAds.filter(ad => ad.reviewStatus === 'rejected').length
         };
+
+        // Approval and rejection rates (calculated from user's ads)
+        const approvedRequests = statusBreakdown.approved;
+        const rejectedRequests = statusBreakdown.rejected;
+        const approvalRate = totalAds > 0 ? (approvedRequests / totalAds) * 100 : 0;
+        const rejectionRate = totalAds > 0 ? (rejectedRequests / totalAds) * 100 : 0;
+
+        // Location distribution (calculated from user's ads only)
+        const locationDistribution = {};
+        financingAds.forEach(ad => {
+            const city = ad.location?.city || ad.city || 'غير محدد';
+            locationDistribution[city] = (locationDistribution[city] || 0) + 1;
+        });
 
         return {
             totalAds,
@@ -4641,8 +4829,19 @@ function AnalyticsPage() {
             timeSincePublished: []
         };
 
-        // Get real estate ads for this organization
-        const realEstateAds = analyticsData.developerAds?.filter(ad => ad.userId === userProfile.uid) || [];
+        // Get real estate ads for this organization - the analytics data should already be filtered by the Redux slice
+        const realEstateAds = analyticsData.developerAds || [];
+
+        // Debug logging for developer ads
+        console.log('Developer Analytics Debug:', {
+            userProfileUid: userProfile.uid,
+            organizationType: userProfile?.type_of_organization,
+            developerAdsCount: realEstateAds.length,
+            developerAdsData: realEstateAds.map(ad => ({ id: ad.id, userId: ad.userId, title: ad.title, reviewStatus: ad.reviewStatus })) || [],
+            analyticsOverview: analyticsData.overview,
+            timeBasedDataCount: analyticsData.timeBasedData?.length || 0,
+            timeBasedDataSample: analyticsData.timeBasedData?.slice(0, 3) || []
+        });
 
         // Calculate metrics
         const totalAds = realEstateAds.length;
@@ -4650,18 +4849,41 @@ function AnalyticsPage() {
         const pendingAds = realEstateAds.filter(ad => ad.reviewStatus === 'pending').length;
         const rejectedAds = realEstateAds.filter(ad => ad.reviewStatus === 'rejected').length;
 
-        // Property type distribution
-        const propertyTypeDistribution = analyticsData.overview?.categoryBreakdown || {};
+        // Property type distribution (calculated from user's ads only)
+        const propertyTypeDistribution = {};
+        realEstateAds.forEach(ad => {
+            // Use project_types array from RealEstateDeveloperAdvertisement model
+            if (Array.isArray(ad.project_types) && ad.project_types.length > 0) {
+                ad.project_types.forEach(type => {
+                    propertyTypeDistribution[type] = (propertyTypeDistribution[type] || 0) + 1;
+                });
+            } else {
+                propertyTypeDistribution['غير محدد'] = (propertyTypeDistribution['غير محدد'] || 0) + 1;
+            }
+        });
 
-        // Average price and area (calculate from actual ads)
-        const prices = realEstateAds.map(ad => parseFloat(ad.price) || 0).filter(price => price > 0);
+        // Average price and area (calculate from actual ads using correct field names)
+        const prices = [];
+        realEstateAds.forEach(ad => {
+            // Use price_start_from and price_end_to from RealEstateDeveloperAdvertisement model
+            if (ad.price_start_from) prices.push(parseFloat(ad.price_start_from));
+            if (ad.price_end_to) prices.push(parseFloat(ad.price_end_to));
+        });
         const areas = realEstateAds.map(ad => parseFloat(ad.area) || 0).filter(area => area > 0);
+        const views = realEstateAds.map(ad => parseInt(ad.views) || 0);
+        const edits = realEstateAds.map(ad => parseInt(ad.edits) || 0);
 
         const averagePrice = prices.length > 0 ? prices.reduce((sum, price) => sum + price, 0) / prices.length : 0;
         const averageArea = areas.length > 0 ? areas.reduce((sum, area) => sum + area, 0) / areas.length : 0;
+        const averageViews = views.length > 0 ? views.reduce((sum, view) => sum + view, 0) / views.length : 0;
+        const averageEdits = edits.length > 0 ? edits.reduce((sum, edit) => sum + edit, 0) / edits.length : 0;
 
-        // City distribution (from overview)
-        const cityDistribution = analyticsData.overview?.cityBreakdown || {};
+        // City distribution (calculated from user's ads only)
+        const cityDistribution = {};
+        realEstateAds.forEach(ad => {
+            const city = ad.location?.city || ad.city || 'غير محدد';
+            cityDistribution[city] = (cityDistribution[city] || 0) + 1;
+        });
 
         // Time since published
         const timeSincePublished = realEstateAds.map(ad => {
@@ -4680,6 +4902,8 @@ function AnalyticsPage() {
             propertyTypeDistribution,
             averagePrice,
             averageArea,
+            averageViews,
+            averageEdits,
             cityDistribution,
             timeSincePublished
         };
@@ -4915,25 +5139,43 @@ function AnalyticsPage() {
                             <Typography variant="h6" gutterBottom sx={{ textAlign: 'right' }}>
                                 الطلبات عبر الزمن
                             </Typography>
-                            <LineChart
-                                xAxis={[
-                                    {
-                                        data: analyticsData.timeBasedData?.map((item, index) => index) || [],
-                                        valueFormatter: (value) => {
-                                            const item = analyticsData.timeBasedData?.[value];
-                                            return item ? new Date(item.date).toLocaleDateString('ar-EG') : '';
+                            {analyticsData.timeBasedData && analyticsData.timeBasedData.length > 0 ? (
+                                <LineChart
+                                    xAxis={[
+                                        {
+                                            data: analyticsData.timeBasedData.map((item, index) => index),
+                                            valueFormatter: (value) => {
+                                                const item = analyticsData.timeBasedData[value];
+                                                return item ? new Date(item.date).toLocaleDateString('ar-EG') : '';
+                                            }
                                         }
-                                    }
-                                ]}
-                                series={[
-                                    {
-                                        data: analyticsData.timeBasedData?.map(item => item.requests || 0) || [],
-                                        label: 'عدد الطلبات',
-                                        color: '#2196F3'
-                                    }
-                                ]}
-                                height={300}
-                            />
+                                    ]}
+                                    series={[
+                                        {
+                                            data: analyticsData.timeBasedData.map(item => item.adsCreated || 0),
+                                            label: 'الإعلانات المُنشأة',
+                                            color: '#2196F3'
+                                        },
+                                        {
+                                            data: analyticsData.timeBasedData.map(item => item.approvals || 0),
+                                            label: 'الموافقات',
+                                            color: '#4CAF50'
+                                        },
+                                        {
+                                            data: analyticsData.timeBasedData.map(item => item.rejections || 0),
+                                            label: 'الرفض',
+                                            color: '#F44336'
+                                        }
+                                    ]}
+                                    height={300}
+                                />
+                            ) : (
+                                <Box sx={{ p: 3, textAlign: 'center' }}>
+                                    <Typography variant="body1" color="text.secondary">
+                                        لا توجد بيانات زمنية متاحة للعرض
+                                    </Typography>
+                                </Box>
+                            )}
                         </Paper>
                     </Grid>
                 </Grid>
@@ -4948,13 +5190,15 @@ function AnalyticsPage() {
                             variant="outlined"
                             startIcon={<DownloadIcon />}
                             onClick={() => {
-                                // Export functionality for funder data
-                                const financingAds = analyticsData?.financingAds?.filter(ad => ad.userId === userProfile.uid) || [];
+                                // Export functionality for funder data - use already filtered data
+                                const financingAds = analyticsData?.financingAds || [];
                                 const csvData = financingAds.map(ad => ({
                                     title: ad.title,
                                     totalRequests: data.totalRequests,
                                     averageAmount: data.averageFinancingAmount,
                                     status: ad.reviewStatus,
+                                    location: ad.location?.city || 'غير محدد',
+                                    interestRate: ad.interest_rate_upto_5 ? '≤5%' : ad.interest_rate_upto_10 ? '≤10%' : '>10%',
                                     createdAt: ad.createdAt?.toDate?.() || new Date(ad.createdAt)
                                 }));
                                 console.log('Export funder data:', csvData);
@@ -4965,38 +5209,50 @@ function AnalyticsPage() {
                         </Button>
                     </Box>
                     <DataGrid
-                        rows={(analyticsData?.financialInsights?.perAdAnalytics || []).map(ad => ({
-                            id: ad.id || `fund-${Math.random().toString(36).substr(2, 9)}`,
-                            title: ad.title,
-                            totalRequests: ad.totalRequests,
-                            approvedRequests: ad.approvedRequests,
-                            averageAmount: ad.averageAmount,
-                            interestRate: ad.interestRate,
-                            location: ad.location,
-                            status: ad.status,
-                            createdAt: ad.createdAt?.toDate?.() || new Date(ad.createdAt)
-                        }))}
+                        rows={(analyticsData?.financingAds || []).map(ad => {
+                            // Use correct field names from FinancingAdvertisement model
+                            const financingRange = ad.start_limit && ad.end_limit
+                                ? `${ad.start_limit.toLocaleString('ar-EG')} - ${ad.end_limit.toLocaleString('ar-EG')} ج.م`
+                                : ad.start_limit
+                                    ? `من ${ad.start_limit.toLocaleString('ar-EG')} ج.م`
+                                    : 'غير محدد';
+
+                            const interestRate = ad.interest_rate_upto_5 ? '≤5%' :
+                                ad.interest_rate_upto_10 ? '≤10%' :
+                                    ad.interest_rate_above_10 ? '>10%' : 'غير محدد';
+
+                            return {
+                                id: ad.id || `fund-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+                                title: ad.title || 'غير محدد',
+                                orgName: ad.org_name || 'غير محدد',
+                                financingRange: financingRange,
+                                totalRequests: 0, // This would need to be calculated from actual requests
+                                approvedRequests: 0, // This would need to be calculated from actual requests
+                                averageAmount: 0, // This would need to be calculated from actual requests
+                                interestRate: interestRate,
+                                status: ad.reviewStatus || 'غير محدد',
+                                createdAt: ad.createdAt ? (ad.createdAt?.toDate?.() || new Date(ad.createdAt)).toLocaleDateString('ar-EG') : 'غير محدد'
+                            };
+                        })}
                         columns={[
                             { field: 'title', headerName: 'عنوان الإعلان', width: 200 },
-                            { field: 'totalRequests', headerName: 'إجمالي الطلبات', width: 120 },
-                            { field: 'approvedRequests', headerName: 'الطلبات المقبولة', width: 120 },
-                            {
-                                field: 'averageAmount', headerName: 'متوسط المبلغ', width: 150,
-                                valueFormatter: (params) => params?.value ? `${params.value.toLocaleString('ar-EG')} ج.م` : '0 ج.م'
-                            },
-                            { field: 'interestRate', headerName: 'نسبة الفائدة', width: 120 },
-                            { field: 'location', headerName: 'الموقع', width: 120 },
-                            { field: 'status', headerName: 'الحالة', width: 120 },
-                            {
-                                field: 'createdAt', headerName: 'تاريخ الإنشاء', width: 150,
-                                valueFormatter: (params) => params?.value ? params.value.toLocaleDateString('ar-EG') : ''
-                            }
+                            { field: 'orgName', headerName: 'اسم المؤسسة', width: 150 },
+                            { field: 'financingRange', headerName: 'نطاق التمويل', width: 180 },
+                            // { field: 'totalRequests', headerName: 'إجمالي الطلبات', width: 120 },
+                            // { field: 'approvedRequests', headerName: 'الطلبات المقبولة', width: 120 },
+                            // {
+                            //     field: 'averageAmount', headerName: 'متوسط المبلغ', width: 150,
+                            //     valueFormatter: (params) => params?.value ? `${params.value.toLocaleString('ar-EG')} ج.م` : '0 ج.م'
+                            // },
+                            // { field: 'interestRate', headerName: 'نسبة الفائدة', width: 120 },
+                            // { field: 'status', headerName: 'الحالة', width: 120 },
+                            // { field: 'createdAt', headerName: 'تاريخ الإنشاء', width: 150 }
                         ]}
                         pageSize={5}
                         rowsPerPageOptions={[5, 10, 25]}
                         disableSelectionOnClick
                         getRowId={(row) => row.id || `fund-${Math.random().toString(36).substr(2, 9)}`}
-                        sx={{ direction: 'rtl' }}
+                    // sx={{ direction: 'rtl' }}
                     />
                 </Paper>
             </Box>
@@ -5142,11 +5398,11 @@ function AnalyticsPage() {
                             </Typography>
                         </Paper>
                     </Grid>
-                    <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                    {/* <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                         <Paper sx={{ p: 3, textAlign: 'center', borderRadius: 2 }}>
                             <Typography variant="h6" color="text.secondary">متوسط المشاهدات</Typography>
                             <Typography variant="h4" sx={{ color: 'info.main', fontWeight: 'bold' }}>
-                                {analyticsData.developerAds?.reduce((sum, ad) => sum + (ad.views || 0), 0) / Math.max(analyticsData.developerAds?.length || 1, 1) || 0}
+                                {data.averageViews ? data.averageViews.toFixed(1) : '0'}
                             </Typography>
                         </Paper>
                     </Grid>
@@ -5154,10 +5410,10 @@ function AnalyticsPage() {
                         <Paper sx={{ p: 3, textAlign: 'center', borderRadius: 2 }}>
                             <Typography variant="h6" color="text.secondary">متوسط التعديلات</Typography>
                             <Typography variant="h4" sx={{ color: 'secondary.main', fontWeight: 'bold' }}>
-                                {analyticsData.developerAds?.reduce((sum, ad) => sum + (ad.edits || 0), 0) / Math.max(analyticsData.developerAds?.length || 1, 1) || 0}
+                                {data.averageEdits ? data.averageEdits.toFixed(1) : '0'}
                             </Typography>
                         </Paper>
-                    </Grid>
+                    </Grid> */}
                 </Grid>
 
                 {/* Charts */}
@@ -5216,30 +5472,43 @@ function AnalyticsPage() {
                             <Typography variant="h6" gutterBottom sx={{ textAlign: 'left' }}>
                                 أداء الإعلانات عبر الزمن
                             </Typography>
-                            <LineChart
-                                xAxis={[
-                                    {
-                                        data: analyticsData.developerAds?.map((ad, index) => index) || [],
-                                        valueFormatter: (value) => {
-                                            const ad = analyticsData.developerAds?.[value];
-                                            return ad ? new Date(ad.createdAt?.toDate?.() || ad.createdAt).toLocaleDateString('ar-EG') : '';
+                            {analyticsData.timeBasedData && analyticsData.timeBasedData.length > 0 ? (
+                                <LineChart
+                                    xAxis={[
+                                        {
+                                            data: analyticsData.timeBasedData.map((item, index) => index),
+                                            valueFormatter: (value) => {
+                                                const item = analyticsData.timeBasedData[value];
+                                                return item ? new Date(item.date).toLocaleDateString('ar-EG') : '';
+                                            }
                                         }
-                                    }
-                                ]}
-                                series={[
-                                    {
-                                        data: analyticsData.developerAds?.map(ad => ad.views || 0) || [],
-                                        label: 'المشاهدات',
-                                        color: '#2196F3'
-                                    },
-                                    {
-                                        data: analyticsData.developerAds?.map(ad => ad.edits || 0) || [],
-                                        label: 'التعديلات',
-                                        color: '#FF9800'
-                                    }
-                                ]}
-                                height={300}
-                            />
+                                    ]}
+                                    series={[
+                                        {
+                                            data: analyticsData.timeBasedData.map(item => item.adsCreated || 0),
+                                            label: 'الإعلانات المُنشأة',
+                                            color: '#2196F3'
+                                        },
+                                        {
+                                            data: analyticsData.timeBasedData.map(item => item.approvals || 0),
+                                            label: 'الموافقات',
+                                            color: '#4CAF50'
+                                        },
+                                        {
+                                            data: analyticsData.timeBasedData.map(item => item.rejections || 0),
+                                            label: 'الرفض',
+                                            color: '#F44336'
+                                        }
+                                    ]}
+                                    height={300}
+                                />
+                            ) : (
+                                <Box sx={{ p: 3, textAlign: 'center' }}>
+                                    <Typography variant="body1" color="text.secondary">
+                                        لا توجد بيانات زمنية متاحة للعرض
+                                    </Typography>
+                                </Box>
+                            )}
                         </Paper>
                     </Grid>
                 </Grid>
@@ -5254,8 +5523,8 @@ function AnalyticsPage() {
                             variant="outlined"
                             startIcon={<DownloadIcon />}
                             onClick={() => {
-                                // Export functionality for developer data
-                                const developerAds = analyticsData?.developerAds?.filter(ad => ad.userId === userProfile.uid) || [];
+                                // Export functionality for developer data - use already filtered data
+                                const developerAds = analyticsData?.developerAds || [];
                                 const csvData = developerAds.map(ad => ({
                                     title: ad.title,
                                     propertyType: ad.propertyType || 'غير محدد',
@@ -5263,7 +5532,10 @@ function AnalyticsPage() {
                                     area: ad.area,
                                     city: ad.location?.city || 'غير محدد',
                                     status: ad.reviewStatus,
-                                    daysSincePublished: data.timeSincePublished.find(t => t.ad.id === ad.id)?.daysSincePublished || 0
+                                    views: ad.views || 0,
+                                    edits: ad.edits || 0,
+                                    daysSincePublished: data.timeSincePublished.find(t => t.ad.id === ad.id)?.daysSincePublished || 0,
+                                    createdAt: ad.createdAt?.toDate?.() || new Date(ad.createdAt)
                                 }));
                                 console.log('Export developer data:', csvData);
                                 alert('تم تصدير البيانات بنجاح!');
@@ -5273,33 +5545,46 @@ function AnalyticsPage() {
                         </Button>
                     </Box>
                     <DataGrid
-                        rows={(analyticsData?.developerAds?.filter(ad => ad.userId === userProfile.uid) || []).map(ad => ({
-                            id: ad.id || `dev-${Math.random().toString(36).substr(2, 9)}`,
-                            title: ad.title,
-                            propertyType: ad.propertyType || 'غير محدد',
-                            price: ad.price,
-                            area: ad.area,
-                            city: ad.location?.city || 'غير محدد',
-                            status: ad.reviewStatus,
-                            views: ad.views || 0,
-                            edits: ad.edits || 0,
-                            daysSincePublished: ad.daysSincePublished || 0,
-                            lastEdited: ad.lastEdited
-                        }))}
+                        rows={(analyticsData?.developerAds || []).map(ad => {
+                            const createdDate = ad.createdAt?.toDate?.() || new Date(ad.createdAt);
+                            const daysSincePublished = Math.floor((new Date() - createdDate) / (1000 * 60 * 60 * 24));
+
+                            // Use correct field names from RealEstateDeveloperAdvertisement model
+                            const priceRange = ad.price_start_from && ad.price_end_to
+                                ? `${ad.price_start_from.toLocaleString('ar-EG')} - ${ad.price_end_to.toLocaleString('ar-EG')} ج.م`
+                                : ad.price_start_from
+                                    ? `من ${ad.price_start_from.toLocaleString('ar-EG')} ج.م`
+                                    : 'غير محدد';
+
+                            const propertyTypes = Array.isArray(ad.project_types) && ad.project_types.length > 0
+                                ? ad.project_types.join(', ')
+                                : 'غير محدد';
+
+                            return {
+                                id: ad.id || `dev-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+                                title: ad.developer_name || ad.title || 'غير محدد',
+                                propertyType: propertyTypes,
+                                price: priceRange,
+                                area: ad.area ? `${ad.area} م²` : 'غير محدد',
+                                city: ad.location?.city || 'غير محدد',
+                                status: ad.reviewStatus || 'غير محدد',
+                                views: ad.views || 0,
+                                edits: ad.edits || 0,
+                                daysSincePublished: daysSincePublished || 0,
+                                createdAt: createdDate.toLocaleDateString('ar-EG')
+                            };
+                        })}
                         columns={[
                             { field: 'title', headerName: 'عنوان الإعلان', width: 200 },
-                            { field: 'propertyType', headerName: 'نوع العقار', width: 120 },
-                            { field: 'price', headerName: 'السعر', width: 120 },
-                            { field: 'area', headerName: 'المساحة', width: 100 },
-                            { field: 'city', headerName: 'المدينة', width: 120 },
-                            { field: 'status', headerName: 'الحالة', width: 120 },
-                            { field: 'views', headerName: 'المشاهدات', width: 100 },
-                            { field: 'edits', headerName: 'التعديلات', width: 100 },
-                            { field: 'daysSincePublished', headerName: 'أيام منذ النشر', width: 150 },
-                            {
-                                field: 'lastEdited', headerName: 'آخر تعديل', width: 150,
-                                valueFormatter: (params) => params?.value ? new Date(params.value).toLocaleDateString('ar-EG') : ''
-                            }
+                            { field: 'propertyType', headerName: 'نوع العقار', width: 180 },
+                            { field: 'price', headerName: 'السعر', width: 240 },
+                            // { field: 'area', headerName: 'المساحة', width: 100 },
+                            { field: 'city', headerName: 'المدينة', width: 160 },
+                            { field: 'status', headerName: 'الحالة', width: 160 },
+                            // { field: 'views', headerName: 'المشاهدات', width: 100 },
+                            // { field: 'edits', headerName: 'التعديلات', width: 100 },
+                            // { field: 'daysSincePublished', headerName: 'أيام منذ النشر', width: 150 },   
+                            // { field: 'createdAt', headerName: 'تاريخ الإنشاء', width: 150 }
                         ]}
                         pageSize={5}
                         rowsPerPageOptions={[5, 10, 25]}
@@ -5430,7 +5715,16 @@ function AnalyticsPage() {
                 </Grid>
             </Paper>
 
-            {(organizationType === 'ممول عقارى' || organizationType === 'ممول عقاري') ? renderFunderAnalytics() : renderDeveloperAnalytics()}
+            {isFunderOrganization() ? renderFunderAnalytics() : isDeveloperOrganization() ? renderDeveloperAnalytics() : (
+                <Box sx={{ p: 2, textAlign: 'center' }}>
+                    <Typography variant="h6" color="text.secondary">
+                        نوع المؤسسة غير مدعوم للتحليلات: {organizationType}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                        يرجى التأكد من أن نوع المؤسسة محدد بشكل صحيح (مطور عقاري أو ممول عقاري)
+                    </Typography>
+                </Box>
+            )}
         </Box>
     );
 }

@@ -131,7 +131,7 @@ class HomepageAdvertisement {
       await new Notification({
         receiver_id: this.userId,
         title: '✅ تمت الموافقة على إعلانك الواجهة',
-        body: 'سيتم عرض إعلانك على الصفحة الرئيسية.',
+        body: 'تمت الموافقة على إعلانك. يمكن للإدارة الآن تفعيله ليظهر على الصفحة الرئيسية.',
         type: 'system',
         link: `/admin-dashboard`,
       }).send();
@@ -166,6 +166,7 @@ class HomepageAdvertisement {
     const admin = await User.getByUid(auth.currentUser.uid);
     await this.update({
       reviewStatus: 'pending',
+      ads: false, // Deactivate the ad when returning to pending status
       reviewed_by: {
         uid: admin.uid,
         name: admin.adm_name,
@@ -274,11 +275,12 @@ class HomepageAdvertisement {
     });
   }
 
-  // ✅ الاشتراك اللحظي في الإعلانات المفعلة
+  // ✅ الاشتراك اللحظي في الإعلانات المفعلة (ads=true AND reviewStatus='approved')
   static subscribeActiveAds(callback) {
     const q = query(
       collection(db, 'HomepageAdvertisements'),
-      where('ads', '==', true)
+      where('ads', '==', true),
+      where('reviewStatus', '==', 'approved')
     );
     return onSnapshot(q, async (snap) => {
       const ads = [];
@@ -357,10 +359,10 @@ class HomepageAdvertisement {
       // title: this.title, // Add title to the data
     };
   }
-  // ✅ جلب كل الإعلانات النشطة (ads: true)
+  // ✅ جلب كل الإعلانات النشطة (ads=true AND reviewStatus='approved')
   static async getActiveAds() {
     const colRef = collection(db, 'HomepageAdvertisements');
-    const q = query(colRef, where('ads', '==', true));
+    const q = query(colRef, where('ads', '==', true), where('reviewStatus', '==', 'approved'));
     const querySnapshot = await getDocs(q);
     const ads = [];
     querySnapshot.forEach((docSnap) => {

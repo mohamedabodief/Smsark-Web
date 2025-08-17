@@ -21,8 +21,7 @@ export default function BestDev() {
   const initializeAds = useCallback(async () => {
     setLoading(true);
     try {
-      const freshAds = await RealEstateDeveloperAdvertisement.getActiveAds();
-      const activeAds = freshAds.filter(ad => ad.ads === true);
+      const activeAds = await RealEstateDeveloperAdvertisement.getActiveAds();
       setOffers(activeAds);
     } catch (error) {
       console.error('Initialization error:', error);
@@ -36,8 +35,7 @@ export default function BestDev() {
 
     // الاشتراك في تحديثات الإعلانات النشطة لو المستخدم مسجل دخول فقط
     let unsubscribe = () => {};
-    unsubscribe = RealEstateDeveloperAdvertisement.subscribeActiveAds((newAds) => {
-      const activeAds = newAds.filter(ad => ad.ads === true);
+    unsubscribe = RealEstateDeveloperAdvertisement.subscribeActiveAds((activeAds) => {
       setOffers(activeAds);
       setLoading(false);
     });
@@ -145,7 +143,7 @@ export default function BestDev() {
                 }}>
                   <CardMedia component="img" width='300' height="160" image={item.images?.[0] || '/no-img.jpeg'} />
                   <FavoriteButton advertisementId={item.id} />
-                  <CardContent>
+                  <CardContent dir="rtl">
                     <Typography color="primary" fontWeight="bold">
                       {item.price_start_from?.toLocaleString()} - {item.price_end_to?.toLocaleString()} ج.م
                     </Typography>

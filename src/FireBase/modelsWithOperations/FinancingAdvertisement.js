@@ -55,6 +55,9 @@ class FinancingAdvertisement {
     this.review_note = data.review_note || null;
     this.status = data.status || 'تحت العرض';
     this.adPackage = data.adPackage !== undefined ? data.adPackage : null;
+    // Add timestamp fields for analytics
+    this.createdAt = data.createdAt || null;
+    this.updatedAt = data.updatedAt || null;
   }
 
   // ✅ إرجاع المعرف الداخلي للإعلان
@@ -64,6 +67,10 @@ class FinancingAdvertisement {
 
   // ✅ إنشاء إعلان جديد + رفع الصور + إيصال الدفع + إشعار الأدمن
   async save(imageFiles = [], receiptFile = null) {
+    // Set creation timestamp
+    this.createdAt = Date.now();
+    this.updatedAt = Date.now();
+
     const colRef = collection(db, 'FinancingAdvertisements');
     // تجهيز معلومات الباقة
     let adPackageName = null, adPackagePrice = null, adPackageDuration = null;
@@ -186,7 +193,7 @@ class FinancingAdvertisement {
     await new Notification({
       receiver_id: this.userId,
       title: 'تمت الموافقة على إعلانك التمويلي',
-      body: `تمت الموافقة على إعلانك "${this.title}" وسيتم عرضه في الواجهة.`,
+      body: `تمت الموافقة على إعلانك "${this.title}". يمكن للإدارة الآن تفعيله ليظهر في الواجهة.`,
       type: 'system',
       link: `/client/ads/${this.#id}`,
     }).send();
@@ -220,6 +227,7 @@ class FinancingAdvertisement {
     const admin = await User.getByUid(auth.currentUser.uid);
     const updates = {
       reviewStatus: 'pending',
+      ads: false, // Deactivate the ad when returning to pending status
       reviewed_by: {
         uid: admin.uid,
         name: admin.adm_name,
@@ -331,11 +339,12 @@ class FinancingAdvertisement {
     return snap.docs.map((d) => new FinancingAdvertisement({ ...d.data(), id: d.id }));
   }
 
-  // ✅ جلب الإعلانات المفعّلة فقط
+  // ✅ جلب الإعلانات المفعّلة فقط (ads=true AND reviewStatus='approved')
   static async getActiveAds() {
     const q = query(
       collection(db, 'FinancingAdvertisements'),
-      where('ads', '==', true)
+      where('ads', '==', true),
+      where('reviewStatus', '==', 'approved')
     );
     const snap = await getDocs(q);
     return snap.docs.map((d) => {
@@ -369,11 +378,12 @@ class FinancingAdvertisement {
     });
   }
 
-  // ✅ الاشتراك اللحظي في الإعلانات المفعّلة فقط (Real-time listener)
+  // ✅ الاشتراك اللحظي في الإعلانات المفعّلة فقط (ads=true AND reviewStatus='approved')
   static subscribeActiveAds(callback) {
     const q = query(
       collection(db, 'FinancingAdvertisements'),
-      where('ads', '==', true)
+      where('ads', '==', true),
+      where('reviewStatus', '==', 'approved')
     );
     return onSnapshot(q, (snap) => {
       const ads = snap.docs.map((d) => {
@@ -568,6 +578,8 @@ class FinancingAdvertisement {
       adPackageName,
       adPackagePrice,
       adPackageDuration,
+      createdAt: this.createdAt,
+      updatedAt: this.updatedAt,
     };
   }
 }

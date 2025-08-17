@@ -102,7 +102,7 @@ const EnhancedPieChart = ({ data, title, colors = [theme.palette.primary.main, t
   return (
     <Card sx={{ bgcolor: 'background.paper', height: 400 }}>
       <CardContent>
-        <Typography variant="h6" gutterBottom>
+        <Typography variant="h6" marginBottom={3} gutterBottom>
           {title}
         </Typography>
         <Box sx={{ height: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -195,7 +195,9 @@ const EnhancedBarChart = ({ data, title, color = theme.palette.primary.main }) =
   );
 };
 
-// Analytics Dashboard Component
+// Analytics Dashboard Component - REAL DATA ONLY
+// This component now exclusively uses real data from the database via model classes
+// All mock/fake data has been removed to ensure accurate analytics
 const Analytics = () => {
   const dispatch = useDispatch();
   const { data: reduxData, loading, error, filters } = useSelector((state) => state.analytics || {
@@ -237,8 +239,6 @@ const Analytics = () => {
   const [activeTab, setActiveTab] = useState(0);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
-  const [useMockData, setUseMockData] = useState(false); // Changed to false to use real data by default
-
   // State for ads table functionality
   const [adsTableActiveTab, setAdsTableActiveTab] = useState('developerAds');
   const [reviewStatusFilter, setReviewStatusFilter] = useState('all');
@@ -258,71 +258,50 @@ const Analytics = () => {
   const [receiptDialogType, setReceiptDialogType] = useState(null);
   const [receiptDialogDays, setReceiptDialogDays] = useState(7);
 
-
-
-  // Mock data for testing (fallback)
-  const mockData = {
+  // Default empty data structure for when no real data is available
+  const emptyData = {
     overview: {
-      totalRealEstateAds: 150,
-      totalFinancingAds: 45,
-      totalClientAds: 80,
-      activeAds: 120,
-      inactiveAds: 75,
+      totalRealEstateAds: 0,
+      totalFinancingAds: 0,
+      totalClientAds: 0,
+      activeAds: 0,
+      inactiveAds: 0,
       statusBreakdown: {
-        pending: 25,
-        approved: 100,
-        rejected: 25
+        pending: 0,
+        approved: 0,
+        rejected: 0
       },
-      categoryBreakdown: {
-        'شقة': 60,
-        'فيلا': 40,
-        'تجاري': 30,
-        'أرض': 20
-      },
-      cityBreakdown: {
-        'القاهرة': 50,
-        'الإسكندرية': 30,
-        'الجيزة': 25,
-        'المنوفية': 20,
-        'أسيوط': 15,
-        'سوهاج': 10
-      }
+      categoryBreakdown: {},
+      cityBreakdown: {}
     },
     userEngagement: {
       userTypes: {
-        client: 200,
-        developer: 50,
-        organization: 30,
-        admin: 5
+        client: 0,
+        developer: 0,
+        organization: 0,
+        admin: 0
       },
-      totalUsers: 285
+      totalUsers: 0
     },
     financialInsights: {
-      totalFinancingRequests: 80,
-      approvedRequests: 60,
-      rejectedRequests: 15,
-      pendingRequests: 5,
-      approvalRate: 75.0,
+      totalFinancingRequests: 0,
+      approvedRequests: 0,
+      rejectedRequests: 0,
+      pendingRequests: 0,
+      approvalRate: 0,
       interestRateBreakdown: {
-        '≤5%': 20,
-        '≤10%': 35,
-        '>10%': 25
+        '≤5%': 0,
+        '≤10%': 0,
+        '>10%': 0
       },
-      totalRevenue: 1500000
+      totalRevenue: 0
     },
-    timeBasedData: Array.from({ length: 30 }, (_, i) => ({
-      date: new Date(Date.now() - (29 - i) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      adsCreated: Math.floor(Math.random() * 10) + 1,
-      requestsCreated: Math.floor(Math.random() * 5) + 1
-    })),
-    userGrowthData: Array.from({ length: 30 }, (_, i) => ({
-      date: new Date(Date.now() - (29 - i) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      usersRegistered: Math.floor(Math.random() * 8) + 1
-    }))
+    timeBasedData: [],
+    userGrowthData: []
   };
 
-  // Use analytics data from the slice (which now uses model classes)
-  const data = useMockData ? mockData : (analyticsData && Object.keys(analyticsData.overview).length > 0 ? analyticsData : mockData);
+  // Use only real analytics data from the slice - no mock data fallback
+  const data = (analyticsData && Object.keys(analyticsData.overview || {}).length > 0) ? analyticsData : emptyData;
   
   // Colors for charts
   const colors = {
@@ -415,10 +394,9 @@ const Analytics = () => {
       analyticsDataAvailable: !!analyticsData,
       analyticsLoading,
       analyticsError,
-      mockData: useMockData,
       dataKeys: analyticsData ? Object.keys(analyticsData.overview).length : 0
     });
-    
+
     // Log analytics data details if available
     if (analyticsData) {
       console.log('Analytics data details:', {
@@ -429,7 +407,7 @@ const Analytics = () => {
         statusBreakdown: analyticsData.overview?.statusBreakdown
       });
     }
-  }, [uid, type_of_user, analyticsData, analyticsLoading, analyticsError, useMockData]);
+  }, [uid, type_of_user, analyticsData, analyticsLoading, analyticsError]);
 
   // --- Ads Table Handlers ---
   
@@ -1204,7 +1182,7 @@ const Analytics = () => {
           sx={{ background: '#fff', borderRadius: 2, mb: 2 }}
           showToolbar
           loading={analyticsLoading}
-          getRowId={(row) => row.id || Math.random().toString()}
+          getRowId={(row) => row.id || `developer-${row.userId || 'unknown'}-${row.developer_name || 'unnamed'}`}
         />
       );
     } else if (adsTableActiveTab === 'funderAds') {
@@ -1223,7 +1201,7 @@ const Analytics = () => {
           sx={{ background: '#fff', borderRadius: 2, mb: 2 }}
           showToolbar
           loading={analyticsLoading}
-          getRowId={(row) => row.id || Math.random().toString()}
+          getRowId={(row) => row.id || `funder-${row.userId || 'unknown'}-${row.org_name || 'unnamed'}`}
         />
       );
     } else if (adsTableActiveTab === 'clientAds') {
@@ -1242,7 +1220,7 @@ const Analytics = () => {
           sx={{ background: '#fff', borderRadius: 2, mb: 2 }}
           showToolbar
           loading={analyticsLoading}
-          getRowId={(row) => row.id || Math.random().toString()}
+          getRowId={(row) => row.id || `client-${row.userId || 'unknown'}-${row.title || 'untitled'}`}
         />
       );
     }
@@ -1255,7 +1233,6 @@ const Analytics = () => {
       type_of_user,
       hasAccess: hasAccess(),
       dataKeys: Object.keys(data.overview).length,
-      mockData: useMockData,
       analyticsDataAvailable: !!analyticsData,
       homepageAds: homepageAds.length,
       developerAds: developerAds.length,
@@ -1265,7 +1242,7 @@ const Analytics = () => {
       properties: properties.length,
       users: users.length
     });
-    
+
     // Log analytics data details if available
     if (analyticsData) {
       console.log('Analytics data details:', {
@@ -1276,7 +1253,7 @@ const Analytics = () => {
         totalClientAds: analyticsData.overview?.totalClientAds
       });
     }
-  }, [uid, type_of_user, data, useMockData, analyticsData, homepageAds.length, developerAds.length, funderAds.length, financialRequests.length, inquiries.length, properties.length, users.length]);
+  }, [uid, type_of_user, data, analyticsData, homepageAds.length, developerAds.length, funderAds.length, financialRequests.length, inquiries.length, properties.length, users.length]);
 
   // Access denied component
   if (!hasAccess()) {
@@ -1438,54 +1415,54 @@ const Analytics = () => {
   };
 
   // Interest Rate Analysis Chart
-  const InterestRateAnalysisChart = () => {
-    const chartData = Object.entries(data.financialInsights.interestRateBreakdown || {})
-      .map(([rate, count]) => ({
-        name: rate,
-        value: count
-      }))
-      .filter(item => item.value > 0);
+  // const InterestRateAnalysisChart = () => {
+  //   const chartData = Object.entries(data.financialInsights.interestRateBreakdown || {})
+  //     .map(([rate, count]) => ({
+  //       name: rate,
+  //       value: count
+  //     }))
+  //     .filter(item => item.value > 0);
 
-    return (
-      <EnhancedBarChart 
-        data={chartData} 
-        title="تحليل معدلات الفائدة"
-        color={colors.teal}
-      />
-    );
-  };
+  //   return (
+  //     <EnhancedBarChart 
+  //       data={chartData} 
+  //       title="تحليل معدلات الفائدة"
+  //       color={colors.teal}
+  //     />
+  //   );
+  // };
 
   // Time Series Chart
-  const TimeSeriesChart = () => {
-    const chartData = data.timeBasedData.map(item => ({
-      name: item.date,
-      value: item.adsCreated
-    }));
+  // const TimeSeriesChart = () => {
+  //   const chartData = data.timeBasedData.map(item => ({
+  //     name: item.date,
+  //     value: item.adsCreated
+  //   }));
 
-    return (
-      <EnhancedBarChart 
-        data={chartData} 
-        title="الإعلانات المُنشأة عبر الزمن"
-        color={colors.primary}
-      />
-    );
-  };
+  //   return (
+  //     <EnhancedBarChart 
+  //       data={chartData} 
+  //       title="الإعلانات المُنشأة عبر الزمن"
+  //       color={colors.primary}
+  //     />
+  //   );
+  // };
 
-  // User Growth Chart
-  const UserGrowthChart = () => {
-    const chartData = data.userGrowthData.map(item => ({
-      name: item.date,
-      value: item.usersRegistered
-    }));
+  // // User Growth Chart
+  // const UserGrowthChart = () => {
+  //   const chartData = data.userGrowthData.map(item => ({
+  //     name: item.date,
+  //     value: item.usersRegistered
+  //   }));
 
-    return (
-      <EnhancedBarChart 
-        data={chartData} 
-        title="نمو المستخدمين"
-        color={colors.info}
-      />
-    );
-  };
+  //   return (
+  //     <EnhancedBarChart 
+  //       data={chartData} 
+  //       title="نمو المستخدمين"
+  //       color={colors.info}
+  //     />
+  //   );
+  // };
 
   // Ad Type Breakdown Chart
   const AdTypeBreakdownChart = () => {
@@ -1670,7 +1647,7 @@ const Analytics = () => {
 
     return (
       <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
-        <Typography variant="h6" gutterBottom sx={{ textAlign: 'right' }}>
+        <Typography variant="h6" gutterBottom sx={{ textAlign: 'left' }}>
           تطور إعلانات العملاء عبر الزمن
         </Typography>
         <Box sx={{ height: 300 }}>
@@ -1816,9 +1793,9 @@ const Analytics = () => {
           </Paper>
       </Grid>
       
-      <Grid size={{ xs: 12, md: 6 }}>
+      {/* <Grid size={{ xs: 12, md: 6 }}>
         <InterestRateAnalysisChart />
-      </Grid>
+      </Grid> */}
       <Grid size={{ xs: 12, md: 6 }}>
         <ClientAdsRevenueChart />
       </Grid>
@@ -1828,7 +1805,7 @@ const Analytics = () => {
   // Controls
   const Controls = () => (
     <Paper elevation={2} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
-      <Typography variant="h6" sx={{ mb: 2, textAlign: 'right' }}>
+      <Typography variant="h6" sx={{ mb: 2, textAlign: 'left' }}>
         أدوات التحكم والفلترة
       </Typography>
       <Grid container spacing={2} alignItems="center">
@@ -1925,16 +1902,7 @@ const Analytics = () => {
             تصدير التقرير
           </Button>
         </Grid>
-        <Grid size="auto">
-          <Button
-            variant={useMockData ? "contained" : "outlined"}
-            color={useMockData ? "secondary" : "primary"}
-            onClick={() => setUseMockData(!useMockData)}
-            size="small"
-          >
-            {useMockData ? "بيانات تجريبية" : "بيانات حقيقية"}
-          </Button>
-        </Grid>
+
       </Grid>
     </Paper>
   );
@@ -1963,10 +1931,10 @@ const Analytics = () => {
       )}
 
              {/* Debug Info */}
-       <Alert severity="info" sx={{ mb: 3 }}>
+       {/* <Alert severity="info" sx={{ mb: 3 }}>
          <Typography variant="body2">
-           <strong>Debug Info:</strong> User ID: {uid}, Type: {type_of_user}, 
-           Data Source: {useMockData ? 'Mock Data' : 'Real Data'}, 
+           <strong>Debug Info:</strong> User ID: {uid}, Type: {type_of_user},
+           Data Source: Real Database Data Only,
            Analytics Data Available: {analyticsData ? 'Yes' : 'No'},
            Loading: {analyticsLoading ? 'Yes' : 'No'},
            Error: {analyticsError || 'None'}
@@ -1983,7 +1951,7 @@ const Analytics = () => {
            <strong>Model Classes Used:</strong> RealEstateDeveloperAdvertisement.getAll(), 
            FinancingAdvertisement.getAll(), User.getAllUsers()
          </Typography>
-       </Alert>
+       </Alert> */}
 
       <Controls />
 
@@ -1996,7 +1964,7 @@ const Analytics = () => {
         <Tab label="تحليل الإعلانات" icon={<AnalyticsIcon />} />
         <Tab label="تفاعل المستخدمين" icon={<PeopleIcon />} />
         <Tab label="الرؤى المالية" icon={<AccountBalanceIcon />} />
-        <Tab label="التقارير الزمنية" icon={<TimelineIcon />} />
+        {/* <Tab label="التقارير الزمنية" icon={<TimelineIcon />} /> */}
         <Tab label="جدول الإعلانات" icon={<TableChartIcon />} />
       </Tabs>
 
@@ -2017,9 +1985,9 @@ const Analytics = () => {
           <Grid size={{ xs: 12, md: 6 }}>
             <ClientAdsAnalysisChart />
           </Grid>
-          <Grid size={{ xs: 12 }}>
+          {/* <Grid size={{ xs: 12 }}>
             <TimeSeriesChart />
-          </Grid>
+          </Grid> */}
           <Grid size={{ xs: 12 }}>
             <ClientAdsSummarySection />
           </Grid>
@@ -2145,9 +2113,9 @@ const Analytics = () => {
           <Grid size={{ xs: 12, md: 6 }}>
             <UserEngagementChart />
           </Grid>
-          <Grid size={{ xs: 12, md: 6 }}>
+          {/* <Grid size={{ xs: 12, md: 6 }}>
             <UserGrowthChart />
-          </Grid>
+          </Grid> */}
           <Grid size={{ xs: 12, md: 6 }}>
             <ClientAdsAnalysisChart />
           </Grid>
@@ -2161,11 +2129,11 @@ const Analytics = () => {
         <FinancialInsights />
       )}
 
-      {activeTab === 6 && (
+       {/* {activeTab === 6 && (
         <Grid container spacing={3}>
-          <Grid size={{ xs: 12, md: 6 }}>
-            <TimeSeriesChart />
-          </Grid>
+          // <Grid size={{ xs: 12, md: 6 }}>
+          //   <TimeSeriesChart />
+          // </Grid>
           <Grid size={{ xs: 12, md: 6 }}>
             <UserGrowthChart />
           </Grid>
@@ -2176,9 +2144,9 @@ const Analytics = () => {
             <ClientAdsAnalysisChart />
           </Grid>
         </Grid>
-      )}
+      )}  */}
 
-      {activeTab === 7 && (
+      {activeTab === 6 && (
         <Box dir={'rtl'} sx={{ p: { xs: 1, md: 3 }, textAlign: 'right', display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
           <Paper dir={'rtl'} sx={{ p: { xs: 1, md: 3 }, borderRadius: 2, minHeight: 400, textAlign: 'right', flexGrow: 1 }}>
             <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>

@@ -4,7 +4,6 @@ import RealEstateDeveloperAdvertisement from "../../FireBase/modelsWithOperation
 // Ensure we only return plain serializable objects from thunks
 const toPlainDeveloperAd = (ad, index = 0) => ({
   id: ad.id || `developer-temp-id-${index}`,
-  title: ad.title,
   description: ad.description,
   images: ad.images,
   phone: ad.phone,
@@ -26,6 +25,16 @@ const toPlainDeveloperAd = (ad, index = 0) => ({
   furnished: ad.furnished,
   type_of_user: ad.type_of_user,
   project_types: ad.project_types,
+  // Add missing fields that are required for editing
+  area: ad.area,
+  deliveryTerms: ad.deliveryTerms,
+  paymentMethod: ad.paymentMethod,
+  negotiable: ad.negotiable,
+  features: ad.features || [],
+  adPackage: ad.adPackage,
+  // Add timestamp fields for analytics
+  createdAt: ad.createdAt,
+  updatedAt: ad.updatedAt,
 });
 export const fetchAllDeveloperAds = createAsyncThunk(
   "developerAds/fetchAll",
@@ -68,7 +77,6 @@ const developerAdsSlice = createSlice({
     // Convert class instances to plain objects to ensure id is accessible
     state.byUser = action.payload.map(ad => ({
       id: ad.id,
-      title: ad.title,
       description: ad.description,
       images: ad.images,
       phone: ad.phone,
@@ -90,6 +98,16 @@ const developerAdsSlice = createSlice({
       furnished: ad.furnished,
       type_of_user: ad.type_of_user,
       project_types: ad.project_types,
+      // Add missing fields that are required for editing
+      area: ad.area,
+      deliveryTerms: ad.deliveryTerms,
+      paymentMethod: ad.paymentMethod,
+      negotiable: ad.negotiable,
+      features: ad.features || [],
+      adPackage: ad.adPackage,
+      // Add timestamp fields for analytics
+      createdAt: ad.createdAt,
+      updatedAt: ad.updatedAt,
     }));
   },
   extraReducers: (builder) => {
