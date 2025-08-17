@@ -414,7 +414,7 @@ const AboutUs = () => {
         <HeroSection>
           <Container maxWidth="lg">
             <Grid spacing={4} alignItems="center">
-              <Grid size={{ xs: 12, md: 6 }}>
+              <Grid item xs={12} md={6}>
                 <Box sx={{ pr: { md: 4 }, textAlign: "center" }}>
                   <Typography
                     variant="h1"
@@ -432,10 +432,10 @@ const AboutUs = () => {
                   </Typography>
                 </Box>
               </Grid>
-              <Grid size={{ xs: 12, md: 6 }}>
+              <Grid item xs={12} md={6}>
                 <Grid container spacing={3} justifyContent="center">
                   {aboutUsData.heroProperties.map((property, index) => (
-                    <Grid size={{ xs: 12, sm: 6 }} key={index}>
+                    <Grid item xs={12} sm={6} key={index}>
                       <PropertyCard>
                         <Box
                           component="img"
@@ -702,7 +702,7 @@ const AboutUs = () => {
           </Typography>
           <Grid container spacing={3} justifyContent="center">
             {aboutUsData.features.map((feature, index) => (
-              <Grid size={{ xs: 12, sm: 6, md: 4 }} key={index}>
+              <Grid item xs={12} sm={6} md={4} key={index}>
                 <FeatureCard>
                   <Typography
                     variant="h6"
@@ -723,7 +723,9 @@ const AboutUs = () => {
         <StatsBox>
           <Grid container spacing={4} justifyContent="center">
             {aboutUsData.stats.map((stat, index) => (
-              <Grid size={{ xs: 4 }}
+              <Grid
+                item
+                xs={4}
                 key={index}
                 sx={{ textAlign: "center", zIndex: 1 }}
               >
@@ -756,7 +758,7 @@ const AboutUs = () => {
           </Typography>
           <Grid container spacing={4} justifyContent="center">
             {aboutUsData.team.map((member, index) => (
-              <Grid size={{ xs: 12, sm: 6, md: 4 }} key={index}>
+              <Grid item xs={12} sm={6} md={4} key={index}>
                 <ModernCard>
                   <CardContent sx={{ p: 4, textAlign: "center" }}>
                     <Avatar
@@ -823,7 +825,7 @@ const AboutUs = () => {
               justifyContent: "center",
             }}
           >
-            <Grid size={{ xs: 12, sm: 4 }}>
+            <Grid item xs={12} sm={4}>
               <Box>
                 <Typography variant="h6" sx={{ fontWeight: "bold", mb: 1 }}>
                   الهاتف
@@ -833,7 +835,7 @@ const AboutUs = () => {
                 </Typography>
               </Box>
             </Grid>
-            <Grid size={{ xs: 12, sm: 4 }}>
+            <Grid item xs={12} sm={4}>
               <Box>
                 <Typography variant="h6" sx={{ fontWeight: "bold", mb: 1 }}>
                   البريد الإلكتروني
@@ -843,7 +845,7 @@ const AboutUs = () => {
                 </Typography>
               </Box>
             </Grid>
-            <Grid size={{ xs: 12, sm: 4 }}>
+            <Grid item xs={12} sm={4}>
               <Box>
                 <Typography variant="h6" sx={{ fontWeight: "bold", mb: 1 }}>
                   العنوان
