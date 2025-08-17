@@ -215,6 +215,9 @@ export default function BestFin() {
                     <Typography variant="body2" color="text.secondary">
                       {item?.financing_model}
                     </Typography>
+                    <Typography variant="body2" mt={1} sx={{ overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                      {item?.description}
+                    </Typography>
                   </CardContent>
                 </Card>
               </Box>
