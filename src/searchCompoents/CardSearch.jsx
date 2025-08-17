@@ -76,7 +76,7 @@ const isSmallScreen = useMediaQuery(theme => theme.breakpoints.down('sm'));
   transition: 'transform 0.3s ease-in-out',
   marginBottom: '10px',
   boxSizing: 'border-box', 
-  overflow: 'visible',
+  overflow: 'hidden',
   justifyContent:'center',
   margin: 'auto',
   '&:hover': {
