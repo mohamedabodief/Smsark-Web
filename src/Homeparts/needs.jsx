@@ -1,5 +1,5 @@
 import { Box, Grid, Typography, Button } from '@mui/material';
-import { AttachMoney, HomeWork, Key, WorkOutline } from '@mui/icons-material';
+import { AttachMoney, HomeWork, Key } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 
@@ -40,7 +40,7 @@ export default function Needs() {
         color: 'white',
         px: { xs: 2, md: 2, },
         py: 5,
-        width: "100%",
+        width: '100%',
         direction: 'rtl',
       }}
     >
@@ -62,7 +62,12 @@ export default function Needs() {
             alignItems: 'center',
           }}
         >
-          <Typography variant="h4" fontWeight="bold" textAlign="center" sx={{ p: 18, pr: { xs: '200px' } }} >
+          <Typography
+            variant="h4"
+            fontWeight="bold"
+            textAlign="center"
+            sx={{ p: 18, pr: { xs: '200px' } }}
+          >
             ماذا تريد؟
           </Typography>
         </Grid>
@@ -78,7 +83,6 @@ export default function Needs() {
             justifyContent: 'center',
           }}
         >
-
           <Grid
             container
             spacing={3}
@@ -106,7 +110,14 @@ export default function Needs() {
                     },
                   }}
                 >
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      mb: 2,
+                      width: '100%',
+                    }}
+                  >
                     <Box
                       sx={{
                         width: 50,
@@ -123,28 +134,33 @@ export default function Needs() {
                     <Typography variant="h6">{item.title}</Typography>
                   </Box>
 
-                  <Typography variant="body2" mb={3} sx={{ color: '#ccc' }}>
+                  <Typography
+                    variant="body2"
+                    mb={3}
+                    sx={{ color: '#ccc', flexGrow: 1, textAlign: 'right' }}
+                  >
                     {item.desc}
                   </Typography>
 
-                  <Button
-                    variant="contained"
-                    size="small"
-                    onClick={() => navigate(item.path)}
-                    sx={{
-                      color: 'white',
-                      fontSize: '0.8rem',
-                      borderRadius: '30px',
-                      textTransform: 'none',
-                      mr: 4,
-                      px: 3,
-                      '&:hover': {
-                        backgroundColor: 'rgba(255,255,255,0.3)',
-                      },
-                    }}
-                  >
-                    <ArrowForwardIcon />
-                  </Button>
+                  <Box sx={{ width: '100%', textAlign: 'right', mt: 'auto' }}>
+                    <Button
+                      variant="contained"
+                      size="small"
+                      onClick={() => navigate(item.path)}
+                      sx={{
+                        color: 'white',
+                        fontSize: '0.8rem',
+                        borderRadius: '30px',
+                        textTransform: 'none',
+                        px: 3,
+                        '&:hover': {
+                          backgroundColor: 'rgba(255,255,255,0.3)',
+                        },
+                      }}
+                    >
+                      <ArrowForwardIcon />
+                    </Button>
+                  </Box>
                 </Box>
               </Grid>
             ))}
@@ -176,7 +192,14 @@ export default function Needs() {
                     },
                   }}
                 >
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      mb: 2,
+                      width: '100%',
+                    }}
+                  >
                     <Box
                       sx={{
                         width: 50,
@@ -193,7 +216,11 @@ export default function Needs() {
                     <Typography variant="h6">{item.title}</Typography>
                   </Box>
 
-                  <Typography variant="body2" mb={3} sx={{ color: '#ccc' }}>
+                  <Typography
+                    variant="body2"
+                    mb={3}
+                    sx={{ color: '#ccc', flexGrow: 1, textAlign: 'right' }}
+                  >
                     {item.desc}
                   </Typography>
 

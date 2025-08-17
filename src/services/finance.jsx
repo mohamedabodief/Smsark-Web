@@ -32,7 +32,9 @@ const [anchorPrice, setAnchorPrice] = useState(null);
 const handleOpenPrice = (event) => {
   setAnchorPrice(event.currentTarget);
 };
-
+useEffect(() => {
+  window.scrollTo(0, 0);
+}, []);
 const handleClosePrice = () => {
   setAnchorPrice(null);
 };
@@ -63,7 +65,7 @@ const handleClosePrice = () => {
 });
 
   return (
-    <Container sx={{ mt: "50px",px: { xs: 0, sm: 2 }, // إزالة padding الجانبي على الشاشات الصغيرة
+    <Container sx={{  mt: "20px",px: { xs: 0, sm: 2 }, // إزالة padding الجانبي على الشاشات الصغيرة
     overflowX: "hidden", }}  dir="rtl">
       <Box
         sx={{
@@ -215,9 +217,9 @@ const handleClosePrice = () => {
       height: "50vh",
     }}
   >
-    <Typography sx={{ fontWeight: "800", color: "red" }}>
+    {/* <Typography sx={{ fontWeight: "800", color: "red" }}>
       لا يوجد إعلانات حالياً
-    </Typography>
+    </Typography> */}
   </Box>
 ) : (
   <ul

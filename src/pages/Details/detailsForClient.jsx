@@ -32,13 +32,24 @@ import PhoneIcon from "@mui/icons-material/Phone";
 import { db, auth } from "../../FireBase/firebaseConfig";
 import { doc, getDoc } from "firebase/firestore";
 import Notification from "../../FireBase/MessageAndNotification/Notification";
+
 // أضف هذا الكائن الثابت في أعلى الملف بعد الاستيرادات
 const PACKAGE_INFO = {
   1: { name: "باقة الأساس", price: "مجانا", duration: 7 },
   2: { name: "باقة النخبة", price: 50, duration: 14 },
   3: { name: "باقة التميز", price: 100, duration: 21 },
 };
+
 function DetailsForClient() {
+  // التمرير إلى أعلى الصفحة عند تحميل الكومبوننت مع حماية باستخدام try-catch
+  useEffect(() => {
+    try {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (error) {
+      console.error("[DEBUG] خطأ في التمرير إلى أعلى الصفحة:", error);
+    }
+  }, []);
+
   const currentUser = auth.currentUser?.uid;
   const { id } = useParams();
   const [clientAds, setClientAds] = useState(null);
@@ -116,6 +127,7 @@ function DetailsForClient() {
       alert("فشل في إرسال الرسالة!");
     }
   };
+
   const handleShare = async () => {
     if (navigator.share) {
       try {
@@ -215,7 +227,7 @@ function DetailsForClient() {
         sx={{
           display: "flex",
           justifyContent: "space-between",
-          mt: "100px",
+          mt: "10px",
           flexDirection: "row-reverse",
         }}
       >
@@ -630,7 +642,6 @@ function DetailsForClient() {
       </Box>
 
       {/* زر التعديل للمالك */}
-
       <Box sx={{ textAlign: "right", mt: 4 }}>
         {isOwner && (
           <Button

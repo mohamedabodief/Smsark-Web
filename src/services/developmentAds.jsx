@@ -38,7 +38,9 @@ const DeveloperAdsPage = () => {
       dispatch(fetchAllDeveloperAds());
     }
   }, [dispatch, allDeveloperAds]);
-
+useEffect(() => {
+  window.scrollTo(0, 0);
+}, []);
 const filteredAds = allDeveloperAds.filter((ad) => {
     const search = searchInput.trim().toLowerCase();
     const from = priceFrom ? parseFloat(priceFrom) : null;
@@ -58,7 +60,7 @@ const filteredAds = allDeveloperAds.filter((ad) => {
     );
   });
   return (
-  <Container sx={{ mt: "100px" }} dir="rtl">
+  <Container sx={{ mt: "20px" }} dir="rtl">
   {/* الجزء المتمركز في النص */}
   <Box
     sx={{
@@ -199,7 +201,7 @@ const filteredAds = allDeveloperAds.filter((ad) => {
   
 {filteredAds.length === 0 ? (
   <Typography sx={{ fontWeight: "800", color: "red", mt: 4, textAlign: "center" }}>
-    لا يوجد إعلانات حالياً
+
   </Typography>
 ) : (
   <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>

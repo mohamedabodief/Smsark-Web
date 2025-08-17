@@ -28,6 +28,9 @@ const SellAds = () => {
   const [priceTo, setPriceTo] = useState(""); 
   const [anchorPropertyType, setAnchorPropertyType] = useState(null); 
   const [anchorPrice, setAnchorPrice] = useState(null); 
+  useEffect(() => {
+  window.scrollTo(0, 0);
+}, []);
   const dispatch = useDispatch();
   const {
     all: allClientAds,
@@ -83,7 +86,7 @@ const SellAds = () => {
     });
 
   return (
-    <Container sx={{ mt: "50px" }} dir="rtl">
+    <Container sx={{  mt: "20px" }} dir="rtl">
       <Box
         sx={{
           display: "flex",
@@ -326,9 +329,9 @@ const SellAds = () => {
             height: "100vh",
           }}
         >
-          <Typography sx={{ fontWeight: "800", color: "red" }}>
+          {/* <Typography sx={{ fontWeight: "800", color: "red" }}>
             لايوجد اعلانات حاليا
-          </Typography>
+          </Typography> */}
         </Box>
       ) : (
         <ul
