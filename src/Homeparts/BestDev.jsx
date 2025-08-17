@@ -143,7 +143,7 @@ export default function BestDev() {
                 }}>
                   <CardMedia component="img" width='300' height="160" image={item.images?.[0] || '/no-img.jpeg'} />
                   <FavoriteButton advertisementId={item.id} />
-                  <CardContent>
+                  <CardContent dir="rtl">
                     <Typography color="primary" fontWeight="bold">
                       {item.price_start_from?.toLocaleString()} - {item.price_end_to?.toLocaleString()} ج.م
                     </Typography>

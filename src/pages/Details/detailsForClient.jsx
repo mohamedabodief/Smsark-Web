@@ -46,7 +46,6 @@ function DetailsForClient() {
     try {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (error) {
-      console.error("[DEBUG] خطأ في التمرير إلى أعلى الصفحة:", error);
     }
   }, []);
 
@@ -64,13 +63,10 @@ function DetailsForClient() {
       const userDoc = await getDoc(doc(db, "users", userId));
       if (userDoc.exists()) {
         const userData = userDoc.data();
-        console.log(`[DEBUG] Receiver data for ${userId}:`, userData);
         return userData.cli_name || "Unknown User";
       }
-      console.log(`[DEBUG] No user document found for ${userId}`);
       return "Unknown User";
     } catch (err) {
-      console.error(`[DEBUG] Error fetching receiver name for ${userId}:`, err);
       return "Unknown User";
     }
   };
@@ -79,7 +75,6 @@ function DetailsForClient() {
     const fetchAd = async () => {
       const ad = await ClientAdvertisement.getById(id);
       if (ad) {
-        console.log("[DEBUG] clientAds:", ad);
         setClientAds(ad);
         if (Array.isArray(ad.images) && ad.images.length > 0) {
           setMainImage(ad.images[0]);
@@ -103,11 +98,6 @@ function DetailsForClient() {
         is_read: false,
         message_type: "text",
       });
-
-      console.log("[DEBUG] Sending message to:", {
-        receiver_id: clientAds.userId,
-        reciverName: receiverName,
-      });
       await newMessage.send();
 
       const notification = new Notification({
@@ -123,7 +113,6 @@ function DetailsForClient() {
       setMessage("");
       setOpen(false);
     } catch (error) {
-      console.error("[DEBUG] خطأ أثناء الإرسال:", error);
       alert("فشل في إرسال الرسالة!");
     }
   };
@@ -136,9 +125,7 @@ function DetailsForClient() {
           text: clientAds?.description || "تحقق من هذا الإعلان العقاري!",
           url: window.location.href,
         });
-        console.log("[DEBUG] تمت المشاركة بنجاح");
       } catch (error) {
-        console.error("[DEBUG] حدث خطأ أثناء المشاركة:", error);
       }
     } else {
       alert("المتصفح لا يدعم خاصية المشاركة.");
@@ -631,10 +618,6 @@ function DetailsForClient() {
               lat={clientAds.latitude}
               lng={clientAds.longitude}
               onLocationSelect={(location) => {
-                console.log(
-                  "[DEBUG] Location selected in DetailsForClient:",
-                  location
-                );
               }}
             />
           </Box>

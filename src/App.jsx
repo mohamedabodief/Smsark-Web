@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from "react";
-import { Route, Routes, useNavigate, } from "react-router-dom";
+import { Route, Routes, useNavigate } from "react-router-dom";
 import DetailsForClient from "./pages/Details/detailsForClient";
 import DetailsForFinancingAds from "./pages/Details/detailsForFinaccingAds";
 import DetailsForDevelopment from "./pages/Details/detailsForDevelopment";
@@ -42,8 +42,8 @@ import DashboardGuard from "./Dashboard/DashboardGuard";
 import { Fab } from '@mui/material';
 import { FaRobot } from 'react-icons/fa';
 import { useLocation } from 'react-router-dom';
-
 import { onMessage, messaging, auth } from "./FireBase/firebaseConfig";
+
 import { requestPermissionAndSaveToken } from "./FireBase/MessageAndNotification/fcmHelper";
 import { onAuthStateChanged } from "firebase/auth";
 import CloseIcon from '@mui/icons-material/Close';
@@ -98,11 +98,12 @@ function App() {
   const navigate = useNavigate();
   const [soundEnabled, setSoundEnabled] = useState(false);
   const [openPermissionDialog, setOpenPermissionDialog] = useState(false);
-  
+  const [permissionChecked, setPermissionChecked] = useState(false);
+
   ////////////////////////////////////////////////
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  ////////////////////////////////////////////////////
+ ////////////////////////////////////////////////////
   const notificationSound = new Audio('/sounds/not.mp3');
   const goToChat = () => {
     navigate('/chat');
@@ -116,26 +117,33 @@ function App() {
 
   const isFabHidden = hiddenFabRoutes.includes(location.pathname) || location.pathname.startsWith('/details') ||
   location.pathname.startsWith('/privateChat');
+
+  // First useEffect: Check notification permission and auth state
   useEffect(() => {
     const checkNotificationPermission = () => {
-      if ("Notification" in window && Notification.permission !== "granted") {
-        setOpenPermissionDialog(true);
-      } else if (Notification.permission === "granted") {
+      if (!permissionChecked && "Notification" in window) {
+        if (Notification.permission === "granted") {
+          setSoundEnabled(true);
+          setPermissionChecked(true);
+        } else if (Notification.permission !== "granted") {
+          setOpenPermissionDialog(true);
+          setPermissionChecked(true);
+        }
+      } else if (!("Notification" in window)) {
         setSoundEnabled(true);
+        setPermissionChecked(true);
       }
-    }
+    };
     checkNotificationPermission();
-    ////////////////////////////////
+    requestPermissionAndSaveToken();
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      console.log("Auth state changed:", user ? user.uid : "No user");
       setUser(user);
       setLoading(false);
     });
-
-    requestPermissionAndSaveToken();
-
+    return () => unsubscribe();
+  }, []);
+  useEffect(() => {
     onMessage(messaging, (payload) => {
-      console.log("📩 إشعار مستلم:", payload);
       const { title, body } = payload.notification || {};
       if (
         title &&
@@ -146,20 +154,11 @@ function App() {
         new Notification(title, { body });
         if (soundEnabled) {
           notificationSound.play().catch((error) => {
-            console.error("خطأ في تشغيل صوت الإشعار:", error);
           });
         }
       }
     });
-
-    return () => unsubscribe();
-  }, []);
-  useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((user) => {
-      setCurrentUser(user);
-    });
-    return () => unsubscribe();
-  }, []);
+  }, [soundEnabled]);
   useEffect(() => {
     if (currentUser) {
       const unsubscribe = NotificationService.subscribeByUser(currentUser.uid, (notifs) => {
@@ -170,16 +169,20 @@ function App() {
           setOpenSnackbar(true);
           if (soundEnabled) {
             notificationSound.play().catch((error) => {
-              console.error("خطأ في تشغيل صوت الإشعار:", error);
             });
           }
         }
         setNotifications(newNotifs);
       });
-
       return () => unsubscribe();
     }
-  }, [currentUser,]);
+  }, [currentUser, soundEnabled]);
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      setCurrentUser(user);
+    });
+    return () => unsubscribe();
+  }, []);
   ///////////
   const handleEnableNotifications = async () => {
     if ("Notification" in window && Notification.permission !== "granted") {
@@ -188,17 +191,16 @@ function App() {
         setSoundEnabled(true);
         toast.dismiss();
         notificationSound.play().catch((error) => {
-          console.error("خطأ في تشغيل صوت الإشعار:", error);
         });
       }
     } else {
       setSoundEnabled(true);
       toast.dismiss();
       notificationSound.play().catch((error) => {
-        console.error("خطأ في تشغيل صوت الإشعار:", error);
       });
     }
-  };//////////////
+  };
+
   const handleOpenChat = () => {
     if (currentNotification?.link) {
       const userId = currentNotification.link.split('/privateChat/')[1];
@@ -212,14 +214,13 @@ function App() {
   const handleCloseSnackbar = () => {
     setOpenSnackbar(false);
   };
+
   const handleMarkAsRead = async () => {
     setOpenSnackbar(false);
     if (currentNotification) {
       NotificationService.markAsRead(currentNotification.id);
     }
   };
-  //////////////////////////////
-
 
   if (loading) return null;
 
@@ -231,13 +232,13 @@ function App() {
           <Routes>
             <Route path="/" element={<Navigate to="/home" replace />} />
             <Route path="/home" element={<Home />} />
-            {/* <Route path="/" element={<Navigate to="/login" replace />} /> */}
-            <Route path="/home" element={<Home />} />
-            {/* صفحات الدخول والتسجيل */}
+             {/* <Route path="/" element={<Navigate to="/login" replace />} /> */}
+             <Route path="/home" element={<Home />} />
+               {/* صفحات الدخول والتسجيل */}
             <Route path="login" element={<LoginRegister />} />
             <Route path="register" element={<LoginRegister />} />
             <Route path="/registration-success" element={<RegistrationSuccess />} />
-            {/* صفحات عامة */}
+             {/* صفحات عامة */}
             <Route path="/about" element={<AboutUs />} />
             <Route path="/contact" element={<ContactUs />} />
             <Route path="/favorite" element={<Favorite />} />
@@ -245,25 +246,24 @@ function App() {
             <Route path="/search" element={<SearchPage />} />
             <Route path="/inbox" element={<InboxChats />} />
             <Route path="/privateChat/:id" element={<ChatBox />} />
-            {/* خدمات الإعلانات */}
+              {/* خدمات الإعلانات */}
             <Route path="/services/sell" element={<SellAds />} />
             <Route path="/services/rent" element={<RentAds />} />
             <Route path="/services/buy" element={<BuyAds />} />
             <Route path="/services/finance" element={<FinancingAdsPage />} />
 
             <Route path="/chat" element={<ChatAiPage />} />
-
-            {/* <AddMultipleAdsOnce/> */}
+                    {/* <AddMultipleAdsOnce/> */}
             <Route path="/services/developmentAds" element={<DeveloperAdsPage />} />
-            {/* صفحات الإعلانات العقارية */}
+              {/* صفحات الإعلانات العقارية */}
             <Route path="/RealEstateDeveloperAnnouncement" element={<PropertyPage />} />
             <Route path="/AdddeveloperAds" element={<PropertyPage />} />
-            {/* صفحات الباقات */}
+               {/* صفحات الباقات */}
             <Route path="/packages" element={<AdPackages />} />
             <Route path="/Client-packages" element={<AdPackagesClient />} />
-            {/* صفحات الإدخال والنماذج */}
+             {/* صفحات الإدخال والنماذج */}
             <Route path="/add-financing-ad" element={<AddFinancingAdForm />} />
-            {/* <Route path="/insert-finance-data" element={<FinancingAdvExample />} /> */}
+             {/* <Route path="/insert-finance-data" element={<FinancingAdvExample />} /> */}
             {/* <Route path="/insert-dev-data" element={<RealEstateDevAdvExample />} /> */}
             <Route path="/financing-request" element={<FinancingRequestForm />} />
             <Route path="/AddAdvertisement" element={<ModernRealEstateForm />} />
@@ -275,17 +275,17 @@ function App() {
               <Route path="/organization-dashboard" element={<OrganizationDashboard />} />
               <Route path="/analytics" element={<Analytics />} />
             </Route>
-            {/* صفحات التفاصيل */}
+                {/* صفحات التفاصيل */}
             <Route path="/detailsForDevelopment/:id" element={<DetailsForDevelopment />} />
             <Route path="/detailsForDevelopment" element={<Navigate to="/RealEstateDeveloperAnnouncement" replace />} />
             <Route path="/details/financingAds/:id" element={<DetailsForFinancingAds />} />
             <Route path="/details/clientAds/:id" element={<DetailsForClient />} />
             <Route path="/details/developmentAds/:id" element={<DetailsForDevelopment />} />
             <Route path="/detailsForClient/:id" element={<DetailsForClient />} />
-            {/* صفحات التفاصيل القديمة (للتوافق) */}
+                {/* صفحات التفاصيل القديمة (للتوافق) */}
             <Route path="details">
               <Route path="financingAds/:id" element={<DetailsForFinancingAds />} />
-              {/* <Route path="clientAds/:id" element={<DetailsForClient />} /> */}
+                {/* <Route path="clientAds/:id" element={<DetailsForClient />} /> */}
               <Route path="developmentAds/:id" element={<DetailsForDevelopment />} />
             </Route>
           </Routes>
@@ -296,15 +296,11 @@ function App() {
           open={openSnackbar}
           onClose={handleCloseSnackbar}
           anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-
         >
           <Alert
             severity="info"
             action={
               <>
-                {/* <Button color="inherit" size="small" sx={{ fontWeight: 'bold', fontSize: '18px' }} onClick={handleOpenChat}>
-                  فتح
-                </Button> */}
                 <Button color="inherit" size="small" sx={{ fontWeight: 'bold', fontSize: '18px' }} onClick={handleMarkAsRead}>
                   تحديد كمقروء
                 </Button>
@@ -338,7 +334,7 @@ function App() {
         <Dialog open={openPermissionDialog} onClose={() => setOpenPermissionDialog(false)}>
           <DialogTitle>🔔 تفعيل إشعارات الصوت</DialogTitle>
           <DialogContent>
-            هل ترغب في تفعيل الإشعارات حتى يتم إعلامك بالتحديثات؟
+            هل ترغب في تفعيل  صوت الإشعارات حتى يتم إعلامك بالتحديثات؟
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setOpenPermissionDialog(false)} color="error">
@@ -346,11 +342,25 @@ function App() {
             </Button>
             <Button
               onClick={async () => {
-                const permission = await Notification.requestPermission();
-                if (permission === "granted") {
-                  setSoundEnabled(true);
+                try {
+                  if ("Notification" in window) {
+                    const permission = await Notification.requestPermission();
+                    if (permission === "granted") {
+                      setSoundEnabled(true);
+                      await notificationSound.play();
+                    } else {
+                      setSoundEnabled(true);
+                      await notificationSound.play().catch(err => {
+                      });
+                    }
+                  } else {
+                    setSoundEnabled(true);
+                    await notificationSound.play().catch(err => {
+                    });
+                  }
+                } catch (err) {
+                } finally {
                   setOpenPermissionDialog(false);
-                  notificationSound.play().catch(err => console.error("فشل في تشغيل الصوت:", err));
                 }
               }}
               color="primary"
@@ -360,7 +370,7 @@ function App() {
             </Button>
           </DialogActions>
         </Dialog>
-                {!isFabHidden && (
+        {!isFabHidden && (
           <Box
             sx={{
               position: 'fixed',
@@ -379,7 +389,6 @@ function App() {
             </Fab>
           </Box>
         )}
-
       </ThemeProvider>
     </>
   );

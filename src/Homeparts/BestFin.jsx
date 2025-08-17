@@ -206,7 +206,7 @@ export default function BestFin() {
                   />
                   <FavoriteButton advertisementId={item?.id} />
 
-                  <CardContent>
+                  <CardContent dir='rtl'>
                     <Typography color="primary" fontWeight="bold">
                       {item?.start_limit?.toLocaleString()} -{" "}
                       {item?.end_limit?.toLocaleString()} ج.م
