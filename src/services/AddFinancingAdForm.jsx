@@ -408,7 +408,7 @@ export default function AddFinancingAdForm() {
       </Snackbar>
       <form onSubmit={handleSubmit}>
         <Grid spacing={2} dir="rtl">
-          <Grid size={{ xs: 12, md: 6 }} mt={2} mb={2} lg={4}>
+          <Grid item xs={12} md={6} mt={2} mb={2} lg={4}>
             <TextField
               fullWidth
               label="عنوان الإعلان"
@@ -419,7 +419,7 @@ export default function AddFinancingAdForm() {
               disabled={loading}
             />
           </Grid>
-          <Grid size={{ xs: 12, md: 6 }} mt={2} mb={2} lg={4}>
+          <Grid item xs={12} md={6} mt={2} mb={2} lg={4}>
             <TextField
               fullWidth
               label="الوصف"
@@ -432,7 +432,7 @@ export default function AddFinancingAdForm() {
               disabled={loading}
             />
           </Grid>
-          <Grid size={{ xs: 12, md: 6 }} mt={2} mb={2} lg={4}>
+          <Grid item xs={12} md={6} mt={2} mb={2} lg={4}>
             <TextField
               fullWidth
               label="اسم الجهة"
@@ -443,7 +443,7 @@ export default function AddFinancingAdForm() {
               disabled={loading}
             />
           </Grid>
-          <Grid size={{ xs: 12, md: 6 }} mt={2} mb={2} lg={4}>
+          <Grid item xs={12} md={6} mt={2} mb={2} lg={4}>
             <TextField
               fullWidth
               label="رقم الهاتف"
@@ -454,7 +454,7 @@ export default function AddFinancingAdForm() {
               disabled={loading}
             />
           </Grid>
-          <Grid size={{ xs: 12, md: 6 }} mt={2} mb={2} lg={4}>
+          <Grid item xs={12} md={6} mt={2} mb={2} lg={4}>
             <TextField
               fullWidth
               label="الحد الأدنى (جنيه)"
@@ -466,7 +466,7 @@ export default function AddFinancingAdForm() {
               disabled={loading}
             />
           </Grid>
-          <Grid size={{ xs: 12, md: 6 }} mt={2} mb={2} lg={4}>
+          <Grid item xs={12} md={6} mt={2} mb={2} lg={4}>
             <TextField
               fullWidth
               label="الحد الأقصى (جنيه)"
@@ -478,7 +478,7 @@ export default function AddFinancingAdForm() {
               disabled={loading}
             />
           </Grid>
-          <Grid size={{ xs: 12, md: 4 }} mt={2} mb={2} lg={4}>
+          <Grid item xs={12} md={4} mt={2} mb={2} lg={4}>
             <TextField
               fullWidth
               label="فائدة حتى 5 سنوات (%)"
@@ -490,7 +490,7 @@ export default function AddFinancingAdForm() {
               disabled={loading}
             />
           </Grid>
-          <Grid size={{ xs: 12, md: 4 }} mt={2} mb={2} lg={4}>
+          <Grid item xs={12} md={4} mt={2} mb={2} lg={4}>
             <TextField
               fullWidth
               label="فائدة حتى 10 سنوات (%)"
@@ -502,7 +502,7 @@ export default function AddFinancingAdForm() {
               disabled={loading}
             />
           </Grid>
-          <Grid size={{ xs: 12, md: 4 }} mt={2} mb={2} lg={4}>
+          <Grid item xs={12} md={4} mt={2} mb={2} lg={4}>
             <TextField
               fullWidth
               label="فائدة أكثر من 10 سنوات (%)"
@@ -575,8 +575,22 @@ export default function AddFinancingAdForm() {
                 </Box>
               ))}
               {imageMetadata.length === 0 && !loading && (
-                <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100px", height: "100px", border: "2px dashed #ccc", borderRadius: "8px", color: "text.secondary", backgroundColor: "#f5f5f5" }}>
-                  <Typography variant="caption" color="primary" textAlign="center">لا توجد صور</Typography>
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: "100px",
+                    height: "100px",
+                    border: "2px dashed #ccc",
+                    borderRadius: "8px",
+                    color: "text.secondary",
+                    backgroundColor: "#f5f5f5",
+                  }}
+                >
+                  <Typography variant="caption" textAlign="center">
+                    لا توجد صور
+                  </Typography>
                 </Box>
               )}
             </Box>
