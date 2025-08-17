@@ -21,7 +21,7 @@ export default function SimpleHeroSlider() {
     if (ads.length === 0) return;
     const interval = setInterval(() => {
       setIndex((prev) => (prev + 1) % ads.length);
-    }, 5000);
+    }, 2500);
     return () => clearInterval(interval);
   }, [ads.length]);
 
