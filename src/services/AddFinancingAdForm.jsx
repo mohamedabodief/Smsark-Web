@@ -10,6 +10,10 @@ import {
   IconButton,
   Chip,
   Snackbar,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
 } from "@mui/material";
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -84,6 +88,8 @@ export default function AddFinancingAdForm() {
   );
   const [receiptImage, setReceiptImage] = useState(null);
   const [receiptPreviewUrl, setReceiptPreviewUrl] = useState(null);
+  const [showReceiptWarning, setShowReceiptWarning] = useState(false);
+  const [pendingData, setPendingData] = useState(null);
 
   // --- MODIFIED: useEffect to handle form and image initialization on edit mode
   React.useEffect(() => {
@@ -256,11 +262,6 @@ export default function AddFinancingAdForm() {
       setError("يجب اختيار باقة إعلانية");
       return false;
     }
-    // تحقق من صورة الإيصال
-    if (!receiptImage) {
-      setError("يجب رفع صورة الإيصال");
-      return false;
-    }
     setError(null);
     return true;
   };
@@ -284,15 +285,31 @@ export default function AddFinancingAdForm() {
     return Promise.all(uploadPromises);
   };
 
-  // --- MODIFIED: The handleSubmit function to correctly save old and new images
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!isFormValid()) return;
-    if (!auth.currentUser) {
-      setError("يجب تسجيل الدخول أولاً.");
-      return;
+  // دالة لرفع صورة الإيصال إلى Firebase Storage
+  const uploadReceiptToFirebase = async (receiptFile) => {
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      throw new Error("يجب تسجيل الدخول أولاً");
     }
 
+    const timestamp = Date.now();
+    const fileName = `receipt_${timestamp}.jpg`;
+    const storageRef = ref(
+      storage,
+      `financing_images/${currentUser.uid}/${fileName}`
+    );
+
+    try {
+      await uploadBytes(storageRef, receiptFile);
+      const downloadURL = await getDownloadURL(storageRef);
+      return downloadURL;
+    } catch (error) {
+      console.error("Error uploading receipt:", error);
+      throw new Error(`فشل في رفع صورة الإيصال: ${error.message}`);
+    }
+  };
+
+  const performSubmit = async () => {
     setLoading(true);
     setError(null);
 
@@ -309,6 +326,21 @@ export default function AddFinancingAdForm() {
         .map((img) => img.url);
       const finalImageUrls = [...oldImageUrls, ...newImageUrls];
       console.log("Final image list before update:", finalImageUrls);
+
+      // التعامل مع صورة الإيصال
+      let receiptUrl = null;
+      if (receiptImage) {
+        if (receiptImage instanceof File) {
+          // صورة جديدة - ارفعها
+          receiptUrl = await uploadReceiptToFirebase(receiptImage);
+        } else {
+          // صورة موجودة - استخدم الرابط الموجود
+          receiptUrl = receiptImage;
+        }
+      } else if (isEditMode && editData?.receipt_image) {
+        // في وضع التعديل، احتفظ بالصورة الأصلية إذا لم يتم رفع صورة جديدة
+        receiptUrl = editData.receipt_image;
+      }
 
       let ad;
       if (isEditMode && form.id) {
@@ -329,9 +361,10 @@ export default function AddFinancingAdForm() {
             ...form,
             images: finalImageUrls,
             adPackage: selectedPackage ? Number(selectedPackage) : null,
+            receipt_image: receiptUrl,
           },
           newImageFiles,
-          receiptImage
+          receiptUrl
         );
 
         await ad.returnToPending();
@@ -345,7 +378,7 @@ export default function AddFinancingAdForm() {
           adPackage: selectedPackage ? Number(selectedPackage) : null,
           images: finalImageUrls,
         });
-        await ad.save(newImageFiles, receiptImage);
+        await ad.save(newImageFiles, receiptUrl);
         form.id = ad.id;
       }
 
@@ -353,11 +386,38 @@ export default function AddFinancingAdForm() {
       setTimeout(() => {
         navigate(`/details/financingAds/${form.id || ad.id}`);
       }, 1500);
-    } catch (err) {
-      setError("حدث خطأ أثناء حفظ الإعلان أو رفع الصور");
-      console.error("Error during save/update:", err);
+    } catch (error) {
+      console.error("Error submitting form:", error);
+      setError(error.message || "حدث خطأ أثناء حفظ الإعلان");
     } finally {
       setLoading(false);
+    }
+  };
+
+  // --- MODIFIED: The handleSubmit function to correctly save old and new images
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!isFormValid()) return;
+    if (!auth.currentUser) {
+      setError("يجب تسجيل الدخول أولاً.");
+      return;
+    }
+
+    // إذا لم يتم رفع صورة الإيصال وليس في وضع التعديل، أظهر التنبيه
+    if (!receiptImage && !isEditMode) {
+      setPendingData(form);
+      setShowReceiptWarning(true);
+      return;
+    }
+
+    await performSubmit();
+  };
+
+  const handleWarningConfirm = () => {
+    setShowReceiptWarning(false);
+    if (pendingData) {
+      performSubmit();
+      setPendingData(null);
     }
   };
 
@@ -368,6 +428,10 @@ export default function AddFinancingAdForm() {
   const removeReceiptImage = () => {
     setReceiptImage(null);
     setReceiptPreviewUrl(null);
+    // تنظيف أي object URL إذا كان موجوداً
+    if (receiptPreviewUrl && receiptPreviewUrl.startsWith("blob:")) {
+      URL.revokeObjectURL(receiptPreviewUrl);
+    }
   };
 
   return (
@@ -595,6 +659,7 @@ export default function AddFinancingAdForm() {
               )}
             </Box>
           </Grid>
+          <PaymentMethods />
           <Grid item xs={12}>
             <Typography
               variant="h6"
@@ -626,17 +691,7 @@ export default function AddFinancingAdForm() {
                 {error}
               </Typography>
             )}
-            {error && error.includes("صورة الإيصال") && (
-              <Typography
-                variant="caption"
-                color="error"
-                sx={{ mt: 1, textAlign: "right" }}
-              >
-                {error}
-              </Typography>
-            )}
           </Grid>
-          <PaymentMethods />
           <Grid item xs={12} sx={{ textAlign: "center", mt: 2 }}>
             <Button
               type="submit"
@@ -662,6 +717,18 @@ export default function AddFinancingAdForm() {
           </Grid>
         </Grid>
       </form>
+
+      {/* Dialog للتنبيه عند عدم رفع صورة الإيصال */}
+      <Dialog open={showReceiptWarning} onClose={() => {}}>
+        <DialogTitle>تنبيه هام</DialogTitle>
+        <DialogContent dir="rtl">
+          لن يتم تفعيل الاعلان الا في حالة رفع صورة ايصال الدفع , و يمكنك رفع
+          صورة الايصال من لوحة التحكم الخاصة بحسابك .
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleWarningConfirm}>حسناً</Button>
+        </DialogActions>
+      </Dialog>
     </Paper>
   );
 }

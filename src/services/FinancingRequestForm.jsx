@@ -254,7 +254,7 @@ export default function FinancingRequestForm() {
   };
 
   return (
-    <Box sx={{ maxWidth: 600, mx: "auto", p: 4, pt: 13, pb: 12 }} dir="rtl">
+    <Box sx={{ maxWidth: 600, mx: "auto", p: 4, pt: 2, pb: 12 }} dir="rtl">
       <Typography variant="h5" textAlign="center" fontWeight="bold" mb={4}>
         {isEditing ? "تعديل طلب التمويل" : "طلب تمويل عقاري"}
       </Typography>
