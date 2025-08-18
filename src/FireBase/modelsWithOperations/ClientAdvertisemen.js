@@ -923,6 +923,7 @@ class ClientAdvertisement {
     const updates = {
       reviewStatus: "pending",
       ads: false, // Deactivate the ad when returning to pending status
+      adExpiryTime: null, // Reset expiry time when deactivating
       reviewed_by: {
         uid: admin.uid,
         name: admin.adm_name,
