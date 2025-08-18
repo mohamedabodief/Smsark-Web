@@ -30,6 +30,10 @@ import {
   Snackbar,
   FormHelperText,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
 } from "@mui/material";
 import {
   LocationOn,
@@ -268,7 +272,7 @@ const ModernRealEstateForm = () => {
       console.log("[DEBUG] Attempting scroll to top");
       const scrollToTop = () => {
         try {
-          window.scrollTo({ top: 0, behavior: 'smooth' });
+          window.scrollTo({ top: 0, behavior: "smooth" });
           console.log("[DEBUG] Scroll to top executed successfully");
         } catch (error) {
           console.error("[DEBUG] خطأ في التمرير إلى أعلى الصفحة:", error);
@@ -303,6 +307,8 @@ const ModernRealEstateForm = () => {
   const [isGeocodingLoading, setIsGeocodingLoading] = useState(false);
   const [geocodingError, setGeocodingError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showReceiptWarning, setShowReceiptWarning] = useState(false);
+  const [pendingData, setPendingData] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -585,29 +591,9 @@ const ModernRealEstateForm = () => {
     setImageError("");
   };
 
-  const onSubmit = async (data) => {
-    console.log("[DEBUG] onSubmit called");
-    console.log("[DEBUG] isEditMode:", isEditMode);
-    console.log("[DEBUG] adId:", adId);
-    console.log("[DEBUG] editData:", editData);
-    console.log("[DEBUG] form data:", data);
-
+  const performSubmit = async (data) => {
     setLoading(true);
     setSubmitError("");
-
-    // تحقق من اختيار الباقة
-    if (!selectedPackage) {
-      setSubmitError("يجب اختيار باقة إعلانية");
-      setLoading(false);
-      return;
-    }
-
-    // تحقق من صورة الإيصال
-    if (!receiptImage) {
-      setSubmitError("يجب رفع صورة الإيصال");
-      setLoading(false);
-      return;
-    }
 
     // Validate images for new advertisements
     setSubmitError("");
@@ -808,7 +794,7 @@ const ModernRealEstateForm = () => {
         };
         console.log("[DEBUG] بيانات الإعلان الجديد:", adData);
         const ad = new ClientAdvertisement(adData);
-        
+
         // Upload receipt image first if provided
         let receiptUrl = null;
         if (receiptImage) {
@@ -818,7 +804,10 @@ const ModernRealEstateForm = () => {
               auth.currentUser.uid,
               `temp_${Date.now()}` // Temporary ID for initial upload
             );
-            console.log("[DEBUG] Receipt URL after initial upload:", receiptUrl);
+            console.log(
+              "[DEBUG] Receipt URL after initial upload:",
+              receiptUrl
+            );
           } catch (error) {
             console.error("[DEBUG] Error uploading receipt image:", error);
             if (error.code === "storage/unauthorized") {
@@ -832,11 +821,11 @@ const ModernRealEstateForm = () => {
             return;
           }
         }
-        
+
         // Save ad with receipt URL
         adId = await ad.save(imageUrls, receiptUrl);
         console.log("[DEBUG] Ad saved with ID:", adId);
-        
+
         // If we uploaded with a temporary ID, now update it with the correct ad ID
         if (receiptUrl && receiptImage) {
           try {
@@ -848,7 +837,10 @@ const ModernRealEstateForm = () => {
             await ad.update({ receipt_image: finalReceiptUrl });
             console.log("[DEBUG] Final receipt URL updated:", finalReceiptUrl);
           } catch (error) {
-            console.error("[DEBUG] Error updating receipt with final URL:", error);
+            console.error(
+              "[DEBUG] Error updating receipt with final URL:",
+              error
+            );
             // Don't fail the entire operation if this fails
           }
         }
@@ -864,6 +856,36 @@ const ModernRealEstateForm = () => {
       setSubmitError(error.message || "حدث خطأ أثناء إضافة الإعلان.");
       console.error("[DEBUG] خطأ أثناء إضافة/تعديل الإعلان:", error);
       setLoading(false);
+    }
+  };
+
+  const onSubmit = async (data) => {
+    console.log("[DEBUG] onSubmit called");
+    console.log("[DEBUG] isEditMode:", isEditMode);
+    console.log("[DEBUG] adId:", adId);
+    console.log("[DEBUG] editData:", editData);
+    console.log("[DEBUG] form data:", data);
+
+    // تحقق من اختيار الباقة
+    if (!selectedPackage) {
+      setSubmitError("يجب اختيار باقة إعلانية");
+      return;
+    }
+
+    if (!receiptImage && !isEditMode) {
+      setPendingData(data);
+      setShowReceiptWarning(true);
+      return;
+    }
+
+    await performSubmit(data);
+  };
+
+  const handleWarningConfirm = () => {
+    setShowReceiptWarning(false);
+    if (pendingData) {
+      performSubmit(pendingData);
+      setPendingData(null);
     }
   };
 
@@ -889,9 +911,9 @@ const ModernRealEstateForm = () => {
         className="modern-form-container"
         sx={{
           minHeight: "100vh",
-          backgroundColor: (theme) => 
-            theme.palette.mode === 'light' 
-              ? theme.palette.grey[50] 
+          backgroundColor: (theme) =>
+            theme.palette.mode === "light"
+              ? theme.palette.grey[50]
               : theme.palette.grey[900],
           py: -2,
           direction: "rtl",
@@ -1006,17 +1028,17 @@ const ModernRealEstateForm = () => {
                               PaperProps: {
                                 sx: (theme) => ({
                                   bgcolor:
-                                    theme.palette.mode === 'light'
+                                    theme.palette.mode === "light"
                                       ? theme.palette.background.paper
                                       : theme.palette.grey[900],
                                   color: theme.palette.text.primary,
-                                  '& .MuiMenuItem-root': {
+                                  "& .MuiMenuItem-root": {
                                     color: theme.palette.text.primary,
                                   },
-                                  '& .MuiMenuItem-root.Mui-selected': {
+                                  "& .MuiMenuItem-root.Mui-selected": {
                                     bgcolor: theme.palette.action.selected,
                                   },
-                                  '& .MuiMenuItem-root.Mui-selected:hover': {
+                                  "& .MuiMenuItem-root.Mui-selected:hover": {
                                     bgcolor: theme.palette.action.hover,
                                   },
                                 }),
@@ -1025,7 +1047,13 @@ const ModernRealEstateForm = () => {
                             renderValue={(selected) => {
                               if (!selected) {
                                 return (
-                                  <Box component="span" sx={{ color: (theme) => theme.palette.text.disabled }}>
+                                  <Box
+                                    component="span"
+                                    sx={{
+                                      color: (theme) =>
+                                        theme.palette.text.disabled,
+                                    }}
+                                  >
                                     اختر نوع العقار
                                   </Box>
                                 );
@@ -1742,6 +1770,8 @@ const ModernRealEstateForm = () => {
         </Container>
       </Box>
 
+      <PaymentMethods />
+
       <AdPackagesClient
         selectedPackageId={selectedPackage}
         setSelectedPackageId={setSelectedPackage}
@@ -1775,8 +1805,6 @@ const ModernRealEstateForm = () => {
           {errors.receiptImage}
         </Typography>
       )}
-
-      <PaymentMethods />
 
       <Box
         sx={{
@@ -1845,6 +1873,16 @@ const ModernRealEstateForm = () => {
           {submitError}
         </Alert>
       )}
+
+      <Dialog open={showReceiptWarning} onClose={() => {}}>
+        <DialogTitle>تنبيه هام</DialogTitle>
+         <DialogContent dir="rtl">
+                  لن يتم تفعيل الاعلان الا في حالة رفع صورة ايصال الدفع , و يمكنك رفع صورة الايصال  من لوحة التحكم الخاصة بحسابك .
+               </DialogContent>
+        <DialogActions>
+          <Button onClick={handleWarningConfirm}>حسناً</Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 };
