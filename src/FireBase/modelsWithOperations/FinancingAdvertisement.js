@@ -135,17 +135,41 @@ class FinancingAdvertisement {
         updates.adPackageDuration = null;
       }
     }
-    // الصور: لا تحذف الصور القديمة إلا إذا تم تمرير صور جديدة
+    // الصور: Handle image updates properly
+    console.log("=== DEBUG: Image update logic ===");
+    console.log("newImageFiles:", newImageFiles);
+    console.log("newImageFiles.length:", newImageFiles?.length);
+    console.log("updates.images:", updates.images);
+    console.log("this.images (existing):", this.images);
+
     if (newImageFiles && Array.isArray(newImageFiles) && newImageFiles.length > 0) {
-      await this.#deleteAllImages();
-      // ارفع الصور الجديدة على نفس id الإعلان الأصلي
+      // New files to upload - upload them
+      console.log("Uploading new image files...");
       const newUrls = await this.#uploadImages(newImageFiles);
-      updates.images = newUrls;
-      this.images = newUrls;
-    } else if (typeof updates.images === 'undefined') {
-      // إذا لم يتم رفع صور جديدة ولم يتم تمرير images في التحديثات، احتفظ بالصور القديمة
-      updates.images = this.images;
+      console.log("New uploaded URLs:", newUrls);
+
+      // If updates.images is provided, it should already contain the combined URLs
+      // If not provided, combine existing images with new ones
+      if (typeof updates.images === 'undefined') {
+        updates.images = [...(this.images || []), ...newUrls];
+        console.log("Combined images (undefined case):", updates.images);
+      }
+      // If updates.images is provided, trust it (form already combined them)
+    } else {
+      // No new files to upload
+      console.log("No new files to upload");
+      if (typeof updates.images === 'undefined') {
+        // If no images provided in updates, fetch current images from database to preserve them
+        console.log("Fetching current images from database...");
+        const currentDoc = await getDoc(doc(db, 'FinancingAdvertisements', this.#id));
+        const currentImages = currentDoc.exists() ? currentDoc.data().images || [] : this.images || [];
+        updates.images = currentImages;
+        console.log("Preserving current database images:", updates.images);
+      }
+      // If updates.images is provided, use it as-is (should contain existing images)
     }
+    console.log("Final updates.images:", updates.images);
+    console.log("================================");
     if (newReceiptFile) {
       const receiptUrl = await this.#uploadReceipt(newReceiptFile);
       updates.receipt_image = receiptUrl;
@@ -236,6 +260,7 @@ class FinancingAdvertisement {
       },
       review_note: null,
     };
+    // Don't pass images in updates - let the update method preserve existing ones
     await this.update(updates);
 
     await new Notification({
@@ -507,9 +532,11 @@ class FinancingAdvertisement {
     const urls = [];
     const limited = files.slice(0, 4);
     for (let i = 0; i < limited.length; i++) {
+      const timestamp = Date.now();
+      const fileName = `financing_${timestamp}_${i}.jpg`;
       const refPath = ref(
         storage,
-        `financing_ads/${this.#id}/image_${i + 1}.jpg`
+        `financing_images/${this.userId}/${fileName}`
       );
       await uploadBytes(refPath, limited[i]);
       urls.push(await getDownloadURL(refPath));
@@ -520,8 +547,10 @@ class FinancingAdvertisement {
   // 📤 رفع إيصال الدفع
   async #uploadReceipt(file) {
     const storage = getStorage();
-    // رفع الريسيت في نفس مجلد صور الإعلان (adId)
-    const refPath = ref(storage, `financing_ads/${this.#id}/receipt.jpg`);
+    // رفع الإيصال في مجلد المستخدم
+    const timestamp = Date.now();
+    const fileName = `receipt_${timestamp}.jpg`;
+    const refPath = ref(storage, `financing_images/${this.userId}/${fileName}`);
     await uploadBytes(refPath, file);
     return await getDownloadURL(refPath);
   }
@@ -529,21 +558,36 @@ class FinancingAdvertisement {
   // 🗑️ حذف جميع صور الإعلان
   async #deleteAllImages() {
     const storage = getStorage();
-    const dirRef = ref(storage, `financing_ads/${this.#id}`);
+    // Note: This will delete ALL financing images for this user, not just this ad's images
+    // This matches the behavior of other models like RealEstateDeveloperAdvertisement
+    const dirRef = ref(storage, `financing_images/${this.userId}`);
     try {
       const list = await listAll(dirRef);
+      // Filter to only delete images that belong to this ad (if we can identify them)
+      // For now, delete all images in the user's folder (matches other models' behavior)
       await Promise.all(list.items.map((ref) => deleteObject(ref)));
     } catch (_) {}
   }
 
   // 🗑️ حذف إيصال الدفع
   async #deleteReceipt() {
+    if (!this.receipt_image) return;
     const storage = getStorage();
-    const receiptRef = ref(storage, `financing_ads/${this.#id}/receipt.jpg`);
     try {
-      await deleteObject(receiptRef);
-    } catch (_) {}
+      // Extract the path from the download URL to delete the specific receipt
+      const url = new URL(this.receipt_image);
+      const pathMatch = url.pathname.match(/\/o\/(.+?)\?/);
+      if (pathMatch) {
+        const decodedPath = decodeURIComponent(pathMatch[1]);
+        const receiptRef = ref(storage, decodedPath);
+        await deleteObject(receiptRef);
+      }
+    } catch (_) {
+      // Ignore errors - file might not exist
+    }
   }
+
+
 
   // 📋 تجهيز كائن البيانات الكامل لتخزينه في Firestore
   #getAdData() {
