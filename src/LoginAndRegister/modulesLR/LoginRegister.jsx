@@ -11,7 +11,7 @@ import { useSelector } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom";
 
 const StyledContainer = styled(Box)({
-  minHeight: "110vh",
+  minHeight: "150vh",
   display: "flex",
   justifyContent: "center",
   alignItems: "center",

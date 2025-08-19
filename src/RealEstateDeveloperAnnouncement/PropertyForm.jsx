@@ -21,6 +21,10 @@ import {
   IconButton,
   CircularProgress,
   Alert,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
 } from "@mui/material";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
 import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
@@ -85,6 +89,8 @@ const PropertyForm = ({
   const [geocodingError, setGeocodingError] = useState("");
   const prevAddressFromMap = React.useRef(null);
   const [receiptPreviewUrl, setReceiptPreviewUrl] = useState(null);
+  const [showReceiptWarning, setShowReceiptWarning] = useState(false);
+  const [pendingData, setPendingData] = useState(null);
 
   // التمرير إلى الأعلى عند تحميل الصفحة
   React.useEffect(() => {
@@ -365,10 +371,6 @@ const PropertyForm = ({
     if (!selectedPackage) {
       newErrors.selectedPackage = "يجب اختيار باقة إعلانية";
     }
-    // تحقق من صورة الإيصال
-    if (!receiptImage) {
-      newErrors.receiptImage = "يجب رفع صورة الإيصال";
-    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -409,6 +411,109 @@ const PropertyForm = ({
     return Promise.all(uploadPromises);
   };
 
+  // دالة لرفع صورة الإيصال إلى Firebase Storage
+  const uploadReceiptToFirebase = async (receiptFile) => {
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      throw new Error("يجب تسجيل الدخول أولاً");
+    }
+
+    const timestamp = Date.now();
+    const fileName = `receipt_${timestamp}.jpg`;
+    const storageRef = ref(
+      storage,
+      `property_images/${currentUser.uid}/${fileName}`
+    );
+
+    try {
+      await uploadBytes(storageRef, receiptFile);
+      const downloadURL = await getDownloadURL(storageRef);
+      return downloadURL;
+    } catch (error) {
+      console.error("Error uploading receipt:", error);
+      throw new Error(`فشل في رفع صورة الإيصال: ${error.message}`);
+    }
+  };
+
+  const performSubmit = async (data) => {
+    setUploading(true);
+    setUploadError(null);
+
+    try {
+      let imageUrls = [];
+      let receiptUrl = null;
+
+      // في وضع التعديل، استخدم الصور الموجودة + الصور الجديدة
+      if (isEditMode) {
+        // الصور الموجودة (URLs)
+        const existingImages = previewUrls.filter(
+          (url) => !url.startsWith("blob:")
+        );
+        // الصور الجديدة (Files)
+        if (images.length > 0) {
+          const newImageUrls = await uploadImagesToFirebase(images);
+          imageUrls = [...existingImages, ...newImageUrls];
+        } else {
+          imageUrls = existingImages;
+        }
+
+        // التعامل مع صورة الإيصال في وضع التعديل
+        if (receiptImage) {
+          if (receiptImage instanceof File) {
+            // صورة جديدة - ارفعها
+            receiptUrl = await uploadReceiptToFirebase(receiptImage);
+          } else {
+            // صورة موجودة - استخدم الرابط الموجود
+            receiptUrl = receiptImage;
+          }
+        } else {
+          // لا توجد صورة إيصال
+          receiptUrl = initialData?.receipt_image || null;
+        }
+      } else {
+        // وضع الإضافة الجديدة
+        if (images.length > 0) {
+          imageUrls = await uploadImagesToFirebase(images);
+        }
+
+        // رفع صورة الإيصال إذا كانت موجودة
+        if (receiptImage && receiptImage instanceof File) {
+          receiptUrl = await uploadReceiptToFirebase(receiptImage);
+        }
+      }
+
+      // إرسال البيانات مع روابط الصور
+      console.log("Submitting form with receiptUrl:", receiptUrl);
+      await onSubmit({
+        ...data,
+        price_start_from: Number(data.price_start_from),
+        price_end_to: Number(data.price_end_to),
+        rooms: Number(data.rooms) || null,
+        bathrooms: Number(data.bathrooms) || null,
+        area: Number(data.area) || null,
+        floor: Number(data.floor) || null,
+        furnished: data.furnished === "نعم",
+        negotiable: data.negotiable === "نعم",
+        adPackage: selectedPackage,
+        images: imageUrls,
+        receiptImage: receiptUrl,
+      });
+
+      if (!isEditMode) {
+        dispatch(resetForm());
+        setImages([]);
+        setPreviewUrls([]);
+        setReceiptImage(null);
+        setReceiptPreviewUrl(null);
+      }
+    } catch (error) {
+      setUploadError(error.message || "حدث خطأ أثناء رفع الصور");
+      console.error("Form submission error:", error);
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -431,66 +536,32 @@ const PropertyForm = ({
     console.log("Current user:", currentUser.uid);
 
     if (validateForm()) {
-      setUploading(true);
-      setUploadError(null);
-
-      try {
-        let imageUrls = [];
-
-        // في وضع التعديل، استخدم الصور الموجودة + الصور الجديدة
-        if (isEditMode) {
-          // الصور الموجودة (URLs)
-          const existingImages = previewUrls.filter(
-            (url) => !url.startsWith("blob:")
-          );
-          // الصور الجديدة (Files)
-          if (images.length > 0) {
-            const newImageUrls = await uploadImagesToFirebase(images);
-            imageUrls = [...existingImages, ...newImageUrls];
-          } else {
-            imageUrls = existingImages;
-          }
-        } else {
-          // وضع الإضافة الجديدة
-          if (images.length > 0) {
-            imageUrls = await uploadImagesToFirebase(images);
-          }
-        }
-
-        // إرسال البيانات مع روابط الصور
-        console.log("Submitting form with receiptImage:", receiptImage);
-        await onSubmit({
-          ...formData,
-          price_start_from: Number(formData.price_start_from),
-          price_end_to: Number(formData.price_end_to),
-          rooms: Number(formData.rooms) || null,
-          bathrooms: Number(formData.bathrooms) || null,
-          area: Number(formData.area) || null,
-          floor: Number(formData.floor) || null,
-          furnished: formData.furnished === "نعم",
-          negotiable: formData.negotiable === "نعم",
-          adPackage: selectedPackage,
-          images: imageUrls,
-          receiptImage: receiptImage,
-        });
-
-        if (!isEditMode) {
-          dispatch(resetForm());
-          setImages([]);
-          setPreviewUrls([]);
-        }
-      } catch (error) {
-        setUploadError(error.message || "حدث خطأ أثناء رفع الصور");
-        console.error("Form submission error:", error);
-      } finally {
-        setUploading(false);
+      // إذا لم يتم رفع صورة الإيصال وليس في وضع التعديل، أظهر التنبيه
+      if (!receiptImage && !isEditMode) {
+        setPendingData(formData);
+        setShowReceiptWarning(true);
+        return;
       }
+
+      await performSubmit(formData);
+    }
+  };
+
+  const handleWarningConfirm = () => {
+    setShowReceiptWarning(false);
+    if (pendingData) {
+      performSubmit(pendingData);
+      setPendingData(null);
     }
   };
 
   const removeReceiptImage = () => {
     setReceiptImage(null);
     setReceiptPreviewUrl(null);
+    // تنظيف أي object URL إذا كان موجوداً
+    if (receiptPreviewUrl && receiptPreviewUrl.startsWith("blob:")) {
+      URL.revokeObjectURL(receiptPreviewUrl);
+    }
   };
 
   return (
@@ -989,7 +1060,11 @@ const PropertyForm = ({
                       backgroundColor: "#f5f5f5",
                     }}
                   >
-                    <Typography variant="caption" color="primary" textAlign="center">
+                    <Typography
+                      variant="caption"
+                      color="primary"
+                      textAlign="center"
+                    >
                       لا توجد صور
                     </Typography>
                   </Box>
@@ -1154,13 +1229,15 @@ const PropertyForm = ({
             </Grid>
           )}
 
+          <PaymentMethods />
+
           {/* أضف مكون الباقات وإيصال الدفع */}
           <Grid size={{ xs: 12, md: 6, lg: 12 }}>
             <Typography
               variant="h6"
               sx={{ color: "#6E00FE", mb: 2, mt: 2, textAlign: "right" }}
             >
-              اختيار الباقة وإيصال الدفع
+              اختيار الباقة و رفع صورة الايصال 
             </Typography>
             <Box
               sx={{ display: "flex", justifyContent: "center", width: "100%" }}
@@ -1190,23 +1267,7 @@ const PropertyForm = ({
                 {errors.selectedPackage}
               </Typography>
             )}
-            {errors.receiptImage && (
-              <Typography
-                variant="caption"
-                color="error"
-                sx={{ mt: 1, textAlign: "right" }}
-              >
-                {errors.receiptImage}
-              </Typography>
-            )}
           </Grid>
-
-
-
-          <PaymentMethods />
-
-
-
 
           <Box
             sx={{
@@ -1261,6 +1322,17 @@ const PropertyForm = ({
           </Grid>
         </Box>
       </form>
+
+      {/* Dialog للتنبيه عند عدم رفع صورة الإيصال */}
+      <Dialog open={showReceiptWarning} onClose={() => {}}>
+        <DialogTitle>تنبيه هام</DialogTitle>
+       <DialogContent dir="rtl">
+           لن يتم تفعيل الاعلان الا في حالة رفع صورة ايصال الدفع , و يمكنك رفع صورة الايصال  من لوحة التحكم الخاصة بحسابك .
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleWarningConfirm}>حسناً</Button>
+        </DialogActions>
+      </Dialog>
     </Paper>
   );
 };

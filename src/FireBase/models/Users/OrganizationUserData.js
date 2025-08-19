@@ -1,4 +1,3 @@
-
 // src/FireBase/models/Users/OrganizationUserData.js
 export default class OrganizationUserData {
   constructor(data) {
@@ -10,10 +9,12 @@ export default class OrganizationUserData {
     this.city = data.city;
     this.governorate = data.governorate;
     this.address = data.address;
+    this.email = data.email;
+    this.tax_card_images = Array.isArray(data.tax_card_images)
+      ? data.tax_card_images
+      : []; // صور البطاقة الضريبية
     this.created_at = new Date().toISOString();
     this.profile_completed = true;
     this.verified = false;
   }
 }
-
-
