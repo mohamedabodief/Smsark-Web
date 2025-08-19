@@ -915,7 +915,6 @@ const ModernRealEstateForm = () => {
             theme.palette.mode === "light"
               ? theme.palette.grey[50]
               : theme.palette.grey[900],
-          py: -2,
           direction: "rtl",
         }}
       >
@@ -925,7 +924,7 @@ const ModernRealEstateForm = () => {
             component="h1"
             sx={{
               mb: 1,
-              mt: "100px",
+              mt: "50px",
               fontWeight: 700,
               color: "#6E00FE",
               textAlign: "center",
@@ -1322,6 +1321,7 @@ const ModernRealEstateForm = () => {
                               }}
                             >
                               <Delete fontSize="small" />
+                              
                             </IconButton>
                             <Box
                               sx={{
@@ -1455,6 +1455,9 @@ const ModernRealEstateForm = () => {
 
                   <Divider sx={{ my: 3, borderColor: "#e0e0e0" }} />
 
+
+
+
                   {/* Location Details */}
                   <Grid item xs={12} md={12} lg={12} width={"100%"} mt={"20px"}>
                     <Typography
@@ -1524,6 +1527,8 @@ const ModernRealEstateForm = () => {
                       )}
                     />
                   </Grid>
+
+
 
                   <Divider sx={{ my: 3, borderColor: "#e0e0e0" }} />
 
