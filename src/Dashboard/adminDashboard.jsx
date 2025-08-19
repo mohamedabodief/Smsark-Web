@@ -1407,6 +1407,7 @@ function UsersPage() {
         }
 
         const columns = [
+            { id: 'id', label: 'ID' },
             { id: 'name', label: 'الاسم' },
             { id: 'contact', label: 'معلومات التواصل' },
             { id: 'actions', label: 'الإجراءات' },
@@ -1449,12 +1450,17 @@ function UsersPage() {
                                 hover
                                 sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
                             >
-                                <TableCell sx={{ width: '33.33%' }}>
+                                <TableCell sx={{ width: '25%' }}>
+                                    <Typography variant="body1" noWrap>
+                                        {item.uid}
+                                    </Typography>
+                                </TableCell>
+                                <TableCell sx={{ width: '25%' }}>
                                     <Typography variant="body1" noWrap>
                                         {item.cli_name || item.org_name || item.adm_name}
                                     </Typography>
                                 </TableCell>
-                                <TableCell sx={{ width: '33.33%' }}>
+                                <TableCell sx={{ width: '25%' }}>
                                     <Box sx={{
                                         display: 'flex',
                                         flexDirection: 'column',
@@ -1473,7 +1479,7 @@ function UsersPage() {
                                         )}
                                     </Box>
                                 </TableCell>
-                                <TableCell sx={{ width: '33.33%' }}>
+                                <TableCell sx={{ width: '25%' }}>
                                     <Box sx={{ display: 'flex', justifyContent: 'center' }}>
                                         <Tooltip title='حذف'>
                                             <IconButton
