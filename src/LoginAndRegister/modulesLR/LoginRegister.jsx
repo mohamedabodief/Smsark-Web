@@ -11,7 +11,7 @@ import { useSelector } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom";
 
 const StyledContainer = styled(Box)({
-  minHeight: "150vh",
+  minHeight: "92vh",
   display: "flex",
   justifyContent: "center",
   alignItems: "center",
@@ -25,9 +25,10 @@ const StyledContainer = styled(Box)({
 const StyledPaper = styled(Paper)(() => ({
   borderRadius: "16px",
   padding:"30px",
+  minHeight: "50vh",
   width: "100%",
   maxWidth: "480px",
-  margin: "auto",
+  margin: "30px ",
   boxShadow: "0 8px 32px rgba(0, 0, 0, 0)",
 }));
 

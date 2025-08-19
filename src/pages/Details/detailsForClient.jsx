@@ -44,9 +44,8 @@ function DetailsForClient() {
   // التمرير إلى أعلى الصفحة عند تحميل الكومبوننت مع حماية باستخدام try-catch
   useEffect(() => {
     try {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    } catch (error) {
-    }
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (error) {}
   }, []);
 
   const currentUser = auth.currentUser?.uid;
@@ -125,8 +124,7 @@ function DetailsForClient() {
           text: clientAds?.description || "تحقق من هذا الإعلان العقاري!",
           url: window.location.href,
         });
-      } catch (error) {
-      }
+      } catch (error) {}
     } else {
       alert("المتصفح لا يدعم خاصية المشاركة.");
     }
@@ -456,9 +454,9 @@ function DetailsForClient() {
             sx={{
               border: "1px solid #E7E5F4",
               borderRadius: "20px",
-              backgroundColor: (theme) => 
-                theme.palette.mode === 'light' 
-                  ? theme.palette.grey[50] 
+              backgroundColor: (theme) =>
+                theme.palette.mode === "light"
+                  ? theme.palette.grey[50]
                   : theme.palette.grey[900],
               p: 3,
             }}
@@ -577,9 +575,9 @@ function DetailsForClient() {
           </Breadcrumbs>
           <Box
             sx={{
-              backgroundColor: (theme) => 
-                theme.palette.mode === 'light' 
-                  ? theme.palette.grey[50] 
+              backgroundColor: (theme) =>
+                theme.palette.mode === "light"
+                  ? theme.palette.grey[50]
                   : theme.palette.grey[900],
               display: "flex",
               gap: "30px",
@@ -615,10 +613,9 @@ function DetailsForClient() {
             }}
           >
             <MapPicker
-              lat={clientAds.latitude}
-              lng={clientAds.longitude}
-              onLocationSelect={(location) => {
-              }}
+              lat={clientAds.location?.lat}
+              lng={clientAds.location?.lng}
+              onLocationSelect={(location) => {}}
             />
           </Box>
         </Box>

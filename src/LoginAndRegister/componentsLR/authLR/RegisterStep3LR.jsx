@@ -247,7 +247,7 @@ export default function RegisterStep3LR({
 
   return (
     <form onSubmit={handleSubmit}>
-      <Typography variant="h6" gutterBottom sx={{ color: "#6E00FE" }}>
+      <Typography variant="h6" gutterBottom sx={{ color: "#6E00FE" }} dir="rtl" >
         {userType === "client" ? "معلومات العميل" : "معلومات المنظمة"}
       </Typography>
 
