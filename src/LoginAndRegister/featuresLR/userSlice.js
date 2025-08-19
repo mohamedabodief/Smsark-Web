@@ -5,10 +5,11 @@ import ClientUserData from "../../FireBase/models/Users/ClientUserData";
 import OrganizationUserData from "../../FireBase/models/Users/OrganizationUserData";
 import User from "../../FireBase/modelsWithOperations/User";
 import { uploadProfileImage } from '../../FireBase/uploadProfileImage';
+import { setAuthUserData } from './authSlice';
 // حفظ بيانات الملف الشخصي في Firestore
 export const saveUserProfile = createAsyncThunk(
   "user/saveUserProfile",
-  async ({ uid, userType, formData }, { rejectWithValue }) => {
+  async ({ uid, userType, formData }, { rejectWithValue, dispatch }) => {
     try {
       const data =
         userType === "client"
@@ -17,6 +18,15 @@ export const saveUserProfile = createAsyncThunk(
       // تحويل الكائن إلى plain object
       const plainData = { ...data };
       await setDoc(doc(db, "users", uid), plainData);
+
+      // Update auth state with the correct user type
+      dispatch(setAuthUserData({
+        uid: uid,
+        type_of_user: userType,
+        type_of_organization: userType === "organization" ? formData.type_of_organization : null,
+        adm_name: userType === "admin" ? formData.adm_name : null,
+      }));
+
       return plainData;
     } catch (error) {
       return rejectWithValue(error.message || "حدث خطأ أثناء حفظ البيانات");

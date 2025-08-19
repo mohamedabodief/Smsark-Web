@@ -1,5 +1,6 @@
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 import { Box, Typography, Card } from "@mui/material";
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 
@@ -9,6 +10,7 @@ import { requestPermissionAndSaveToken } from "../../FireBase/MessageAndNotifica
 
 export default function RegistrationSuccess() {
     const navigate = useNavigate();
+    const authUserType = useSelector((state) => state.auth.type_of_user);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -22,13 +24,20 @@ export default function RegistrationSuccess() {
                     });
 
                 setTimeout(() => {
-                    navigate("/home", { replace: true });
+                    // Redirect based on user type
+                    if (authUserType === 'admin') {
+                        navigate("/admin-dashboard", { replace: true });
+                    } else {
+                        // Redirect clients and organizations to home page
+                        // They can access their dashboards via the profile icon in navigation
+                        navigate("/home", { replace: true });
+                    }
                 }, 2000);
             }
         });
 
         return () => unsubscribe();
-    }, [navigate]);
+    }, [navigate, authUserType]);
 
     return (
         <Box

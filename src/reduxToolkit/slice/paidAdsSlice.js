@@ -60,23 +60,37 @@ export const deleteAd = createAsyncThunk(
       if (!auth.currentUser) {
         throw new Error('يجب تسجيل الدخول أولاً');
       }
+
       const user = await User.getByUid(auth.currentUser.uid);
-      if (user.type_of_user !== 'admin') {
-        throw new Error('فقط المشرفون يمكنهم حذف الإعلانات');
-      }
+      console.log('[deleteAd] Current user:', { uid: user.uid, type: user.type_of_user });
       console.log('[deleteAd] Called with:', { id, type });
+
       let ad;
+      // First, get the ad to check ownership
       if (type === 'developer') {
         ad = await RealEstateDeveloperAdvertisement.getById(id);
         if (!ad) throw new Error('إعلان المطور غير موجود');
-        await ad.delete();
       } else if (type === 'funder') {
         ad = await FinancingAdvertisement.getById(id);
         if (!ad) throw new Error('إعلان التمويل غير موجود');
-        await ad.delete();
       } else {
         throw new Error('نوع الإعلان غير صالح');
       }
+
+      console.log('[deleteAd] Ad details:', { adId: ad.id, adUserId: ad.userId, currentUserId: user.uid });
+
+      // Check permissions: admin can delete any ad, owner can delete their own ad
+      const isAdmin = user.type_of_user === 'admin';
+      const isOwner = ad.userId === user.uid;
+
+      if (!isAdmin && !isOwner) {
+        throw new Error('يمكنك حذف إعلاناتك الخاصة فقط');
+      }
+
+      console.log('[deleteAd] Permission check passed:', { isAdmin, isOwner });
+
+      // Delete the ad
+      await ad.delete();
       console.log(`[deleteAd] Successfully deleted ${type} ad with ID: ${id}`);
       return { id, type };
     } catch (error) {

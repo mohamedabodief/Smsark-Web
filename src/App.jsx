@@ -51,25 +51,35 @@ import RegistrationSuccess from "./LoginAndRegister/componentsLR/RegistrationSuc
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { SearchProvider } from "./context/searchcontext";
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { ThemeProvider } from "./context/ThemeContext";
+import { fetchUserProfile } from "./LoginAndRegister/featuresLR/userSlice";
 
-// Dashboard Router Component - Only for admin users
+// Dashboard Router Component - Routes users to appropriate dashboard based on user type
 function DashboardRouter() {
   const authUid = useSelector((state) => state.auth.uid);
   const authUserType = useSelector((state) => state.auth.type_of_user);
   const userProfile = useSelector((state) => state.user.profile);
   const userProfileStatus = useSelector((state) => state.user.status);
+  const dispatch = useDispatch();
   const navigate = useNavigate();
+
+  // Fetch user profile if not already loaded and we have a UID
+  useEffect(() => {
+    if (authUid && userProfileStatus === 'idle' && !userProfile) {
+      console.log("DashboardRouter: Fetching user profile for UID:", authUid);
+      dispatch(fetchUserProfile(authUid));
+    }
+  }, [authUid, userProfileStatus, userProfile, dispatch]);
 
   // Show loading while profile is being fetched
   if (userProfileStatus === 'loading') {
     return (
-      <Box sx={{ 
-        display: 'flex', 
+      <Box sx={{
+        display: 'flex',
         flexDirection: 'column',
-        justifyContent: 'center', 
-        alignItems: 'center', 
+        justifyContent: 'center',
+        alignItems: 'center',
         minHeight: '100vh',
         gap: 2
       }}>
@@ -81,12 +91,20 @@ function DashboardRouter() {
     );
   }
 
-  // Only admin users should access dashboard routes
-  if (userProfile?.type_of_user === 'admin' || authUserType === 'admin') {
+  // Determine user type from profile or auth state
+  const userType = userProfile?.type_of_user || authUserType;
+
+  // Route based on user type
+  if (userType === 'admin') {
     return <Navigate to="/admin-dashboard" replace />;
+  } else if (userType === 'organization' || userType === 'client') {
+    // Redirect clients and organizations to home page
+    // They can access their dashboards via the profile icon in navigation
+    return <Navigate to="/home" replace />;
   }
-  
-  // For non-admin users, redirect to home page
+
+  // For unknown user types or no user type, redirect to home page
+  console.warn("DashboardRouter: Unknown user type or no user type found:", userType);
   return <Navigate to="/home" replace />;
 }
 

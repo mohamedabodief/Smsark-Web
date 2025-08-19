@@ -288,7 +288,7 @@ function DetailsForFinaccingAds() {
                 }}
               >
                 <img
-                  src={mainImage || "https://via.placeholder.com/800x500"}
+                  src={mainImg}
                   alt="Main"
                   style={{
                     width: "100%",
@@ -712,11 +712,27 @@ function DetailsForFinaccingAds() {
           <Button
             variant="contained"
             startIcon={<EditIcon />}
-            onClick={() =>
+            onClick={() => {
+              console.log("=== DEBUG: Navigating to edit form ===");
+              console.log("clientAds:", clientAds);
+              console.log("clientAds.id:", clientAds.id);
+              console.log("typeof clientAds.id:", typeof clientAds.id);
+
+              const adDataToPass = {
+                ...clientAds,
+                id: clientAds.id // Explicitly include the ID from the getter
+              };
+              console.log("adDataToPass:", adDataToPass);
+              console.log("adDataToPass.id:", adDataToPass.id);
+              console.log("=====================================");
+
               navigate("/add-financing-ad", {
-                state: { editMode: true, adData: clientAds },
-              })
-            }
+                state: {
+                  editMode: true,
+                  adData: adDataToPass
+                },
+              });
+            }}
             sx={{
               backgroundColor: "#6E00FE",
               "&:hover": { backgroundColor: "#200D3A" },

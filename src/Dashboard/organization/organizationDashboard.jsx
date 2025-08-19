@@ -2710,10 +2710,10 @@ function PaidAdvertismentPage() {
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const userProfile = useSelector((state) => state.user.profile);
-    const developerAds = useSelector((state) => state.developerAds?.byUser || []);
-    const financingAds = useSelector((state) => state.financingAds?.byUser || []);
-    const developerAdsLoading = useSelector((state) => state.developerAds?.loading || false);
-    const financingAdsLoading = useSelector((state) => state.financingAds?.loading || false);
+    const developerAds = useSelector((state) => state.paidAds?.developerAds || []);
+    const financingAds = useSelector((state) => state.paidAds?.funderAds || []);
+    const developerAdsLoading = useSelector((state) => state.paidAds?.loading?.developer || false);
+    const financingAdsLoading = useSelector((state) => state.paidAds?.loading?.funder || false);
 
     // State to manage the active tab - initialize based on user's organization type
     const [activeTab, setActiveTab] = React.useState(() => {
@@ -2735,46 +2735,64 @@ function PaidAdvertismentPage() {
     }, [userProfile?.type_of_organization, activeTab]);
 
     // Fetch paid ads based on organization type
+    // Subscribe to real-time ads updates when user profile is available
     useEffect(() => {
-        if (!userProfile?.uid) return;
+        if (!userProfile?.uid || !userProfile?.type_of_organization) {
+            console.log('User profile not ready for setting up ads subscription');
+            return;
+        }
 
         const orgType = userProfile.type_of_organization;
-        console.log('Fetching ads for user:', userProfile.uid, 'with organization type:', orgType);
+        console.log('Setting up real-time subscription for user:', userProfile.uid, 'with organization type:', orgType);
+
+        let unsubscribe = null;
 
         if (orgType === "مطور عقاري" || orgType === "مطور عقارى") {
-            // Only fetch real estate ads for developers
-            console.log('Fetching real estate ads for developer organization');
-            dispatch(fetchDeveloperAdsByUser(userProfile.uid))
-                .then(() => console.log('Real estate ads fetched successfully'))
-                .catch(error => console.error('Error fetching real estate ads:', error));
+            // Subscribe to real-time updates for developer ads
+            console.log('Setting up real-time subscription for developer ads');
+            try {
+                unsubscribe = RealEstateDeveloperAdvertisement.subscribeByUserId(userProfile.uid, (ads) => {
+                    console.log('Real-time developer ads update received:', ads.length, 'ads');
+                    console.log('Developer ads data:', ads);
+                    dispatch(setDeveloperAds(ads));
+                });
+                subscriptionManager.add(`org-developer-ads-${userProfile.uid}`, unsubscribe);
+            } catch (error) {
+                console.error('Error setting up developer ads subscription:', error);
+                // Fallback to fetch if subscription fails
+                dispatch(fetchDeveloperAdsByUser(userProfile.uid));
+            }
         } else if (orgType === "ممول عقاري" || orgType === "ممول عقارى") {
-            // Only fetch financing ads for funders
-            console.log('Fetching financing ads for funder organization');
-            dispatch(fetchFinancingAdsByUser(userProfile.uid))
-                .then(() => console.log('Financing ads fetched successfully'))
-                .catch(error => console.error('Error fetching financing ads:', error));
+            // Subscribe to real-time updates for funder ads
+            console.log('Setting up real-time subscription for funder ads');
+            try {
+                unsubscribe = FinancingAdvertisement.subscribeByUserId(userProfile.uid, (ads) => {
+                    console.log('Real-time funder ads update received:', ads.length, 'ads');
+                    console.log('Funder ads data:', ads);
+                    dispatch(setFunderAds(ads));
+                });
+                subscriptionManager.add(`org-funder-ads-${userProfile.uid}`, unsubscribe);
+            } catch (error) {
+                console.error('Error setting up funder ads subscription:', error);
+                // Fallback to fetch if subscription fails
+                dispatch(fetchFinancingAdsByUser(userProfile.uid));
+            }
         } else {
             console.warn('Unknown organization type:', orgType);
         }
-    }, [dispatch, userProfile?.uid, userProfile?.type_of_organization]);
 
-    // Refresh data when returning to the dashboard (e.g., after editing an ad)
-    useEffect(() => {
-        const handleVisibilityChange = () => {
-            if (!document.hidden && userProfile?.uid) {
-                // Page became visible again, refresh the data
-                const orgType = userProfile.type_of_organization;
-                if (orgType === "مطور عقاري" || orgType === "مطور عقارى") {
-                    dispatch(fetchDeveloperAdsByUser(userProfile.uid));
-                } else if (orgType === "ممول عقاري" || orgType === "ممول عقارى") {
-                    dispatch(fetchFinancingAdsByUser(userProfile.uid));
-                }
+        // Cleanup subscription on unmount or when dependencies change
+        return () => {
+            console.log('Cleaning up ads subscription for user:', userProfile.uid);
+            if (orgType === "مطور عقاري" || orgType === "مطور عقارى") {
+                subscriptionManager.remove(`org-developer-ads-${userProfile.uid}`);
+            } else if (orgType === "ممول عقاري" || orgType === "ممول عقارى") {
+                subscriptionManager.remove(`org-funder-ads-${userProfile.uid}`);
             }
         };
-
-        document.addEventListener('visibilitychange', handleVisibilityChange);
-        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
     }, [dispatch, userProfile?.uid, userProfile?.type_of_organization]);
+
+    // Note: Real-time subscriptions above handle automatic updates, no need for manual refresh
 
     // Handler for tab changes
     const handleTabChange = (event, newValue) => {
@@ -2791,6 +2809,7 @@ function PaidAdvertismentPage() {
         if (orgType === "مطور عقاري" || orgType === "مطور عقارى") {
             // Developers only see their real estate ads
             console.log('Showing real estate ads for developer, count:', developerAds.length);
+            console.log('Developer ads data for DataGrid:', developerAds);
             return {
                 ads: developerAds,
                 loading: developerAdsLoading,
@@ -2799,6 +2818,7 @@ function PaidAdvertismentPage() {
         } else if (orgType === "ممول عقاري" || orgType === "ممول عقارى") {
             // Funders only see their financing ads
             console.log('Showing financing ads for funder, count:', financingAds.length);
+            console.log('Funder ads data for DataGrid:', financingAds);
             return {
                 ads: financingAds,
                 loading: financingAdsLoading,
@@ -3186,9 +3206,7 @@ function PaidAdvertismentPage() {
                 }
             }
 
-            // Refresh the data after status update
-            dispatch(fetchDeveloperAdsByUser(userProfile.uid));
-            dispatch(fetchFinancingAdsByUser(userProfile.uid));
+            // Real-time subscriptions will automatically update the data
 
             setSnackbar({
                 open: true,
@@ -4126,6 +4144,22 @@ export default function OrganizationDashboard(props) {
         return () => window.removeEventListener('resize', handleResize);
     }, [mobileOpen]);
 
+    // Redux selectors and hooks - must be declared before useEffect
+    const profilePicInDrawer = useSelector((state) => state.profilePic.profilePicUrl);
+    const userProfile = useSelector((state) => state.user.profile);
+    const userProfileStatus = useSelector((state) => state.user.status);
+    const authUid = useSelector((state) => state.auth.uid);
+    const dispatch = useDispatch();
+    const userName = userProfile?.adm_name || userProfile?.cli_name || userProfile?.org_name || 'Organization';
+
+    // Fetch user profile when component mounts (if not already loaded)
+    React.useEffect(() => {
+        if (authUid && userProfileStatus === 'idle' && !userProfile) {
+            console.log("OrganizationDashboard: Fetching user profile for UID:", authUid);
+            dispatch(fetchUserProfile(authUid));
+        }
+    }, [authUid, userProfileStatus, userProfile, dispatch]);
+
     // Close drawer when route changes on mobile
     const handleDrawerToggle = () => {
         if (isMobile) {
@@ -4141,10 +4175,6 @@ export default function OrganizationDashboard(props) {
             setMobileOpen(false);
         }
     };
-
-    const profilePicInDrawer = useSelector((state) => state.profilePic.profilePicUrl);
-    const userProfile = useSelector((state) => state.user.profile);
-    const userName = userProfile?.adm_name || userProfile?.cli_name || userProfile?.org_name || 'Organization';
 
     // Get organization type for conditional navigation
     const organizationType = userProfile?.type_of_organization;
@@ -4221,7 +4251,6 @@ export default function OrganizationDashboard(props) {
 
 
     // logout
-    const dispatch = useDispatch();
     const navigate = useNavigate();
     // const authStatus = useSelector((state) => state.auth.status); // Get auth status to disable button
 
@@ -4351,7 +4380,6 @@ export default function OrganizationDashboard(props) {
     const [snackbarOpen, setSnackbarOpen] = React.useState(false);
     const [snackbarMessage, setSnackbarMessage] = React.useState('');
     const [snackbarSeverity, setSnackbarSeverity] = React.useState('success');
-    const authUid = useSelector((state) => state.auth.uid);
 
     // Real-time notification subscription
     React.useEffect(() => {

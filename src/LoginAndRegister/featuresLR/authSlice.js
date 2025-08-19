@@ -290,7 +290,7 @@ const authSlice = createSlice({
       .addCase(registerUser.fulfilled, (state, action) => {
         state.status = "succeeded";
         state.uid = action.payload;
-        state.type_of_user = "client"; // القيمة الافتراضية بعد التسجيل
+        state.type_of_user = "client"; // Default value, will be updated when profile is saved
       })
       .addCase(registerUser.rejected, (state, action) => {
         state.status = "failed";

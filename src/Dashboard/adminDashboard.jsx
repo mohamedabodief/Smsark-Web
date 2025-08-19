@@ -80,6 +80,8 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import PauseIcon from '@mui/icons-material/Pause';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 
 // Import your async thunks and synchronous actions
 import {
@@ -141,6 +143,8 @@ import sendResetPasswordEmail from "../FireBase/authService/sendResetPasswordEma
 import { collection, doc, getDoc, getDocs } from "firebase/firestore";
 import { fetchFinancialRequests, deleteFinancialRequest, updateFinancialRequest } from '../reduxToolkit/slice/financialRequestSlice';
 import FinancingRequest from '../FireBase/modelsWithOperations/FinancingRequest';
+import User from '../FireBase/modelsWithOperations/User';
+import { getStorage, ref, listAll, getDownloadURL } from 'firebase/storage';
 import {
     fetchAllHomepageAds,
     subscribeToAllHomepageAds,
@@ -2399,6 +2403,8 @@ function PaidAdvertismentPage() {
 
     const [activeTab, setActiveTab] = useState('developerAds');
     const [reviewStatusFilter, setReviewStatusFilter] = useState('all');
+    const [userFilter, setUserFilter] = useState('all');
+    const [availableUsers, setAvailableUsers] = useState([]);
 
     // State for delete dialog
     const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
@@ -2429,6 +2435,161 @@ function PaidAdvertismentPage() {
     const [receiptDialogAd, setReceiptDialogAd] = useState(null);
     const [receiptDialogType, setReceiptDialogType] = useState(null);
     const [receiptDialogDays, setReceiptDialogDays] = useState(7);
+
+    // State for tax card images dialog
+    const [taxCardDialogOpen, setTaxCardDialogOpen] = useState(false);
+    const [taxCardImages, setTaxCardImages] = useState([]);
+    const [currentTaxImageIndex, setCurrentTaxImageIndex] = useState(0);
+    const [usersData, setUsersData] = useState({}); // Cache for user data
+    const [taxImagesCache, setTaxImagesCache] = useState({}); // Cache for tax images from storage
+
+    // Function to fetch tax card images directly from Firebase Storage
+    const fetchTaxImagesFromStorage = async (userId) => {
+        if (!userId) {
+            console.warn('fetchTaxImagesFromStorage: No userId provided');
+            return [];
+        }
+
+        // Check cache first
+        if (taxImagesCache[userId]) {
+            console.log('fetchTaxImagesFromStorage: Using cached tax images for userId:', userId);
+            return taxImagesCache[userId];
+        }
+
+        try {
+            console.log('fetchTaxImagesFromStorage: Fetching tax images for userId:', userId);
+            const storage = getStorage();
+            const storageRef = ref(storage, `property_images/${userId}`);
+
+            const listResult = await listAll(storageRef);
+            const taxImageUrls = [];
+
+            // Filter files that start with 'tax_card_'
+            const taxCardFiles = listResult.items.filter(item =>
+                item.name.startsWith('tax_card_')
+            );
+
+            console.log('fetchTaxImagesFromStorage: Found tax card files:', taxCardFiles.map(f => f.name));
+
+            // Get download URLs for tax card images
+            for (const fileRef of taxCardFiles) {
+                try {
+                    const downloadURL = await getDownloadURL(fileRef);
+                    taxImageUrls.push(downloadURL);
+                    console.log('fetchTaxImagesFromStorage: Got URL for:', fileRef.name, downloadURL);
+                } catch (error) {
+                    console.error('fetchTaxImagesFromStorage: Error getting URL for:', fileRef.name, error);
+                }
+            }
+
+            // Cache the results
+            setTaxImagesCache(prev => ({
+                ...prev,
+                [userId]: taxImageUrls
+            }));
+
+            console.log('fetchTaxImagesFromStorage: Total tax images found for userId:', userId, taxImageUrls.length);
+            return taxImageUrls;
+
+        } catch (error) {
+            console.error('fetchTaxImagesFromStorage: Error fetching tax images for userId:', userId, error);
+            return [];
+        }
+    };
+
+    // Function to fetch user data by userId
+    const fetchUserData = async (userId) => {
+        if (!userId) {
+            console.warn('fetchUserData: No userId provided');
+            return null;
+        }
+
+        if (usersData[userId]) {
+            console.log('fetchUserData: Using cached data for userId:', userId);
+            return usersData[userId];
+        }
+
+        try {
+            console.log('fetchUserData: Fetching data for userId:', userId);
+            const userData = await User.getByUid(userId);
+            if (userData) {
+                console.log('fetchUserData: User data fetched successfully:', {
+                    uid: userData.uid,
+                    name: userData.cli_name || userData.org_name || userData.adm_name,
+                    type: userData.type_of_user,
+                    hasTaxImages: userData.tax_card_images?.length > 0
+                });
+                setUsersData(prev => ({
+                    ...prev,
+                    [userId]: userData
+                }));
+                return userData;
+            } else {
+                console.warn('fetchUserData: No user data found for userId:', userId);
+            }
+        } catch (error) {
+            console.error('fetchUserData: Error fetching user data for userId:', userId, error);
+        }
+        return null;
+    };
+
+    // Function to handle tax card images click
+    const handleTaxCardClick = async (userId) => {
+        console.log('handleTaxCardClick: Called with userId:', userId);
+
+        if (!userId) {
+            console.error('handleTaxCardClick: No userId provided');
+            setSnackbar({
+                open: true,
+                message: 'لا يمكن العثور على معرف المستخدم',
+                severity: 'error'
+            });
+            return;
+        }
+
+        // Fetch tax images directly from storage
+        const taxImages = await fetchTaxImagesFromStorage(userId);
+        console.log('handleTaxCardClick: Tax images from storage:', taxImages);
+
+        if (taxImages && taxImages.length > 0) {
+            console.log('handleTaxCardClick: Opening tax card dialog with images from storage:', taxImages);
+            setTaxCardImages(taxImages);
+            setCurrentTaxImageIndex(0);
+            setTaxCardDialogOpen(true);
+        } else {
+            console.warn('handleTaxCardClick: No tax card images found in storage for userId:', userId);
+            setSnackbar({
+                open: true,
+                message: 'لا توجد صور للسجل الضريبي لهذا المستخدم',
+                severity: 'info'
+            });
+        }
+    };
+
+    // Function to extract unique users from ads and fetch their data
+    const extractAndFetchUsers = async (ads) => {
+        const uniqueUserIds = [...new Set(ads.map(ad => ad.userId).filter(Boolean))];
+        const users = [];
+
+        // Fetch all user data in parallel for better performance
+        const userDataPromises = uniqueUserIds.map(userId => fetchUserData(userId));
+        const userDataResults = await Promise.allSettled(userDataPromises);
+
+        userDataResults.forEach((result, index) => {
+            if (result.status === 'fulfilled' && result.value) {
+                const userData = result.value;
+                users.push({
+                    uid: userData.uid,
+                    name: userData.cli_name || userData.org_name || userData.adm_name || 'مستخدم غير معروف',
+                    type: userData.type_of_user
+                });
+            } else {
+                console.warn(`Failed to fetch user data for userId: ${uniqueUserIds[index]}`);
+            }
+        });
+
+        setAvailableUsers(users);
+    };
 
     // --- Data Fetching Effect ---
     useEffect(() => {
@@ -2467,17 +2628,46 @@ function PaidAdvertismentPage() {
             if (unsubscribeDeveloper) unsubscribeDeveloper();
             if (unsubscribeFunder) unsubscribeFunder();
         };
-    }, [dispatch]); // Depend on dispatch
+    }, [dispatch]);
+
+    // Extract users when ads are loaded
+    useEffect(() => {
+        const allAds = [...(developerAds || []), ...(funderAds || [])];
+        if (allAds.length > 0) {
+            extractAndFetchUsers(allAds);
+            // Also preload tax images for all users
+            const uniqueUserIds = [...new Set(allAds.map(ad => ad.userId).filter(Boolean))];
+            uniqueUserIds.forEach(userId => {
+                if (!taxImagesCache[userId]) {
+                    fetchTaxImagesFromStorage(userId);
+                }
+            });
+        }
+    }, [developerAds, funderAds]); // Depend on dispatch
 
     // --- Filtering Logic ---
     const filteredDeveloperAds = developerAds.filter((ad) => {
-        if (reviewStatusFilter === 'all') return true;
-        return ad.reviewStatus === reviewStatusFilter;
+        // Filter by review status
+        if (reviewStatusFilter !== 'all' && ad.reviewStatus !== reviewStatusFilter) {
+            return false;
+        }
+        // Filter by user
+        if (userFilter !== 'all' && ad.userId !== userFilter) {
+            return false;
+        }
+        return true;
     });
 
     const filteredFunderAds = funderAds.filter((ad) => {
-        if (reviewStatusFilter === 'all') return true;
-        return ad.reviewStatus === reviewStatusFilter;
+        // Filter by review status
+        if (reviewStatusFilter !== 'all' && ad.reviewStatus !== reviewStatusFilter) {
+            return false;
+        }
+        // Filter by user
+        if (userFilter !== 'all' && ad.userId !== userFilter) {
+            return false;
+        }
+        return true;
     });
 
     // --- Handlers for Actions ---
@@ -2864,6 +3054,80 @@ function PaidAdvertismentPage() {
                 </Box>
             ),
         },
+        {
+            field: 'tax_record',
+            headerName: 'السجل الضريبي',
+            width: 100,
+            renderCell: (params) => {
+                const userId = params.row.userId;
+                const cachedTaxImages = taxImagesCache[userId] || [];
+                const firstTaxImage = cachedTaxImages.length > 0 ? cachedTaxImages[0] : null;
+
+                // Debug logging
+                console.log('Tax record renderCell:', {
+                    userId: userId,
+                    cachedTaxImages: cachedTaxImages,
+                    firstTaxImage: firstTaxImage
+                });
+
+                // If no cached images, try to fetch them
+                React.useEffect(() => {
+                    if (userId && !taxImagesCache[userId]) {
+                        fetchTaxImagesFromStorage(userId);
+                    }
+                }, [userId]);
+
+                return (
+                    <Avatar
+                        src={firstTaxImage || 'https://placehold.co/50x50/E0E0E0/FFFFFF?text=No+Tax'}
+                        variant="rounded"
+                        sx={{
+                            width: 60,
+                            height: 50,
+                            cursor: 'pointer',
+                            '&:hover': { opacity: 0.8 }
+                        }}
+                        onClick={() => handleTaxCardClick(userId)}
+                    />
+                );
+            },
+            sortable: false,
+            filterable: false,
+        },
+        {
+            field: 'receipt_image',
+            headerName: 'إيصال الدفع',
+            width: 100,
+            renderCell: (params) => {
+                if (params.value) {
+                    return (
+                        <Avatar
+                            src={params.value}
+                            variant="rounded"
+                            sx={{
+                                width: 60,
+                                height: 50,
+                                cursor: 'pointer',
+                                '&:hover': {
+                                    opacity: 0.8,
+                                    transform: 'scale(1.05)'
+                                }
+                            }}
+                            onClick={() => handleReceiptClick(params.row, 'developer')}
+                        />
+                    );
+                }
+                return (
+                    <Avatar
+                        src="https://placehold.co/50x50/E0E0E0/FFFFFF?text=No+Receipt"
+                        variant="rounded"
+                        sx={{ width: 60, height: 50 }}
+                    />
+                );
+            },
+            sortable: false,
+            filterable: false,
+        },
         { field: 'adExpiryTime', headerName: 'تاريخ الانتهاء', width: 150, renderCell: (params) => params.value ? new Date(params.value).toLocaleDateString('ar-EG') : '—' },
     ];
 
@@ -3059,6 +3323,80 @@ function PaidAdvertismentPage() {
                 </Box>
             ),
         },
+        {
+            field: 'tax_record',
+            headerName: 'السجل الضريبي',
+            width: 100,
+            renderCell: (params) => {
+                const userId = params.row.userId;
+                const cachedTaxImages = taxImagesCache[userId] || [];
+                const firstTaxImage = cachedTaxImages.length > 0 ? cachedTaxImages[0] : null;
+
+                // Debug logging for funder ads
+                console.log('Funder tax record renderCell:', {
+                    userId: userId,
+                    cachedTaxImages: cachedTaxImages,
+                    firstTaxImage: firstTaxImage
+                });
+
+                // If no cached images, try to fetch them
+                React.useEffect(() => {
+                    if (userId && !taxImagesCache[userId]) {
+                        fetchTaxImagesFromStorage(userId);
+                    }
+                }, [userId]);
+
+                return (
+                    <Avatar
+                        src={firstTaxImage || 'https://placehold.co/50x50/E0E0E0/FFFFFF?text=No+Tax'}
+                        variant="rounded"
+                        sx={{
+                            width: 60,
+                            height: 50,
+                            cursor: 'pointer',
+                            '&:hover': { opacity: 0.8 }
+                        }}
+                        onClick={() => handleTaxCardClick(userId)}
+                    />
+                );
+            },
+            sortable: false,
+            filterable: false,
+        },
+        {
+            field: 'receipt_image',
+            headerName: 'إيصال الدفع',
+            width: 100,
+            renderCell: (params) => {
+                if (params.value) {
+                    return (
+                        <Avatar
+                            src={params.value}
+                            variant="rounded"
+                            sx={{
+                                width: 60,
+                                height: 50,
+                                cursor: 'pointer',
+                                '&:hover': {
+                                    opacity: 0.8,
+                                    transform: 'scale(1.05)'
+                                }
+                            }}
+                            onClick={() => handleReceiptClick(params.row, 'funder')}
+                        />
+                    );
+                }
+                return (
+                    <Avatar
+                        src="https://placehold.co/50x50/E0E0E0/FFFFFF?text=No+Receipt"
+                        variant="rounded"
+                        sx={{ width: 60, height: 50 }}
+                    />
+                );
+            },
+            sortable: false,
+            filterable: false,
+        },
         { field: 'adExpiryTime', headerName: 'تاريخ الانتهاء', width: 150, renderCell: (params) => params.value ? new Date(params.value).toLocaleDateString('ar-EG') : '—' },
     ];
 
@@ -3143,6 +3481,26 @@ function PaidAdvertismentPage() {
                         <Tab value="funderAds" label="إعلانات ممولين عقاريين" />
                     </Tabs>
                 </Box>
+
+                {/* User Filter */}
+                <Box sx={{ mb: 2 }}>
+                    <FormControl size="small" sx={{ minWidth: 200 }}>
+                        <InputLabel>تصفية حسب المستخدم</InputLabel>
+                        <Select
+                            value={userFilter}
+                            onChange={(e) => setUserFilter(e.target.value)}
+                            label="تصفية حسب المستخدم"
+                        >
+                            <MenuItem value="all">جميع المستخدمين</MenuItem>
+                            {availableUsers.map((user) => (
+                                <MenuItem key={user.uid} value={user.uid}>
+                                    {user.name} ({user.type})
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+                </Box>
+
                 {/* Filter Chips */}
                 <Stack direction="row" spacing={1} mb={3} flexWrap="wrap">
                     <Chip
@@ -3290,6 +3648,130 @@ function PaidAdvertismentPage() {
                 <Button onClick={handleReceiptDialogActivate} variant="contained" color="primary">تفعيل</Button>
               </DialogActions>
             </Dialog>
+
+            {/* Tax Card Images Dialog */}
+            <Dialog
+                open={taxCardDialogOpen}
+                onClose={() => setTaxCardDialogOpen(false)}
+                maxWidth="md"
+                fullWidth
+                PaperProps={{
+                    sx: { borderRadius: 2 }
+                }}
+                onClick={(e) => {
+                    // Close dialog when clicking on backdrop
+                    if (e.target === e.currentTarget) {
+                        setTaxCardDialogOpen(false);
+                    }
+                }}
+            >
+                <DialogTitle sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    textAlign: 'right'
+                }}>
+                    <Typography variant="h6">صور السجل الضريبي</Typography>
+                    <IconButton
+                        onClick={() => setTaxCardDialogOpen(false)}
+                        sx={{ color: 'text.secondary' }}
+                    >
+                        <CloseIcon />
+                    </IconButton>
+                </DialogTitle>
+                <DialogContent sx={{ textAlign: 'center', p: 3 }}>
+                    {taxCardImages.length > 0 ? (
+                        <Box>
+                            {/* Current Image Display */}
+                            <Box sx={{ mb: 2 }}>
+                                <img
+                                    src={taxCardImages[currentTaxImageIndex]}
+                                    alt={`صورة السجل الضريبي ${currentTaxImageIndex + 1}`}
+                                    style={{
+                                        maxWidth: '100%',
+                                        maxHeight: '500px',
+                                        borderRadius: 8,
+                                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                                    }}
+                                />
+                            </Box>
+
+                            {/* Image Navigation */}
+                            {taxCardImages.length > 1 && (
+                                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 2, mb: 2 }}>
+                                    <IconButton
+                                        onClick={() => setCurrentTaxImageIndex(prev =>
+                                            prev > 0 ? prev - 1 : taxCardImages.length - 1
+                                        )}
+                                        disabled={taxCardImages.length <= 1}
+                                    >
+                                        <ArrowBackIcon />
+                                    </IconButton>
+
+                                    <Typography variant="body2" color="text.secondary">
+                                        {currentTaxImageIndex + 1} من {taxCardImages.length}
+                                    </Typography>
+
+                                    <IconButton
+                                        onClick={() => setCurrentTaxImageIndex(prev =>
+                                            prev < taxCardImages.length - 1 ? prev + 1 : 0
+                                        )}
+                                        disabled={taxCardImages.length <= 1}
+                                    >
+                                        <ArrowForwardIcon />
+                                    </IconButton>
+                                </Box>
+                            )}
+
+                            {/* Thumbnail Navigation */}
+                            {taxCardImages.length > 1 && (
+                                <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1, flexWrap: 'wrap' }}>
+                                    {taxCardImages.map((image, index) => (
+                                        <Box
+                                            key={index}
+                                            onClick={() => setCurrentTaxImageIndex(index)}
+                                            sx={{
+                                                width: 60,
+                                                height: 60,
+                                                borderRadius: 1,
+                                                overflow: 'hidden',
+                                                cursor: 'pointer',
+                                                border: currentTaxImageIndex === index ? '2px solid' : '1px solid',
+                                                borderColor: currentTaxImageIndex === index ? 'primary.main' : 'divider',
+                                                opacity: currentTaxImageIndex === index ? 1 : 0.7,
+                                                transition: 'all 0.2s ease'
+                                            }}
+                                        >
+                                            <img
+                                                src={image}
+                                                alt={`صورة مصغرة ${index + 1}`}
+                                                style={{
+                                                    width: '100%',
+                                                    height: '100%',
+                                                    objectFit: 'cover'
+                                                }}
+                                            />
+                                        </Box>
+                                    ))}
+                                </Box>
+                            )}
+                        </Box>
+                    ) : (
+                        <Typography color="text.secondary" sx={{ py: 4 }}>
+                            لا توجد صور للسجل الضريبي
+                        </Typography>
+                    )}
+                </DialogContent>
+                <DialogActions sx={{ justifyContent: 'center', pb: 3 }}>
+                    <Button
+                        onClick={() => setTaxCardDialogOpen(false)}
+                        variant="contained"
+                        sx={{ minWidth: 120 }}
+                    >
+                        إغلاق
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Box>
     );
 }
@@ -3302,6 +3784,9 @@ function ClientAdvertismentPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [filters, setFilters] = useState({ reviewStatus: 'all', adStatus: 'all' });
+    const [userFilter, setUserFilter] = useState('all');
+    const [availableUsers, setAvailableUsers] = useState([]);
+    const [usersData, setUsersData] = useState({}); // Cache for user data
 
     const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
     const [adToDelete, setAdToDelete] = useState(null);
@@ -3327,6 +3812,50 @@ function ClientAdvertismentPage() {
     const [openReceiptDialog, setOpenReceiptDialog] = useState(false);
     const [receiptDialogImage, setReceiptDialogImage] = useState(null);
     const receiptButtonRef = useRef(null);
+
+    // Function to fetch user data by userId
+    const fetchUserData = async (userId) => {
+        if (!userId || usersData[userId]) return usersData[userId];
+
+        try {
+            const userData = await User.getByUid(userId);
+            if (userData) {
+                setUsersData(prev => ({
+                    ...prev,
+                    [userId]: userData
+                }));
+                return userData;
+            }
+        } catch (error) {
+            console.error('Error fetching user data:', error);
+        }
+        return null;
+    };
+
+    // Function to extract unique users from ads and fetch their data
+    const extractAndFetchUsers = async (ads) => {
+        const uniqueUserIds = [...new Set(ads.map(ad => ad.userId).filter(Boolean))];
+        const users = [];
+
+        // Fetch all user data in parallel for better performance
+        const userDataPromises = uniqueUserIds.map(userId => fetchUserData(userId));
+        const userDataResults = await Promise.allSettled(userDataPromises);
+
+        userDataResults.forEach((result, index) => {
+            if (result.status === 'fulfilled' && result.value) {
+                const userData = result.value;
+                users.push({
+                    uid: userData.uid,
+                    name: userData.cli_name || userData.org_name || userData.adm_name || 'مستخدم غير معروف',
+                    type: userData.type_of_user
+                });
+            } else {
+                console.warn(`Failed to fetch user data for userId: ${uniqueUserIds[index]}`);
+            }
+        });
+
+        setAvailableUsers(users);
+    };
 
     // Handler to close the receipt dialog
     const handleCloseReceiptDialog = () => {
@@ -3369,6 +3898,10 @@ function ClientAdvertismentPage() {
             });
             setAdvertisements(adsData);
             setLoading(false);
+            // Extract users from ads
+            if (adsData.length > 0) {
+                extractAndFetchUsers(adsData);
+            }
         });
 
         return () => {
@@ -3872,6 +4405,22 @@ function ClientAdvertismentPage() {
 
                     {/* Filter Controls */}
                     <Box sx={{ display: 'flex', gap: 2 }}>
+                        <FormControl size="small" sx={{ minWidth: 200 }}>
+                            <InputLabel>تصفية حسب المستخدم</InputLabel>
+                            <Select
+                                value={userFilter}
+                                onChange={(e) => setUserFilter(e.target.value)}
+                                label="تصفية حسب المستخدم"
+                            >
+                                <MenuItem value="all">جميع المستخدمين</MenuItem>
+                                {availableUsers.map((user) => (
+                                    <MenuItem key={user.uid} value={user.uid}>
+                                        {user.name} ({user.type})
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+
                         <FormControl size="small" sx={{ minWidth: 150 }}>
                             <InputLabel>حالة المراجعة</InputLabel>
                             <Select
@@ -3936,6 +4485,7 @@ function ClientAdvertismentPage() {
                                 .filter(ad => ad.id != null)
                                 .filter(ad => filters.reviewStatus === 'all' || ad.reviewStatus === filters.reviewStatus)
                                 .filter(ad => filters.adStatus === 'all' || ad.status === filters.adStatus)
+                                .filter(ad => userFilter === 'all' || ad.userId === userFilter)
                                 .map(ad => ({
                                     ...ad,
                                     id: ad.id || `temp-${Math.random().toString(36).substr(2, 9)}`
