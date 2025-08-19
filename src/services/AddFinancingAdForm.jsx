@@ -111,6 +111,9 @@ export default function AddFinancingAdForm() {
         }
 
         if (adData) {
+          console.log("=== DEBUG: Setting form data in edit mode ===");
+          console.log("adData.id:", adData.id);
+
           setForm({
             title: adData.title || "",
             description: adData.description || "",
@@ -128,6 +131,9 @@ export default function AddFinancingAdForm() {
             interest_rate_above_10: adData.interest_rate_above_10 || "",
             id: adData.id || undefined,
           });
+
+          console.log("Form ID set to:", adData.id || undefined);
+          console.log("============================================");
 
           // Create image metadata for existing images
           if (adData.images && adData.images.length > 0) {
@@ -285,29 +291,7 @@ export default function AddFinancingAdForm() {
     return Promise.all(uploadPromises);
   };
 
-  // دالة لرفع صورة الإيصال إلى Firebase Storage
-  const uploadReceiptToFirebase = async (receiptFile) => {
-    const currentUser = auth.currentUser;
-    if (!currentUser) {
-      throw new Error("يجب تسجيل الدخول أولاً");
-    }
-
-    const timestamp = Date.now();
-    const fileName = `receipt_${timestamp}.jpg`;
-    const storageRef = ref(
-      storage,
-      `financing_images/${currentUser.uid}/${fileName}`
-    );
-
-    try {
-      await uploadBytes(storageRef, receiptFile);
-      const downloadURL = await getDownloadURL(storageRef);
-      return downloadURL;
-    } catch (error) {
-      console.error("Error uploading receipt:", error);
-      throw new Error(`فشل في رفع صورة الإيصال: ${error.message}`);
-    }
-  };
+  // Note: Receipt upload is now handled by the FinancingAdvertisement model
 
   const performSubmit = async () => {
     setLoading(true);
@@ -325,50 +309,76 @@ export default function AddFinancingAdForm() {
         .filter((img) => !img.isNew && img.url && img.url.startsWith("http"))
         .map((img) => img.url);
       const finalImageUrls = [...oldImageUrls, ...newImageUrls];
-      console.log("Final image list before update:", finalImageUrls);
+
+      console.log("=== DEBUG: Form image processing ===");
+      console.log("imageMetadata:", imageMetadata);
+      console.log("newImageFiles:", newImageFiles);
+      console.log("newImageUrls:", newImageUrls);
+      console.log("oldImageUrls:", oldImageUrls);
+      console.log("finalImageUrls:", finalImageUrls);
+      console.log("===================================");
 
       // التعامل مع صورة الإيصال
-      let receiptUrl = null;
-      if (receiptImage) {
-        if (receiptImage instanceof File) {
-          // صورة جديدة - ارفعها
-          receiptUrl = await uploadReceiptToFirebase(receiptImage);
-        } else {
-          // صورة موجودة - استخدم الرابط الموجود
-          receiptUrl = receiptImage;
-        }
-      } else if (isEditMode && editData?.receipt_image) {
-        // في وضع التعديل، احتفظ بالصورة الأصلية إذا لم يتم رفع صورة جديدة
-        receiptUrl = editData.receipt_image;
+      // Pass the File object directly to the model methods instead of pre-uploading
+      let receiptFileToPass = null;
+      if (receiptImage && receiptImage instanceof File) {
+        // صورة جديدة - مرر الملف للنموذج ليتولى رفعه
+        receiptFileToPass = receiptImage;
       }
+      // Note: For existing receipts, we don't need to do anything as the model will preserve them
+
+      // Debug logging to understand the issue
+      console.log("=== DEBUG: Edit Mode Analysis ===");
+      console.log("isEditMode:", isEditMode);
+      console.log("form.id:", form.id);
+      console.log("editData:", editData);
+      console.log("editData?.id:", editData?.id);
+      console.log("adIdParam:", adIdParam);
+      console.log("Condition (isEditMode && form.id):", isEditMode && form.id);
+      console.log("================================");
+
+      // Fix: Use multiple sources to determine if we have a valid ID for editing
+      const editId = form.id || editData?.id || adIdParam;
+      console.log("Determined editId:", editId);
 
       let ad;
-      if (isEditMode && form.id) {
+      if (isEditMode && editId) {
+        console.log("Taking UPDATE path with editId:", editId);
         const userId = editData?.userId || form.userId || auth.currentUser?.uid;
         if (!userId) {
           setError("معرف المستخدم غير صالح للتعديل.");
           return;
         }
 
+        console.log("=== DEBUG: Creating FinancingAdvertisement instance ===");
+        console.log("editData?.images:", editData?.images);
+        console.log("finalImageUrls:", finalImageUrls);
+
         ad = new FinancingAdvertisement({
           ...form,
-          id: form.id,
+          id: editId, // Use the determined editId instead of form.id
           userId: userId,
+          images: editData?.images || [], // Include existing images in the constructor
         });
+
+        console.log("Created instance - ad.images:", ad.images);
+        console.log("================================================");
+
+        console.log("Created FinancingAdvertisement instance for update with ID:", ad.id);
 
         await ad.update(
           {
             ...form,
             images: finalImageUrls,
             adPackage: selectedPackage ? Number(selectedPackage) : null,
-            receipt_image: receiptUrl,
           },
           newImageFiles,
-          receiptUrl
+          receiptFileToPass
         );
 
         await ad.returnToPending();
       } else {
+        console.log("Taking CREATE path - isEditMode:", isEditMode, "form.id:", form.id);
         const currentUser = auth.currentUser;
         if (!currentUser) throw new Error("يجب تسجيل الدخول أولاً.");
 
@@ -378,13 +388,15 @@ export default function AddFinancingAdForm() {
           adPackage: selectedPackage ? Number(selectedPackage) : null,
           images: finalImageUrls,
         });
-        await ad.save(newImageFiles, receiptUrl);
+        await ad.save(newImageFiles, receiptFileToPass);
         form.id = ad.id;
       }
 
       setSuccess(true);
       setTimeout(() => {
-        navigate(`/details/financingAds/${form.id || ad.id}`);
+        const finalId = editId || form.id || ad.id;
+        console.log("Navigating to details page with ID:", finalId);
+        navigate(`/details/financingAds/${finalId}`);
       }, 1500);
     } catch (error) {
       console.error("Error submitting form:", error);

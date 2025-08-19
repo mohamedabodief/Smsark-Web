@@ -1,4 +1,3 @@
-// استيراد الوظائف من Firebase
 import {
   collection,
   addDoc,
@@ -6,11 +5,11 @@ import {
   getDoc,
   deleteDoc,
   updateDoc,
+  getDocs,
+  onSnapshot,
   query,
   where,
-  onSnapshot,
-  getDocs,
-} from "firebase/firestore";
+} from 'firebase/firestore';
 import {
   getStorage,
   ref,
@@ -18,83 +17,49 @@ import {
   getDownloadURL,
   deleteObject,
   listAll,
-} from "firebase/storage";
-import { db, auth } from "../firebaseConfig";
-import Notification from "../MessageAndNotification/Notification";
-import User from "./User";
+} from 'firebase/storage';
+import { db, auth } from '../firebaseConfig';
+import User from './User';
+import Notification from '../MessageAndNotification/Notification';
 
-// أضف هذا الكائن الثابت بعد الاستيرادات
-const PACKAGE_INFO = {
-  1: { name: "باقة الأساس", price: 100, duration: 7 },
-  2: { name: "باقة النخبة", price: 150, duration: 14 },
-  3: { name: "باقة التميز", price: 200, duration: 21 },
-};
-
-class FinancingAdvertisement {
+class HomepageAdvertisement {
   #id = null;
 
   constructor(data) {
     this.#id = data.id || null;
-    this.title = data.title;
-    this.description = data.description;
-    this.images = data.images || [];
-    this.phone = data.phone;
-    this.start_limit = Number(data.start_limit);
-    this.end_limit = Number(data.end_limit);
-    this.org_name = data.org_name;
-    this.type_of_user = data.type_of_user;
-    this.userId = data.userId;
+    this.image = data.image || null;
     this.ads = data.ads !== undefined ? data.ads : false;
     this.adExpiryTime = data.adExpiryTime || null;
-    this.interest_rate_upto_5 = data.interest_rate_upto_5;
-    this.interest_rate_upto_10 = data.interest_rate_upto_10;
-    this.interest_rate_above_10 = data.interest_rate_above_10;
     this.receipt_image = data.receipt_image || null;
-    this.reviewStatus = data.reviewStatus || "pending";
+    this.reviewStatus = data.reviewStatus || 'pending'; // 'pending', 'approved', 'rejected'
     this.reviewed_by = data.reviewed_by || null;
     this.review_note = data.review_note || null;
-    this.status = data.status || "تحت العرض";
-    this.adPackage = data.adPackage !== undefined ? data.adPackage : null;
-    // Add timestamp fields for analytics
+    this.userId = data.userId || null;
     this.createdAt = data.createdAt || null;
-    this.updatedAt = data.updatedAt || null;
+    // إضافة العنوان إذا كان موجودًا في البيانات
+    // this.title = data.title || '';
   }
 
-  // ✅ إرجاع المعرف الداخلي للإعلان
   get id() {
     return this.#id;
   }
 
-  // ✅ إنشاء إعلان جديد + رفع الصور + إيصال الدفع + إشعار الأدمن
-  async save(imageFiles = [], receiptFile = null) {
-    // Set creation timestamp
+  // ✅ إنشاء إعلان جديد + رفع الصورة + إيصال الدفع + إشعار للأدمن
+  async save(imageFile = null, receiptFile = null) {
     this.createdAt = Date.now();
-    this.updatedAt = Date.now();
-
-    const colRef = collection(db, "FinancingAdvertisements");
-    // تجهيز معلومات الباقة
-    let adPackageName = null,
-      adPackagePrice = null,
-      adPackageDuration = null;
-    const pkgKey = String(this.adPackage);
-    if (pkgKey && PACKAGE_INFO[pkgKey]) {
-      adPackageName = PACKAGE_INFO[pkgKey].name;
-      adPackagePrice = PACKAGE_INFO[pkgKey].price;
-      adPackageDuration = PACKAGE_INFO[pkgKey].duration;
-    }
-    const docRef = await addDoc(colRef, {
-      ...this.#getAdData(),
-      adPackageName,
-      adPackagePrice,
-      adPackageDuration,
-    });
+    const colRef = collection(db, 'HomepageAdvertisements');
+    // تأكد من وجود العنوان قبل الحفظ
+    // if (!this.title) {
+    //   this.title = 'إعلان بدون عنوان';
+    // }
+    const docRef = await addDoc(colRef, this.#getAdData());
     this.#id = docRef.id;
     await updateDoc(docRef, { id: this.#id });
 
-    if (imageFiles.length > 0) {
-      const urls = await this.#uploadImages(imageFiles);
-      this.images = urls;
-      await updateDoc(docRef, { images: urls });
+    if (imageFile) {
+      const imageUrl = await this.#uploadImage(imageFile);
+      this.image = imageUrl;
+      await updateDoc(docRef, { image: imageUrl });
     }
 
     if (receiptFile) {
@@ -103,16 +68,15 @@ class FinancingAdvertisement {
       await updateDoc(docRef, { receipt_image: receiptUrl });
     }
 
-    // إرسال إشعار للمشرفين
-    const admins = await User.getAllUsersByType("admin");
+    const admins = await User.getAllUsersByType('admin');
     await Promise.all(
       admins.map((admin) =>
         new Notification({
           receiver_id: admin.uid,
-          title: "إعلان تمويلي جديد بانتظار المراجعة",
-          body: `العنوان: ${this.title}`,
-          type: "system",
-          link: `/admin/financing-ads/${this.#id}`,
+          title: '📢 إعلان واجهة جديد بانتظار المراجعة',
+          body: `تم إضافة إعلان جديد لواجهة الموقع.`,
+          type: 'system',
+          link: `/admin-dashboard`,
         }).send()
       )
     );
@@ -120,122 +84,88 @@ class FinancingAdvertisement {
     return this.#id;
   }
 
-  // ✅ تحديث بيانات الإعلان (بما في ذلك الصور أو إيصال الدفع)
-  async update(updates = {}, newImageFiles = null, newReceiptFile = null) {
-    if (!this.#id) throw new Error("الإعلان بدون ID صالح للتحديث");
-    const docRef = doc(db, "FinancingAdvertisements", this.#id);
-    // تحديث معلومات الباقة إذا تم تغييرها
-    if (
-      typeof updates.adPackage !== "undefined" &&
-      updates.adPackage !== null
-    ) {
-      const pkgKey = String(updates.adPackage);
-      if (PACKAGE_INFO[pkgKey]) {
-        updates.adPackageName = PACKAGE_INFO[pkgKey].name;
-        updates.adPackagePrice = PACKAGE_INFO[pkgKey].price;
-        updates.adPackageDuration = PACKAGE_INFO[pkgKey].duration;
-      } else {
-        updates.adPackageName = null;
-        updates.adPackagePrice = null;
-        updates.adPackageDuration = null;
-      }
+  // ✅ تحديث بيانات الإعلان أو الصورة أو الإيصال
+  async update(updates = {}, newImageFile = null, newReceiptFile = null) {
+    if (!this.#id) throw new Error('الإعلان بدون ID غير قابل للتحديث');
+    const docRef = doc(db, 'HomepageAdvertisements', this.#id);
+
+    if (newImageFile) {
+      await this.#deleteImage();
+      const newUrl = await this.#uploadImage(newImageFile);
+      updates.image = newUrl;
+      this.image = newUrl;
     }
-    // الصور: لا تحذف الصور القديمة إلا إذا تم تمرير صور جديدة
-    if (
-      newImageFiles &&
-      Array.isArray(newImageFiles) &&
-      newImageFiles.length > 0
-    ) {
-      await this.#deleteAllImages();
-      // ارفع الصور الجديدة على نفس id الإعلان الأصلي
-      const newUrls = await this.#uploadImages(newImageFiles);
-      updates.images = newUrls;
-      this.images = newUrls;
-    } else if (typeof updates.images === "undefined") {
-      // إذا لم يتم رفع صور جديدة ولم يتم تمرير images في التحديثات، احتفظ بالصور القديمة
-      updates.images = this.images;
-    }
+
     if (newReceiptFile) {
+      await this.#deleteReceipt();
       const receiptUrl = await this.#uploadReceipt(newReceiptFile);
       updates.receipt_image = receiptUrl;
       this.receipt_image = receiptUrl;
     }
-    // لا تغير userId أو id إلا إذا تم تمريرهم بشكل صريح
-    if (typeof updates.userId === "undefined" || !updates.userId) {
-      updates.userId = this.userId;
-    }
-    if (typeof updates.id === "undefined" || !updates.id) {
-      updates.id = this.#id;
-    }
-    // تحقق من صحة قيمة الحالة
-    if (
-      updates.status &&
-      !["تحت العرض", "تحت التفاوض", "منتهي"].includes(updates.status)
-    ) {
-      throw new Error("❌ قيمة حالة الإعلان غير صالحة");
-    }
+
     await updateDoc(docRef, updates);
   }
 
-  // ✅ حذف الإعلان نهائيًا مع صوره وإيصال الدفع
+  // ✅ حذف الإعلان وكل الصور المرتبطة به
   async delete() {
-    if (!this.#id) throw new Error("الإعلان بدون ID صالح للحذف");
-    await this.#deleteAllImages();
+    if (!this.#id) throw new Error('الإعلان بدون ID غير قابل للحذف');
+    await this.#deleteImage();
     await this.#deleteReceipt();
-    await deleteDoc(doc(db, "FinancingAdvertisements", this.#id));
+    await deleteDoc(doc(db, 'HomepageAdvertisements', this.#id));
   }
 
-  // ✅ الموافقة على الإعلان من قبل صانع الإعلان
+  // ✅ الموافقة على الإعلان من قبل الأدمن
   async approve() {
     const admin = await User.getByUid(auth.currentUser.uid);
-    const updates = {
-      reviewStatus: "approved",
+    await this.update({
+      reviewStatus: 'approved',
       reviewed_by: {
         uid: admin.uid,
         name: admin.adm_name,
         image: admin.image || null,
       },
       review_note: null,
-    };
-    await this.update(updates);
+    });
 
-    await new Notification({
-      receiver_id: this.userId,
-      title: "تمت الموافقة على إعلانك التمويلي",
-      body: `تمت الموافقة على إعلانك "${this.title}". يمكن للإدارة الآن تفعيله ليظهر في الواجهة.`,
-      type: "system",
-      link: `/client/ads/${this.#id}`,
-    }).send();
+    if (this.userId) {
+      await new Notification({
+        receiver_id: this.userId,
+        title: '✅ تمت الموافقة على إعلانك الواجهة',
+        body: 'تمت الموافقة على إعلانك. يمكن للإدارة الآن تفعيله ليظهر على الصفحة الرئيسية.',
+        type: 'system',
+        link: `/admin-dashboard`,
+      }).send();
+    }
   }
-
-  // ❌ رفض الإعلان مع ذكر السبب
-  async reject(reason = "") {
+  // ❌ رفض الإعلان
+  async reject(reason = '') {
     const admin = await User.getByUid(auth.currentUser.uid);
-    const updates = {
-      reviewStatus: "rejected",
+    await this.update({
+      reviewStatus: 'rejected',
       reviewed_by: {
         uid: admin.uid,
         name: admin.adm_name,
         image: admin.image || null,
       },
       review_note: reason,
-    };
-    await this.update(updates);
+    });
 
-    await new Notification({
-      receiver_id: this.userId,
-      title: "❌ تم رفض إعلانك التمويلي",
-      body: `تم رفض إعلانك "${this.title}". السبب: ${reason || "غير مذكور"}`,
-      type: "system",
-      link: `/client/ads/${this.#id}`,
-    }).send();
+    if (this.userId) {
+      await new Notification({
+        receiver_id: this.userId,
+        title: '❌ تم رفض إعلانك الواجهة',
+        body: `سبب الرفض: ${reason || 'غير مذكور'}`,
+        type: 'system',
+        link: `/`,
+      }).send();
+    }
   }
 
-  // 🔁 إعادة الإعلان لحالة المراجعة "pending"
+  // 🔄 إرجاع الإعلان لحالة المراجعة
   async returnToPending() {
     const admin = await User.getByUid(auth.currentUser.uid);
-    const updates = {
-      reviewStatus: "pending",
+    await this.update({
+      reviewStatus: 'pending',
       ads: false, // Deactivate the ad when returning to pending status
       adExpiryTime: null, // Reset expiry time when deactivating
       reviewed_by: {
@@ -244,19 +174,20 @@ class FinancingAdvertisement {
         image: admin.image || null,
       },
       review_note: null,
-    };
-    await this.update(updates);
+    });
 
-    await new Notification({
-      receiver_id: this.userId,
-      title: "إعلانك التمويلي الآن تحت المراجعة",
-      body: `تمت إعادة إعلانك "${this.title}" لحالة المراجعة.`,
-      type: "system",
-      link: `/client/ads/${this.#id}`,
-    }).send();
+    if (this.userId) {
+      await new Notification({
+        receiver_id: this.userId,
+        title: '🔄 إعلانك الآن قيد المراجعة',
+        body: 'تمت إعادة إعلانك للمراجعة من قبل الإدارة.',
+        type: 'system',
+        link: `/`,
+      }).send();
+    }
   }
 
-  // ⏳ تفعيل الإعلان لعدد أيام محدد
+  // ⏳ تفعيل الإعلان لمدة معينة
   async adsActivation(days) {
     const ms = days * 24 * 60 * 60 * 1000;
     this.ads = true;
@@ -272,167 +203,92 @@ class FinancingAdvertisement {
     await this.update({ ads: false, adExpiryTime: null });
   }
 
-  // ============================
-  // 📦 دوال static (جلب البيانات)
-  // ============================
+  // ✅ التأكد من انتهاء مدة الإعلان وتعطيله إن لزم
+  static async #handleExpiry(data) {
+    const now = Date.now();
+    if (data.ads === true && data.adExpiryTime && data.adExpiryTime <= now) {
+      console.log("HomepageAdvertisement.#handleExpiry - deactivating expired ad:", data.id);
+      data.ads = false;
+      data.adExpiryTime = null;
+      const docRef = doc(db, 'HomepageAdvertisements', data.id);
+      await updateDoc(docRef, { ads: false, adExpiryTime: null });
+    }
+    return new HomepageAdvertisement(data);
+  }
 
-  // ✅ جلب إعلان واحد باستخدام ID
+  // ✅ جلب إعلان حسب ID
   static async getById(id) {
-    const snap = await getDoc(doc(db, "FinancingAdvertisements", id));
+    const snap = await getDoc(doc(db, 'HomepageAdvertisements', id));
     return snap.exists()
-      ? new FinancingAdvertisement({ ...snap.data(), id: snap.id })
+      ? await HomepageAdvertisement.#handleExpiry(snap.data())
       : null;
   }
 
-  // ✅ جلب جميع الإعلانات
+  // ✅ جلب كل الإعلانات
   static async getAll() {
-    const col = collection(db, "FinancingAdvertisements");
-    const snap = await getDocs(col);
-    return snap.docs.map(
-      (d) => new FinancingAdvertisement({ ...d.data(), id: d.id })
-    );
+    const snap = await getDocs(collection(db, 'HomepageAdvertisements'));
+    const ads = [];
+    for (const docSnap of snap.docs) {
+      const ad = await HomepageAdvertisement.#handleExpiry(docSnap.data());
+      if (ad) ads.push(ad);
+    }
+    return ads;
   }
 
-  // ✅ جلب الإعلانات حسب حالة المراجعة (pending | approved | rejected)
+  // ✅ جلب الإعلانات حسب حالة المراجعة
   static async getByReviewStatus(status) {
     const q = query(
-      collection(db, "FinancingAdvertisements"),
-      where("reviewStatus", "==", status)
+      collection(db, 'HomepageAdvertisements'),
+      where('reviewStatus', '==', status)
     );
     const snap = await getDocs(q);
-    return snap.docs.map(
-      (d) => new FinancingAdvertisement({ ...d.data(), id: d.id })
-    );
+    return snap.docs.map((d) => new HomepageAdvertisement(d.data()));
   }
 
   // ✅ الاشتراك اللحظي في الإعلانات حسب حالة المراجعة (pending | approved | rejected)
   static subscribeByStatus(status, callback) {
     const q = query(
-      collection(db, "FinancingAdvertisements"),
-      where("reviewStatus", "==", status)
+      collection(db, 'HomepageAdvertisements'),
+      where('reviewStatus', '==', status)
     );
-    return onSnapshot(q, (snapshot) => {
-      const ads = snapshot.docs.map((docSnap) => {
-        const data = docSnap.data();
-        return {
-          id: docSnap.id,
-          title: data.title,
-          description: data.description,
-          images: data.images || [],
-          phone: data.phone,
-          start_limit: data.start_limit,
-          end_limit: data.end_limit,
-          org_name: data.org_name,
-          type_of_user: data.type_of_user,
-          userId: data.userId,
-          ads: data.ads !== undefined ? data.ads : false,
-          adExpiryTime: data.adExpiryTime,
-          interest_rate_upto_5: data.interest_rate_upto_5,
-          interest_rate_upto_10: data.interest_rate_upto_10,
-          interest_rate_above_10: data.interest_rate_above_10,
-          receipt_image: data.receipt_image,
-          reviewStatus: data.reviewStatus || "pending",
-          reviewed_by: data.reviewed_by,
-          review_note: data.review_note,
-          status: data.status,
-          adPackage: data.adPackage,
-          adPackageName: data.adPackageName,
-          adPackagePrice: data.adPackagePrice,
-          adPackageDuration: data.adPackageDuration,
-        };
-      });
+    return onSnapshot(q, async (snap) => {
+      const ads = [];
+      for (const doc of snap.docs) {
+        const ad = await HomepageAdvertisement.#handleExpiry(doc.data());
+        if (ad) ads.push(ad);
+      }
       callback(ads);
     });
   }
 
-  // ✅ جلب الإعلانات الخاصة بمستخدم معيّن
-  static async getByUserId(userId) {
-    const q = query(
-      collection(db, "FinancingAdvertisements"),
-      where("userId", "==", userId)
-    );
-    const snap = await getDocs(q);
-    return snap.docs.map(
-      (d) => new FinancingAdvertisement({ ...d.data(), id: d.id })
-    );
-  }
-
-  // ✅ جلب الإعلانات المفعّلة فقط (ads=true AND reviewStatus='approved')
-  static async getActiveAds() {
-    const q = query(
-      collection(db, "FinancingAdvertisements"),
-      where("ads", "==", true),
-      where("reviewStatus", "==", "approved")
-    );
-    const snap = await getDocs(q);
-    return snap.docs.map((d) => {
-      const data = d.data();
-      return {
-        id: d.id,
-        title: data.title,
-        description: data.description,
-        images: data.images || [],
-        phone: data.phone,
-        start_limit: data.start_limit,
-        end_limit: data.end_limit,
-        org_name: data.org_name,
-        type_of_user: data.type_of_user,
-        userId: data.userId,
-        ads: data.ads !== undefined ? data.ads : false,
-        adExpiryTime: data.adExpiryTime,
-        interest_rate_upto_5: data.interest_rate_upto_5,
-        interest_rate_upto_10: data.interest_rate_upto_10,
-        interest_rate_above_10: data.interest_rate_above_10,
-        financing_model: data.financing_model,
-        receipt_image: data.receipt_image,
-        reviewStatus: data.reviewStatus || "pending",
-        reviewed_by: data.reviewed_by,
-        review_note: data.review_note,
-        adPackage: data.adPackage,
-        adPackageName: data.adPackageName,
-        adPackagePrice: data.adPackagePrice,
-        adPackageDuration: data.adPackageDuration,
-      };
+  // ✅ الاشتراك اللحظي في جميع الإعلانات
+  static subscribeToAll(callback) {
+    const q = query(collection(db, 'HomepageAdvertisements'));
+    return onSnapshot(q, async (snap) => {
+      console.log("HomepageAdvertisement.subscribeToAll - received snapshots:", snap.docs.length);
+      const ads = [];
+      for (const doc of snap.docs) {
+        const ad = await HomepageAdvertisement.#handleExpiry(doc.data());
+        if (ad) ads.push(ad);
+      }
+      console.log("HomepageAdvertisement.subscribeToAll - processed ads:", ads.length);
+      callback(ads);
     });
   }
 
-  // ✅ الاشتراك اللحظي في الإعلانات المفعّلة فقط (ads=true AND reviewStatus='approved')
+  // ✅ الاشتراك اللحظي في الإعلانات المفعلة (ads=true AND reviewStatus='approved')
   static subscribeActiveAds(callback) {
     const q = query(
-      collection(db, "FinancingAdvertisements"),
-      where("ads", "==", true),
-      where("reviewStatus", "==", "approved")
+      collection(db, 'HomepageAdvertisements'),
+      where('ads', '==', true),
+      where('reviewStatus', '==', 'approved')
     );
-    return onSnapshot(q, (snap) => {
-      const ads = snap.docs.map((d) => {
-        const data = d.data();
-        return {
-          id: d.id,
-          title: data.title,
-          description: data.description,
-          images: data.images || [],
-          phone: data.phone,
-          start_limit: data.start_limit,
-          end_limit: data.end_limit,
-          org_name: data.org_name,
-          type_of_user: data.type_of_user,
-          userId: data.userId,
-          ads: data.ads !== undefined ? data.ads : false,
-          adExpiryTime: data.adExpiryTime,
-          interest_rate_upto_5: data.interest_rate_upto_5,
-          interest_rate_upto_10: data.interest_rate_upto_10,
-          interest_rate_above_10: data.interest_rate_above_10,
-          financing_model: data.financing_model,
-          receipt_image: data.receipt_image,
-          reviewStatus: data.reviewStatus || "pending",
-          reviewed_by: data.reviewed_by,
-          review_note: data.review_note,
-          adPackage: data.adPackage,
-          adPackageName: data.adPackageName,
-          adPackagePrice: data.adPackagePrice,
-          adPackageDuration: data.adPackageDuration,
-        };
-      });
+    return onSnapshot(q, async (snap) => {
+      const ads = [];
+      for (const doc of snap.docs) {
+        const ad = await HomepageAdvertisement.#handleExpiry(doc.data());
+        if (ad) ads.push(ad);
+      }
       callback(ads);
     });
   }
@@ -440,172 +296,81 @@ class FinancingAdvertisement {
   // 🔁 استماع لحظي لإعلانات مستخدم معين
   static subscribeByUserId(userId, callback) {
     const q = query(
-      collection(db, "FinancingAdvertisements"),
-      where("userId", "==", userId)
+      collection(db, 'HomepageAdvertisements'),
+      where('userId', '==', userId)
     );
-    return onSnapshot(q, (snap) => {
-      const ads = snap.docs.map((d) => {
-        const data = d.data();
-        return {
-          id: d.id,
-          title: data.title,
-          description: data.description,
-          images: data.images || [],
-          phone: data.phone,
-          start_limit: data.start_limit,
-          end_limit: data.end_limit,
-          org_name: data.org_name,
-          type_of_user: data.type_of_user,
-          userId: data.userId,
-          ads: data.ads !== undefined ? data.ads : false,
-          adExpiryTime: data.adExpiryTime,
-          interest_rate_upto_5: data.interest_rate_upto_5,
-          interest_rate_upto_10: data.interest_rate_upto_10,
-          interest_rate_above_10: data.interest_rate_above_10,
-          financing_model: data.financing_model,
-          receipt_image: data.receipt_image,
-          reviewStatus: data.reviewStatus || "pending",
-          reviewed_by: data.reviewed_by,
-          review_note: data.review_note,
-          adPackage: data.adPackage,
-          adPackageName: data.adPackageName,
-          adPackagePrice: data.adPackagePrice,
-          adPackageDuration: data.adPackageDuration,
-        };
-      });
+    return onSnapshot(q, async (snap) => {
+      console.log(`HomepageAdvertisement.subscribeByUserId - received snapshots for user ${userId}:`, snap.docs.length);
+      const ads = [];
+      for (const doc of snap.docs) {
+        const ad = await HomepageAdvertisement.#handleExpiry(doc.data());
+        if (ad) ads.push(ad);
+      }
+      console.log(`HomepageAdvertisement.subscribeByUserId - processed ads for user ${userId}:`, ads.length);
       callback(ads);
     });
   }
 
-  // 🔁 استماع لحظي لجميع الإعلانات
-  static subscribeAllAds(callback) {
-    const q = collection(db, "FinancingAdvertisements");
-    return onSnapshot(q, (snap) => {
-      const ads = snap.docs.map((d) => {
-        const data = d.data();
-        return {
-          id: d.id,
-          title: data.title,
-          description: data.description,
-          images: data.images || [],
-          phone: data.phone,
-          start_limit: data.start_limit,
-          end_limit: data.end_limit,
-          org_name: data.org_name,
-          type_of_user: data.type_of_user,
-          userId: data.userId,
-          ads: data.ads !== undefined ? data.ads : false,
-          adExpiryTime: data.adExpiryTime,
-          interest_rate_upto_5: data.interest_rate_upto_5,
-          interest_rate_upto_10: data.interest_rate_upto_10,
-          interest_rate_above_10: data.interest_rate_above_10,
-          receipt_image: data.receipt_image,
-          reviewStatus: data.reviewStatus || "pending",
-          reviewed_by: data.reviewed_by,
-          review_note: data.review_note,
-          status: data.status,
-          adPackage: data.adPackage,
-          adPackageName: data.adPackageName,
-          adPackagePrice: data.adPackagePrice,
-          adPackageDuration: data.adPackageDuration,
-        };
-      });
-      callback(ads);
-    });
-  }
-
-  // ============================
-  // 🔐 دوال خاصة داخلية
-  // ============================
-
-  // 📤 رفع صور الإعلان
-  async #uploadImages(files = []) {
+  // 📤 رفع صورة الإعلان
+  async #uploadImage(file) {
     const storage = getStorage();
-    const urls = [];
-    const limited = files.slice(0, 4);
-    for (let i = 0; i < limited.length; i++) {
-      const refPath = ref(
-        storage,
-        `financing_ads/${this.#id}/image_${i + 1}.jpg`
-      );
-      await uploadBytes(refPath, limited[i]);
-      urls.push(await getDownloadURL(refPath));
-    }
-    return urls;
+    const imageRef = ref(storage, `homepage_ads/${this.#id}/main.jpg`);
+    await uploadBytes(imageRef, file);
+    return await getDownloadURL(imageRef);
   }
 
   // 📤 رفع إيصال الدفع
   async #uploadReceipt(file) {
     const storage = getStorage();
-    // رفع الإيصال في نفس مسار صور العقارات مع userId
-    const timestamp = Date.now();
-    const fileName = `receipt_${timestamp}.jpg`;
-    const refPath = ref(storage, `property_images/${this.userId}/${fileName}`);
+    const refPath = ref(storage, `homepage_ads/${this.#id}/receipt.jpg`);
     await uploadBytes(refPath, file);
     return await getDownloadURL(refPath);
   }
 
-  // 🗑️ حذف جميع صور الإعلان
-  async #deleteAllImages() {
+  // 🗑️ حذف صورة الإعلان
+  async #deleteImage() {
     const storage = getStorage();
-    const dirRef = ref(storage, `financing_ads/${this.#id}`);
+    const imageRef = ref(storage, `homepage_ads/${this.#id}/main.jpg`);
     try {
-      const list = await listAll(dirRef);
-      await Promise.all(list.items.map((ref) => deleteObject(ref)));
+      await deleteObject(imageRef);
     } catch (_) {}
   }
 
   // 🗑️ حذف إيصال الدفع
   async #deleteReceipt() {
     const storage = getStorage();
-    const receiptRef = ref(storage, `financing_ads/${this.#id}/receipt.jpg`);
+    const receiptRef = ref(storage, `homepage_ads/${this.#id}/receipt.jpg`);
     try {
       await deleteObject(receiptRef);
     } catch (_) {}
   }
 
-  // 📋 تجهيز كائن البيانات الكامل لتخزينه في Firestore
+  // 📦 تجهيز كائن البيانات للتخزين
   #getAdData() {
-    // تجهيز معلومات الباقة
-    let adPackageName = null,
-      adPackagePrice = null,
-      adPackageDuration = null;
-    const pkgKey = String(this.adPackage);
-    if (pkgKey && PACKAGE_INFO[pkgKey]) {
-      adPackageName = PACKAGE_INFO[pkgKey].name;
-      adPackagePrice = PACKAGE_INFO[pkgKey].price;
-      adPackageDuration = PACKAGE_INFO[pkgKey].duration;
-    }
     return {
-      title: this.title,
-      description: this.description,
-      images: this.images,
-      phone: this.phone,
-      start_limit: this.start_limit,
-      end_limit: this.end_limit,
-      org_name: this.org_name,
-      type_of_user: this.type_of_user,
-      userId: this.userId,
+      image: this.image,
       ads: this.ads,
       adExpiryTime: this.adExpiryTime,
-      interest_rate_upto_5: this.interest_rate_upto_5,
-      interest_rate_upto_10: this.interest_rate_upto_10,
-      interest_rate_above_10: this.interest_rate_above_10,
       receipt_image: this.receipt_image,
       reviewStatus: this.reviewStatus,
       reviewed_by: this.reviewed_by,
       review_note: this.review_note,
-      status: this.status,
-      ...(this.adPackage !== undefined && this.adPackage !== null
-        ? { adPackage: this.adPackage }
-        : {}),
-      adPackageName,
-      adPackagePrice,
-      adPackageDuration,
+      userId: this.userId,
       createdAt: this.createdAt,
-      updatedAt: this.updatedAt,
+      // title: this.title, // Add title to the data
     };
+  }
+  // ✅ جلب كل الإعلانات النشطة (ads=true AND reviewStatus='approved')
+  static async getActiveAds() {
+    const colRef = collection(db, 'HomepageAdvertisements');
+    const q = query(colRef, where('ads', '==', true), where('reviewStatus', '==', 'approved'));
+    const querySnapshot = await getDocs(q);
+    const ads = [];
+    querySnapshot.forEach((docSnap) => {
+      ads.push(new HomepageAdvertisement({ id: docSnap.id, ...docSnap.data() }));
+    });
+    return ads;
   }
 }
 
-export default FinancingAdvertisement;
+export default HomepageAdvertisement;
