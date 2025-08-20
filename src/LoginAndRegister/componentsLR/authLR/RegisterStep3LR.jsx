@@ -138,13 +138,12 @@ export default function RegisterStep3LR({
 
   // دالة لرفع صور البطاقة الضريبية إلى Firebase Storage
   const uploadTaxCardImagesToFirebase = async (files, userId) => {
-    // التحقق من وجود مستخدم مسجل الدخول
-    const currentUser = auth.currentUser;
-    if (!currentUser || !userId) {
-      throw new Error("يجب تسجيل الدخول أولاً. يرجى تسجيل الدخول من جديد.");
-    }
+  const currentUser = auth.currentUser;
+  if (!currentUser || !userId) {
+    throw new Error("يجب تسجيل الدخول أولاً. يرجى تسجيل الدخول من جديد.");
+  }
 
-    console.log("Uploading tax card images for user:", currentUser.uid);
+  console.log("Uploading tax card images for user:", currentUser.uid);
 
     const uploadPromises = files.map(async (file, index) => {
       const timestamp = Date.now();
@@ -155,24 +154,24 @@ export default function RegisterStep3LR({
         `tax_card_images/${currentUser.uid}/${fileName}`
       );
 
-      try {
-        await uploadBytes(storageRef, file);
-        const downloadURL = await getDownloadURL(storageRef);
-        return downloadURL;
-      } catch (error) {
-        console.error("Error uploading tax card image:", error);
-        if (error.code === "storage/unauthorized") {
-          throw new Error("ليس لديك صلاحية لرفع الصور. تأكد من تسجيل الدخول.");
-        } else {
-          throw new Error(
-            `فشل في رفع صورة البطاقة الضريبية ${index + 1}: ${error.message}`
-          );
-        }
+    try {
+      await uploadBytes(storageRef, file);
+      const downloadURL = await getDownloadURL(storageRef);
+      return downloadURL;
+    } catch (error) {
+      console.error("Error uploading tax card image:", error);
+      if (error.code === "storage/unauthorized") {
+        throw new Error("ليس لديك صلاحية لرفع الصور. تأكد من تسجيل الدخول.");
+      } else {
+        throw new Error(
+          `فشل في رفع صورة البطاقة الضريبية ${index + 1}: ${error.message}`
+        );
       }
-    });
+    }
+  });
 
-    return Promise.all(uploadPromises);
-  };
+  return Promise.all(uploadPromises);
+};
 
   const handleSubmit = async (e) => {
     e.preventDefault();

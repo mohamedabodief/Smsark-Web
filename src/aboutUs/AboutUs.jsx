@@ -1,5 +1,3 @@
-
-
 import React, { useState, useRef, useEffect } from "react";
 import {
   Box,
@@ -84,7 +82,7 @@ const aboutUsData = {
 
   heroText: "بيتك المثالي هيكون حقيقة مع سمسارك",
   whoIsSamsarakTitle: "مرحبًا بك في سمسارك",
-  whoIsSamsarakDescription:  
+  whoIsSamsarakDescription:
     "تأسست سمسارك على يد مجموعة من المهندسين المصريين بخبرة واسعة في مجال العقارات، لتكون منصة متخصصة في البيع، الشراء، والإيجار لكافة أنواع العقارات في جميع أنحاء مصر. نحن شركة مصرية 100%، نفخر بخدمة عملائنا في مختلف المحافظات من خلال فهم عميق للسوق العقاري المصري، وتقديم حلول مرنة وواقعية تناسب جميع الاحتياجات السكنية والاستثمارية.",
   clientStoriesTitle: "قصص عملائنا",
   clientStories: [
@@ -140,7 +138,6 @@ const aboutUsData = {
     },
   ],
 };
-
 
 const HeroSection = styled(Box)(() => ({
   position: "relative",
@@ -244,7 +241,8 @@ const AboutUs = () => {
 
   const scrollToIndex = (index) => {
     if (sliderRef.current) {
-      const cardWidth = window.innerWidth >= 900 ? 300 : sliderRef.current.offsetWidth;
+      const cardWidth =
+        window.innerWidth >= 900 ? 300 : sliderRef.current.offsetWidth;
       sliderRef.current.scrollTo({
         left: index * cardWidth,
         behavior: "smooth",
@@ -258,11 +256,11 @@ const AboutUs = () => {
 
   // وظائف الأزرار
   const handleBrowseProperties = () => {
-    navigate('/home');
+    navigate("/home");
   };
 
   const handleContactUs = () => {
-    navigate('/contact');
+    navigate("/contact");
   };
 
   return (
@@ -271,7 +269,7 @@ const AboutUs = () => {
       <Box
         sx={{
           position: "relative",
-          width: "100vw",
+          width: "100%",
           height: "60vh",
           minHeight: 500,
           mb: 6,
@@ -282,7 +280,6 @@ const AboutUs = () => {
       >
         <img
           src={aboutUsHeader}
-          
           alt="عقارات سمسارك"
           style={{
             width: "100%",
@@ -365,7 +362,6 @@ const AboutUs = () => {
       <Container maxWidth="lg" sx={{ py: 6 }}>
         <Box sx={{ mb: 8 }}>
           <Grid container spacing={4} alignItems="center">
-
             <Grid size={{ xs: 12, md: 5 }}>
               <Box
                 component="img"
