@@ -3,6 +3,8 @@
 import FinancingAdvertisement from '../../FireBase/modelsWithOperations/FinancingAdvertisement';
 import ClientAdvertisement from '../../FireBase/modelsWithOperations/ClientAdvertisemen';
 import User from '../../FireBase/modelsWithOperations/User';
+    import { collection, getDocs } from 'firebase/firestore';
+    import { db } from '../../FireBase/firebaseConfig';
 
     // Async thunk to fetch comprehensive analytics data using model classes - REAL DATA ONLY
 // This replaces the previous direct Firestore calls with model class methods
@@ -39,8 +41,18 @@ export const fetchAnalyticsData = createAsyncThunk(
       let financingAds = [];
       let clientAds = [];
       let users = [];
-      
+      let financialRequests = [];
+
       try {
+        // Fetch financial requests directly from Firestore
+        const financialRequestsSnapshot = await getDocs(collection(db, 'FinancingRequests'));
+        financialRequests = financialRequestsSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          // Convert Firestore timestamp to ISO string for consistency
+          submitted_at: doc.data().submitted_at?.toDate?.()?.toISOString() || doc.data().submitted_at
+        }));
+
         [developerAds, financingAds, clientAds, users] = await Promise.all([
           RealEstateDeveloperAdvertisement.getAll(),
           FinancingAdvertisement.getAll(),
@@ -54,13 +66,15 @@ export const fetchAnalyticsData = createAsyncThunk(
         financingAds = [];
         clientAds = [];
         users = [];
+        financialRequests = [];
       }
 
         console.log('Fetched data counts using model classes:', {
             developerAds: developerAds.length,
             financingAds: financingAds.length,
             clientAds: clientAds.length,
-            users: users.length
+            users: users.length,
+            financialRequests: financialRequests.length
         });
 
         // Process data based on user role
@@ -69,6 +83,7 @@ export const fetchAnalyticsData = createAsyncThunk(
             financingAds,
             clientAds,
             users,
+            financialRequests,
             userRole,
             userId,
             { dateRange, selectedCity, selectedStatus, adType, startDate, daysAgo }
@@ -166,7 +181,7 @@ export const fetchAnalyticsData = createAsyncThunk(
     };
 
     // Helper function to process analytics data using model class instances
-    const processAnalyticsData = (developerAds, financingAds, clientAds, users, userRole, userId, filters) => {
+    const processAnalyticsData = (developerAds, financingAds, clientAds, users, financialRequests, userRole, userId, filters) => {
     const { dateRange, selectedCity, selectedStatus, adType, startDate, daysAgo } = filters;
 
     // Filter data based on user role
@@ -262,11 +277,20 @@ export const fetchAnalyticsData = createAsyncThunk(
         }
     });
 
-    // Financial insights (using financing ads as proxy for requests)
-    const totalFinancingRequests = filteredFinancingAds.length;
-    const approvedRequests = filteredFinancingAds.filter(ad => ad.reviewStatus === 'approved').length;
-    const rejectedRequests = filteredFinancingAds.filter(ad => ad.reviewStatus === 'rejected').length;
-    const pendingRequests = filteredFinancingAds.filter(ad => ad.reviewStatus === 'pending').length;
+    // Financial insights (using real financial requests data)
+    const filteredFinancialRequests = financialRequests.filter(req => {
+        // Apply date filter if specified
+        if (startDate) {
+            const reqDate = new Date(req.submitted_at);
+            if (reqDate < startDate) return false;
+        }
+        return true;
+    });
+
+    const totalFinancingRequests = filteredFinancialRequests.length;
+    const approvedRequests = filteredFinancialRequests.filter(req => req.reviewStatus === 'approved').length;
+    const rejectedRequests = filteredFinancialRequests.filter(req => req.reviewStatus === 'rejected').length;
+    const pendingRequests = filteredFinancialRequests.filter(req => req.reviewStatus === 'pending').length;
 
     // Calculate approval rate
     const approvalRate = totalFinancingRequests > 0 ? Number(((approvedRequests / totalFinancingRequests) * 100).toFixed(3)) : 0;
@@ -288,10 +312,20 @@ export const fetchAnalyticsData = createAsyncThunk(
         if (rateAbove > 0) interestRateBreakdown['>10%']++;
     });
 
-    // Revenue tracking (real calculation based on approved ads' package prices)
-    const totalRevenue = filteredFinancingAds
-        .filter(ad => ad.reviewStatus === 'approved')
+    // Revenue tracking (real calculation based on approved ads' package prices from all ad types)
+    const clientRevenue = filteredClientAds
+        .filter(ad => ad.reviewStatus === 'approved' && ad.ads)
         .reduce((sum, ad) => sum + (ad.adPackagePrice || 0), 0);
+
+    const developerRevenue = filteredDeveloperAds
+        .filter(ad => ad.reviewStatus === 'approved' && ad.ads)
+        .reduce((sum, ad) => sum + (ad.adPackagePrice || 0), 0);
+
+    const financingRevenue = filteredFinancingAds
+        .filter(ad => ad.reviewStatus === 'approved' && ad.ads)
+        .reduce((sum, ad) => sum + (ad.adPackagePrice || 0), 0);
+
+    const totalRevenue = clientRevenue + developerRevenue + financingRevenue;
 
     // Time-based data
     const timeBasedData = [];
@@ -471,6 +505,24 @@ export const fetchAnalyticsData = createAsyncThunk(
       location: ad.location,
       createdAt: ad.createdAt,
       updatedAt: ad.updatedAt
+    })),
+    // Include real financial requests data
+    financialRequests: filteredFinancialRequests.map(req => ({
+      id: req.id,
+      user_id: req.user_id,
+      advertisement_id: req.advertisement_id,
+      monthly_income: req.monthly_income,
+      job_title: req.job_title,
+      employer: req.employer,
+      age: req.age,
+      marital_status: req.marital_status,
+      dependents: req.dependents,
+      financing_amount: req.financing_amount,
+      repayment_years: req.repayment_years,
+      phone_number: req.phone_number,
+      status: req.status,
+      reviewStatus: req.reviewStatus,
+      submitted_at: req.submitted_at
     })),
     filters: {
       dateRange,

@@ -2190,11 +2190,12 @@ function Mainadvertisment(props) {
                                     {/* Admin Actions */}
                                 <Box sx={{
                                     display: 'flex',
-                                    flexWrap: 'wrap',
-                                    gap: 1,
+                                    flexWrap: { xs: 'wrap', md: 'nowrap' },
+                                    gap: { xs: 1, md: 0.5 },
                                     justifyContent: { xs: 'center', sm: 'flex-start' },
                                     mt: { xs: 2, sm: 0 },
-                                    width: { xs: '100%', sm: 'auto' }
+                                    width: { xs: '100%', sm: 'auto' },
+                                    minWidth: { md: 'fit-content' }
                                 }}>
                                         {/* Approve/Reject buttons for pending ads */}
                                         {ad.reviewStatus === 'pending' && (
@@ -2935,6 +2936,80 @@ function PaidAdvertismentPage() {
                 ) : '—'
             ),
         },
+        {
+            field: 'tax_record',
+            headerName: 'السجل الضريبي',
+            width: 100,
+            renderCell: (params) => {
+                const userId = params.row.userId;
+                const cachedTaxImages = taxImagesCache[userId] || [];
+                const firstTaxImage = cachedTaxImages.length > 0 ? cachedTaxImages[0] : null;
+
+                // Debug logging
+                console.log('Tax record renderCell:', {
+                    userId: userId,
+                    cachedTaxImages: cachedTaxImages,
+                    firstTaxImage: firstTaxImage
+                });
+
+                // If no cached images, try to fetch them
+                React.useEffect(() => {
+                    if (userId && !taxImagesCache[userId]) {
+                        fetchTaxImagesFromStorage(userId);
+                    }
+                }, [userId]);
+
+                return (
+                    <Avatar
+                        src={firstTaxImage || 'https://placehold.co/50x50/E0E0E0/FFFFFF?text=No+Tax'}
+                        variant="rounded"
+                        sx={{
+                            width: 60,
+                            height: 50,
+                            cursor: 'pointer',
+                            '&:hover': { opacity: 0.8 }
+                        }}
+                        onClick={() => handleTaxCardClick(userId)}
+                    />
+                );
+            },
+            sortable: false,
+            filterable: false,
+        },
+        {
+            field: 'receipt_image',
+            headerName: 'إيصال الدفع',
+            width: 100,
+            renderCell: (params) => {
+                if (params.value) {
+                    return (
+                        <Avatar
+                            src={params.value}
+                            variant="rounded"
+                            sx={{
+                                width: 60,
+                                height: 50,
+                                cursor: 'pointer',
+                                '&:hover': {
+                                    opacity: 0.8,
+                                    transform: 'scale(1.05)'
+                                }
+                            }}
+                            onClick={() => handleReceiptClick(params.row, 'developer')}
+                        />
+                    );
+                }
+                return (
+                    <Avatar
+                        src="https://placehold.co/50x50/E0E0E0/FFFFFF?text=No+Receipt"
+                        variant="rounded"
+                        sx={{ width: 60, height: 50 }}
+                    />
+                );
+            },
+            sortable: false,
+            filterable: false,
+        },
         // { field: 'address', headerName: 'العنوان التفصيلي', width: 300 },
         {
             field: 'actions',
@@ -2943,7 +3018,7 @@ function PaidAdvertismentPage() {
             sortable: false,
             filterable: false,
             renderCell: (params) => (
-                <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                <Box sx={{ display: 'flex', gap: 0.5, flexWrap: { xs: 'wrap', md: 'nowrap' } }}>
                     <Tooltip title="موافقة">
                         <span>
                             <IconButton
@@ -3036,7 +3111,7 @@ function PaidAdvertismentPage() {
                         </span>
                     </Tooltip>
                     {/* Add a new column to developerColumns for receipt image */}
-                    {params.row.receipt_image && (
+                    {/* {params.row.receipt_image && (
                         <Tooltip title="إيصال الدفع">
                             <span>
                                 <IconButton
@@ -3050,83 +3125,9 @@ function PaidAdvertismentPage() {
                                 </IconButton>
                             </span>
                         </Tooltip>
-                    )}
+                    )} */}
                 </Box>
             ),
-        },
-        {
-            field: 'tax_record',
-            headerName: 'السجل الضريبي',
-            width: 100,
-            renderCell: (params) => {
-                const userId = params.row.userId;
-                const cachedTaxImages = taxImagesCache[userId] || [];
-                const firstTaxImage = cachedTaxImages.length > 0 ? cachedTaxImages[0] : null;
-
-                // Debug logging
-                console.log('Tax record renderCell:', {
-                    userId: userId,
-                    cachedTaxImages: cachedTaxImages,
-                    firstTaxImage: firstTaxImage
-                });
-
-                // If no cached images, try to fetch them
-                React.useEffect(() => {
-                    if (userId && !taxImagesCache[userId]) {
-                        fetchTaxImagesFromStorage(userId);
-                    }
-                }, [userId]);
-
-                return (
-                    <Avatar
-                        src={firstTaxImage || 'https://placehold.co/50x50/E0E0E0/FFFFFF?text=No+Tax'}
-                        variant="rounded"
-                        sx={{
-                            width: 60,
-                            height: 50,
-                            cursor: 'pointer',
-                            '&:hover': { opacity: 0.8 }
-                        }}
-                        onClick={() => handleTaxCardClick(userId)}
-                    />
-                );
-            },
-            sortable: false,
-            filterable: false,
-        },
-        {
-            field: 'receipt_image',
-            headerName: 'إيصال الدفع',
-            width: 100,
-            renderCell: (params) => {
-                if (params.value) {
-                    return (
-                        <Avatar
-                            src={params.value}
-                            variant="rounded"
-                            sx={{
-                                width: 60,
-                                height: 50,
-                                cursor: 'pointer',
-                                '&:hover': {
-                                    opacity: 0.8,
-                                    transform: 'scale(1.05)'
-                                }
-                            }}
-                            onClick={() => handleReceiptClick(params.row, 'developer')}
-                        />
-                    );
-                }
-                return (
-                    <Avatar
-                        src="https://placehold.co/50x50/E0E0E0/FFFFFF?text=No+Receipt"
-                        variant="rounded"
-                        sx={{ width: 60, height: 50 }}
-                    />
-                );
-            },
-            sortable: false,
-            filterable: false,
         },
         { field: 'adExpiryTime', headerName: 'تاريخ الانتهاء', width: 150, renderCell: (params) => params.value ? new Date(params.value).toLocaleDateString('ar-EG') : '—' },
     ];
@@ -3206,13 +3207,87 @@ function PaidAdvertismentPage() {
             }
         },
         {
+            field: 'tax_record',
+            headerName: 'السجل الضريبي',
+            width: 100,
+            renderCell: (params) => {
+                const userId = params.row.userId;
+                const cachedTaxImages = taxImagesCache[userId] || [];
+                const firstTaxImage = cachedTaxImages.length > 0 ? cachedTaxImages[0] : null;
+
+                // Debug logging for funder ads
+                console.log('Funder tax record renderCell:', {
+                    userId: userId,
+                    cachedTaxImages: cachedTaxImages,
+                    firstTaxImage: firstTaxImage
+                });
+
+                // If no cached images, try to fetch them
+                React.useEffect(() => {
+                    if (userId && !taxImagesCache[userId]) {
+                        fetchTaxImagesFromStorage(userId);
+                    }
+                }, [userId]);
+
+                return (
+                    <Avatar
+                        src={firstTaxImage || 'https://placehold.co/50x50/E0E0E0/FFFFFF?text=No+Tax'}
+                        variant="rounded"
+                        sx={{
+                            width: 60,
+                            height: 50,
+                            cursor: 'pointer',
+                            '&:hover': { opacity: 0.8 }
+                        }}
+                        onClick={() => handleTaxCardClick(userId)}
+                    />
+                );
+            },
+            sortable: false,
+            filterable: false,
+        },
+        {
+            field: 'receipt_image',
+            headerName: 'إيصال الدفع',
+            width: 100,
+            renderCell: (params) => {
+                if (params.value) {
+                    return (
+                        <Avatar
+                            src={params.value}
+                            variant="rounded"
+                            sx={{
+                                width: 60,
+                                height: 50,
+                                cursor: 'pointer',
+                                '&:hover': {
+                                    opacity: 0.8,
+                                    transform: 'scale(1.05)'
+                                }
+                            }}
+                            onClick={() => handleReceiptClick(params.row, 'funder')}
+                        />
+                    );
+                }
+                return (
+                    <Avatar
+                        src="https://placehold.co/50x50/E0E0E0/FFFFFF?text=No+Receipt"
+                        variant="rounded"
+                        sx={{ width: 60, height: 50 }}
+                    />
+                );
+            },
+            sortable: false,
+            filterable: false,
+        },
+        {
             field: 'actions',
             headerName: 'الإجراءات',
             width: 320,
             sortable: false,
             filterable: false,
             renderCell: (params) => (
-                <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                <Box sx={{ display: 'flex', gap: 0.5, flexWrap: { xs: 'wrap', md: 'nowrap' } }}>
                     <Tooltip title="موافقة">
                         <span>
                             <IconButton
@@ -3305,7 +3380,7 @@ function PaidAdvertismentPage() {
                         </span>
                     </Tooltip>
                     {/* Add a new column to funderColumns for receipt image */}
-                    {params.row.receipt_image && (
+                    {/* {params.row.receipt_image && (
                         <Tooltip title="إيصال الدفع">
                             <span>
                                 <IconButton
@@ -3319,83 +3394,9 @@ function PaidAdvertismentPage() {
                                 </IconButton>
                             </span>
                         </Tooltip>
-                    )}
+                    )} */}
                 </Box>
             ),
-        },
-        {
-            field: 'tax_record',
-            headerName: 'السجل الضريبي',
-            width: 100,
-            renderCell: (params) => {
-                const userId = params.row.userId;
-                const cachedTaxImages = taxImagesCache[userId] || [];
-                const firstTaxImage = cachedTaxImages.length > 0 ? cachedTaxImages[0] : null;
-
-                // Debug logging for funder ads
-                console.log('Funder tax record renderCell:', {
-                    userId: userId,
-                    cachedTaxImages: cachedTaxImages,
-                    firstTaxImage: firstTaxImage
-                });
-
-                // If no cached images, try to fetch them
-                React.useEffect(() => {
-                    if (userId && !taxImagesCache[userId]) {
-                        fetchTaxImagesFromStorage(userId);
-                    }
-                }, [userId]);
-
-                return (
-                    <Avatar
-                        src={firstTaxImage || 'https://placehold.co/50x50/E0E0E0/FFFFFF?text=No+Tax'}
-                        variant="rounded"
-                        sx={{
-                            width: 60,
-                            height: 50,
-                            cursor: 'pointer',
-                            '&:hover': { opacity: 0.8 }
-                        }}
-                        onClick={() => handleTaxCardClick(userId)}
-                    />
-                );
-            },
-            sortable: false,
-            filterable: false,
-        },
-        {
-            field: 'receipt_image',
-            headerName: 'إيصال الدفع',
-            width: 100,
-            renderCell: (params) => {
-                if (params.value) {
-                    return (
-                        <Avatar
-                            src={params.value}
-                            variant="rounded"
-                            sx={{
-                                width: 60,
-                                height: 50,
-                                cursor: 'pointer',
-                                '&:hover': {
-                                    opacity: 0.8,
-                                    transform: 'scale(1.05)'
-                                }
-                            }}
-                            onClick={() => handleReceiptClick(params.row, 'funder')}
-                        />
-                    );
-                }
-                return (
-                    <Avatar
-                        src="https://placehold.co/50x50/E0E0E0/FFFFFF?text=No+Receipt"
-                        variant="rounded"
-                        sx={{ width: 60, height: 50 }}
-                    />
-                );
-            },
-            sortable: false,
-            filterable: false,
         },
         { field: 'adExpiryTime', headerName: 'تاريخ الانتهاء', width: 150, renderCell: (params) => params.value ? new Date(params.value).toLocaleDateString('ar-EG') : '—' },
     ];

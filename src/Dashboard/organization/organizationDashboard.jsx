@@ -140,6 +140,24 @@ import NotificationList from '../../pages/notificationList';
 import FinancingRequest from '../../FireBase/modelsWithOperations/FinancingRequest';
 // analytics
 import { fetchAnalyticsData } from '../../reduxToolkit/slice/analyticsSlice';
+import { fetchFinancialRequests } from '../../reduxToolkit/slice/financialRequestSlice';
+// Number formatting utility function for better readability
+const formatNumber = (num) => {
+    if (num === null || num === undefined || isNaN(num)) return '0';
+
+    const absNum = Math.abs(num);
+
+    if (absNum >= 1000000) {
+        const millions = num / 1000000;
+        return (millions % 1 === 0) ? millions.toFixed(0) + 'M' : millions.toFixed(1) + 'M';
+    } else if (absNum >= 1000) {
+        const thousands = num / 1000;
+        return (thousands % 1 === 0) ? thousands.toFixed(0) + 'K' : thousands.toFixed(1) + 'K';
+    } else {
+        return num.toString();
+    }
+};
+
 // Define shared data (could be moved to a constants file)
 const governorates = [
     "القاهرة", "الإسكندرية", "الجيزة", "الشرقية", "الدقهلية", "البحيرة", "المنيا", "أسيوط",
@@ -3949,7 +3967,7 @@ function OrdersPage() {
                                                                 عدد المعالين: {req.dependents}
                                                             </Typography>
                                                             <Typography variant="body2" sx={{ mt: 0.5 }}>
-                                                                المبلغ المطلوب: {req.financing_amount?.toLocaleString()} ج.م | سنوات السداد: {req.repayment_years}
+                                                                المبلغ المطلوب: {formatNumber(req.financing_amount)} ج.م | سنوات السداد: {req.repayment_years}
                                                             </Typography>
                                                             <Typography variant="body2" sx={{ mt: 0.5 }}>
                                                                 الحالة: {req.reviewStatus}
@@ -4720,6 +4738,9 @@ function AnalyticsPage() {
             userId: userProfile.uid,
             filters
         }));
+
+        // Fetch financial requests for accurate funder analytics calculations
+        dispatch(fetchFinancialRequests());
     }, [dispatch, userProfile?.uid, organizationType, filters]);
 
     // Debug logging for analytics data
@@ -4755,6 +4776,77 @@ function AnalyticsPage() {
         return organizationType === 'مطور عقاري' || organizationType === 'مطور عقارى';
     };
 
+    // Helper function to calculate time-based data for financial requests
+    const calculateTimeBasedRequestData = (requests) => {
+        if (!requests || requests.length === 0) return [];
+
+        // Group requests by date
+        const requestsByDate = {};
+
+        requests.forEach(req => {
+            let dateStr;
+            try {
+                // Handle different date formats
+                if (req.submitted_at) {
+                    const date = typeof req.submitted_at === 'string'
+                        ? new Date(req.submitted_at)
+                        : req.submitted_at.toDate ? req.submitted_at.toDate() : new Date(req.submitted_at);
+
+                    dateStr = date.toISOString().split('T')[0]; // YYYY-MM-DD format
+                } else {
+                    dateStr = new Date().toISOString().split('T')[0]; // Fallback to today
+                }
+            } catch (error) {
+                console.warn('Error parsing date for request:', req.id, error);
+                dateStr = new Date().toISOString().split('T')[0]; // Fallback to today
+            }
+
+            if (!requestsByDate[dateStr]) {
+                requestsByDate[dateStr] = {
+                    date: dateStr,
+                    totalRequests: 0,
+                    approvedRequests: 0,
+                    rejectedRequests: 0,
+                    pendingRequests: 0,
+                    totalAmount: 0
+                };
+            }
+
+            requestsByDate[dateStr].totalRequests++;
+            requestsByDate[dateStr].totalAmount += Number(req.financing_amount) || 0;
+
+            // Count by status
+            switch (req.reviewStatus) {
+                case 'approved':
+                    requestsByDate[dateStr].approvedRequests++;
+                    break;
+                case 'rejected':
+                    requestsByDate[dateStr].rejectedRequests++;
+                    break;
+                case 'pending':
+                default:
+                    requestsByDate[dateStr].pendingRequests++;
+                    break;
+            }
+        });
+
+        // Convert to array and sort by date
+        const timeBasedData = Object.values(requestsByDate)
+            .sort((a, b) => new Date(a.date) - new Date(b.date))
+            .slice(-30); // Last 30 days
+
+        console.log('Time-based Request Data:', {
+            totalDays: timeBasedData.length,
+            dateRange: timeBasedData.length > 0 ? {
+                from: timeBasedData[0].date,
+                to: timeBasedData[timeBasedData.length - 1].date
+            } : null,
+            sampleData: timeBasedData.slice(0, 3)
+        });
+
+        return timeBasedData;
+    };
+
     // Helper functions for data processing
     const processFunderAnalytics = () => {
         // Use Redux analytics data
@@ -4786,12 +4878,40 @@ function AnalyticsPage() {
             timeBasedDataSample: analyticsData.timeBasedData?.slice(0, 3) || []
         });
 
-        // Calculate metrics
+        // Get financial requests data from analytics
+        const allFinancialRequests = analyticsData.financialRequests || [];
+
+        // Filter financial requests to only include those for the current user's financing ads
+        const userAdIds = financingAds.map(ad => ad.id);
+        const userFinancialRequests = allFinancialRequests.filter(req =>
+            userAdIds.includes(req.advertisement_id)
+        );
+
+        console.log('Funder Financial Requests Debug:', {
+            userAdIds,
+            allFinancialRequestsCount: allFinancialRequests.length,
+            userFinancialRequestsCount: userFinancialRequests.length,
+            userFinancialRequestsSample: userFinancialRequests.slice(0, 3).map(req => ({
+                id: req.id,
+                advertisement_id: req.advertisement_id,
+                financing_amount: req.financing_amount,
+                reviewStatus: req.reviewStatus
+            }))
+        });
+
+        // Calculate metrics based on user's financial requests only
         const totalAds = financingAds.length;
-        const totalRequests = Number(analyticsData.financialInsights?.totalFinancingRequests) || 0;
-        const totalFinancingAmount = Number(analyticsData.financialInsights?.totalRevenue) || 0;
+        const totalRequests = userFinancialRequests.length;
+
+        // Calculate total financing amount from user's requests
+        const totalFinancingAmount = userFinancialRequests.reduce((sum, req) => {
+            const amount = Number(req.financing_amount) || 0;
+            return sum + amount;
+        }, 0);
+
+        // Calculate average financing amount
         const averageFinancingAmount = totalRequests > 0 ? totalFinancingAmount / totalRequests : 0;
-        const averageRequestAmount = averageFinancingAmount; // Same value for consistency
+        const averageRequestAmount = averageFinancingAmount;
 
         // Interest rate distribution (calculated from user's ads only)
         const interestRateDistribution = {
@@ -4809,24 +4929,46 @@ function AnalyticsPage() {
             }
         });
 
-        // Status breakdown (calculated from user's ads only)
-        const statusBreakdown = {
+        // Status breakdown (calculated from user's financial requests, not ads)
+        const requestStatusBreakdown = {
+            pending: userFinancialRequests.filter(req => req.reviewStatus === 'pending').length,
+            approved: userFinancialRequests.filter(req => req.reviewStatus === 'approved').length,
+            rejected: userFinancialRequests.filter(req => req.reviewStatus === 'rejected').length
+        };
+
+        // Ad status breakdown (for display purposes)
+        const adStatusBreakdown = {
             pending: financingAds.filter(ad => ad.reviewStatus === 'pending').length,
             approved: financingAds.filter(ad => ad.reviewStatus === 'approved').length,
             rejected: financingAds.filter(ad => ad.reviewStatus === 'rejected').length
         };
 
-        // Approval and rejection rates (calculated from user's ads)
-        const approvedRequests = statusBreakdown.approved;
-        const rejectedRequests = statusBreakdown.rejected;
-        const approvalRate = totalAds > 0 ? (approvedRequests / totalAds) * 100 : 0;
-        const rejectionRate = totalAds > 0 ? (rejectedRequests / totalAds) * 100 : 0;
+        // Approval and rejection rates (calculated from user's financial requests)
+        const approvedRequests = requestStatusBreakdown.approved;
+        const rejectedRequests = requestStatusBreakdown.rejected;
+        const approvalRate = totalRequests > 0 ? (approvedRequests / totalRequests) * 100 : 0;
+        const rejectionRate = totalRequests > 0 ? (rejectedRequests / totalRequests) * 100 : 0;
 
         // Location distribution (calculated from user's ads only)
         const locationDistribution = {};
         financingAds.forEach(ad => {
             const city = ad.location?.city || ad.city || 'غير محدد';
             locationDistribution[city] = (locationDistribution[city] || 0) + 1;
+        });
+
+        // Calculate time-based data for financial requests
+        const timeBasedData = calculateTimeBasedRequestData(userFinancialRequests);
+
+        // Debug log for calculated metrics
+        console.log('Funder Analytics Calculated Metrics:', {
+            totalAds,
+            totalRequests,
+            totalFinancingAmount,
+            averageFinancingAmount,
+            approvalRate: approvalRate.toFixed(2),
+            rejectionRate: rejectionRate.toFixed(2),
+            requestStatusBreakdown,
+            adStatusBreakdown
         });
 
         return {
@@ -4839,7 +4981,9 @@ function AnalyticsPage() {
             rejectionRate,
             interestRateDistribution,
             locationDistribution,
-            statusBreakdown
+            statusBreakdown: requestStatusBreakdown, // Use request status breakdown for metrics
+            adStatusBreakdown, // Keep ad status breakdown for other purposes
+            timeBasedData // Add time-based data for requests
         };
     };
 
@@ -4983,13 +5127,13 @@ function AnalyticsPage() {
 
         return (
             <Box dir='rtl' sx={{ p: 2 }}>
-                <Typography variant="h4" gutterBottom sx={{ textAlign: 'right', mb: 3 }}>
+                <Typography variant="h4" gutterBottom sx={{ textAlign: 'left', mb: 3 }}>
                     تحليلات الممول العقاري
                 </Typography>
 
                 {/* Filters */}
                 <Paper sx={{ p: 2, mb: 3, borderRadius: 2 }}>
-                    <Typography variant="h6" gutterBottom sx={{ textAlign: 'right', mb: 2 }}>
+                    <Typography variant="h6" gutterBottom sx={{ textAlign: 'left', mb: 2 }}>
                         الفلاتر
                     </Typography>
                     <Grid container spacing={2} direction="row-reverse">
@@ -5044,7 +5188,21 @@ function AnalyticsPage() {
                 {/* Overview Cards */}
                 <Grid container spacing={3} sx={{ mb: 4 }}>
                     <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                        <Paper sx={{ p: 3, textAlign: 'center', borderRadius: 2 }}>
+                        <Paper
+                            sx={{
+                                p: 3,
+                                textAlign: 'center',
+                                borderRadius: 2,
+                                transition: 'all 0.3s ease-in-out',
+                                cursor: 'pointer',
+                                '&:hover': {
+                                    elevation: 8,
+                                    transform: 'translateY(-4px)',
+                                    boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
+                                    bgcolor: 'primary.50'
+                                }
+                            }}
+                        >
                             <Typography variant="h6" color="text.secondary">إجمالي الإعلانات</Typography>
                             <Typography variant="h4" sx={{ color: 'primary.main', fontWeight: 'bold' }}>
                                 {data.totalAds}
@@ -5052,7 +5210,21 @@ function AnalyticsPage() {
                         </Paper>
                     </Grid>
                     <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                        <Paper sx={{ p: 3, textAlign: 'center', borderRadius: 2 }}>
+                        <Paper
+                            sx={{
+                                p: 3,
+                                textAlign: 'center',
+                                borderRadius: 2,
+                                transition: 'all 0.3s ease-in-out',
+                                cursor: 'pointer',
+                                '&:hover': {
+                                    elevation: 8,
+                                    transform: 'translateY(-4px)',
+                                    boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
+                                    bgcolor: 'success.50'
+                                }
+                            }}
+                        >
                             <Typography variant="h6" color="text.secondary">إجمالي الطلبات</Typography>
                             <Typography variant="h4" sx={{ color: 'success.main', fontWeight: 'bold' }}>
                                 {data.totalRequests}
@@ -5060,15 +5232,43 @@ function AnalyticsPage() {
                         </Paper>
                     </Grid>
                     <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                        <Paper sx={{ p: 3, textAlign: 'center', borderRadius: 2 }}>
+                        <Paper
+                            sx={{
+                                p: 3,
+                                textAlign: 'center',
+                                borderRadius: 2,
+                                transition: 'all 0.3s ease-in-out',
+                                cursor: 'pointer',
+                                '&:hover': {
+                                    elevation: 8,
+                                    transform: 'translateY(-4px)',
+                                    boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
+                                    bgcolor: 'info.50'
+                                }
+                            }}
+                        >
                             <Typography variant="h6" color="text.secondary">إجمالي مبالغ التمويل</Typography>
                             <Typography variant="h4" sx={{ color: 'info.main', fontWeight: 'bold' }}>
-                                {data.totalFinancingAmount.toLocaleString('ar-EG')} ج.م
+                                {formatNumber(data.totalFinancingAmount)} ج.م
                             </Typography>
                         </Paper>
                     </Grid>
                     <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                        <Paper sx={{ p: 3, textAlign: 'center', borderRadius: 2 }}>
+                        <Paper
+                            sx={{
+                                p: 3,
+                                textAlign: 'center',
+                                borderRadius: 2,
+                                transition: 'all 0.3s ease-in-out',
+                                cursor: 'pointer',
+                                '&:hover': {
+                                    elevation: 8,
+                                    transform: 'translateY(-4px)',
+                                    boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
+                                    bgcolor: 'warning.50'
+                                }
+                            }}
+                        >
                             <Typography variant="h6" color="text.secondary">نسبة الموافقة</Typography>
                             <Typography variant="h4" sx={{ color: 'warning.main', fontWeight: 'bold' }}>
                                 {typeof data.approvalRate === 'number' ? data.approvalRate.toFixed(1) : '0.0'}%
@@ -5080,15 +5280,43 @@ function AnalyticsPage() {
                 {/* Additional Metrics */}
                 <Grid container spacing={3} sx={{ mb: 4 }}>
                     <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                        <Paper sx={{ p: 3, textAlign: 'center', borderRadius: 2 }}>
+                        <Paper
+                            sx={{
+                                p: 3,
+                                textAlign: 'center',
+                                borderRadius: 2,
+                                transition: 'all 0.3s ease-in-out',
+                                cursor: 'pointer',
+                                '&:hover': {
+                                    elevation: 8,
+                                    transform: 'translateY(-4px)',
+                                    boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
+                                    bgcolor: 'secondary.50'
+                                }
+                            }}
+                        >
                             <Typography variant="h6" color="text.secondary">متوسط مبلغ الطلب</Typography>
                             <Typography variant="h4" sx={{ color: 'secondary.main', fontWeight: 'bold' }}>
-                                {typeof data.averageFinancingAmount === 'number' ? data.averageFinancingAmount.toLocaleString('ar-EG') : '0'} ج.م
+                                {typeof data.averageFinancingAmount === 'number' ? formatNumber(data.averageFinancingAmount) : '0'} ج.م
                             </Typography>
                         </Paper>
                     </Grid>
                     <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                        <Paper sx={{ p: 3, textAlign: 'center', borderRadius: 2 }}>
+                        <Paper
+                            sx={{
+                                p: 3,
+                                textAlign: 'center',
+                                borderRadius: 2,
+                                transition: 'all 0.3s ease-in-out',
+                                cursor: 'pointer',
+                                '&:hover': {
+                                    elevation: 8,
+                                    transform: 'translateY(-4px)',
+                                    boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
+                                    bgcolor: 'error.50'
+                                }
+                            }}
+                        >
                             <Typography variant="h6" color="text.secondary">نسبة الرفض</Typography>
                             <Typography variant="h4" sx={{ color: 'error.main', fontWeight: 'bold' }}>
                                 {typeof data.rejectionRate === 'number' ? data.rejectionRate.toFixed(1) : '0.0'}%
@@ -5096,7 +5324,21 @@ function AnalyticsPage() {
                         </Paper>
                     </Grid>
                     <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                        <Paper sx={{ p: 3, textAlign: 'center', borderRadius: 2 }}>
+                        <Paper
+                            sx={{
+                                p: 3,
+                                textAlign: 'center',
+                                borderRadius: 2,
+                                transition: 'all 0.3s ease-in-out',
+                                cursor: 'pointer',
+                                '&:hover': {
+                                    elevation: 8,
+                                    transform: 'translateY(-4px)',
+                                    boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
+                                    bgcolor: 'success.50'
+                                }
+                            }}
+                        >
                             <Typography variant="h6" color="text.secondary">متوسط الطلبات/إعلان</Typography>
                             <Typography variant="h4" sx={{ color: 'success.light', fontWeight: 'bold' }}>
                                 {data.totalAds > 0 && typeof data.totalRequests === 'number' && typeof data.totalAds === 'number' ? (data.totalRequests / data.totalAds).toFixed(1) : '0.0'}
@@ -5104,7 +5346,21 @@ function AnalyticsPage() {
                         </Paper>
                     </Grid>
                     <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                        <Paper sx={{ p: 3, textAlign: 'center', borderRadius: 2 }}>
+                        <Paper
+                            sx={{
+                                p: 3,
+                                textAlign: 'center',
+                                borderRadius: 2,
+                                transition: 'all 0.3s ease-in-out',
+                                cursor: 'pointer',
+                                '&:hover': {
+                                    elevation: 8,
+                                    transform: 'translateY(-4px)',
+                                    boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
+                                    bgcolor: 'warning.50'
+                                }
+                            }}
+                        >
                             <Typography variant="h6" color="text.secondary">الطلبات المعلقة</Typography>
                             <Typography variant="h4" sx={{ color: 'warning.light', fontWeight: 'bold' }}>
                                 {data.statusBreakdown.pending}
@@ -5118,7 +5374,7 @@ function AnalyticsPage() {
                     {/* Status Distribution */}
                     <Grid size={{ xs: 12, md: 6 }}>
                         <Paper sx={{ p: 3, borderRadius: 2 }}>
-                            <Typography variant="h6" gutterBottom sx={{ textAlign: 'right' }}>
+                            <Typography variant="h6" gutterBottom sx={{ textAlign: 'left' }}>
                                 توزيع حالة الطلبات
                             </Typography>
                             <PieChart
@@ -5141,7 +5397,7 @@ function AnalyticsPage() {
                     {/* Interest Rate Distribution */}
                     <Grid size={{ xs: 12, md: 6 }}>
                         <Paper sx={{ p: 3, borderRadius: 2 }}>
-                            <Typography variant="h6" gutterBottom sx={{ textAlign: 'right' }}>
+                            <Typography variant="h6" gutterBottom sx={{ textAlign: 'left' }}>
                                 توزيع نسب الفائدة
                             </Typography>
                             <PieChart
@@ -5164,35 +5420,43 @@ function AnalyticsPage() {
                     {/* Requests Over Time */}
                     <Grid size={{ xs: 12 }}>
                         <Paper sx={{ p: 3, borderRadius: 2 }}>
-                            <Typography variant="h6" gutterBottom sx={{ textAlign: 'right' }}>
+                            <Typography variant="h6" gutterBottom sx={{ textAlign: 'left' }}>
                                 الطلبات عبر الزمن
                             </Typography>
-                            {analyticsData.timeBasedData && analyticsData.timeBasedData.length > 0 ? (
+                            {data.timeBasedData && data.timeBasedData.length > 0 ? (
                                 <LineChart
                                     xAxis={[
                                         {
-                                            data: analyticsData.timeBasedData.map((item, index) => index),
+                                            data: data.timeBasedData.map((item, index) => index),
                                             valueFormatter: (value) => {
-                                                const item = analyticsData.timeBasedData[value];
-                                                return item ? new Date(item.date).toLocaleDateString('ar-EG') : '';
+                                                const item = data.timeBasedData[value];
+                                                return item ? new Date(item.date).toLocaleDateString('ar-EG', {
+                                                    month: 'short',
+                                                    day: 'numeric'
+                                                }) : '';
                                             }
                                         }
                                     ]}
                                     series={[
                                         {
-                                            data: analyticsData.timeBasedData.map(item => item.adsCreated || 0),
-                                            label: 'الإعلانات المُنشأة',
+                                            data: data.timeBasedData.map(item => item.totalRequests || 0),
+                                            label: 'إجمالي الطلبات',
                                             color: '#2196F3'
                                         },
                                         {
-                                            data: analyticsData.timeBasedData.map(item => item.approvals || 0),
-                                            label: 'الموافقات',
+                                            data: data.timeBasedData.map(item => item.approvedRequests || 0),
+                                            label: 'الطلبات المُوافق عليها',
                                             color: '#4CAF50'
                                         },
                                         {
-                                            data: analyticsData.timeBasedData.map(item => item.rejections || 0),
-                                            label: 'الرفض',
+                                            data: data.timeBasedData.map(item => item.rejectedRequests || 0),
+                                            label: 'الطلبات المرفوضة',
                                             color: '#F44336'
+                                        },
+                                        {
+                                            data: data.timeBasedData.map(item => item.pendingRequests || 0),
+                                            label: 'الطلبات المعلقة',
+                                            color: '#FF9800'
                                         }
                                     ]}
                                     height={300}
@@ -5200,7 +5464,47 @@ function AnalyticsPage() {
                             ) : (
                                 <Box sx={{ p: 3, textAlign: 'center' }}>
                                     <Typography variant="body1" color="text.secondary">
-                                        لا توجد بيانات زمنية متاحة للعرض
+                                        لا توجد بيانات زمنية متاحة للطلبات
+                                    </Typography>
+                                </Box>
+                            )}
+                        </Paper>
+                    </Grid>
+
+                    {/* Financial Amounts Over Time */}
+                    <Grid size={{ xs: 12 }}>
+                        <Paper sx={{ p: 3, borderRadius: 2 }}>
+                            <Typography variant="h6" gutterBottom sx={{ textAlign: 'left' }}>
+                                مبالغ التمويل عبر الزمن
+                            </Typography>
+                            {data.timeBasedData && data.timeBasedData.length > 0 ? (
+                                <LineChart
+                                    xAxis={[
+                                        {
+                                            data: data.timeBasedData.map((item, index) => index),
+                                            valueFormatter: (value) => {
+                                                const item = data.timeBasedData[value];
+                                                return item ? new Date(item.date).toLocaleDateString('ar-EG', {
+                                                    month: 'short',
+                                                    day: 'numeric'
+                                                }) : '';
+                                            }
+                                        }
+                                    ]}
+                                    series={[
+                                        {
+                                            data: data.timeBasedData.map(item => item.totalAmount || 0),
+                                            label: 'إجمالي مبالغ الطلبات (ج.م)',
+                                            color: '#9C27B0',
+                                            valueFormatter: (value) => `${formatNumber(value)} ج.م`
+                                        }
+                                    ]}
+                                    height={250}
+                                />
+                            ) : (
+                                <Box sx={{ p: 3, textAlign: 'center' }}>
+                                    <Typography variant="body1" color="text.secondary">
+                                        لا توجد بيانات مالية زمنية متاحة
                                     </Typography>
                                 </Box>
                             )}
@@ -5395,7 +5699,21 @@ function AnalyticsPage() {
                 {/* Overview Cards */}
                 <Grid container spacing={3} sx={{ mb: 4 }}>
                     <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                        <Paper sx={{ p: 3, textAlign: 'center', borderRadius: 2 }}>
+                        <Paper
+                            sx={{
+                                p: 3,
+                                textAlign: 'center',
+                                borderRadius: 2,
+                                transition: 'all 0.3s ease-in-out',
+                                cursor: 'pointer',
+                                '&:hover': {
+                                    elevation: 8,
+                                    transform: 'translateY(-4px)',
+                                    boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
+                                    bgcolor: 'primary.50'
+                                }
+                            }}
+                        >
                             <Typography variant="h6" color="text.secondary">إجمالي الإعلانات</Typography>
                             <Typography variant="h4" sx={{ color: 'primary.main', fontWeight: 'bold' }}>
                                 {data.totalAds}
@@ -5403,7 +5721,21 @@ function AnalyticsPage() {
                         </Paper>
                     </Grid>
                     <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                        <Paper sx={{ p: 3, textAlign: 'center', borderRadius: 2 }}>
+                        <Paper
+                            sx={{
+                                p: 3,
+                                textAlign: 'center',
+                                borderRadius: 2,
+                                transition: 'all 0.3s ease-in-out',
+                                cursor: 'pointer',
+                                '&:hover': {
+                                    elevation: 8,
+                                    transform: 'translateY(-4px)',
+                                    boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
+                                    bgcolor: 'success.50'
+                                }
+                            }}
+                        >
                             <Typography variant="h6" color="text.secondary">الإعلانات النشطة</Typography>
                             <Typography variant="h4" sx={{ color: 'success.main', fontWeight: 'bold' }}>
                                 {data.activeAds}
@@ -5411,15 +5743,43 @@ function AnalyticsPage() {
                         </Paper>
                     </Grid>
                     <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                        <Paper sx={{ p: 3, textAlign: 'center', borderRadius: 2 }}>
+                        <Paper
+                            sx={{
+                                p: 3,
+                                textAlign: 'center',
+                                borderRadius: 2,
+                                transition: 'all 0.3s ease-in-out',
+                                cursor: 'pointer',
+                                '&:hover': {
+                                    elevation: 8,
+                                    transform: 'translateY(-4px)',
+                                    boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
+                                    bgcolor: 'info.50'
+                                }
+                            }}
+                        >
                             <Typography variant="h6" color="text.secondary">متوسط السعر</Typography>
                             <Typography variant="h4" sx={{ color: 'info.main', fontWeight: 'bold' }}>
-                                {data.averagePrice.toLocaleString('ar-EG')} ج.م
+                                {formatNumber(data.averagePrice)} ج.م
                             </Typography>
                         </Paper>
                     </Grid>
                     <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                        <Paper sx={{ p: 3, textAlign: 'center', borderRadius: 2 }}>
+                        <Paper
+                            sx={{
+                                p: 3,
+                                textAlign: 'center',
+                                borderRadius: 2,
+                                transition: 'all 0.3s ease-in-out',
+                                cursor: 'pointer',
+                                '&:hover': {
+                                    elevation: 8,
+                                    transform: 'translateY(-4px)',
+                                    boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
+                                    bgcolor: 'warning.50'
+                                }
+                            }}
+                        >
                             <Typography variant="h6" color="text.secondary">متوسط المساحة</Typography>
                             <Typography variant="h4" sx={{ color: 'warning.main', fontWeight: 'bold' }}>
                                 {typeof data.averageArea === 'number' ? data.averageArea.toFixed(0) : '0'} م²

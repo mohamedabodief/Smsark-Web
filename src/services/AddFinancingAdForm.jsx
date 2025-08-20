@@ -275,7 +275,7 @@ export default function AddFinancingAdForm() {
   const uploadImagesToFirebase = async (files) => {
     const currentUser = auth.currentUser;
     if (!currentUser) {
-      throw new Error("يجب tsجيل الدخول أولاً. يرجى تسجيل الدخول من جديد.");
+      throw new Error("يجب تسجيل الدخول أولاً. يرجى تسجيل الدخول من جديد.");
     }
     const uploadPromises = files.map(async (file, index) => {
       const timestamp = Date.now();

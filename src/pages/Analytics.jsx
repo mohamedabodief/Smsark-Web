@@ -63,15 +63,88 @@ import {
 } from '@mui/icons-material';
 import { DataGrid } from '@mui/x-data-grid';
 import { fetchAnalyticsData, exportAnalyticsData, setFilters } from '../reduxToolkit/slice/analyticsSlice';
-import { 
-  deleteAd, 
-  toggleAdStatus, 
-  approveAd, 
-  rejectAd, 
-  returnAdToPending 
+import {
+  deleteAd,
+  toggleAdStatus,
+  approveAd,
+  rejectAd,
+  returnAdToPending
 } from '../reduxToolkit/slice/paidAdsSlice';
+import { fetchFinancialRequests } from '../reduxToolkit/slice/financialRequestSlice';
 import theme from '../theme';
 import { PieChart } from '@mui/x-charts/PieChart';
+
+// Number formatting utility function for better readability
+const formatNumber = (num, showFullOnHover = false) => {
+  if (num === null || num === undefined || isNaN(num)) return showFullOnHover ? { formatted: '0', full: '0' } : '0';
+
+  const absNum = Math.abs(num);
+  let formatted = '';
+  let fullNumber = '';
+
+  try {
+    fullNumber = num.toLocaleString('ar-EG');
+  } catch (error) {
+    fullNumber = num.toString();
+  }
+
+  if (absNum >= 1000000) {
+    const millions = num / 1000000;
+    formatted = (millions % 1 === 0) ? millions.toFixed(0) + 'M' : millions.toFixed(1) + 'M';
+  } else if (absNum >= 1000) {
+    const thousands = num / 1000;
+    formatted = (thousands % 1 === 0) ? thousands.toFixed(0) + 'K' : thousands.toFixed(1) + 'K';
+  } else {
+    formatted = num.toString();
+  }
+
+  // Return object with formatted value and full number for tooltip
+  return showFullOnHover ? { formatted, full: fullNumber } : formatted;
+};
+
+// Enhanced Metric Display Component for consistent formatting
+const MetricCard = ({ value, label, color = 'primary', variant = 'h4', suffix = '', showTooltip = true }) => {
+  const formattedData = formatNumber(value, showTooltip);
+  const displayValue = typeof formattedData === 'object' ? formattedData.formatted : formattedData;
+  const fullValue = typeof formattedData === 'object' ? formattedData.full : value?.toLocaleString('ar-EG');
+
+  const content = (
+    <Box textAlign="center" sx={{ p: 1 }}>
+      <Typography
+        variant={variant}
+        color={color}
+        sx={{
+          fontWeight: 'bold',
+          fontSize: { xs: '1.5rem', sm: '2rem', md: '2.125rem' },
+          lineHeight: 1.2
+        }}
+      >
+        {displayValue}{suffix}
+      </Typography>
+      <Typography
+        variant="body2"
+        color="textSecondary"
+        sx={{
+          fontSize: { xs: '0.75rem', sm: '0.875rem' },
+          mt: 0.5,
+          lineHeight: 1.3
+        }}
+      >
+        {label}
+      </Typography>
+    </Box>
+  );
+
+  if (showTooltip && typeof formattedData === 'object') {
+    return (
+      <Tooltip title={`القيمة الكاملة: ${fullValue}${suffix}`} arrow placement="top">
+        {content}
+      </Tooltip>
+    );
+  }
+
+  return content;
+};
 
 // Enhanced Pie Chart Component (matching Reports page design)
 const EnhancedPieChart = ({ data, title, colors = [theme.palette.primary.main, theme.palette.secondary.main, theme.palette.success.main, theme.palette.warning.main, theme.palette.error.main] }) => {
@@ -377,11 +450,14 @@ const Analytics = () => {
   useEffect(() => {
     if (hasAccess()) {
       // Fetch analytics data using model classes
-      dispatch(fetchAnalyticsData({ 
-        userRole: type_of_user, 
-        userId: uid, 
-        filters 
+      dispatch(fetchAnalyticsData({
+        userRole: type_of_user,
+        userId: uid,
+        filters
       }));
+
+      // Fetch real financial requests data for enhanced financial insights
+      dispatch(fetchFinancialRequests());
     }
   }, [dispatch, uid, type_of_user, filters]);
 
@@ -1563,56 +1639,132 @@ const Analytics = () => {
     );
   };
 
-  // Client Ads Revenue Chart
+  // Client Ads Revenue Chart - Enhanced with Real Revenue Data
   const ClientAdsRevenueChart = () => {
     const clientAds = analyticsData?.clientAds || [];
-    const approvedClientAds = clientAds.filter(ad => ad.reviewStatus === 'approved');
-    
-    const chartData = [
-      { name: 'إعلانات مُوافق عليها', value: approvedClientAds.length },
-      { name: 'إعلانات قيد المراجعة', value: clientAds.filter(ad => ad.reviewStatus === 'pending').length },
-      { name: 'إعلانات مرفوضة', value: clientAds.filter(ad => ad.reviewStatus === 'rejected').length },
-      { name: 'إعلانات نشطة', value: clientAds.filter(ad => ad.ads === true).length },
-      { name: 'إعلانات غير نشطة', value: clientAds.filter(ad => ad.ads === false).length }
+    const developerAds = analyticsData?.developerAds || [];
+    const financingAds = analyticsData?.financingAds || [];
+
+    // Show loading state if analytics data is still being fetched
+    if (analyticsLoading && clientAds.length === 0) {
+      return (
+        <Paper direction="rtl" elevation={3} sx={{ p: 3, borderRadius: 2, textAlign: 'center' }}>
+          <CircularProgress sx={{ mb: 2 }} />
+          <Typography variant="h6">جاري تحميل بيانات الإيرادات...</Typography>
+        </Paper>
+      );
+    }
+
+    // Calculate real revenue from all ad types
+    const clientRevenue = clientAds
+      .filter(ad => ad.reviewStatus === 'approved' && ad.ads)
+      .reduce((sum, ad) => sum + (ad.adPackagePrice || 0), 0);
+
+    const developerRevenue = developerAds
+      .filter(ad => ad.reviewStatus === 'approved' && ad.ads)
+      .reduce((sum, ad) => sum + (ad.adPackagePrice || 0), 0);
+
+    const financingRevenue = financingAds
+      .filter(ad => ad.reviewStatus === 'approved' && ad.ads)
+      .reduce((sum, ad) => sum + (ad.adPackagePrice || 0), 0);
+
+    const totalRevenue = clientRevenue + developerRevenue + financingRevenue;
+
+    // Revenue breakdown by ad type
+    const revenueChartData = [
+      { name: 'إيرادات إعلانات العملاء', value: clientRevenue },
+      { name: 'إيرادات إعلانات المطورين', value: developerRevenue },
+      { name: 'إيرادات إعلانات التمويل', value: financingRevenue }
     ].filter(item => item.value > 0);
 
-    const totalRevenue = approvedClientAds.reduce((sum, ad) => sum + (ad.adPackagePrice || 0), 0);
+    // Status breakdown for client ads
+    const statusChartData = [
+      { name: 'مُوافق عليها', value: clientAds.filter(ad => ad.reviewStatus === 'approved').length },
+      { name: 'قيد المراجعة', value: clientAds.filter(ad => ad.reviewStatus === 'pending').length },
+      { name: 'مرفوضة', value: clientAds.filter(ad => ad.reviewStatus === 'rejected').length }
+    ].filter(item => item.value > 0);
+
+    // Calculate average revenue per ad
+    const activeAds = clientAds.filter(ad => ad.reviewStatus === 'approved' && ad.ads);
+    const avgRevenuePerAd = activeAds.length > 0 ? (clientRevenue / activeAds.length).toFixed(2) : 0;
 
     return (
       <Paper direction="rtl" elevation={3} sx={{ p: 3, borderRadius: 2 }}>
         <Typography variant="h6" gutterBottom sx={{ textAlign: 'left' }}>
-          تحليل إعلانات العملاء
+          تحليل الإيرادات من الإعلانات
         </Typography>
+
+        {/* Revenue Summary */}
+        <Grid container spacing={{ xs: 1, sm: 2 }} sx={{ mb: 2 }}>
+          <Grid size={{ xs: 6, md: 3 }}>
+            <Paper elevation={1} sx={{ p: 1, borderRadius: 1, bgcolor: 'primary.50' }}>
+              <MetricCard
+                value={totalRevenue}
+                label="إجمالي الإيرادات"
+                color="primary"
+                variant="h5"
+                suffix=" ج.م"
+              />
+            </Paper>
+          </Grid>
+          <Grid size={{ xs: 6, md: 3 }}>
+            <Paper elevation={1} sx={{ p: 1, borderRadius: 1, bgcolor: 'success.50' }}>
+              <MetricCard
+                value={clientRevenue}
+                label="إيرادات العملاء"
+                color="success.main"
+                variant="h5"
+                suffix=" ج.م"
+              />
+            </Paper>
+          </Grid>
+          <Grid size={{ xs: 6, md: 3 }}>
+            <Paper elevation={1} sx={{ p: 1, borderRadius: 1, bgcolor: 'info.50' }}>
+              <MetricCard
+                value={activeAds.length}
+                label="إعلانات نشطة"
+                color="info.main"
+                variant="h5"
+                showTooltip={false}
+              />
+            </Paper>
+          </Grid>
+          <Grid size={{ xs: 6, md: 3 }}>
+            <Paper elevation={1} sx={{ p: 1, borderRadius: 1, bgcolor: 'warning.50' }}>
+              <MetricCard
+                value={Number(avgRevenuePerAd)}
+                label="متوسط الإيراد لكل إعلان"
+                color="warning.main"
+                variant="h5"
+                suffix=" ج.م"
+              />
+            </Paper>
+          </Grid>
+        </Grid>
+
+        <Divider sx={{ my: 2 }} />
+
+        {/* Charts */}
         <Grid container spacing={2}>
-          <Grid size={{ xs: 6 }}>
-            <Box textAlign="center">
-              <Typography variant="h4" color="primary">
-                {clientAds.length}
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
-                إجمالي الإعلانات
-              </Typography>
+          <Grid size={{ xs: 12, md: 6 }}>
+            <Box sx={{ height: 250 }}>
+              <EnhancedPieChart
+                data={revenueChartData}
+                title="توزيع الإيرادات حسب نوع الإعلان"
+                colors={[colors.success, colors.primary, colors.secondary]}
+              />
             </Box>
           </Grid>
-          <Grid size={{ xs: 6 }}>
-            <Box textAlign="center">
-              <Typography variant="h4" style={{ color: colors.success }}>
-                {totalRevenue}
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
-                إجمالي الإيرادات
-              </Typography>
+          <Grid size={{ xs: 12, md: 6 }}>
+            <Box sx={{ height: 250 }}>
+              <EnhancedPieChart
+                data={statusChartData}
+                title="حالة إعلانات العملاء"
+                colors={[colors.success, colors.warning, colors.error]}
+              />
             </Box>
           </Grid>
         </Grid>
-        <Divider sx={{ my: 2 }} />
-        <Box sx={{ height: 200 }}>
-          <EnhancedPieChart 
-            data={chartData} 
-            title="توزيع إعلانات العملاء"
-            colors={[colors.success, colors.warning, colors.error, colors.primary, colors.grey]}
-          />
-        </Box>
       </Paper>
     );
   };
@@ -1731,76 +1883,294 @@ const Analytics = () => {
     );
   };
 
-  // Financial Insights
-  const FinancialInsights = () => (
-    <Grid container spacing={3}>
-      <Grid size={{ xs: 12, md: 6 }}>
-        <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
-          <Typography variant="h6" gutterBottom sx={{ textAlign: 'right' }}>
-            ملخص التمويل
-          </Typography>
-            <Grid container spacing={2}>
-              <Grid size={{ xs: 6 }}>
-                <Box textAlign="center">
-                  <Typography variant="h4" color="primary">
-                    {data.financialInsights.totalFinancingRequests || 0}
-                  </Typography>
-                  <Typography variant="body2" color="textSecondary">
-                    إجمالي الطلبات
-                  </Typography>
-                </Box>
+  // Financial Insights - Enhanced with Real Financial Request Data
+  const FinancialInsights = () => {
+    // Get real financial requests data from Redux store
+    const financialRequests = useSelector((state) => state.financialRequests?.list || []);
+    const financialRequestsLoading = useSelector((state) => state.financialRequests?.loading || false);
+    const financialRequestsError = useSelector((state) => state.financialRequests?.error);
+    const financingAds = analyticsData?.financingAds || [];
+
+    // Show loading state if data is being fetched
+    if (financialRequestsLoading && financialRequests.length === 0) {
+      return (
+        <Grid container spacing={3}>
+          <Grid size={{ xs: 12 }}>
+            <Paper elevation={3} sx={{ p: 3, borderRadius: 2, textAlign: 'center' }}>
+              <CircularProgress sx={{ mb: 2 }} />
+              <Typography variant="h6">جاري تحميل بيانات التمويل...</Typography>
+            </Paper>
+          </Grid>
+        </Grid>
+      );
+    }
+
+    // Show error state if there's an error
+    if (financialRequestsError) {
+      return (
+        <Grid container spacing={3}>
+          <Grid size={{ xs: 12 }}>
+            <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
+              <Alert severity="error">
+                خطأ في تحميل بيانات التمويل: {financialRequestsError}
+              </Alert>
+            </Paper>
+          </Grid>
+        </Grid>
+      );
+    }
+
+    // Calculate real financial insights from actual requests
+    const totalRequests = financialRequests.length;
+    const approvedRequests = financialRequests.filter(req => req.reviewStatus === 'approved').length;
+    const rejectedRequests = financialRequests.filter(req => req.reviewStatus === 'rejected').length;
+    const pendingRequests = financialRequests.filter(req => req.reviewStatus === 'pending').length;
+
+    // Calculate approval rate
+    const approvalRate = totalRequests > 0 ? ((approvedRequests / totalRequests) * 100).toFixed(1) : 0;
+
+    // Calculate total financing amounts
+    const totalFinancingAmount = financialRequests.reduce((sum, req) => sum + (req.financing_amount || 2), 0);
+    const approvedFinancingAmount = financialRequests
+      .filter(req => req.reviewStatus === 'approved')
+      .reduce((sum, req) => sum + (req.financing_amount || 0), 0);
+
+    // Calculate average financing amount
+    const avgFinancingAmount = totalRequests > 0 ? (totalFinancingAmount / totalRequests).toFixed(0) : 0;
+
+    // Interest rate breakdown from financing ads
+    const interestRateData = [
+      {
+        name: 'معدل ≤ 5%',
+        value: financingAds.filter(ad => ad.interest_rate_upto_5 > 0).length
+      },
+      {
+        name: 'معدل ≤ 10%',
+        value: financingAds.filter(ad => ad.interest_rate_upto_10 > 0).length
+      },
+      {
+        name: 'معدل > 10%',
+        value: financingAds.filter(ad => ad.interest_rate_above_10 > 0).length
+      }
+    ].filter(item => item.value > 0);
+
+    // Request status breakdown for chart
+    const requestStatusData = [
+      { name: 'مُوافق عليها', value: approvedRequests },
+      { name: 'قيد المراجعة', value: pendingRequests },
+      { name: 'مرفوضة', value: rejectedRequests }
+    ].filter(item => item.value > 0);
+
+    // Calculate financing ads revenue
+    const financingAdsRevenue = financingAds
+      .filter(ad => ad.reviewStatus === 'approved' && ad.ads)
+      .reduce((sum, ad) => sum + (ad.adPackagePrice || 0), 0);
+
+    return (
+      <Grid container spacing={3} dir="rtl">
+        {/* Financial Summary */}
+        <Grid size={{ xs: 12, lg: 8 }}>
+          <Paper elevation={3} sx={{ p: { xs: 2, sm: 3 }, borderRadius: 2 }}>
+            <Typography
+              variant="h5"
+              gutterBottom
+              sx={{
+                textAlign: 'center',
+                fontWeight: 'bold',
+                mb: 3,
+                color: 'primary.main'
+              }}
+            >
+              ملخص طلبات التمويل الفعلية
+            </Typography>
+
+            {/* Main Metrics */}
+            <Grid container spacing={{ xs: 1, sm: 2 }} sx={{ mb: 3 }}>
+              <Grid size={{ xs: 6, sm: 3 }}>
+                <Paper elevation={1} sx={{ p: 1, borderRadius: 1, bgcolor: 'primary.50' }}>
+                  <MetricCard
+                    value={totalRequests}
+                    label="إجمالي الطلبات"
+                    color="primary"
+                    variant="h4"
+                  />
+                </Paper>
               </Grid>
-              <Grid size={{ xs: 6 }}>
-                <Box textAlign="center">
-                  <Typography variant="h4" style={{ color: colors.success }}>
-                    {data.financialInsights.approvedRequests || 0}
-                  </Typography>
-                  <Typography variant="body2" color="textSecondary">
-                    مُوافق عليها
-                  </Typography>
-                </Box>
+              <Grid size={{ xs: 6, sm: 3 }}>
+                <Paper elevation={1} sx={{ p: 1, borderRadius: 1, bgcolor: 'success.50' }}>
+                  <MetricCard
+                    value={approvedRequests}
+                    label="مُوافق عليها"
+                    color="success.main"
+                    variant="h4"
+                  />
+                </Paper>
               </Grid>
-              <Grid size={{ xs: 6 }}>
-                <Box textAlign="center">
-                  <Typography variant="h4" style={{ color: colors.error }}>
-                    {data.financialInsights.rejectedRequests || 0}
-                  </Typography>
-                  <Typography variant="body2" color="textSecondary">
-                    مرفوضة
-                  </Typography>
-                </Box>
+              <Grid size={{ xs: 6, sm: 3 }}>
+                <Paper elevation={1} sx={{ p: 1, borderRadius: 1, bgcolor: 'warning.50' }}>
+                  <MetricCard
+                    value={pendingRequests}
+                    label="قيد المراجعة"
+                    color="warning.main"
+                    variant="h4"
+                  />
+                </Paper>
               </Grid>
-              <Grid size={{ xs: 6 }}>
-                <Box textAlign="center">
-                  <Typography variant="h4" style={{ color: colors.warning }}>
-                    {data.financialInsights.pendingRequests || 0}
-                  </Typography>
-                  <Typography variant="body2" color="textSecondary">
-                    قيد المراجعة
-                  </Typography>
-                </Box>
+              <Grid size={{ xs: 6, sm: 3 }}>
+                <Paper elevation={1} sx={{ p: 1, borderRadius: 1, bgcolor: 'error.50' }}>
+                  <MetricCard
+                    value={rejectedRequests}
+                    label="مرفوضة"
+                    color="error.main"
+                    variant="h4"
+                  />
+                </Paper>
               </Grid>
             </Grid>
-            <Divider sx={{ my: 2 }} />
-            <Box textAlign="center">
-              <Typography variant="h5" color="primary">
-                {data.financialInsights.approvalRate || 0}%
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
-                معدل الموافقة
-              </Typography>
-            </Box>
+
+            <Divider sx={{ my: 3 }} />
+
+            {/* Financial Amounts */}
+            <Typography
+              variant="h6"
+              gutterBottom
+              sx={{
+                textAlign: 'center',
+                mb: 2,
+                color: 'text.primary',
+                fontWeight: 'medium'
+              }}
+            >
+              تفاصيل المبالغ المالية
+            </Typography>
+
+            <Grid container spacing={{ xs: 1, sm: 2 }} sx={{ mb: 3 }}>
+              <Grid size={{ xs: 6, sm: 3 }}>
+                <Paper elevation={1} sx={{ p: 1, borderRadius: 1, bgcolor: 'info.50' }}>
+                  <MetricCard
+                    value={approvalRate}
+                    label="معدل الموافقة"
+                    color="primary"
+                    variant="h5"
+                    suffix="%"
+                    showTooltip={false}
+                  />
+                </Paper>
+              </Grid>
+              <Grid size={{ xs: 6, sm: 3 }}>
+                <Paper elevation={1} sx={{ p: 1, borderRadius: 1, bgcolor: 'info.50' }}>
+                  <MetricCard
+                    value={totalFinancingAmount}
+                    label="إجمالي المبالغ المطلوبة"
+                    color="info.main"
+                    variant="h6"
+                    suffix=" ج.م"
+                  />
+                </Paper>
+              </Grid>
+              <Grid size={{ xs: 6, sm: 3 }}>
+                <Paper elevation={1} sx={{ p: 1, borderRadius: 1, bgcolor: 'success.50' }}>
+                  <MetricCard
+                    value={approvedFinancingAmount}
+                    label="المبالغ المُوافق عليها"
+                    color="success.main"
+                    variant="h6"
+                    suffix=" ج.م"
+                  />
+                </Paper>
+              </Grid>
+              <Grid size={{ xs: 6, sm: 3 }}>
+                <Paper elevation={1} sx={{ p: 1, borderRadius: 1, bgcolor: 'secondary.50' }}>
+                  <MetricCard
+                    value={Number(avgFinancingAmount)}
+                    label="متوسط مبلغ التمويل"
+                    color="secondary.main"
+                    variant="h6"
+                    suffix=" ج.م"
+                  />
+                </Paper>
+              </Grid>
+            </Grid>
+
+            <Divider sx={{ my: 3 }} />
+
+            {/* Revenue from Financing Ads */}
+            <Paper
+              elevation={2}
+              sx={{
+                p: 2,
+                borderRadius: 2,
+                bgcolor: 'success.50',
+                textAlign: 'center'
+              }}
+            >
+              <MetricCard
+                value={financingAdsRevenue}
+                label="إيرادات إعلانات التمويل"
+                color="success.main"
+                variant="h5"
+                suffix=" ج.م"
+              />
+            </Paper>
           </Paper>
+        </Grid>
+
+        {/* Charts */}
+        <Grid size={{ xs: 12, lg: 4 }}>
+          <Grid container spacing={2}>
+            <Grid size={{ xs: 12 }}>
+              <Paper elevation={3} sx={{ p: 2, borderRadius: 2 }}>
+                <Typography
+                  variant="h6"
+                  gutterBottom
+                  sx={{
+                    textAlign: 'center',
+                    mb: 2,
+                    color: 'primary.main',
+                    fontWeight: 'medium'
+                  }}
+                >
+                  حالة طلبات التمويل
+                </Typography>
+                <Box sx={{ height: { xs: 250, sm: 300 } }}>
+                  <EnhancedPieChart
+                    data={requestStatusData}
+                    title=""
+                    colors={[colors.success, colors.warning, colors.error]}
+                  />
+                </Box>
+              </Paper>
+            </Grid>
+            {interestRateData.length > 0 && (
+              <Grid size={{ xs: 12 }}>
+                <Paper elevation={3} sx={{ p: 2, borderRadius: 2 }}>
+                  <Typography
+                    variant="h6"
+                    gutterBottom
+                    sx={{
+                      textAlign: 'center',
+                      mb: 2,
+                      color: 'primary.main',
+                      fontWeight: 'medium'
+                    }}
+                  >
+                    توزيع معدلات الفائدة
+                  </Typography>
+                  <Box sx={{ height: { xs: 250, sm: 300 } }}>
+                    <EnhancedPieChart
+                      data={interestRateData}
+                      title=""
+                      colors={[colors.primary, colors.secondary, colors.info]}
+                    />
+                  </Box>
+                </Paper>
+              </Grid>
+            )}
+          </Grid>
+        </Grid>
       </Grid>
-      
-      {/* <Grid size={{ xs: 12, md: 6 }}>
-        <InterestRateAnalysisChart />
-      </Grid> */}
-      <Grid size={{ xs: 12, md: 6 }}>
-        <ClientAdsRevenueChart />
-      </Grid>
-    </Grid>
-  );
+    );
+  };
 
   // Controls
   const Controls = () => (
@@ -2074,7 +2444,7 @@ const Analytics = () => {
           </Grid>
           <Grid size={{ xs: 12 }}>
             <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
-              <Typography variant="h6" gutterBottom sx={{ textAlign: 'right' }}>
+              <Typography variant="h6" gutterBottom sx={{ textAlign: 'left' }}>
                 تحليل مفصل لحالة الإعلانات
               </Typography>
               <Grid container spacing={2}>

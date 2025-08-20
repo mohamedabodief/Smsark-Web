@@ -723,25 +723,30 @@ function ProfilePage() {
 function ClientAdvertismentPage() {
     const authUid = useSelector((state) => state.auth.uid);
     const navigate = useNavigate();
-    
+
     // Local state for real-time advertisements
     const [advertisements, setAdvertisements] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    
+
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
     const [openReturnDialog, setOpenReturnDialog] = useState(false);
     const [adToReturn, setAdToReturn] = useState(null);
-    
+
     // State for delete confirmation
     const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
     const [adToDelete, setAdToDelete] = useState(null);
     const [deleteLoading, setDeleteLoading] = useState(false);
-    
+
     // State for filtering
     const [statusFilter, setStatusFilter] = useState('all');
     const [activationFilter, setActivationFilter] = useState('all');
     const [adTypeFilter, setAdTypeFilter] = useState('all');
+
+    // State for receipt image modal
+    const [receiptModalOpen, setReceiptModalOpen] = useState(false);
+    const [selectedReceiptImage, setSelectedReceiptImage] = useState(null);
+    const [receiptImageError, setReceiptImageError] = useState(false);
 
     // Real-time subscription to user's advertisements
     useEffect(() => {
@@ -819,6 +824,39 @@ function ClientAdvertismentPage() {
         setSnackbar({ ...snackbar, open: false });
         setError(null);
     };
+
+    // Receipt image modal handlers
+    const handleReceiptClick = (ad) => {
+        if (ad.receipt_image) {
+            setSelectedReceiptImage(ad.receipt_image);
+            setReceiptImageError(false);
+            setReceiptModalOpen(true);
+        }
+    };
+
+    const handleCloseReceiptModal = () => {
+        setReceiptModalOpen(false);
+        setSelectedReceiptImage(null);
+        setReceiptImageError(false);
+    };
+
+    const handleReceiptImageError = () => {
+        setReceiptImageError(true);
+    };
+
+    // Handle ESC key press to close modal
+    useEffect(() => {
+        const handleKeyDown = (event) => {
+            if (event.key === 'Escape' && receiptModalOpen) {
+                handleCloseReceiptModal();
+            }
+        };
+
+        if (receiptModalOpen) {
+            document.addEventListener('keydown', handleKeyDown);
+            return () => document.removeEventListener('keydown', handleKeyDown);
+        }
+    }, [receiptModalOpen]);
 
     // Edit advertisement handler
     const handleEditAd = (ad) => {
@@ -1007,6 +1045,69 @@ function ClientAdvertismentPage() {
                 );
             },
         },
+        {
+                    field: 'receipt_image',
+                    headerName: 'إيصال الدفع',
+                    width: 120,
+                    renderCell: (params) => {
+                        if (params.value) {
+                            return (
+                                <Box sx={{ position: 'relative' }}>
+                                    <Avatar
+                                        src={params.value}
+                                        variant="rounded"
+                                        sx={{
+                                            width: 60,
+                                            height: 50,
+                                            cursor: 'pointer',
+                                            transition: 'all 0.2s ease-in-out',
+                                            '&:hover': {
+                                                opacity: 0.8,
+                                                transform: 'scale(1.05)',
+                                                boxShadow: '0 4px 8px rgba(0,0,0,0.2)'
+                                            }
+                                        }}
+                                        onClick={() => handleReceiptClick(params.row)}
+                                        onError={(e) => {
+                                            e.target.src = "https://placehold.co/60x50/E0E0E0/999999?text=خطأ";
+                                        }}
+                                    />
+                                    <Tooltip title="انقر لعرض الإيصال بالحجم الكامل" placement="top">
+                                        <Box
+                                            sx={{
+                                                position: 'absolute',
+                                                top: 0,
+                                                left: 0,
+                                                right: 0,
+                                                bottom: 0,
+                                                cursor: 'pointer',
+                                                borderRadius: 1
+                                            }}
+                                            onClick={() => handleReceiptClick(params.row)}
+                                        />
+                                    </Tooltip>
+                                </Box>
+                            );
+                        }
+                        return (
+                            <Avatar
+                                variant="rounded"
+                                sx={{
+                                    width: 60,
+                                    height: 50,
+                                    bgcolor: 'grey.200',
+                                    color: 'grey.500'
+                                }}
+                            >
+                                <Typography variant="caption" sx={{ fontSize: '10px' }}>
+                                    لا يوجد
+                                </Typography>
+                            </Avatar>
+                        );
+                    },
+                    sortable: false,
+                    filterable: false,
+                },
         {
             field: 'actions',
             headerName: 'الإجراءات',
@@ -1267,6 +1368,115 @@ function ClientAdvertismentPage() {
                     {snackbar.message}
                 </Alert>
             </Snackbar>
+
+            {/* Receipt Image Modal */}
+            <Dialog
+                open={receiptModalOpen}
+                onClose={handleCloseReceiptModal}
+                maxWidth="md"
+                fullWidth
+                dir="rtl"
+                PaperProps={{
+                    sx: {
+                        borderRadius: 2,
+                        maxHeight: '90vh'
+                    }
+                }}
+            >
+                <DialogTitle
+                    sx={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        pb: 1
+                    }}
+                >
+                    <Typography variant="h6">إيصال الدفع</Typography>
+                    <IconButton
+                        onClick={handleCloseReceiptModal}
+                        sx={{
+                            color: 'grey.500',
+                            '&:hover': {
+                                color: 'grey.700',
+                                backgroundColor: 'grey.100'
+                            }
+                        }}
+                    >
+                        <CloseIcon />
+                    </IconButton>
+                </DialogTitle>
+                <DialogContent
+                    dividers
+                    sx={{
+                        textAlign: 'center',
+                        p: 2,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center'
+                    }}
+                >
+                    {selectedReceiptImage && !receiptImageError ? (
+                        <Box
+                            sx={{
+                                position: 'relative',
+                                maxWidth: '100%',
+                                maxHeight: '70vh',
+                                overflow: 'hidden',
+                                borderRadius: 2,
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                            }}
+                        >
+                            <img
+                                src={selectedReceiptImage}
+                                alt="إيصال الدفع"
+                                style={{
+                                    maxWidth: '100%',
+                                    maxHeight: '70vh',
+                                    objectFit: 'contain',
+                                    borderRadius: 8
+                                }}
+                                onError={handleReceiptImageError}
+                            />
+                        </Box>
+                    ) : (
+                        <Box
+                            sx={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                py: 4
+                            }}
+                        >
+                            <Avatar
+                                sx={{
+                                    width: 80,
+                                    height: 80,
+                                    bgcolor: 'grey.200',
+                                    color: 'grey.500',
+                                    mb: 2
+                                }}
+                            >
+                                <Typography variant="h4">!</Typography>
+                            </Avatar>
+                            <Typography color="text.secondary" variant="h6">
+                                {receiptImageError ? 'فشل في تحميل الصورة' : 'لا يوجد إيصال دفع متاح'}
+                            </Typography>
+                            <Typography color="text.secondary" variant="body2" sx={{ mt: 1 }}>
+                                {receiptImageError ? 'تعذر عرض الصورة. قد تكون الصورة تالفة أو غير متاحة.' : 'لم يتم رفع إيصال دفع لهذا الإعلان.'}
+                            </Typography>
+                        </Box>
+                    )}
+                </DialogContent>
+                <DialogActions sx={{ p: 2, justifyContent: 'center' }}>
+                    <Button
+                        onClick={handleCloseReceiptModal}
+                        variant="contained"
+                        sx={{ minWidth: 100 }}
+                    >
+                        إغلاق
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Box>
     );
 }
