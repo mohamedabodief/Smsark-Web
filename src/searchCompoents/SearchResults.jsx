@@ -55,8 +55,8 @@ function SearchResults() {
         ad.city?.toLowerCase().includes(searchWord.toLowerCase()) ||
         ad.governorate?.toLowerCase().includes(searchWord.toLowerCase()) ||
         ad.title?.toLowerCase().includes(searchWord.toLowerCase());
-
-      return matchesPurpose && matchesType && matchesPriceFrom && matchesPriceTo && matchesCity;
+        const isApproved = ad.reviewStatus ? ad.reviewStatus === 'approved' : false;
+      return matchesPurpose && matchesType && matchesPriceFrom && matchesPriceTo && matchesCity&& isApproved;;
     });
   }, [clientAds, filters, searchWord]);
 
@@ -75,8 +75,8 @@ function SearchResults() {
         !filters.priceFrom || ad.start_limit >= parseFloat(filters.priceFrom);
       const matchesPriceTo =
         !filters.priceTo || ad.end_limit <= parseFloat(filters.priceTo);
-
-      return matchesSearch && matchesPriceFrom && matchesPriceTo;
+       const isApproved = ad.reviewStatus ? ad.reviewStatus === 'approved' : false;
+      return matchesSearch && matchesPriceFrom && matchesPriceTo && isApproved;;
     });
   }, [financingAds, filters, searchWord]);
 
@@ -94,8 +94,8 @@ function SearchResults() {
         !filters.priceFrom || ad.price_start_from >= parseFloat(filters.priceFrom);
       const matchesPriceTo =
         !filters.priceTo || ad.price_end_to <= parseFloat(filters.priceTo);
-
-      return matchesSearch && matchesPriceFrom && matchesPriceTo;
+const isApproved = ad.reviewStatus ? ad.reviewStatus === 'approved' : false;
+      return matchesSearch && matchesPriceFrom && matchesPriceTo&& isApproved;;
     });
   }, [developerAds, filters, searchWord]);
 

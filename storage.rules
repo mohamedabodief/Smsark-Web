@@ -15,8 +15,16 @@ service firebase.storage {
       allow delete: if request.auth != null;
     }
 
-    // السماح للمستخدمين المسجلين برفع صور العقارات في مجلدات المستخدمين
+    // السماح للمستخدمين المسجلين برفع صور العقارات في مجلدات المستخدمين (legacy path)
     match /property_images/{userId}/{fileName} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == userId;
+      // السماح للمستخدمين المصادق عليهم بحذف الملفات (سيتم التحقق من صلاحيات الأدمن في التطبيق)
+      allow delete: if request.auth != null;
+    }
+
+    // السماح للمستخدمين المسجلين برفع صور العقارات في مجلدات الإعلانات المحددة
+    match /property_images/{userId}/{adId}/{fileName} {
       allow read: if true;
       allow write: if request.auth != null && request.auth.uid == userId;
       // السماح للمستخدمين المصادق عليهم بحذف الملفات (سيتم التحقق من صلاحيات الأدمن في التطبيق)
@@ -53,13 +61,25 @@ service firebase.storage {
     }
 
 
-    // السماح للمستخدمين المسجلين برفع صور التمويل في مجلدات المستخدمين
+    // السماح للمستخدمين المسجلين برفع صور التمويل في مجلدات المستخدمين (legacy path)
     match /financing_images/{userId}/{fileName} {
       allow read: if true;
       allow write: if request.auth != null && request.auth.uid == userId;
       allow delete: if request.auth != null;
     }
 
+    // السماح للمستخدمين المسجلين برفع صور التمويل في مجلدات الإعلانات المحددة
+    match /financing_images/{userId}/{adId}/{fileName} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == userId;
+      allow delete: if request.auth != null;
+    }
+        // السماح للمستخدمين المسجلين برفع صور البطاقة الضريبية
+    match /tax_card_images/{userId}/{fileName} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == userId;
+      allow delete: if request.auth != null;
+    }
     // القاعدة الافتراضية - رفض جميع الوصولات الأخرى
     match /{allPaths=**} {
       allow read, write: if false;

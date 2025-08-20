@@ -528,15 +528,15 @@ class FinancingAdvertisement {
 
   // 📤 رفع صور الإعلان
   async #uploadImages(files = []) {
+    if (!this.#id) throw new Error('Ad ID is required for uploading images');
     const storage = getStorage();
     const urls = [];
     const limited = files.slice(0, 4);
     for (let i = 0; i < limited.length; i++) {
-      const timestamp = Date.now();
-      const fileName = `financing_${timestamp}_${i}.jpg`;
+      const fileName = `image_${i + 1}.jpg`;
       const refPath = ref(
         storage,
-        `financing_images/${this.userId}/${fileName}`
+        `financing_images/${this.userId}/${this.#id}/${fileName}`
       );
       await uploadBytes(refPath, limited[i]);
       urls.push(await getDownloadURL(refPath));
@@ -546,43 +546,46 @@ class FinancingAdvertisement {
 
   // 📤 رفع إيصال الدفع
   async #uploadReceipt(file) {
+    if (!this.#id) throw new Error('Ad ID is required for uploading receipt');
     const storage = getStorage();
-    // رفع الإيصال في مجلد المستخدم
-    const timestamp = Date.now();
-    const fileName = `receipt_${timestamp}.jpg`;
-    const refPath = ref(storage, `financing_images/${this.userId}/${fileName}`);
+    const fileName = `receipt.jpg`;
+    const refPath = ref(storage, `financing_images/${this.userId}/${this.#id}/${fileName}`);
     await uploadBytes(refPath, file);
     return await getDownloadURL(refPath);
   }
 
-  // 🗑️ حذف جميع صور الإعلان
+  // 🗑️ حذف جميع صور الإعلان المحددة
   async #deleteAllImages() {
+    if (!this.#id) {
+      console.warn('No ad ID available for image deletion');
+      return;
+    }
     const storage = getStorage();
-    // Note: This will delete ALL financing images for this user, not just this ad's images
-    // This matches the behavior of other models like RealEstateDeveloperAdvertisement
-    const dirRef = ref(storage, `financing_images/${this.userId}`);
+    // Delete only images belonging to this specific ad
+    const dirRef = ref(storage, `financing_images/${this.userId}/${this.#id}`);
     try {
       const list = await listAll(dirRef);
-      // Filter to only delete images that belong to this ad (if we can identify them)
-      // For now, delete all images in the user's folder (matches other models' behavior)
-      await Promise.all(list.items.map((ref) => deleteObject(ref)));
-    } catch (_) {}
+      await Promise.all(list.items.map((fileRef) => deleteObject(fileRef)));
+      console.log(`Successfully deleted all images for ad ${this.#id}`);
+    } catch (error) {
+      console.warn(`Failed to delete images for ad ${this.#id}:`, error.message);
+    }
   }
 
   // 🗑️ حذف إيصال الدفع
   async #deleteReceipt() {
-    if (!this.receipt_image) return;
+    if (!this.#id) {
+      console.warn('No ad ID available for receipt deletion');
+      return;
+    }
     const storage = getStorage();
     try {
-      // Extract the path from the download URL to delete the specific receipt
-      const url = new URL(this.receipt_image);
-      const pathMatch = url.pathname.match(/\/o\/(.+?)\?/);
-      if (pathMatch) {
-        const decodedPath = decodeURIComponent(pathMatch[1]);
-        const receiptRef = ref(storage, decodedPath);
-        await deleteObject(receiptRef);
-      }
-    } catch (_) {
+      // Delete receipt using the new ad-specific path structure
+      const receiptRef = ref(storage, `financing_images/${this.userId}/${this.#id}/receipt.jpg`);
+      await deleteObject(receiptRef);
+      console.log(`Successfully deleted receipt for ad ${this.#id}`);
+    } catch (error) {
+      console.warn(`Failed to delete receipt for ad ${this.#id}:`, error.message);
       // Ignore errors - file might not exist
     }
   }

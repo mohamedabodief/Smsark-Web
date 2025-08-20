@@ -149,10 +149,10 @@ export default function RegisterStep3LR({
     const uploadPromises = files.map(async (file, index) => {
       const timestamp = Date.now();
       const fileName = `tax_card_${timestamp}_${index}.jpg`;
-      // استخدام نفس مسار الصور العادية مع userId من المستخدم الحالي
+      // استخدام مسار البطاقة الضريبية المخصص
       const storageRef = ref(
         storage,
-        `property_images/${currentUser.uid}/${fileName}`
+        `tax_card_images/${currentUser.uid}/${fileName}`
       );
 
       try {

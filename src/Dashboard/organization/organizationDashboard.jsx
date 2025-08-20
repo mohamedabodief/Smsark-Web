@@ -87,13 +87,16 @@ import AccessTimeOutlinedIcon from '@mui/icons-material/AccessTimeOutlined';
 import DirectionsWalkOutlinedIcon from '@mui/icons-material/DirectionsWalkOutlined';
 import PendingActionsOutlinedIcon from '@mui/icons-material/PendingActionsOutlined';
 
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import ImageIcon from '@mui/icons-material/Image';
+
 
 // chart
 import { PieChart, pieArcLabelClasses } from '@mui/x-charts/PieChart';
 import { BarChart } from '@mui/x-charts/BarChart';
 import { LineChart } from '@mui/x-charts/LineChart';
 import { desktopOS, valueFormatter } from './webUsageStats';
-//  msg 
+//  msg
 import MoreVertIcon from '@mui/icons-material/MoreVert'; // For dropdown menu on inquiry status
 import DoneOutlineIcon from '@mui/icons-material/DoneOutline'; // For contacted
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty'; // For pending
@@ -142,6 +145,8 @@ import FinancingRequest from '../../FireBase/modelsWithOperations/FinancingReque
 import { fetchAnalyticsData } from '../../reduxToolkit/slice/analyticsSlice';
 import { fetchFinancialRequests } from '../../reduxToolkit/slice/financialRequestSlice';
 // Number formatting utility function for better readability
+import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject, listAll } from 'firebase/storage';
+
 const formatNumber = (num) => {
     if (num === null || num === undefined || isNaN(num)) return '0';
 
@@ -163,7 +168,7 @@ const governorates = [
     "القاهرة", "الإسكندرية", "الجيزة", "الشرقية", "الدقهلية", "البحيرة", "المنيا", "أسيوط",
 ];
 const organizationTypes = ["مطور عقاري", "مطور عقارى", "ممول عقاري", "ممول عقارى"];
-// Login Logout 
+// Login Logout
 // import { logoutUser } from '../../reduxToolkit/authSlice';
 import { useNavigate, Navigate } from 'react-router-dom';
 
@@ -1448,6 +1453,254 @@ function ProfilePage() {
         );
     };
 
+    // Tax card images section
+    const TaxCardSection = () => {
+        const [taxImages, setTaxImages] = useState([]);
+        const [taxLoading, setTaxLoading] = useState(true);
+        const [uploadingTax, setUploadingTax] = useState(false);
+        const [currentIdx, setCurrentIdx] = useState(0);
+        const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+
+        const loadTaxImages = React.useCallback(async () => {
+            if (!actualUid) return;
+            setTaxLoading(true);
+            try {
+                const storage = getStorage();
+                const folderRef = ref(storage, `tax_card_images/${actualUid}`);
+                const listRes = await listAll(folderRef);
+                // Sort by name (assumes name contains timestamp) to get newest last
+                const items = listRes.items.sort((a, b) => a.name.localeCompare(b.name));
+                const urls = await Promise.all(items.map(item => getDownloadURL(item)));
+                setTaxImages(urls);
+                setCurrentIdx(0);
+            } catch (e) {
+                console.error('Failed to load tax card images:', e);
+                setSnackbarMessage('تعذر تحميل صور البطاقة الضريبية');
+                setSnackbarSeverity('error');
+                setSnackbarOpen(true);
+            } finally {
+                setTaxLoading(false);
+            }
+        }, [actualUid]);
+
+        useEffect(() => {
+            loadTaxImages();
+        }, [loadTaxImages]);
+
+        const validateFiles = (files) => {
+            const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+            const maxSize = 5 * 1024 * 1024; // 5MB
+            for (const f of files) {
+                if (!allowed.includes(f.type)) {
+                    return { ok: false, message: 'يُسمح فقط بصيغ JPG/PNG/WebP' };
+                }
+                if (f.size > maxSize) {
+                    return { ok: false, message: 'حجم الصورة يجب أن يكون أقل من 5 ميجابايت' };
+                }
+            }
+            return { ok: true };
+        };
+
+        const handleUploadChange = async (e) => {
+            const files = Array.from(e.target.files || []);
+            if (!files.length || !actualUid) return;
+            const valid = validateFiles(files);
+            if (!valid.ok) {
+                setSnackbarMessage(valid.message);
+                setSnackbarSeverity('warning');
+                setSnackbarOpen(true);
+                return;
+            }
+            setUploadingTax(true);
+            try {
+                const storage = getStorage();
+                const newUrls = [];
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+                    const fileName = `tax_card_${Date.now()}_${i}.${ext}`;
+                    const fileRef = ref(storage, `tax_card_images/${actualUid}/${fileName}`);
+                    await uploadBytes(fileRef, file);
+                    const url = await getDownloadURL(fileRef);
+                    newUrls.push(url);
+                }
+                const updated = [...taxImages, ...newUrls];
+                setTaxImages(updated);
+                setCurrentIdx(Math.max(updated.length - 1, 0));
+                // Persist to Firestore profile
+                try {
+                    await dispatch(updateUserProfile({ uid: actualUid, updates: { tax_card_images: updated } })).unwrap();
+                } catch (err) {
+                    console.warn('Failed to update profile with tax images, proceeding anyway:', err);
+                }
+                setSnackbarMessage('تم رفع صورة/صور البطاقة الضريبية بنجاح');
+                setSnackbarSeverity('success');
+                setSnackbarOpen(true);
+            } catch (err) {
+                console.error('Upload tax card image failed:', err);
+                setSnackbarMessage('فشل رفع الصور: ' + (err.message || 'خطأ غير معروف'));
+                setSnackbarSeverity('error');
+                setSnackbarOpen(true);
+            } finally {
+                setUploadingTax(false);
+                // Reset the input so the same file can be selected again
+                e.target.value = '';
+            }
+        };
+
+        const getPathFromUrl = (url) => {
+            try {
+                return decodeURIComponent(new URL(url).pathname.split('/o/')[1].split('?')[0]);
+            } catch (_) {
+                return null;
+            }
+        };
+
+        const confirmDeleteCurrent = async () => {
+            const url = taxImages[currentIdx];
+            if (!url) return;
+            try {
+                const storage = getStorage();
+                const path = getPathFromUrl(url);
+                if (path) {
+                    await deleteObject(ref(storage, path));
+                } else {
+                    // Fallback: try by name if possible (best-effort)
+                    console.warn('Could not derive storage path from URL, skipping deleteObject');
+                }
+                const updated = taxImages.filter((_, idx) => idx !== currentIdx);
+                setTaxImages(updated);
+                setCurrentIdx((prev) => Math.max(Math.min(prev, updated.length - 1), 0));
+                try {
+                    await dispatch(updateUserProfile({ uid: actualUid, updates: { tax_card_images: updated } })).unwrap();
+                } catch (err) {
+                    console.warn('Failed to update profile after delete:', err);
+                }
+                setSnackbarMessage('تم حذف صورة البطاقة الضريبية');
+                setSnackbarSeverity('success');
+                setSnackbarOpen(true);
+            } catch (err) {
+                console.error('Delete tax card image failed:', err);
+                setSnackbarMessage('فشل حذف الصورة: ' + (err.message || 'خطأ غير معروف'));
+                setSnackbarSeverity('error');
+                setSnackbarOpen(true);
+            } finally {
+                setDeleteDialogOpen(false);
+            }
+        };
+
+        return (
+            <Box  sx={{ width: '100%', mt: 3  }}>
+                <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 , textAlign:'left'}}>السجل الضريبي</Typography>
+                <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+                    {taxLoading ? (
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 180 }}>
+                            <CircularProgress size={28} />
+                            <Typography sx={{ ml: 2 }}>جاري التحميل...</Typography>
+                        </Box>
+                    ) : taxImages.length > 0 ? (
+                        <Box>
+                            <Box sx={{
+                                width: '100%',
+                                height: 200,
+                                borderRadius: 2,
+                                overflow: 'hidden',
+                                border: '1px solid',
+                                borderColor: 'divider',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                backgroundColor: 'background.default',
+                            }}>
+                                <img
+                                    src={taxImages[currentIdx]}
+                                    alt={`Tax card ${currentIdx + 1}`}
+                                    style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                                    onError={(e) => {
+                                        e.currentTarget.src = 'https://placehold.co/400x200/E0E0E0/7D7D7D?text=Image+Not+Available';
+                                    }}
+                                />
+                            </Box>
+                            {taxImages.length > 1 && (
+                                <Stack direction="row" spacing={1} sx={{ mt: 1, overflowX: 'auto' }}>
+                                    {taxImages.map((u, idx) => (
+                                        <Box key={idx} onClick={() => setCurrentIdx(idx)} sx={{
+                                            width: 56, height: 56, borderRadius: 1, overflow: 'hidden', cursor: 'pointer',
+                                            outline: currentIdx === idx ? '2px solid #6E00FE' : '1px solid #e0e0e0',
+                                            flex: '0 0 auto'
+                                        }}>
+                                            <img src={u} alt={`thumb ${idx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        </Box>
+                                    ))}
+                                </Stack>
+                            )}
+                            <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
+                                <input
+                                    id="tax-card-upload"
+                                    type="file"
+                                    accept="image/*"
+                                    multiple
+                                    style={{ display: 'none' }}
+                                    onChange={handleUploadChange}
+                                    disabled={uploadingTax}
+                                />
+                                <label htmlFor="tax-card-upload">
+                                    <Button dir='ltr' sx={{gap:'10px'}}  variant="contained" component="span" startIcon={<CloudUploadIcon />} disabled={uploadingTax}>
+                                        {uploadingTax ? 'جاري الرفع...' : 'إضافة'}
+                                    </Button>
+                                </label>
+                                <Button
+                                dir='ltr'
+                                sx={{gap:'5px'}}
+                                    variant="outlined"
+                                    color="error"
+                                    startIcon={<DeleteIcon />}
+                                    onClick={() => setDeleteDialogOpen(true)}
+                                >
+                                حذف
+                                </Button>
+                            </Stack>
+                        </Box>
+                    ) : (
+                        <Box sx={{
+                            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                            height: 180, border: '2px dashed', borderColor: 'divider', borderRadius: 2, backgroundColor: 'background.default'
+                        }}>
+                            <ImageIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
+                            <Typography color="text.secondary" sx={{ mb: 1 }}>لا توجد صورة بطاقة ضريبية بعد</Typography>
+                            <input
+                                id="tax-card-upload"
+                                type="file"
+                                accept="image/*"
+                                multiple
+                                style={{ display: 'none' }}
+                                onChange={handleUploadChange}
+                                disabled={uploadingTax}
+                            />
+                            <label htmlFor="tax-card-upload">
+                                <Button variant="contained" component="span" startIcon={<CloudUploadIcon />} disabled={uploadingTax}>
+                                    {uploadingTax ? 'جاري الرفع...' : 'رفع الصورة'}
+                                </Button>
+                            </label>
+                        </Box>
+                    )}
+
+                    {/* Delete confirmation dialog */}
+                    <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+                        <DialogTitle sx={{ textAlign: 'left' }}>تأكيد الحذف</DialogTitle>
+                        <DialogContent sx={{ textAlign: 'right' }}>
+                            <Typography>هل أنت متأكد من حذف صورة البطاقة الضريبية الحالية؟</Typography>
+                        </DialogContent>
+                        <DialogActions sx={{ flexDirection: 'row-reverse' }}>
+                            <Button variant="contained" color="error" onClick={confirmDeleteCurrent}>حذف</Button>
+                            <Button onClick={() => setDeleteDialogOpen(false)}>إلغاء</Button>
+                        </DialogActions>
+                    </Dialog>
+                </Paper>
+            </Box>
+        );
+    };
+
     // Show loading state while profile is being fetched
     if (userProfileStatus === "loading") {
         return (
@@ -1507,8 +1760,9 @@ function ProfilePage() {
             <Paper sx={{ p: 4, borderRadius: 2, minHeight: 400, textAlign: 'right', boxShadow: '0px 0px 8px rgba(0,0,0,0.2)' }}>
                 <Grid container spacing={4} direction="row">
                     <Grid size={{ xs: 12, md: 4, lg: 3 }}>
-                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'stretch', justifyContent: 'flex-start', gap: 2 }}>
                             <UploadAvatars />
+                            <TaxCardSection />
                         </Box>
                     </Grid>
                     <Grid size={{ xs: 12, md: 8, lg: 9 }}>
@@ -2952,29 +3206,19 @@ function PaidAdvertismentPage() {
             headerName: 'إيصال الدفع',
             width: 100,
             renderCell: (params) => {
-                if (params.value) {
-                    return (
-                        <Avatar
-                            src={params.value}
-                            variant="rounded"
-                            sx={{
-                                width: 60,
-                                height: 50,
-                                cursor: 'pointer',
-                                '&:hover': {
-                                    opacity: 0.8,
-                                    transform: 'scale(1.05)'
-                                }
-                            }}
-                            onClick={() => handleReceiptClick(params.value)}
-                        />
-                    );
-                }
+                // Debug logging for receipt images
+                console.log('Organization developer receipt image debug:', {
+                    adId: params.row.id,
+                    userId: params.row.userId,
+                    receiptImage: params.value,
+                    hasReceiptImage: !!params.value
+                });
+
                 return (
-                    <Avatar
-                        src="https://placehold.co/50x50/E0E0E0/FFFFFF?text=No+Receipt"
-                        variant="rounded"
-                        sx={{ width: 60, height: 50 }}
+                    <ReceiptThumb
+                        ad={params.row}
+                        initialUrl={params.value}
+                        imageType="property_images"
                     />
                 );
             },
@@ -3098,29 +3342,19 @@ function PaidAdvertismentPage() {
             headerName: 'إيصال الدفع',
             width: 100,
             renderCell: (params) => {
-                if (params.value) {
-                    return (
-                        <Avatar
-                            src={params.value}
-                            variant="rounded"
-                            sx={{
-                                width: 60,
-                                height: 50,
-                                cursor: 'pointer',
-                                '&:hover': {
-                                    opacity: 0.8,
-                                    transform: 'scale(1.05)'
-                                }
-                            }}
-                            onClick={() => handleReceiptClick(params.value)}
-                        />
-                    );
-                }
+                // Debug logging for receipt images
+                console.log('Organization funder receipt image debug:', {
+                    adId: params.row.id,
+                    userId: params.row.userId,
+                    receiptImage: params.value,
+                    hasReceiptImage: !!params.value
+                });
+
                 return (
-                    <Avatar
-                        src="https://placehold.co/50x50/E0E0E0/FFFFFF?text=No+Receipt"
-                        variant="rounded"
-                        sx={{ width: 60, height: 50 }}
+                    <ReceiptThumb
+                        ad={params.row}
+                        initialUrl={params.value}
+                        imageType="financing_images"
                     />
                 );
             },
@@ -3324,6 +3558,82 @@ function PaidAdvertismentPage() {
         setReceiptDialogImage(imageUrl);
         setReceiptDialogOpen(true);
     };
+
+    // Minimal receipt thumbnail that resolves correct URL from Storage
+    const ReceiptThumb = ({ ad, initialUrl, imageType }) => {
+        const [url, setUrl] = React.useState(initialUrl || null);
+        const [loading, setLoading] = React.useState(!initialUrl);
+
+        React.useEffect(() => {
+            let isMounted = true;
+            const run = async () => {
+                try {
+                    const storage = getStorage();
+                    // Try new ad-specific path first
+                    const newRef = ref(storage, `${imageType}/${ad.userId}/${ad.id}/receipt.jpg`);
+                    const newUrl = await getDownloadURL(newRef);
+                    if (isMounted) setUrl(newUrl);
+                } catch (_) {
+                    try {
+                        // Fallback to old user-level path
+                        const storage = getStorage();
+                        const oldRef = ref(storage, `${imageType}/${ad.userId}/receipt.jpg`);
+                        const oldUrl = await getDownloadURL(oldRef);
+                        if (isMounted) setUrl(oldUrl);
+                    } catch (_) {
+                        // As a last resort, keep whatever initial URL we have
+                        if (isMounted) setUrl(initialUrl || null);
+                    }
+                } finally {
+                    if (isMounted) setLoading(false);
+                }
+            };
+
+            // If no URL provided, resolve one
+            if (!initialUrl) run();
+            else setLoading(false);
+            return () => { isMounted = false; };
+        }, [ad.id, ad.userId, imageType, initialUrl]);
+
+        if (loading) {
+            return (
+                <Avatar
+                    variant="rounded"
+                    sx={{ width: 60, height: 50, bgcolor: 'grey.200' }}
+                />
+            );
+        }
+
+        if (url) {
+            return (
+                <Avatar
+                    src={url}
+                    variant="rounded"
+                    sx={{
+                        width: 60,
+                        height: 50,
+                        cursor: 'pointer',
+                        '&:hover': { opacity: 0.8, transform: 'scale(1.05)' }
+                    }}
+                    onClick={() => handleReceiptClick(url)}
+                    onError={(e) => {
+                        console.error('Receipt image failed to load:', url);
+                        e.currentTarget.src = "https://placehold.co/50x50/FF6B6B/FFFFFF?text=Error";
+                    }}
+                />
+            );
+        }
+
+        return (
+            <Avatar
+                src="https://placehold.co/50x50/E0E0E0/FFFFFF?text=No+Receipt"
+                variant="rounded"
+                sx={{ width: 60, height: 50 }}
+            />
+        );
+    };
+
+
 
 
 
@@ -5971,7 +6281,7 @@ function AnalyticsPage() {
                             { field: 'status', headerName: 'الحالة', width: 160 },
                             // { field: 'views', headerName: 'المشاهدات', width: 100 },
                             // { field: 'edits', headerName: 'التعديلات', width: 100 },
-                            // { field: 'daysSincePublished', headerName: 'أيام منذ النشر', width: 150 },   
+                            // { field: 'daysSincePublished', headerName: 'أيام منذ النشر', width: 150 },
                             // { field: 'createdAt', headerName: 'تاريخ الإنشاء', width: 150 }
                         ]}
                         pageSize={5}

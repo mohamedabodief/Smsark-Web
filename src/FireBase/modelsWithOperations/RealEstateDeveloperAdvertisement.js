@@ -115,9 +115,16 @@ class RealEstateDeveloperAdvertisement {
 
     // رفع الريسيت بعد تعيين this.#id
     if (receiptFile) {
-      const receiptUrl = await this.#uploadReceipt(receiptFile);
-      this.receipt_image = receiptUrl;
-      await updateDoc(docRef, { receipt_image: receiptUrl });
+      // إذا كانت قيمة نصية (رابط قديم)، فقط خزّنها
+      if (typeof receiptFile === 'string') {
+        this.receipt_image = receiptFile;
+        await updateDoc(docRef, { receipt_image: receiptFile });
+      } else {
+        // وإلا اعتبرها ملفاً وارفعها تحت المسار المعياري /property_images/{userId}/{adId}/receipt.jpg
+        const receiptUrl = await this.#uploadReceipt(receiptFile);
+        this.receipt_image = receiptUrl;
+        await updateDoc(docRef, { receipt_image: receiptUrl });
+      }
     }
 
     const admins = await User.getAllUsersByType('admin');
@@ -174,9 +181,14 @@ class RealEstateDeveloperAdvertisement {
 
     // إيصال الدفع
     if (newReceiptFile) {
-      const receiptUrl = await this.#uploadReceipt(newReceiptFile);
-      updates.receipt_image = receiptUrl;
-      this.receipt_image = receiptUrl;
+      if (typeof newReceiptFile === 'string') {
+        updates.receipt_image = newReceiptFile;
+        this.receipt_image = newReceiptFile;
+      } else {
+        const receiptUrl = await this.#uploadReceipt(newReceiptFile);
+        updates.receipt_image = receiptUrl;
+        this.receipt_image = receiptUrl;
+      }
     }
 
     // تحقق من صحة الحالة
@@ -659,13 +671,14 @@ class RealEstateDeveloperAdvertisement {
   async #uploadImages(files = []) {
     const currentUser = auth.currentUser;
     if (!currentUser) throw new Error("يجب تسجيل الدخول أولاً قبل رفع الصور");
+    if (!this.#id) throw new Error('Ad ID is required for uploading images');
     const storage = getStorage();
     const urls = [];
     const limited = files.slice(0, 4);
     for (let i = 0; i < limited.length; i++) {
       const refPath = ref(
         storage,
-        `property_images/${this.userId}/image_${i + 1}.jpg`
+        `property_images/${this.userId}/${this.#id}/image_${i + 1}.jpg`
       );
       await uploadBytes(refPath, limited[i]);
       urls.push(await getDownloadURL(refPath));
@@ -677,8 +690,9 @@ class RealEstateDeveloperAdvertisement {
   async #uploadReceipt(file) {
     const currentUser = auth.currentUser;
     if (!currentUser) throw new Error("يجب تسجيل الدخول أولاً قبل رفع الإيصال");
+    if (!this.#id) throw new Error('Ad ID is required for uploading receipt');
     const storage = getStorage();
-    const refPath = ref(storage, `property_images/${this.userId}/receipt.jpg`);
+    const refPath = ref(storage, `property_images/${this.userId}/${this.#id}/receipt.jpg`);
     await uploadBytes(refPath, file);
     return await getDownloadURL(refPath);
   }
@@ -689,12 +703,19 @@ async #deleteAllImages() {
     throw new Error("يجب تسجيل الدخول أولاً قبل حذف الصور");
   }
 
-  const dirRef = ref(getStorage(), `property_images/${this.userId}`);
+  if (!this.#id) {
+    console.warn('No ad ID available for image deletion');
+    return;
+  }
+
+  // Delete only images belonging to this specific ad
+  const dirRef = ref(getStorage(), `property_images/${this.userId}/${this.#id}`);
   try {
     const list = await listAll(dirRef);
     for (const fileRef of list.items) await deleteObject(fileRef);
-  } catch {
-    // تجاهل الخطأ بصمت - ممكن الملفات تكون مش موجودة
+    console.log(`Successfully deleted all images for ad ${this.#id}`);
+  } catch (error) {
+    console.warn(`Failed to delete images for ad ${this.#id}:`, error.message);
   }
 }
 
@@ -706,11 +727,18 @@ async #deleteAllImages() {
     throw new Error("يجب تسجيل الدخول أولاً قبل حذف الإيصال");
   }
 
-  const fileRef = ref(getStorage(), `property_images/${this.userId}/receipt.jpg`);
+  if (!this.#id) {
+    console.warn('No ad ID available for receipt deletion');
+    return;
+  }
+
+  // Delete receipt using the new ad-specific path structure
+  const fileRef = ref(getStorage(), `property_images/${this.userId}/${this.#id}/receipt.jpg`);
   try {
     await deleteObject(fileRef);
-  } catch {
-    // الخطأ متوقع لو الملف مش موجود، مش مهم نعرضه
+    console.log(`Successfully deleted receipt for ad ${this.#id}`);
+  } catch (error) {
+    console.warn(`Failed to delete receipt for ad ${this.#id}:`, error.message);
   }
 }
 

@@ -75,13 +75,15 @@ const RentAds = () => {
       const propertyType = propertyTypeFilter.trim();
       const from = priceFrom ? parseFloat(priceFrom) : null;
       const to = priceTo ? parseFloat(priceTo) : null;
+      const isApproved = ad.reviewStatus ? ad.reviewStatus === 'approved' : false;
       return (
         (ad.address?.toLowerCase().includes(search.toLowerCase()) ||
          ad.city?.toLowerCase().includes(search.toLowerCase()) ||
          !search) &&
         (propertyType === "نوع العقار" || ad.type?.toLowerCase().includes(propertyType.toLowerCase())) &&
         (!from || ad.price >= from) &&
-        (!to || ad.price <= to)
+        (!to || ad.price <= to)&&
+        isApproved
       );
     });
 
