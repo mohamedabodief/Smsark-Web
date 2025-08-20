@@ -75,8 +75,21 @@ const PropertyForm = ({
   const dispatch = useDispatch();
   const formData = useSelector((state) => state.property.formData);
   const [errors, setErrors] = useState({});
-  const [images, setImages] = useState([]);
-  const [previewUrls, setPreviewUrls] = useState([]);
+  const [images, setImages] = useState([]); // Only new files
+  const [imageMetadata, setImageMetadata] = useState(
+    isEditMode && initialData?.images && Array.isArray(initialData.images)
+      ? initialData.images
+          .filter(
+            (img) =>
+              img &&
+              img.trim() !== "" &&
+              img !== "null" &&
+              img !== "undefined" &&
+              img.startsWith("http")
+          )
+          .map((url, idx) => ({ url, isNew: false, id: `existing-${idx}` }))
+      : []
+  );
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState(null);
   const [selectedPackage, setSelectedPackage] = useState(
@@ -137,7 +150,7 @@ const PropertyForm = ({
         })
       );
 
-      // عرض الصور الموجودة - استبعاد القيم الفارغة والروابط غير الصحيحة
+      // Create image metadata for existing images
       if (initialData.images && initialData.images.length > 0) {
         console.log("Setting existing images:", initialData.images);
         const validImages = initialData.images.filter(
@@ -149,7 +162,14 @@ const PropertyForm = ({
             img.startsWith("http")
         );
         console.log("Valid existing images:", validImages);
-        setPreviewUrls(validImages);
+        const existingImageMetadata = validImages.map((url, index) => ({
+          url,
+          isNew: false,
+          id: `existing-${index}`,
+        }));
+        setImageMetadata(existingImageMetadata);
+      } else {
+        setImageMetadata([]);
       }
 
       // إضافة معاينة صورة الإيصال القديمة
@@ -160,16 +180,16 @@ const PropertyForm = ({
     }
   }, [isEditMode, initialData, dispatch]);
 
-  // تنظيف object URLs عند إلغاء تحميل المكون
+  // Clean up object URLs when the component unmounts
   React.useEffect(() => {
     return () => {
-      previewUrls.forEach((url) => {
-        if (url.startsWith("blob:")) {
-          URL.revokeObjectURL(url);
+      imageMetadata.forEach((img) => {
+        if (img.url && img.url.startsWith("blob:")) {
+          URL.revokeObjectURL(img.url);
         }
       });
     };
-  }, [previewUrls]);
+  }, [imageMetadata]);
 
   // أضف مكون الباقات أسفل الفورم
   React.useEffect(() => {
@@ -195,32 +215,46 @@ const PropertyForm = ({
       return;
     }
 
-    if (files.length + images.length > 4) {
+    const currentImageCount = imageMetadata.length;
+    if (files.length + currentImageCount > 4) {
       setErrors({ ...errors, images: "يمكنك تحميل 4 صور كحد أقصى" });
       return;
     }
 
-    setImages((prev) => [...prev, ...files]);
     setErrors({ ...errors, images: "" });
     setUploadError(null); // مسح أي أخطاء سابقة
 
-    const newPreviewUrls = files.map((file) => URL.createObjectURL(file));
-    setPreviewUrls((prev) => [...prev, ...newPreviewUrls]);
+    const newImageMetadata = files.map((file, index) => ({
+      url: URL.createObjectURL(file),
+      isNew: true,
+      id: `new-${Date.now()}-${index}`,
+      file: file,
+    }));
+    // Append new images for preview, do not overwrite
+    setImageMetadata((prev) => [...prev, ...newImageMetadata]);
+    // Only append new files for upload
+    setImages((prev) => [...prev, ...files]);
   };
 
   // دالة لإزالة صورة
-  const removeImage = (index) => {
-    const newImages = [...images];
-    newImages.splice(index, 1);
-    setImages(newImages);
+  const removeImage = (idToRemove) => {
+    setImageMetadata((prev) => {
+      const imageToRemove = prev.find((img) => img.id === idToRemove);
+      if (!imageToRemove) return prev;
 
-    const newPreviews = [...previewUrls];
-    // تحقق من أن الصورة هي blob URL قبل حذفها
-    if (newPreviews[index] && newPreviews[index].startsWith("blob:")) {
-      URL.revokeObjectURL(newPreviews[index]);
-    }
-    newPreviews.splice(index, 1);
-    setPreviewUrls(newPreviews);
+      if (imageToRemove.url && imageToRemove.url.startsWith("blob:")) {
+        URL.revokeObjectURL(imageToRemove.url);
+      }
+
+      // If the image is new, remove the corresponding file from the `images` state
+      if (imageToRemove.isNew) {
+        setImages((prevFiles) =>
+          prevFiles.filter((file) => file !== imageToRemove.file)
+        );
+      }
+
+      return prev.filter((img) => img.id !== idToRemove);
+    });
   };
 
   const handleChange = (e) => {
@@ -364,7 +398,7 @@ const PropertyForm = ({
     if (!isEditMode && images.length === 0) {
       newErrors.images = "يجب إضافة صورة واحدة على الأقل";
     }
-    if (isEditMode && images.length === 0 && previewUrls.length === 0) {
+    if (isEditMode && images.length === 0 && imageMetadata.length === 0) {
       newErrors.images = "يجب إضافة صورة واحدة على الأقل";
     }
     // تحقق من اختيار الباقة
@@ -440,46 +474,32 @@ const PropertyForm = ({
     setUploadError(null);
 
     try {
-      let imageUrls = [];
+      const newImageFiles = images;
+      const newImageUrls =
+        newImageFiles.length > 0
+          ? await uploadImagesToFirebase(newImageFiles)
+          : [];
+
+      // Robust merge: combine all old image URLs with all new uploaded image URLs
+      const oldImageUrls = imageMetadata
+        .filter((img) => !img.isNew && img.url && img.url.startsWith("http"))
+        .map((img) => img.url);
+      const finalImageUrls = [...oldImageUrls, ...newImageUrls];
+
       let receiptUrl = null;
 
-      // في وضع التعديل، استخدم الصور الموجودة + الصور الجديدة
-      if (isEditMode) {
-        // الصور الموجودة (URLs)
-        const existingImages = previewUrls.filter(
-          (url) => !url.startsWith("blob:")
-        );
-        // الصور الجديدة (Files)
-        if (images.length > 0) {
-          const newImageUrls = await uploadImagesToFirebase(images);
-          imageUrls = [...existingImages, ...newImageUrls];
+      // التعامل مع صورة الإيصال
+      if (receiptImage) {
+        if (receiptImage instanceof File) {
+          // صورة جديدة - ارفعها
+          receiptUrl = await uploadReceiptToFirebase(receiptImage);
         } else {
-          imageUrls = existingImages;
-        }
-
-        // التعامل مع صورة الإيصال في وضع التعديل
-        if (receiptImage) {
-          if (receiptImage instanceof File) {
-            // صورة جديدة - ارفعها
-            receiptUrl = await uploadReceiptToFirebase(receiptImage);
-          } else {
-            // صورة موجودة - استخدم الرابط الموجود
-            receiptUrl = receiptImage;
-          }
-        } else {
-          // لا توجد صورة إيصال
-          receiptUrl = initialData?.receipt_image || null;
+          // صورة موجودة - استخدم الرابط الموجود
+          receiptUrl = receiptImage;
         }
       } else {
-        // وضع الإضافة الجديدة
-        if (images.length > 0) {
-          imageUrls = await uploadImagesToFirebase(images);
-        }
-
-        // رفع صورة الإيصال إذا كانت موجودة
-        if (receiptImage && receiptImage instanceof File) {
-          receiptUrl = await uploadReceiptToFirebase(receiptImage);
-        }
+        // لا توجد صورة إيصال
+        receiptUrl = initialData?.receipt_image || null;
       }
 
       // إرسال البيانات مع روابط الصور
@@ -495,14 +515,14 @@ const PropertyForm = ({
         furnished: data.furnished === "نعم",
         negotiable: data.negotiable === "نعم",
         adPackage: selectedPackage,
-        images: imageUrls,
+        images: finalImageUrls,
         receiptImage: receiptUrl,
       });
 
       if (!isEditMode) {
         dispatch(resetForm());
         setImages([]);
-        setPreviewUrls([]);
+        setImageMetadata([]);
         setReceiptImage(null);
         setReceiptPreviewUrl(null);
       }
@@ -997,78 +1017,83 @@ const PropertyForm = ({
               </Typography>
             )}
             <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
-              {previewUrls
-                .filter(
-                  (url) =>
-                    url &&
-                    url.trim() !== "" &&
-                    url !== "null" &&
-                    url !== "undefined"
-                )
-                .map((url, index) => (
-                  <Box key={index} sx={{ position: "relative" }}>
-                    <img
-                      src={url}
-                      alt={`معاينة ${index + 1}`}
-                      style={{
-                        width: "100px",
-                        height: "100px",
-                        objectFit: "cover",
-                        borderRadius: "8px",
-                      }}
-                      onError={(e) => {
-                        console.log("Preview image failed to load:", url);
-                        e.target.src = "/no-image-thumbnail.svg";
-                      }}
-                      onLoad={() => {
-                        console.log("Preview image loaded successfully:", url);
-                      }}
-                    />
-                    <IconButton
-                      sx={{
-                        position: "absolute",
-                        top: 0,
-                        right: 0,
-                        bgcolor: "white",
-                        "&:hover": { bgcolor: "grey.200" },
-                      }}
-                      onClick={() => removeImage(index)}
-                      disabled={loading || loadingEditData || uploading}
-                    >
-                      <DeleteIcon color="error" />
-                    </IconButton>
-                  </Box>
-                ))}
-              {previewUrls.filter(
-                (url) =>
-                  url &&
-                  url.trim() !== "" &&
-                  url !== "null" &&
-                  url !== "undefined"
-              ).length === 0 &&
-                !uploading && (
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
+              {imageMetadata.map((img) => (
+                <Box key={img.id} sx={{ position: "relative" }}>
+                  <img
+                    src={img.url}
+                    alt={`معاينة ${img.id + 1}`}
+                    style={{
                       width: "100px",
                       height: "100px",
-                      border: "2px dashed #ccc",
+                      objectFit: "cover",
                       borderRadius: "8px",
-                      color: "text.secondary",
-                      backgroundColor: "#f5f5f5",
                     }}
+                    onError={(e) => {
+                      console.log("Preview image failed to load:", img.url);
+                      e.target.src = "/no-image-thumbnail.svg";
+                    }}
+                    onLoad={() => {
+                      console.log(
+                        "Preview image loaded successfully:",
+                        img.url
+                      );
+                    }}
+                  />
+                  <Chip
+                    label={img.isNew ? "جديد" : "موجود"}
+                    size="small"
+                    color={img.isNew ? "primary" : "default"}
+                    sx={{
+                      position: "absolute",
+                      top: 4,
+                      right: 4,
+                      fontSize: "0.7rem",
+                      height: "20px",
+                      backgroundColor: img.isNew ? "primary.main" : "grey.500",
+                      color: "white",
+                      "& .MuiChip-label": {
+                        padding: "0 6px",
+                      },
+                    }}
+                  />
+                  <IconButton
+                    sx={{
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      bgcolor: "white",
+                      "&:hover": { bgcolor: "grey.200" },
+                    }}
+                    onClick={() => removeImage(img.id)}
+                    disabled={loading || loadingEditData || uploading}
                   >
-                    <Typography
-                      variant="caption"
-                      color="primary"
-                      textAlign="center"
-                    >
-                      لا توجد صور
-                    </Typography>
-                  </Box>
-                )}
+                    <DeleteIcon color="error" />
+                  </IconButton>
+                </Box>
+              ))}
+              {imageMetadata.length === 0 && !uploading && (
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: "100px",
+                    height: "100px",
+                    border: "2px dashed #ccc",
+                    borderRadius: "8px",
+                    color: "text.secondary",
+                    backgroundColor: "#f5f5f5",
+                  }}
+                >
+                  <Typography
+                    variant="caption"
+                    color="primary"
+                    textAlign="center"
+                  >
+                    لا توجد صور
+                  </Typography>
+                </Box>
+              )}
               {uploading && (
                 <Box
                   sx={{
@@ -1237,7 +1262,7 @@ const PropertyForm = ({
               variant="h6"
               sx={{ color: "#6E00FE", mb: 2, mt: 2, textAlign: "right" }}
             >
-              اختيار الباقة و رفع صورة الايصال 
+              اختيار الباقة و رفع صورة الايصال
             </Typography>
             <Box
               sx={{ display: "flex", justifyContent: "center", width: "100%" }}
@@ -1317,7 +1342,7 @@ const PropertyForm = ({
                 "حفظ التعديلات"
               ) : (
                 "إضافة العقار"
-              )}
+              )}ف
             </StyledButton>
           </Grid>
         </Box>
@@ -1326,8 +1351,9 @@ const PropertyForm = ({
       {/* Dialog للتنبيه عند عدم رفع صورة الإيصال */}
       <Dialog open={showReceiptWarning} onClose={() => {}}>
         <DialogTitle>تنبيه هام</DialogTitle>
-       <DialogContent dir="rtl">
-           لن يتم تفعيل الاعلان الا في حالة رفع صورة ايصال الدفع , و يمكنك رفع صورة الايصال  من لوحة التحكم الخاصة بحسابك .
+        <DialogContent dir="rtl">
+          لن يتم تفعيل الاعلان الا في حالة رفع صورة ايصال الدفع , و يمكنك رفع
+          صورة الايصال من لوحة التحكم الخاصة بحسابك .
         </DialogContent>
         <DialogActions>
           <Button onClick={handleWarningConfirm}>حسناً</Button>
