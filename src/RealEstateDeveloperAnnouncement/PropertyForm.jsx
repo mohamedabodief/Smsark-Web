@@ -1246,7 +1246,7 @@ const PropertyForm = ({
                       variant="outlined"
                       onClick={() => setUploadError(null)}
                     >
-                      إلغاء
+                      إلغاء5
                     </Button>
                   </Box>
                 )}
