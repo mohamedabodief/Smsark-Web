@@ -1246,7 +1246,7 @@ const PropertyForm = ({
                       variant="outlined"
                       onClick={() => setUploadError(null)}
                     >
-                      إلغاء5
+                      إلغاء
                     </Button>
                   </Box>
                 )}
@@ -1342,7 +1342,7 @@ const PropertyForm = ({
                 "حفظ التعديلات"
               ) : (
                 "إضافة العقار"
-              )}ف
+              )}
             </StyledButton>
           </Grid>
         </Box>
