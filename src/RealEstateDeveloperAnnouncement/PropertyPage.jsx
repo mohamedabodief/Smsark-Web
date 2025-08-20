@@ -162,8 +162,8 @@ const PropertyPage = () => {
         };
         console.log('Updated data with ID:', updatedData.id);
         const advertisement = new RealEstateDeveloperAdvertisement(updatedData);
-        await advertisement.update({ ...updatedData }, newImagesFiles);
-        
+        await advertisement.update({ ...updatedData }, newImagesFiles, (formData && formData.receiptImage instanceof File) ? formData.receiptImage : null);
+
         // Update status to pending for admin review
         try {
           await advertisement.returnToPending();

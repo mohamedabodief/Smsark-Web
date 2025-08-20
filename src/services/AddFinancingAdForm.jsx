@@ -1083,6 +1083,27 @@ export default function AddFinancingAdForm() {
     return true;
   };
 
+  const uploadImagesToFirebase = async (files) => {
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      throw new Error("يجب تسجيل الدخول أولاً. يرجى تسجيل الدخول من جديد.");
+    }
+    const uploadPromises = files.map(async (file, index) => {
+      const timestamp = Date.now();
+      const fileName = `financing_${timestamp}_${index}.jpg`;
+      const storageRef = ref(
+        storage,
+        `financing_images/${currentUser.uid}/${fileName}`
+      );
+      await uploadBytes(storageRef, file);
+      const downloadURL = await getDownloadURL(storageRef);
+      return downloadURL;
+    });
+    return Promise.all(uploadPromises);
+  };
+
+  // Note: Receipt upload is now handled by the FinancingAdvertisement model
+
   const performSubmit = async () => {
     setLoading(true);
     setError(null);

@@ -145,15 +145,14 @@ export default function RegisterStep3LR({
 
   console.log("Uploading tax card images for user:", currentUser.uid);
 
-  const uploadPromises = files.map(async (file, index) => {
-    const timestamp = Date.now();
-    const fileName = `tax_card_${timestamp}_${index}.jpg`;
-
-    // تعديل المسار عشان يبقى في فولدر tax_card_images
-    const storageRef = ref(
-      storage,
-      `tax_card_images/${currentUser.uid}/${fileName}`
-    );
+    const uploadPromises = files.map(async (file, index) => {
+      const timestamp = Date.now();
+      const fileName = `tax_card_${timestamp}_${index}.jpg`;
+      // استخدام مسار البطاقة الضريبية المخصص
+      const storageRef = ref(
+        storage,
+        `tax_card_images/${currentUser.uid}/${fileName}`
+      );
 
     try {
       await uploadBytes(storageRef, file);

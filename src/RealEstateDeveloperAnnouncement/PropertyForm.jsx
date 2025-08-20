@@ -486,24 +486,12 @@ const PropertyForm = ({
         .map((img) => img.url);
       const finalImageUrls = [...oldImageUrls, ...newImageUrls];
 
-      let receiptUrl = null;
-
-      // التعامل مع صورة الإيصال
-      if (receiptImage) {
-        if (receiptImage instanceof File) {
-          // صورة جديدة - ارفعها
-          receiptUrl = await uploadReceiptToFirebase(receiptImage);
-        } else {
-          // صورة موجودة - استخدم الرابط الموجود
-          receiptUrl = receiptImage;
-        }
-      } else {
-        // لا توجد صورة إيصال
-        receiptUrl = initialData?.receipt_image || null;
-      }
+      // لا ترفع الإيصال هنا حتى نستطيع حفظه تحت مسار يتضمن adId داخل الطبقة المسؤولة عن الحفظ
+      // إذا كانت صورة الإيصال ملفاً جديداً نمرره كما هو؛ إذا كان رابطاً قديماً (وضع التعديل) لا نمرر شيئاً جديداً
+      const receiptToPass = receiptImage instanceof File ? receiptImage : null;
 
       // إرسال البيانات مع روابط الصور
-      console.log("Submitting form with receiptUrl:", receiptUrl);
+      console.log("Submitting form with receipt:", receiptToPass instanceof File ? "[File]" : receiptToPass);
       await onSubmit({
         ...data,
         price_start_from: Number(data.price_start_from),
@@ -516,7 +504,7 @@ const PropertyForm = ({
         negotiable: data.negotiable === "نعم",
         adPackage: selectedPackage,
         images: finalImageUrls,
-        receiptImage: receiptUrl,
+        receiptImage: receiptToPass,
       });
 
       if (!isEditMode) {

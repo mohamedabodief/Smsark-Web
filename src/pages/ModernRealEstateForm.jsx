@@ -366,7 +366,7 @@ const ModernRealEstateForm = () => {
     },
   });
 
-  // Reset form when editData changes (for edit mode)
+  // Reset form when component mounts or when mode changes
   useEffect(() => {
     console.log(
       "[DEBUG] useEffect triggered - isEditMode:",
@@ -411,6 +411,37 @@ const ModernRealEstateForm = () => {
             )
           : 7,
       });
+    } else {
+      // For new ads, ensure form is completely reset
+      console.log("[DEBUG] Resetting form for new ad");
+      reset({
+        title: "",
+        propertyType: "",
+        price: "",
+        area: "",
+        buildingDate: "",
+        fullAddress: "",
+        city: "",
+        governorate: "",
+        phone: "",
+        username: "",
+        adType: "",
+        adStatus: "",
+        description: "",
+        adsActivation: false,
+        activationDays: 7,
+      });
+
+      // Reset all other form-related state
+      setImages([]);
+      setExistingImages([]);
+      setImageError("");
+      setCoordinates(null);
+      setGeocodingError("");
+      setSelectedPackage(null);
+      setReceiptImage(null);
+      setReceiptPreviewUrl(null);
+      setSubmitError("");
     }
   }, [isEditMode, editData, adId, reset]);
 
@@ -445,6 +476,19 @@ const ModernRealEstateForm = () => {
       setImageError("");
     }
   }, [isEditMode, editData]);
+
+  // Cleanup effect to reset form when component unmounts
+  useEffect(() => {
+    return () => {
+      console.log("[DEBUG] Component unmounting, cleaning up form state");
+      // Clean up any blob URLs to prevent memory leaks
+      images.forEach(image => {
+        if (image.preview && image.preview.startsWith('blob:')) {
+          URL.revokeObjectURL(image.preview);
+        }
+      });
+    };
+  }, [images]);
 
   // Set selected package for edit mode
   useEffect(() => {

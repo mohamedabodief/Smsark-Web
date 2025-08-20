@@ -87,13 +87,16 @@ import AccessTimeOutlinedIcon from '@mui/icons-material/AccessTimeOutlined';
 import DirectionsWalkOutlinedIcon from '@mui/icons-material/DirectionsWalkOutlined';
 import PendingActionsOutlinedIcon from '@mui/icons-material/PendingActionsOutlined';
 
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import ImageIcon from '@mui/icons-material/Image';
+
 
 // chart
 import { PieChart, pieArcLabelClasses } from '@mui/x-charts/PieChart';
 import { BarChart } from '@mui/x-charts/BarChart';
 import { LineChart } from '@mui/x-charts/LineChart';
 import { desktopOS, valueFormatter } from './webUsageStats';
-//  msg 
+//  msg
 import MoreVertIcon from '@mui/icons-material/MoreVert'; // For dropdown menu on inquiry status
 import DoneOutlineIcon from '@mui/icons-material/DoneOutline'; // For contacted
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty'; // For pending
@@ -140,12 +143,32 @@ import NotificationList from '../../pages/notificationList';
 import FinancingRequest from '../../FireBase/modelsWithOperations/FinancingRequest';
 // analytics
 import { fetchAnalyticsData } from '../../reduxToolkit/slice/analyticsSlice';
+import { fetchFinancialRequests } from '../../reduxToolkit/slice/financialRequestSlice';
+// Number formatting utility function for better readability
+import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject, listAll } from 'firebase/storage';
+
+const formatNumber = (num) => {
+    if (num === null || num === undefined || isNaN(num)) return '0';
+
+    const absNum = Math.abs(num);
+
+    if (absNum >= 1000000) {
+        const millions = num / 1000000;
+        return (millions % 1 === 0) ? millions.toFixed(0) + 'M' : millions.toFixed(1) + 'M';
+    } else if (absNum >= 1000) {
+        const thousands = num / 1000;
+        return (thousands % 1 === 0) ? thousands.toFixed(0) + 'K' : thousands.toFixed(1) + 'K';
+    } else {
+        return num.toString();
+    }
+};
+
 // Define shared data (could be moved to a constants file)
 const governorates = [
     "القاهرة", "الإسكندرية", "الجيزة", "الشرقية", "الدقهلية", "البحيرة", "المنيا", "أسيوط",
 ];
 const organizationTypes = ["مطور عقاري", "مطور عقارى", "ممول عقاري", "ممول عقارى"];
-// Login Logout 
+// Login Logout
 // import { logoutUser } from '../../reduxToolkit/authSlice';
 import { useNavigate, Navigate } from 'react-router-dom';
 
@@ -1430,6 +1453,254 @@ function ProfilePage() {
         );
     };
 
+    // Tax card images section
+    const TaxCardSection = () => {
+        const [taxImages, setTaxImages] = useState([]);
+        const [taxLoading, setTaxLoading] = useState(true);
+        const [uploadingTax, setUploadingTax] = useState(false);
+        const [currentIdx, setCurrentIdx] = useState(0);
+        const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+
+        const loadTaxImages = React.useCallback(async () => {
+            if (!actualUid) return;
+            setTaxLoading(true);
+            try {
+                const storage = getStorage();
+                const folderRef = ref(storage, `tax_card_images/${actualUid}`);
+                const listRes = await listAll(folderRef);
+                // Sort by name (assumes name contains timestamp) to get newest last
+                const items = listRes.items.sort((a, b) => a.name.localeCompare(b.name));
+                const urls = await Promise.all(items.map(item => getDownloadURL(item)));
+                setTaxImages(urls);
+                setCurrentIdx(0);
+            } catch (e) {
+                console.error('Failed to load tax card images:', e);
+                setSnackbarMessage('تعذر تحميل صور البطاقة الضريبية');
+                setSnackbarSeverity('error');
+                setSnackbarOpen(true);
+            } finally {
+                setTaxLoading(false);
+            }
+        }, [actualUid]);
+
+        useEffect(() => {
+            loadTaxImages();
+        }, [loadTaxImages]);
+
+        const validateFiles = (files) => {
+            const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+            const maxSize = 5 * 1024 * 1024; // 5MB
+            for (const f of files) {
+                if (!allowed.includes(f.type)) {
+                    return { ok: false, message: 'يُسمح فقط بصيغ JPG/PNG/WebP' };
+                }
+                if (f.size > maxSize) {
+                    return { ok: false, message: 'حجم الصورة يجب أن يكون أقل من 5 ميجابايت' };
+                }
+            }
+            return { ok: true };
+        };
+
+        const handleUploadChange = async (e) => {
+            const files = Array.from(e.target.files || []);
+            if (!files.length || !actualUid) return;
+            const valid = validateFiles(files);
+            if (!valid.ok) {
+                setSnackbarMessage(valid.message);
+                setSnackbarSeverity('warning');
+                setSnackbarOpen(true);
+                return;
+            }
+            setUploadingTax(true);
+            try {
+                const storage = getStorage();
+                const newUrls = [];
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+                    const fileName = `tax_card_${Date.now()}_${i}.${ext}`;
+                    const fileRef = ref(storage, `tax_card_images/${actualUid}/${fileName}`);
+                    await uploadBytes(fileRef, file);
+                    const url = await getDownloadURL(fileRef);
+                    newUrls.push(url);
+                }
+                const updated = [...taxImages, ...newUrls];
+                setTaxImages(updated);
+                setCurrentIdx(Math.max(updated.length - 1, 0));
+                // Persist to Firestore profile
+                try {
+                    await dispatch(updateUserProfile({ uid: actualUid, updates: { tax_card_images: updated } })).unwrap();
+                } catch (err) {
+                    console.warn('Failed to update profile with tax images, proceeding anyway:', err);
+                }
+                setSnackbarMessage('تم رفع صورة/صور البطاقة الضريبية بنجاح');
+                setSnackbarSeverity('success');
+                setSnackbarOpen(true);
+            } catch (err) {
+                console.error('Upload tax card image failed:', err);
+                setSnackbarMessage('فشل رفع الصور: ' + (err.message || 'خطأ غير معروف'));
+                setSnackbarSeverity('error');
+                setSnackbarOpen(true);
+            } finally {
+                setUploadingTax(false);
+                // Reset the input so the same file can be selected again
+                e.target.value = '';
+            }
+        };
+
+        const getPathFromUrl = (url) => {
+            try {
+                return decodeURIComponent(new URL(url).pathname.split('/o/')[1].split('?')[0]);
+            } catch (_) {
+                return null;
+            }
+        };
+
+        const confirmDeleteCurrent = async () => {
+            const url = taxImages[currentIdx];
+            if (!url) return;
+            try {
+                const storage = getStorage();
+                const path = getPathFromUrl(url);
+                if (path) {
+                    await deleteObject(ref(storage, path));
+                } else {
+                    // Fallback: try by name if possible (best-effort)
+                    console.warn('Could not derive storage path from URL, skipping deleteObject');
+                }
+                const updated = taxImages.filter((_, idx) => idx !== currentIdx);
+                setTaxImages(updated);
+                setCurrentIdx((prev) => Math.max(Math.min(prev, updated.length - 1), 0));
+                try {
+                    await dispatch(updateUserProfile({ uid: actualUid, updates: { tax_card_images: updated } })).unwrap();
+                } catch (err) {
+                    console.warn('Failed to update profile after delete:', err);
+                }
+                setSnackbarMessage('تم حذف صورة البطاقة الضريبية');
+                setSnackbarSeverity('success');
+                setSnackbarOpen(true);
+            } catch (err) {
+                console.error('Delete tax card image failed:', err);
+                setSnackbarMessage('فشل حذف الصورة: ' + (err.message || 'خطأ غير معروف'));
+                setSnackbarSeverity('error');
+                setSnackbarOpen(true);
+            } finally {
+                setDeleteDialogOpen(false);
+            }
+        };
+
+        return (
+            <Box  sx={{ width: '100%', mt: 3  }}>
+                <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 , textAlign:'left'}}>السجل الضريبي</Typography>
+                <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+                    {taxLoading ? (
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 180 }}>
+                            <CircularProgress size={28} />
+                            <Typography sx={{ ml: 2 }}>جاري التحميل...</Typography>
+                        </Box>
+                    ) : taxImages.length > 0 ? (
+                        <Box>
+                            <Box sx={{
+                                width: '100%',
+                                height: 200,
+                                borderRadius: 2,
+                                overflow: 'hidden',
+                                border: '1px solid',
+                                borderColor: 'divider',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                backgroundColor: 'background.default',
+                            }}>
+                                <img
+                                    src={taxImages[currentIdx]}
+                                    alt={`Tax card ${currentIdx + 1}`}
+                                    style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                                    onError={(e) => {
+                                        e.currentTarget.src = 'https://placehold.co/400x200/E0E0E0/7D7D7D?text=Image+Not+Available';
+                                    }}
+                                />
+                            </Box>
+                            {taxImages.length > 1 && (
+                                <Stack direction="row" spacing={1} sx={{ mt: 1, overflowX: 'auto' }}>
+                                    {taxImages.map((u, idx) => (
+                                        <Box key={idx} onClick={() => setCurrentIdx(idx)} sx={{
+                                            width: 56, height: 56, borderRadius: 1, overflow: 'hidden', cursor: 'pointer',
+                                            outline: currentIdx === idx ? '2px solid #6E00FE' : '1px solid #e0e0e0',
+                                            flex: '0 0 auto'
+                                        }}>
+                                            <img src={u} alt={`thumb ${idx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        </Box>
+                                    ))}
+                                </Stack>
+                            )}
+                            <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
+                                <input
+                                    id="tax-card-upload"
+                                    type="file"
+                                    accept="image/*"
+                                    multiple
+                                    style={{ display: 'none' }}
+                                    onChange={handleUploadChange}
+                                    disabled={uploadingTax}
+                                />
+                                <label htmlFor="tax-card-upload">
+                                    <Button dir='ltr' sx={{gap:'10px'}}  variant="contained" component="span" startIcon={<CloudUploadIcon />} disabled={uploadingTax}>
+                                        {uploadingTax ? 'جاري الرفع...' : 'إضافة'}
+                                    </Button>
+                                </label>
+                                <Button
+                                dir='ltr'
+                                sx={{gap:'5px'}}
+                                    variant="outlined"
+                                    color="error"
+                                    startIcon={<DeleteIcon />}
+                                    onClick={() => setDeleteDialogOpen(true)}
+                                >
+                                حذف
+                                </Button>
+                            </Stack>
+                        </Box>
+                    ) : (
+                        <Box sx={{
+                            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                            height: 180, border: '2px dashed', borderColor: 'divider', borderRadius: 2, backgroundColor: 'background.default'
+                        }}>
+                            <ImageIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
+                            <Typography color="text.secondary" sx={{ mb: 1 }}>لا توجد صورة بطاقة ضريبية بعد</Typography>
+                            <input
+                                id="tax-card-upload"
+                                type="file"
+                                accept="image/*"
+                                multiple
+                                style={{ display: 'none' }}
+                                onChange={handleUploadChange}
+                                disabled={uploadingTax}
+                            />
+                            <label htmlFor="tax-card-upload">
+                                <Button variant="contained" component="span" startIcon={<CloudUploadIcon />} disabled={uploadingTax}>
+                                    {uploadingTax ? 'جاري الرفع...' : 'رفع الصورة'}
+                                </Button>
+                            </label>
+                        </Box>
+                    )}
+
+                    {/* Delete confirmation dialog */}
+                    <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+                        <DialogTitle sx={{ textAlign: 'left' }}>تأكيد الحذف</DialogTitle>
+                        <DialogContent sx={{ textAlign: 'right' }}>
+                            <Typography>هل أنت متأكد من حذف صورة البطاقة الضريبية الحالية؟</Typography>
+                        </DialogContent>
+                        <DialogActions sx={{ flexDirection: 'row-reverse' }}>
+                            <Button variant="contained" color="error" onClick={confirmDeleteCurrent}>حذف</Button>
+                            <Button onClick={() => setDeleteDialogOpen(false)}>إلغاء</Button>
+                        </DialogActions>
+                    </Dialog>
+                </Paper>
+            </Box>
+        );
+    };
+
     // Show loading state while profile is being fetched
     if (userProfileStatus === "loading") {
         return (
@@ -1489,8 +1760,9 @@ function ProfilePage() {
             <Paper sx={{ p: 4, borderRadius: 2, minHeight: 400, textAlign: 'right', boxShadow: '0px 0px 8px rgba(0,0,0,0.2)' }}>
                 <Grid container spacing={4} direction="row">
                     <Grid size={{ xs: 12, md: 4, lg: 3 }}>
-                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'stretch', justifyContent: 'flex-start', gap: 2 }}>
                             <UploadAvatars />
+                            <TaxCardSection />
                         </Box>
                     </Grid>
                     <Grid size={{ xs: 12, md: 8, lg: 9 }}>
@@ -2934,29 +3206,19 @@ function PaidAdvertismentPage() {
             headerName: 'إيصال الدفع',
             width: 100,
             renderCell: (params) => {
-                if (params.value) {
-                    return (
-                        <Avatar
-                            src={params.value}
-                            variant="rounded"
-                            sx={{
-                                width: 60,
-                                height: 50,
-                                cursor: 'pointer',
-                                '&:hover': {
-                                    opacity: 0.8,
-                                    transform: 'scale(1.05)'
-                                }
-                            }}
-                            onClick={() => handleReceiptClick(params.value)}
-                        />
-                    );
-                }
+                // Debug logging for receipt images
+                console.log('Organization developer receipt image debug:', {
+                    adId: params.row.id,
+                    userId: params.row.userId,
+                    receiptImage: params.value,
+                    hasReceiptImage: !!params.value
+                });
+
                 return (
-                    <Avatar
-                        src="https://placehold.co/50x50/E0E0E0/FFFFFF?text=No+Receipt"
-                        variant="rounded"
-                        sx={{ width: 60, height: 50 }}
+                    <ReceiptThumb
+                        ad={params.row}
+                        initialUrl={params.value}
+                        imageType="property_images"
                     />
                 );
             },
@@ -3080,29 +3342,19 @@ function PaidAdvertismentPage() {
             headerName: 'إيصال الدفع',
             width: 100,
             renderCell: (params) => {
-                if (params.value) {
-                    return (
-                        <Avatar
-                            src={params.value}
-                            variant="rounded"
-                            sx={{
-                                width: 60,
-                                height: 50,
-                                cursor: 'pointer',
-                                '&:hover': {
-                                    opacity: 0.8,
-                                    transform: 'scale(1.05)'
-                                }
-                            }}
-                            onClick={() => handleReceiptClick(params.value)}
-                        />
-                    );
-                }
+                // Debug logging for receipt images
+                console.log('Organization funder receipt image debug:', {
+                    adId: params.row.id,
+                    userId: params.row.userId,
+                    receiptImage: params.value,
+                    hasReceiptImage: !!params.value
+                });
+
                 return (
-                    <Avatar
-                        src="https://placehold.co/50x50/E0E0E0/FFFFFF?text=No+Receipt"
-                        variant="rounded"
-                        sx={{ width: 60, height: 50 }}
+                    <ReceiptThumb
+                        ad={params.row}
+                        initialUrl={params.value}
+                        imageType="financing_images"
                     />
                 );
             },
@@ -3306,6 +3558,82 @@ function PaidAdvertismentPage() {
         setReceiptDialogImage(imageUrl);
         setReceiptDialogOpen(true);
     };
+
+    // Minimal receipt thumbnail that resolves correct URL from Storage
+    const ReceiptThumb = ({ ad, initialUrl, imageType }) => {
+        const [url, setUrl] = React.useState(initialUrl || null);
+        const [loading, setLoading] = React.useState(!initialUrl);
+
+        React.useEffect(() => {
+            let isMounted = true;
+            const run = async () => {
+                try {
+                    const storage = getStorage();
+                    // Try new ad-specific path first
+                    const newRef = ref(storage, `${imageType}/${ad.userId}/${ad.id}/receipt.jpg`);
+                    const newUrl = await getDownloadURL(newRef);
+                    if (isMounted) setUrl(newUrl);
+                } catch (_) {
+                    try {
+                        // Fallback to old user-level path
+                        const storage = getStorage();
+                        const oldRef = ref(storage, `${imageType}/${ad.userId}/receipt.jpg`);
+                        const oldUrl = await getDownloadURL(oldRef);
+                        if (isMounted) setUrl(oldUrl);
+                    } catch (_) {
+                        // As a last resort, keep whatever initial URL we have
+                        if (isMounted) setUrl(initialUrl || null);
+                    }
+                } finally {
+                    if (isMounted) setLoading(false);
+                }
+            };
+
+            // If no URL provided, resolve one
+            if (!initialUrl) run();
+            else setLoading(false);
+            return () => { isMounted = false; };
+        }, [ad.id, ad.userId, imageType, initialUrl]);
+
+        if (loading) {
+            return (
+                <Avatar
+                    variant="rounded"
+                    sx={{ width: 60, height: 50, bgcolor: 'grey.200' }}
+                />
+            );
+        }
+
+        if (url) {
+            return (
+                <Avatar
+                    src={url}
+                    variant="rounded"
+                    sx={{
+                        width: 60,
+                        height: 50,
+                        cursor: 'pointer',
+                        '&:hover': { opacity: 0.8, transform: 'scale(1.05)' }
+                    }}
+                    onClick={() => handleReceiptClick(url)}
+                    onError={(e) => {
+                        console.error('Receipt image failed to load:', url);
+                        e.currentTarget.src = "https://placehold.co/50x50/FF6B6B/FFFFFF?text=Error";
+                    }}
+                />
+            );
+        }
+
+        return (
+            <Avatar
+                src="https://placehold.co/50x50/E0E0E0/FFFFFF?text=No+Receipt"
+                variant="rounded"
+                sx={{ width: 60, height: 50 }}
+            />
+        );
+    };
+
+
 
 
 
@@ -3949,7 +4277,7 @@ function OrdersPage() {
                                                                 عدد المعالين: {req.dependents}
                                                             </Typography>
                                                             <Typography variant="body2" sx={{ mt: 0.5 }}>
-                                                                المبلغ المطلوب: {req.financing_amount?.toLocaleString()} ج.م | سنوات السداد: {req.repayment_years}
+                                                                المبلغ المطلوب: {formatNumber(req.financing_amount)} ج.م | سنوات السداد: {req.repayment_years}
                                                             </Typography>
                                                             <Typography variant="body2" sx={{ mt: 0.5 }}>
                                                                 الحالة: {req.reviewStatus}
@@ -4720,6 +5048,9 @@ function AnalyticsPage() {
             userId: userProfile.uid,
             filters
         }));
+
+        // Fetch financial requests for accurate funder analytics calculations
+        dispatch(fetchFinancialRequests());
     }, [dispatch, userProfile?.uid, organizationType, filters]);
 
     // Debug logging for analytics data
@@ -4755,6 +5086,77 @@ function AnalyticsPage() {
         return organizationType === 'مطور عقاري' || organizationType === 'مطور عقارى';
     };
 
+    // Helper function to calculate time-based data for financial requests
+    const calculateTimeBasedRequestData = (requests) => {
+        if (!requests || requests.length === 0) return [];
+
+        // Group requests by date
+        const requestsByDate = {};
+
+        requests.forEach(req => {
+            let dateStr;
+            try {
+                // Handle different date formats
+                if (req.submitted_at) {
+                    const date = typeof req.submitted_at === 'string'
+                        ? new Date(req.submitted_at)
+                        : req.submitted_at.toDate ? req.submitted_at.toDate() : new Date(req.submitted_at);
+
+                    dateStr = date.toISOString().split('T')[0]; // YYYY-MM-DD format
+                } else {
+                    dateStr = new Date().toISOString().split('T')[0]; // Fallback to today
+                }
+            } catch (error) {
+                console.warn('Error parsing date for request:', req.id, error);
+                dateStr = new Date().toISOString().split('T')[0]; // Fallback to today
+            }
+
+            if (!requestsByDate[dateStr]) {
+                requestsByDate[dateStr] = {
+                    date: dateStr,
+                    totalRequests: 0,
+                    approvedRequests: 0,
+                    rejectedRequests: 0,
+                    pendingRequests: 0,
+                    totalAmount: 0
+                };
+            }
+
+            requestsByDate[dateStr].totalRequests++;
+            requestsByDate[dateStr].totalAmount += Number(req.financing_amount) || 0;
+
+            // Count by status
+            switch (req.reviewStatus) {
+                case 'approved':
+                    requestsByDate[dateStr].approvedRequests++;
+                    break;
+                case 'rejected':
+                    requestsByDate[dateStr].rejectedRequests++;
+                    break;
+                case 'pending':
+                default:
+                    requestsByDate[dateStr].pendingRequests++;
+                    break;
+            }
+        });
+
+        // Convert to array and sort by date
+        const timeBasedData = Object.values(requestsByDate)
+            .sort((a, b) => new Date(a.date) - new Date(b.date))
+            .slice(-30); // Last 30 days
+
+        console.log('Time-based Request Data:', {
+            totalDays: timeBasedData.length,
+            dateRange: timeBasedData.length > 0 ? {
+                from: timeBasedData[0].date,
+                to: timeBasedData[timeBasedData.length - 1].date
+            } : null,
+            sampleData: timeBasedData.slice(0, 3)
+        });
+
+        return timeBasedData;
+    };
+
     // Helper functions for data processing
     const processFunderAnalytics = () => {
         // Use Redux analytics data
@@ -4786,12 +5188,40 @@ function AnalyticsPage() {
             timeBasedDataSample: analyticsData.timeBasedData?.slice(0, 3) || []
         });
 
-        // Calculate metrics
+        // Get financial requests data from analytics
+        const allFinancialRequests = analyticsData.financialRequests || [];
+
+        // Filter financial requests to only include those for the current user's financing ads
+        const userAdIds = financingAds.map(ad => ad.id);
+        const userFinancialRequests = allFinancialRequests.filter(req =>
+            userAdIds.includes(req.advertisement_id)
+        );
+
+        console.log('Funder Financial Requests Debug:', {
+            userAdIds,
+            allFinancialRequestsCount: allFinancialRequests.length,
+            userFinancialRequestsCount: userFinancialRequests.length,
+            userFinancialRequestsSample: userFinancialRequests.slice(0, 3).map(req => ({
+                id: req.id,
+                advertisement_id: req.advertisement_id,
+                financing_amount: req.financing_amount,
+                reviewStatus: req.reviewStatus
+            }))
+        });
+
+        // Calculate metrics based on user's financial requests only
         const totalAds = financingAds.length;
-        const totalRequests = Number(analyticsData.financialInsights?.totalFinancingRequests) || 0;
-        const totalFinancingAmount = Number(analyticsData.financialInsights?.totalRevenue) || 0;
+        const totalRequests = userFinancialRequests.length;
+
+        // Calculate total financing amount from user's requests
+        const totalFinancingAmount = userFinancialRequests.reduce((sum, req) => {
+            const amount = Number(req.financing_amount) || 0;
+            return sum + amount;
+        }, 0);
+
+        // Calculate average financing amount
         const averageFinancingAmount = totalRequests > 0 ? totalFinancingAmount / totalRequests : 0;
-        const averageRequestAmount = averageFinancingAmount; // Same value for consistency
+        const averageRequestAmount = averageFinancingAmount;
 
         // Interest rate distribution (calculated from user's ads only)
         const interestRateDistribution = {
@@ -4809,24 +5239,46 @@ function AnalyticsPage() {
             }
         });
 
-        // Status breakdown (calculated from user's ads only)
-        const statusBreakdown = {
+        // Status breakdown (calculated from user's financial requests, not ads)
+        const requestStatusBreakdown = {
+            pending: userFinancialRequests.filter(req => req.reviewStatus === 'pending').length,
+            approved: userFinancialRequests.filter(req => req.reviewStatus === 'approved').length,
+            rejected: userFinancialRequests.filter(req => req.reviewStatus === 'rejected').length
+        };
+
+        // Ad status breakdown (for display purposes)
+        const adStatusBreakdown = {
             pending: financingAds.filter(ad => ad.reviewStatus === 'pending').length,
             approved: financingAds.filter(ad => ad.reviewStatus === 'approved').length,
             rejected: financingAds.filter(ad => ad.reviewStatus === 'rejected').length
         };
 
-        // Approval and rejection rates (calculated from user's ads)
-        const approvedRequests = statusBreakdown.approved;
-        const rejectedRequests = statusBreakdown.rejected;
-        const approvalRate = totalAds > 0 ? (approvedRequests / totalAds) * 100 : 0;
-        const rejectionRate = totalAds > 0 ? (rejectedRequests / totalAds) * 100 : 0;
+        // Approval and rejection rates (calculated from user's financial requests)
+        const approvedRequests = requestStatusBreakdown.approved;
+        const rejectedRequests = requestStatusBreakdown.rejected;
+        const approvalRate = totalRequests > 0 ? (approvedRequests / totalRequests) * 100 : 0;
+        const rejectionRate = totalRequests > 0 ? (rejectedRequests / totalRequests) * 100 : 0;
 
         // Location distribution (calculated from user's ads only)
         const locationDistribution = {};
         financingAds.forEach(ad => {
             const city = ad.location?.city || ad.city || 'غير محدد';
             locationDistribution[city] = (locationDistribution[city] || 0) + 1;
+        });
+
+        // Calculate time-based data for financial requests
+        const timeBasedData = calculateTimeBasedRequestData(userFinancialRequests);
+
+        // Debug log for calculated metrics
+        console.log('Funder Analytics Calculated Metrics:', {
+            totalAds,
+            totalRequests,
+            totalFinancingAmount,
+            averageFinancingAmount,
+            approvalRate: approvalRate.toFixed(2),
+            rejectionRate: rejectionRate.toFixed(2),
+            requestStatusBreakdown,
+            adStatusBreakdown
         });
 
         return {
@@ -4839,7 +5291,9 @@ function AnalyticsPage() {
             rejectionRate,
             interestRateDistribution,
             locationDistribution,
-            statusBreakdown
+            statusBreakdown: requestStatusBreakdown, // Use request status breakdown for metrics
+            adStatusBreakdown, // Keep ad status breakdown for other purposes
+            timeBasedData // Add time-based data for requests
         };
     };
 
@@ -4983,13 +5437,13 @@ function AnalyticsPage() {
 
         return (
             <Box dir='rtl' sx={{ p: 2 }}>
-                <Typography variant="h4" gutterBottom sx={{ textAlign: 'right', mb: 3 }}>
+                <Typography variant="h4" gutterBottom sx={{ textAlign: 'left', mb: 3 }}>
                     تحليلات الممول العقاري
                 </Typography>
 
                 {/* Filters */}
                 <Paper sx={{ p: 2, mb: 3, borderRadius: 2 }}>
-                    <Typography variant="h6" gutterBottom sx={{ textAlign: 'right', mb: 2 }}>
+                    <Typography variant="h6" gutterBottom sx={{ textAlign: 'left', mb: 2 }}>
                         الفلاتر
                     </Typography>
                     <Grid container spacing={2} direction="row-reverse">
@@ -5044,7 +5498,21 @@ function AnalyticsPage() {
                 {/* Overview Cards */}
                 <Grid container spacing={3} sx={{ mb: 4 }}>
                     <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                        <Paper sx={{ p: 3, textAlign: 'center', borderRadius: 2 }}>
+                        <Paper
+                            sx={{
+                                p: 3,
+                                textAlign: 'center',
+                                borderRadius: 2,
+                                transition: 'all 0.3s ease-in-out',
+                                cursor: 'pointer',
+                                '&:hover': {
+                                    elevation: 8,
+                                    transform: 'translateY(-4px)',
+                                    boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
+                                    bgcolor: 'primary.50'
+                                }
+                            }}
+                        >
                             <Typography variant="h6" color="text.secondary">إجمالي الإعلانات</Typography>
                             <Typography variant="h4" sx={{ color: 'primary.main', fontWeight: 'bold' }}>
                                 {data.totalAds}
@@ -5052,7 +5520,21 @@ function AnalyticsPage() {
                         </Paper>
                     </Grid>
                     <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                        <Paper sx={{ p: 3, textAlign: 'center', borderRadius: 2 }}>
+                        <Paper
+                            sx={{
+                                p: 3,
+                                textAlign: 'center',
+                                borderRadius: 2,
+                                transition: 'all 0.3s ease-in-out',
+                                cursor: 'pointer',
+                                '&:hover': {
+                                    elevation: 8,
+                                    transform: 'translateY(-4px)',
+                                    boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
+                                    bgcolor: 'success.50'
+                                }
+                            }}
+                        >
                             <Typography variant="h6" color="text.secondary">إجمالي الطلبات</Typography>
                             <Typography variant="h4" sx={{ color: 'success.main', fontWeight: 'bold' }}>
                                 {data.totalRequests}
@@ -5060,15 +5542,43 @@ function AnalyticsPage() {
                         </Paper>
                     </Grid>
                     <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                        <Paper sx={{ p: 3, textAlign: 'center', borderRadius: 2 }}>
+                        <Paper
+                            sx={{
+                                p: 3,
+                                textAlign: 'center',
+                                borderRadius: 2,
+                                transition: 'all 0.3s ease-in-out',
+                                cursor: 'pointer',
+                                '&:hover': {
+                                    elevation: 8,
+                                    transform: 'translateY(-4px)',
+                                    boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
+                                    bgcolor: 'info.50'
+                                }
+                            }}
+                        >
                             <Typography variant="h6" color="text.secondary">إجمالي مبالغ التمويل</Typography>
                             <Typography variant="h4" sx={{ color: 'info.main', fontWeight: 'bold' }}>
-                                {data.totalFinancingAmount.toLocaleString('ar-EG')} ج.م
+                                {formatNumber(data.totalFinancingAmount)} ج.م
                             </Typography>
                         </Paper>
                     </Grid>
                     <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                        <Paper sx={{ p: 3, textAlign: 'center', borderRadius: 2 }}>
+                        <Paper
+                            sx={{
+                                p: 3,
+                                textAlign: 'center',
+                                borderRadius: 2,
+                                transition: 'all 0.3s ease-in-out',
+                                cursor: 'pointer',
+                                '&:hover': {
+                                    elevation: 8,
+                                    transform: 'translateY(-4px)',
+                                    boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
+                                    bgcolor: 'warning.50'
+                                }
+                            }}
+                        >
                             <Typography variant="h6" color="text.secondary">نسبة الموافقة</Typography>
                             <Typography variant="h4" sx={{ color: 'warning.main', fontWeight: 'bold' }}>
                                 {typeof data.approvalRate === 'number' ? data.approvalRate.toFixed(1) : '0.0'}%
@@ -5080,15 +5590,43 @@ function AnalyticsPage() {
                 {/* Additional Metrics */}
                 <Grid container spacing={3} sx={{ mb: 4 }}>
                     <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                        <Paper sx={{ p: 3, textAlign: 'center', borderRadius: 2 }}>
+                        <Paper
+                            sx={{
+                                p: 3,
+                                textAlign: 'center',
+                                borderRadius: 2,
+                                transition: 'all 0.3s ease-in-out',
+                                cursor: 'pointer',
+                                '&:hover': {
+                                    elevation: 8,
+                                    transform: 'translateY(-4px)',
+                                    boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
+                                    bgcolor: 'secondary.50'
+                                }
+                            }}
+                        >
                             <Typography variant="h6" color="text.secondary">متوسط مبلغ الطلب</Typography>
                             <Typography variant="h4" sx={{ color: 'secondary.main', fontWeight: 'bold' }}>
-                                {typeof data.averageFinancingAmount === 'number' ? data.averageFinancingAmount.toLocaleString('ar-EG') : '0'} ج.م
+                                {typeof data.averageFinancingAmount === 'number' ? formatNumber(data.averageFinancingAmount) : '0'} ج.م
                             </Typography>
                         </Paper>
                     </Grid>
                     <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                        <Paper sx={{ p: 3, textAlign: 'center', borderRadius: 2 }}>
+                        <Paper
+                            sx={{
+                                p: 3,
+                                textAlign: 'center',
+                                borderRadius: 2,
+                                transition: 'all 0.3s ease-in-out',
+                                cursor: 'pointer',
+                                '&:hover': {
+                                    elevation: 8,
+                                    transform: 'translateY(-4px)',
+                                    boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
+                                    bgcolor: 'error.50'
+                                }
+                            }}
+                        >
                             <Typography variant="h6" color="text.secondary">نسبة الرفض</Typography>
                             <Typography variant="h4" sx={{ color: 'error.main', fontWeight: 'bold' }}>
                                 {typeof data.rejectionRate === 'number' ? data.rejectionRate.toFixed(1) : '0.0'}%
@@ -5096,7 +5634,21 @@ function AnalyticsPage() {
                         </Paper>
                     </Grid>
                     <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                        <Paper sx={{ p: 3, textAlign: 'center', borderRadius: 2 }}>
+                        <Paper
+                            sx={{
+                                p: 3,
+                                textAlign: 'center',
+                                borderRadius: 2,
+                                transition: 'all 0.3s ease-in-out',
+                                cursor: 'pointer',
+                                '&:hover': {
+                                    elevation: 8,
+                                    transform: 'translateY(-4px)',
+                                    boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
+                                    bgcolor: 'success.50'
+                                }
+                            }}
+                        >
                             <Typography variant="h6" color="text.secondary">متوسط الطلبات/إعلان</Typography>
                             <Typography variant="h4" sx={{ color: 'success.light', fontWeight: 'bold' }}>
                                 {data.totalAds > 0 && typeof data.totalRequests === 'number' && typeof data.totalAds === 'number' ? (data.totalRequests / data.totalAds).toFixed(1) : '0.0'}
@@ -5104,7 +5656,21 @@ function AnalyticsPage() {
                         </Paper>
                     </Grid>
                     <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                        <Paper sx={{ p: 3, textAlign: 'center', borderRadius: 2 }}>
+                        <Paper
+                            sx={{
+                                p: 3,
+                                textAlign: 'center',
+                                borderRadius: 2,
+                                transition: 'all 0.3s ease-in-out',
+                                cursor: 'pointer',
+                                '&:hover': {
+                                    elevation: 8,
+                                    transform: 'translateY(-4px)',
+                                    boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
+                                    bgcolor: 'warning.50'
+                                }
+                            }}
+                        >
                             <Typography variant="h6" color="text.secondary">الطلبات المعلقة</Typography>
                             <Typography variant="h4" sx={{ color: 'warning.light', fontWeight: 'bold' }}>
                                 {data.statusBreakdown.pending}
@@ -5118,7 +5684,7 @@ function AnalyticsPage() {
                     {/* Status Distribution */}
                     <Grid size={{ xs: 12, md: 6 }}>
                         <Paper sx={{ p: 3, borderRadius: 2 }}>
-                            <Typography variant="h6" gutterBottom sx={{ textAlign: 'right' }}>
+                            <Typography variant="h6" gutterBottom sx={{ textAlign: 'left' }}>
                                 توزيع حالة الطلبات
                             </Typography>
                             <PieChart
@@ -5141,7 +5707,7 @@ function AnalyticsPage() {
                     {/* Interest Rate Distribution */}
                     <Grid size={{ xs: 12, md: 6 }}>
                         <Paper sx={{ p: 3, borderRadius: 2 }}>
-                            <Typography variant="h6" gutterBottom sx={{ textAlign: 'right' }}>
+                            <Typography variant="h6" gutterBottom sx={{ textAlign: 'left' }}>
                                 توزيع نسب الفائدة
                             </Typography>
                             <PieChart
@@ -5164,35 +5730,43 @@ function AnalyticsPage() {
                     {/* Requests Over Time */}
                     <Grid size={{ xs: 12 }}>
                         <Paper sx={{ p: 3, borderRadius: 2 }}>
-                            <Typography variant="h6" gutterBottom sx={{ textAlign: 'right' }}>
+                            <Typography variant="h6" gutterBottom sx={{ textAlign: 'left' }}>
                                 الطلبات عبر الزمن
                             </Typography>
-                            {analyticsData.timeBasedData && analyticsData.timeBasedData.length > 0 ? (
+                            {data.timeBasedData && data.timeBasedData.length > 0 ? (
                                 <LineChart
                                     xAxis={[
                                         {
-                                            data: analyticsData.timeBasedData.map((item, index) => index),
+                                            data: data.timeBasedData.map((item, index) => index),
                                             valueFormatter: (value) => {
-                                                const item = analyticsData.timeBasedData[value];
-                                                return item ? new Date(item.date).toLocaleDateString('ar-EG') : '';
+                                                const item = data.timeBasedData[value];
+                                                return item ? new Date(item.date).toLocaleDateString('ar-EG', {
+                                                    month: 'short',
+                                                    day: 'numeric'
+                                                }) : '';
                                             }
                                         }
                                     ]}
                                     series={[
                                         {
-                                            data: analyticsData.timeBasedData.map(item => item.adsCreated || 0),
-                                            label: 'الإعلانات المُنشأة',
+                                            data: data.timeBasedData.map(item => item.totalRequests || 0),
+                                            label: 'إجمالي الطلبات',
                                             color: '#2196F3'
                                         },
                                         {
-                                            data: analyticsData.timeBasedData.map(item => item.approvals || 0),
-                                            label: 'الموافقات',
+                                            data: data.timeBasedData.map(item => item.approvedRequests || 0),
+                                            label: 'الطلبات المُوافق عليها',
                                             color: '#4CAF50'
                                         },
                                         {
-                                            data: analyticsData.timeBasedData.map(item => item.rejections || 0),
-                                            label: 'الرفض',
+                                            data: data.timeBasedData.map(item => item.rejectedRequests || 0),
+                                            label: 'الطلبات المرفوضة',
                                             color: '#F44336'
+                                        },
+                                        {
+                                            data: data.timeBasedData.map(item => item.pendingRequests || 0),
+                                            label: 'الطلبات المعلقة',
+                                            color: '#FF9800'
                                         }
                                     ]}
                                     height={300}
@@ -5200,7 +5774,47 @@ function AnalyticsPage() {
                             ) : (
                                 <Box sx={{ p: 3, textAlign: 'center' }}>
                                     <Typography variant="body1" color="text.secondary">
-                                        لا توجد بيانات زمنية متاحة للعرض
+                                        لا توجد بيانات زمنية متاحة للطلبات
+                                    </Typography>
+                                </Box>
+                            )}
+                        </Paper>
+                    </Grid>
+
+                    {/* Financial Amounts Over Time */}
+                    <Grid size={{ xs: 12 }}>
+                        <Paper sx={{ p: 3, borderRadius: 2 }}>
+                            <Typography variant="h6" gutterBottom sx={{ textAlign: 'left' }}>
+                                مبالغ التمويل عبر الزمن
+                            </Typography>
+                            {data.timeBasedData && data.timeBasedData.length > 0 ? (
+                                <LineChart
+                                    xAxis={[
+                                        {
+                                            data: data.timeBasedData.map((item, index) => index),
+                                            valueFormatter: (value) => {
+                                                const item = data.timeBasedData[value];
+                                                return item ? new Date(item.date).toLocaleDateString('ar-EG', {
+                                                    month: 'short',
+                                                    day: 'numeric'
+                                                }) : '';
+                                            }
+                                        }
+                                    ]}
+                                    series={[
+                                        {
+                                            data: data.timeBasedData.map(item => item.totalAmount || 0),
+                                            label: 'إجمالي مبالغ الطلبات (ج.م)',
+                                            color: '#9C27B0',
+                                            valueFormatter: (value) => `${formatNumber(value)} ج.م`
+                                        }
+                                    ]}
+                                    height={250}
+                                />
+                            ) : (
+                                <Box sx={{ p: 3, textAlign: 'center' }}>
+                                    <Typography variant="body1" color="text.secondary">
+                                        لا توجد بيانات مالية زمنية متاحة
                                     </Typography>
                                 </Box>
                             )}
@@ -5395,7 +6009,21 @@ function AnalyticsPage() {
                 {/* Overview Cards */}
                 <Grid container spacing={3} sx={{ mb: 4 }}>
                     <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                        <Paper sx={{ p: 3, textAlign: 'center', borderRadius: 2 }}>
+                        <Paper
+                            sx={{
+                                p: 3,
+                                textAlign: 'center',
+                                borderRadius: 2,
+                                transition: 'all 0.3s ease-in-out',
+                                cursor: 'pointer',
+                                '&:hover': {
+                                    elevation: 8,
+                                    transform: 'translateY(-4px)',
+                                    boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
+                                    bgcolor: 'primary.50'
+                                }
+                            }}
+                        >
                             <Typography variant="h6" color="text.secondary">إجمالي الإعلانات</Typography>
                             <Typography variant="h4" sx={{ color: 'primary.main', fontWeight: 'bold' }}>
                                 {data.totalAds}
@@ -5403,7 +6031,21 @@ function AnalyticsPage() {
                         </Paper>
                     </Grid>
                     <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                        <Paper sx={{ p: 3, textAlign: 'center', borderRadius: 2 }}>
+                        <Paper
+                            sx={{
+                                p: 3,
+                                textAlign: 'center',
+                                borderRadius: 2,
+                                transition: 'all 0.3s ease-in-out',
+                                cursor: 'pointer',
+                                '&:hover': {
+                                    elevation: 8,
+                                    transform: 'translateY(-4px)',
+                                    boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
+                                    bgcolor: 'success.50'
+                                }
+                            }}
+                        >
                             <Typography variant="h6" color="text.secondary">الإعلانات النشطة</Typography>
                             <Typography variant="h4" sx={{ color: 'success.main', fontWeight: 'bold' }}>
                                 {data.activeAds}
@@ -5411,15 +6053,43 @@ function AnalyticsPage() {
                         </Paper>
                     </Grid>
                     <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                        <Paper sx={{ p: 3, textAlign: 'center', borderRadius: 2 }}>
+                        <Paper
+                            sx={{
+                                p: 3,
+                                textAlign: 'center',
+                                borderRadius: 2,
+                                transition: 'all 0.3s ease-in-out',
+                                cursor: 'pointer',
+                                '&:hover': {
+                                    elevation: 8,
+                                    transform: 'translateY(-4px)',
+                                    boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
+                                    bgcolor: 'info.50'
+                                }
+                            }}
+                        >
                             <Typography variant="h6" color="text.secondary">متوسط السعر</Typography>
                             <Typography variant="h4" sx={{ color: 'info.main', fontWeight: 'bold' }}>
-                                {data.averagePrice.toLocaleString('ar-EG')} ج.م
+                                {formatNumber(data.averagePrice)} ج.م
                             </Typography>
                         </Paper>
                     </Grid>
                     <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                        <Paper sx={{ p: 3, textAlign: 'center', borderRadius: 2 }}>
+                        <Paper
+                            sx={{
+                                p: 3,
+                                textAlign: 'center',
+                                borderRadius: 2,
+                                transition: 'all 0.3s ease-in-out',
+                                cursor: 'pointer',
+                                '&:hover': {
+                                    elevation: 8,
+                                    transform: 'translateY(-4px)',
+                                    boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
+                                    bgcolor: 'warning.50'
+                                }
+                            }}
+                        >
                             <Typography variant="h6" color="text.secondary">متوسط المساحة</Typography>
                             <Typography variant="h4" sx={{ color: 'warning.main', fontWeight: 'bold' }}>
                                 {typeof data.averageArea === 'number' ? data.averageArea.toFixed(0) : '0'} م²
@@ -5611,7 +6281,7 @@ function AnalyticsPage() {
                             { field: 'status', headerName: 'الحالة', width: 160 },
                             // { field: 'views', headerName: 'المشاهدات', width: 100 },
                             // { field: 'edits', headerName: 'التعديلات', width: 100 },
-                            // { field: 'daysSincePublished', headerName: 'أيام منذ النشر', width: 150 },   
+                            // { field: 'daysSincePublished', headerName: 'أيام منذ النشر', width: 150 },
                             // { field: 'createdAt', headerName: 'تاريخ الإنشاء', width: 150 }
                         ]}
                         pageSize={5}
