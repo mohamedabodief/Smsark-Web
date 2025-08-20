@@ -85,7 +85,7 @@ const PaymentMethods = () => {
     if (!selectedMethod) return null;
 
     switch (selectedMethod) {
-      case "VISA":
+      case "حساب بنكي":
         return (
           <>
             <Typography variant="body1" sx={{ mb: 1 }}>

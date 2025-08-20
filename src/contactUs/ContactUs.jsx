@@ -153,7 +153,7 @@ const ContactUs = () => {
       <Box
         sx={{
           position: "relative",
-          width: "100vw",
+          width: "100%",
           height: 350,
           mb: 6,
           left: "50%",

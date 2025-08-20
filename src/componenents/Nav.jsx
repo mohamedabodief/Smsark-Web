@@ -149,7 +149,7 @@ export default function Nav() {
           role="presentation"
           onClick={() => setDrawerOpen(false)}
         >
-          <List>
+          <List sx={{ cursor: "pointer" }}>
             <ListItem button onClick={() => navigate('/home')}>
               <ListItemText primary="الصفحة الرئيسية" />
             </ListItem>

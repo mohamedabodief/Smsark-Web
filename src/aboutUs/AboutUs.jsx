@@ -269,7 +269,7 @@ const AboutUs = () => {
       <Box
         sx={{
           position: "relative",
-          width: "100vw",
+          width: "100%",
           height: "60vh",
           minHeight: 500,
           mb: 6,
