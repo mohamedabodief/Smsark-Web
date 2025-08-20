@@ -47,6 +47,7 @@ const handleClosePrice = () => {
   const search = searchInput.trim().toLowerCase();
   const from = priceFrom ? parseFloat(priceFrom) : null;
   const to = priceTo ? parseFloat(priceTo) : null;
+    const isApproved = ad.reviewStatus ? ad.reviewStatus === 'approved' : false;
   let priceCondition = true;
   if (from && to) {
     priceCondition = from <= ad.end_limit && to >= ad.start_limit;
@@ -60,7 +61,8 @@ const handleClosePrice = () => {
     ((ad.org_name || "").toLowerCase().includes(search) ||
      ad.title.toLowerCase().includes(search) ||
      !search) &&
-    priceCondition
+    priceCondition&&
+        isApproved
   );
 });
 
