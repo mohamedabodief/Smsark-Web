@@ -45,6 +45,7 @@ const filteredAds = allDeveloperAds.filter((ad) => {
     const search = searchInput.trim().toLowerCase();
     const from = priceFrom ? parseFloat(priceFrom) : null;
     const to = priceTo ? parseFloat(priceTo) : null;
+    const isApproved = ad.reviewStatus ? ad.reviewStatus === 'approved' : false;
     let priceCondition = true;
     if (from && to) {
       priceCondition = from <= ad.price_end_to && to >= ad.price_start_from;
@@ -56,7 +57,8 @@ const filteredAds = allDeveloperAds.filter((ad) => {
 
     return (
       ((ad.developer_name || "").toLowerCase().includes(search) || !search) &&
-      priceCondition
+      priceCondition&&
+        isApproved
     );
   });
   return (
