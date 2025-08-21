@@ -114,7 +114,7 @@ function DetailsForDevelopment() {
       try {
         setError(null);
         console.log("Fetching ad with ID:", id);
-        const ad = await RealEstateDeveloperAdvertisement.getById(id);
+        const ad = await RealEstateDeveloperAdvertisement.getByIdPublic(id);
         if (ad) {
           console.log("Ad data:", ad);
           console.log("Ad ID:", ad.id);
@@ -319,7 +319,9 @@ function DetailsForDevelopment() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpen(false)}>إلغاء</Button>
-          <Button variant="contained" onClick={handleSend}>إرسال</Button>
+          <Button variant="contained" onClick={handleSend}>
+            إرسال
+          </Button>
         </DialogActions>
       </Dialog>
 

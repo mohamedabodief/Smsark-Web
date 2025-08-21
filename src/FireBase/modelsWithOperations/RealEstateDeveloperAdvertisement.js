@@ -9,7 +9,7 @@ import {
   query,
   where,
   onSnapshot,
-} from 'firebase/firestore';
+} from "firebase/firestore";
 import {
   getStorage,
   ref,
@@ -17,31 +17,36 @@ import {
   getDownloadURL,
   deleteObject,
   listAll,
-} from 'firebase/storage';
-import { db, auth } from '../firebaseConfig';
-import Notification from '../MessageAndNotification/Notification';
-import User from './User';
+} from "firebase/storage";
+import { db, auth } from "../firebaseConfig";
+import Notification from "../MessageAndNotification/Notification";
+import User from "./User";
 
 // أضف هذا الكائن الثابت في أعلى الملف بعد الاستيرادات
 const PACKAGE_INFO = {
-  1: { name: 'باقة الأساس', price: 100, duration: 7 },
-  2: { name: 'باقة النخبة', price: 150, duration: 14 },
-  3: { name: 'باقة التميز', price: 200, duration: 21 },
+  1: { name: "باقة الأساس", price: 100, duration: 7 },
+  2: { name: "باقة النخبة", price: 150, duration: 14 },
+  3: { name: "باقة التميز", price: 200, duration: 21 },
 };
 
 class RealEstateDeveloperAdvertisement {
   #id = null;
 
-  constructor(data) {
-    // التحقق من حالة تسجيل الدخول
-    const currentUser = auth.currentUser;
-    if (!currentUser) {
-      throw new Error("يجب تسجيل الدخول أولاً قبل إنشاء عقار جديد");
+  constructor(data, skipAuthCheck = false) {
+    // التحقق من حالة تسجيل الدخول (إلا إذا تم تخطي التحقق)
+    if (!skipAuthCheck) {
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        throw new Error("يجب تسجيل الدخول أولاً قبل إنشاء عقار جديد");
+      }
     }
-    
+
     this.#id = data.id || null;
     if (!this.#id) {
-      console.error('RealEstateDeveloperAdvertisement: id is missing in constructor data:', data);
+      console.error(
+        "RealEstateDeveloperAdvertisement: id is missing in constructor data:",
+        data
+      );
     }
     this.developer_name = data.developer_name;
     this.description = data.description;
@@ -57,7 +62,7 @@ class RealEstateDeveloperAdvertisement {
     this.bathrooms = data.bathrooms || null;
     this.floor = data.floor || null;
     this.furnished = data.furnished || false;
-    this.status = data.status || 'تحت العرض';
+    this.status = data.status || "تحت العرض";
     this.paymentMethod = data.paymentMethod || null;
     this.negotiable = data.negotiable || false;
     this.deliveryTerms = data.deliveryTerms || null;
@@ -66,7 +71,7 @@ class RealEstateDeveloperAdvertisement {
     this.ads = data.ads !== undefined ? data.ads : false;
     this.adExpiryTime = data.adExpiryTime || null;
     this.receipt_image = data.receipt_image || null;
-    this.reviewStatus = data.reviewStatus || 'pending';
+    this.reviewStatus = data.reviewStatus || "pending";
     this.reviewed_by = data.reviewed_by || null;
     this.review_note = data.review_note || null;
     this.adPackage = data.adPackage !== undefined ? data.adPackage : null;
@@ -82,7 +87,7 @@ class RealEstateDeveloperAdvertisement {
     if (!currentUser) {
       throw new Error("يجب تسجيل الدخول أولاً قبل الوصول لمعرف العقار");
     }
-    
+
     return this.#id;
   }
 
@@ -93,14 +98,14 @@ class RealEstateDeveloperAdvertisement {
     if (!currentUser) {
       throw new Error("يجب تسجيل الدخول أولاً قبل إضافة عقار");
     }
-    
-    console.log('Saving advertisement for user:', currentUser.uid);
+
+    console.log("Saving advertisement for user:", currentUser.uid);
 
     // Set creation timestamp
     this.createdAt = Date.now();
     this.updatedAt = Date.now();
 
-    const colRef = collection(db, 'RealEstateDeveloperAdvertisements');
+    const colRef = collection(db, "RealEstateDeveloperAdvertisements");
     const docRef = await addDoc(colRef, this.#getAdData());
     this.#id = docRef.id;
     await updateDoc(docRef, { id: this.#id });
@@ -116,7 +121,7 @@ class RealEstateDeveloperAdvertisement {
     // رفع الريسيت بعد تعيين this.#id
     if (receiptFile) {
       // إذا كانت قيمة نصية (رابط قديم)، فقط خزّنها
-      if (typeof receiptFile === 'string') {
+      if (typeof receiptFile === "string") {
         this.receipt_image = receiptFile;
         await updateDoc(docRef, { receipt_image: receiptFile });
       } else {
@@ -127,14 +132,14 @@ class RealEstateDeveloperAdvertisement {
       }
     }
 
-    const admins = await User.getAllUsersByType('admin');
+    const admins = await User.getAllUsersByType("admin");
     await Promise.all(
       admins.map((admin) =>
         new Notification({
           receiver_id: admin.uid,
-          title: 'إعلان مطور جديد بانتظار المراجعة',
+          title: "إعلان مطور جديد بانتظار المراجعة",
           body: `المطور: ${this.developer_name}`,
-          type: 'system',
+          type: "system",
           link: `/admin/developer-ads/${this.#id}`,
         }).send()
       )
@@ -150,12 +155,15 @@ class RealEstateDeveloperAdvertisement {
     if (!currentUser) {
       throw new Error("يجب تسجيل الدخول أولاً قبل تعديل العقار");
     }
-    
-    if (!this.#id) throw new Error('الإعلان بدون ID صالح للتحديث');
-    const docRef = doc(db, 'RealEstateDeveloperAdvertisements', this.#id);
+
+    if (!this.#id) throw new Error("الإعلان بدون ID صالح للتحديث");
+    const docRef = doc(db, "RealEstateDeveloperAdvertisements", this.#id);
 
     // تحديث معلومات الباقة إذا تم تغييرها
-    if (typeof updates.adPackage !== 'undefined' && updates.adPackage !== null) {
+    if (
+      typeof updates.adPackage !== "undefined" &&
+      updates.adPackage !== null
+    ) {
       const pkgKey = String(updates.adPackage);
       if (PACKAGE_INFO[pkgKey]) {
         updates.adPackageName = PACKAGE_INFO[pkgKey].name;
@@ -174,14 +182,14 @@ class RealEstateDeveloperAdvertisement {
       const newUrls = await this.#uploadImages(newImagesFiles);
       updates.images = newUrls;
       this.images = newUrls;
-    } else if (typeof updates.images === 'undefined') {
+    } else if (typeof updates.images === "undefined") {
       // إذا لم يتم رفع صور جديدة ولم يتم تمرير images في التحديثات، احتفظ بالصور القديمة
       updates.images = this.images;
     }
 
     // إيصال الدفع
     if (newReceiptFile) {
-      if (typeof newReceiptFile === 'string') {
+      if (typeof newReceiptFile === "string") {
         updates.receipt_image = newReceiptFile;
         this.receipt_image = newReceiptFile;
       } else {
@@ -192,15 +200,12 @@ class RealEstateDeveloperAdvertisement {
     }
 
     // تحقق من صحة الحالة
-    if (
-      updates.status &&
-      !['جاهز', 'قيد الإنشاء'].includes(updates.status)
-    ) {
+    if (updates.status && !["جاهز", "قيد الإنشاء"].includes(updates.status)) {
       throw new Error('❌ الحالة غير صالحة. اختر إما "جاهز" أو "قيد الإنشاء"');
     }
 
     // لا تغير userId إذا لم يتم تمريره أو كان فارغًا
-    if (typeof updates.userId === 'undefined' || !updates.userId) {
+    if (typeof updates.userId === "undefined" || !updates.userId) {
       updates.userId = this.userId;
     }
 
@@ -214,11 +219,11 @@ class RealEstateDeveloperAdvertisement {
     if (!currentUser) {
       throw new Error("يجب تسجيل الدخول أولاً قبل حذف العقار");
     }
-    
-    if (!this.#id) throw new Error('الإعلان بدون ID');
+
+    if (!this.#id) throw new Error("الإعلان بدون ID");
     await this.#deleteAllImages();
     await this.#deleteReceipt();
-    await deleteDoc(doc(db, 'RealEstateDeveloperAdvertisements', this.#id));
+    await deleteDoc(doc(db, "RealEstateDeveloperAdvertisements", this.#id));
   }
 
   // ✅ الموافقة على الإعلان
@@ -228,10 +233,10 @@ class RealEstateDeveloperAdvertisement {
     if (!currentUser) {
       throw new Error("يجب تسجيل الدخول أولاً قبل الموافقة على العقار");
     }
-    
+
     const admin = await User.getByUid(currentUser.uid);
     await this.update({
-      reviewStatus: 'approved',
+      reviewStatus: "approved",
       reviewed_by: {
         uid: admin.uid,
         name: admin.adm_name,
@@ -242,24 +247,24 @@ class RealEstateDeveloperAdvertisement {
 
     await new Notification({
       receiver_id: this.userId,
-      title: '✅ تمت الموافقة على إعلانك العقاري',
+      title: "✅ تمت الموافقة على إعلانك العقاري",
       body: `تمت الموافقة على إعلانك "${this.developer_name}". يمكن للإدارة الآن تفعيله ليظهر في الواجهة.`,
-      type: 'system',
+      type: "system",
       link: `/client/developer-ads/${this.#id}`,
     }).send();
   }
 
   // ❌ رفض الإعلان
-  async reject(reason = '') {
+  async reject(reason = "") {
     // التحقق من حالة تسجيل الدخول
     const currentUser = auth.currentUser;
     if (!currentUser) {
       throw new Error("يجب تسجيل الدخول أولاً قبل رفض العقار");
     }
-    
+
     const admin = await User.getByUid(currentUser.uid);
     await this.update({
-      reviewStatus: 'rejected',
+      reviewStatus: "rejected",
       reviewed_by: {
         uid: admin.uid,
         name: admin.adm_name,
@@ -270,11 +275,11 @@ class RealEstateDeveloperAdvertisement {
 
     await new Notification({
       receiver_id: this.userId,
-      title: '❌ تم رفض إعلانك العقاري',
+      title: "❌ تم رفض إعلانك العقاري",
       body: `تم رفض إعلانك "${this.developer_name}". السبب: ${
-        reason || 'غير مذكور'
+        reason || "غير مذكور"
       }`,
-      type: 'system',
+      type: "system",
       link: `/client/developer-ads/${this.#id}`,
     }).send();
   }
@@ -283,7 +288,7 @@ class RealEstateDeveloperAdvertisement {
   async returnToPending() {
     const admin = await User.getByUid(auth.currentUser.uid);
     await this.update({
-      reviewStatus: 'pending',
+      reviewStatus: "pending",
       ads: false, // Deactivate the ad when returning to pending status
       adExpiryTime: null, // Reset expiry time when deactivating
       reviewed_by: {
@@ -296,9 +301,9 @@ class RealEstateDeveloperAdvertisement {
 
     await new Notification({
       receiver_id: this.userId,
-      title: '🔄 إعلانك الآن قيد المراجعة',
+      title: "🔄 إعلانك الآن قيد المراجعة",
       body: `تمت إعادة إعلانك "${this.developer_name}" للمراجعة.`,
-      type: 'system',
+      type: "system",
       link: `/client/developer-ads/${this.#id}`,
     }).send();
   }
@@ -310,7 +315,7 @@ class RealEstateDeveloperAdvertisement {
     if (!currentUser) {
       throw new Error("يجب تسجيل الدخول أولاً قبل تفعيل العقار");
     }
-    
+
     const ms = days * 24 * 60 * 60 * 1000;
     this.ads = true;
     this.adExpiryTime = Date.now() + ms;
@@ -325,29 +330,44 @@ class RealEstateDeveloperAdvertisement {
     if (!currentUser) {
       throw new Error("يجب تسجيل الدخول أولاً قبل إلغاء تفعيل العقار");
     }
-    
+
     this.ads = false;
     this.adExpiryTime = null;
     await this.update({ ads: false, adExpiryTime: null });
   }
 
-  // 📥 جلب إعلان واحد بالـ ID
+  // 📥 جلب إعلان واحد بالـ ID (للمستخدمين المسجلين)
   static async getById(id) {
     // التحقق من حالة تسجيل الدخول
     const currentUser = auth.currentUser;
     if (!currentUser) {
       throw new Error("يجب تسجيل الدخول أولاً قبل جلب بيانات العقار");
     }
-    
-    const docRef = doc(db, 'RealEstateDeveloperAdvertisements', id);
+
+    const docRef = doc(db, "RealEstateDeveloperAdvertisements", id);
     const snap = await getDoc(docRef);
     if (snap.exists()) {
       const data = snap.data();
       const advertisement = new RealEstateDeveloperAdvertisement({
         ...data,
-        id: snap.id // إضافة الـ ID بشكل صريح
+        id: snap.id, // إضافة الـ ID بشكل صريح
       });
       return advertisement;
+    }
+    return null;
+  }
+
+  // 📥 جلب إعلان واحد بالـ ID (للوصول العام - بدون تسجيل دخول)
+  static async getByIdPublic(id) {
+    const docRef = doc(db, "RealEstateDeveloperAdvertisements", id);
+    const snap = await getDoc(docRef);
+    if (snap.exists()) {
+      const data = snap.data();
+      // إرجاع object عادي بدلاً من instance من الكلاس لتجنب مشاكل المصادقة
+      return {
+        ...data,
+        id: snap.id, // إضافة الـ ID بشكل صريح
+      };
     }
     return null;
   }
@@ -359,14 +379,17 @@ class RealEstateDeveloperAdvertisement {
     if (!currentUser) {
       throw new Error("يجب تسجيل الدخول أولاً قبل جلب قائمة العقارات");
     }
-    
+
     const snap = await getDocs(
-      collection(db, 'RealEstateDeveloperAdvertisements')
+      collection(db, "RealEstateDeveloperAdvertisements")
     );
-    return snap.docs.map((d) => new RealEstateDeveloperAdvertisement({
-      ...d.data(),
-      id: d.id
-    }));
+    return snap.docs.map(
+      (d) =>
+        new RealEstateDeveloperAdvertisement({
+          ...d.data(),
+          id: d.id,
+        })
+    );
   }
 
   // 📥 جلب إعلانات حسب حالة المراجعة
@@ -374,18 +397,23 @@ class RealEstateDeveloperAdvertisement {
     // التحقق من حالة تسجيل الدخول
     const currentUser = auth.currentUser;
     if (!currentUser) {
-      throw new Error("يجب تسجيل الدخول أولاً قبل جلب العقارات حسب حالة المراجعة");
+      throw new Error(
+        "يجب تسجيل الدخول أولاً قبل جلب العقارات حسب حالة المراجعة"
+      );
     }
-    
+
     const q = query(
-      collection(db, 'RealEstateDeveloperAdvertisements'),
-      where('reviewStatus', '==', status)
+      collection(db, "RealEstateDeveloperAdvertisements"),
+      where("reviewStatus", "==", status)
     );
     const snap = await getDocs(q);
-    return snap.docs.map((d) => new RealEstateDeveloperAdvertisement({
-      ...d.data(),
-      id: d.id
-    }));
+    return snap.docs.map(
+      (d) =>
+        new RealEstateDeveloperAdvertisement({
+          ...d.data(),
+          id: d.id,
+        })
+    );
   }
 
   // 📥 جلب إعلانات مستخدم معين
@@ -395,16 +423,19 @@ class RealEstateDeveloperAdvertisement {
     if (!currentUser) {
       throw new Error("يجب تسجيل الدخول أولاً قبل جلب عقارات المستخدم");
     }
-    
+
     const q = query(
-      collection(db, 'RealEstateDeveloperAdvertisements'),
-      where('userId', '==', userId)
+      collection(db, "RealEstateDeveloperAdvertisements"),
+      where("userId", "==", userId)
     );
     const snap = await getDocs(q);
-    return snap.docs.map((d) => new RealEstateDeveloperAdvertisement({
-      ...d.data(),
-      id: d.id
-    }));
+    return snap.docs.map(
+      (d) =>
+        new RealEstateDeveloperAdvertisement({
+          ...d.data(),
+          id: d.id,
+        })
+    );
   }
 
   // ✅ الاشتراك اللحظي في الإعلانات حسب حالة المراجعة
@@ -414,10 +445,10 @@ class RealEstateDeveloperAdvertisement {
     if (!currentUser) {
       throw new Error("يجب تسجيل الدخول أولاً قبل الاشتراك في العقارات");
     }
-    
+
     const q = query(
-      collection(db, 'RealEstateDeveloperAdvertisements'),
-      where('reviewStatus', '==', status)
+      collection(db, "RealEstateDeveloperAdvertisements"),
+      where("reviewStatus", "==", status)
     );
     return onSnapshot(q, (snap) => {
       const ads = snap.docs.map((d) => {
@@ -447,7 +478,7 @@ class RealEstateDeveloperAdvertisement {
           ads: data.ads !== undefined ? data.ads : false,
           adExpiryTime: data.adExpiryTime,
           receipt_image: data.receipt_image,
-          reviewStatus: data.reviewStatus || 'pending',
+          reviewStatus: data.reviewStatus || "pending",
           reviewed_by: data.reviewed_by,
           review_note: data.review_note,
           adPackage: data.adPackage,
@@ -469,9 +500,9 @@ class RealEstateDeveloperAdvertisement {
     // }
 
     const q = query(
-      collection(db, 'RealEstateDeveloperAdvertisements'),
-      where('ads', '==', true),
-      where('reviewStatus', '==', 'approved')
+      collection(db, "RealEstateDeveloperAdvertisements"),
+      where("ads", "==", true),
+      where("reviewStatus", "==", "approved")
     );
     const snap = await getDocs(q);
     return snap.docs.map((d) => {
@@ -501,7 +532,7 @@ class RealEstateDeveloperAdvertisement {
         ads: data.ads !== undefined ? data.ads : false,
         adExpiryTime: data.adExpiryTime,
         receipt_image: data.receipt_image,
-        reviewStatus: data.reviewStatus || 'pending',
+        reviewStatus: data.reviewStatus || "pending",
         reviewed_by: data.reviewed_by,
         review_note: data.review_note,
         adPackage: data.adPackage,
@@ -521,9 +552,9 @@ class RealEstateDeveloperAdvertisement {
     // }
 
     const q = query(
-      collection(db, 'RealEstateDeveloperAdvertisements'),
-      where('ads', '==', true),
-      where('reviewStatus', '==', 'approved')
+      collection(db, "RealEstateDeveloperAdvertisements"),
+      where("ads", "==", true),
+      where("reviewStatus", "==", "approved")
     );
     return onSnapshot(q, (snap) => {
       const ads = snap.docs.map((d) => {
@@ -553,7 +584,7 @@ class RealEstateDeveloperAdvertisement {
           ads: data.ads !== undefined ? data.ads : false,
           adExpiryTime: data.adExpiryTime,
           receipt_image: data.receipt_image,
-          reviewStatus: data.reviewStatus || 'pending',
+          reviewStatus: data.reviewStatus || "pending",
           reviewed_by: data.reviewed_by,
           review_note: data.review_note,
           adPackage: data.adPackage,
@@ -573,7 +604,7 @@ class RealEstateDeveloperAdvertisement {
     if (!currentUser) {
       throw new Error("يجب تسجيل الدخول أولاً قبل الاشتراك في العقارات");
     }
-    const q = collection(db, 'RealEstateDeveloperAdvertisements');
+    const q = collection(db, "RealEstateDeveloperAdvertisements");
     return onSnapshot(q, (snap) => {
       const ads = snap.docs.map((d) => {
         const data = d.data();
@@ -602,7 +633,7 @@ class RealEstateDeveloperAdvertisement {
           ads: data.ads !== undefined ? data.ads : false,
           adExpiryTime: data.adExpiryTime,
           receipt_image: data.receipt_image,
-          reviewStatus: data.reviewStatus || 'pending',
+          reviewStatus: data.reviewStatus || "pending",
           reviewed_by: data.reviewed_by,
           review_note: data.review_note,
           adPackage: data.adPackage,
@@ -623,8 +654,8 @@ class RealEstateDeveloperAdvertisement {
       throw new Error("يجب تسجيل الدخول أولاً قبل الاشتراك في العقارات");
     }
     const q = query(
-      collection(db, 'RealEstateDeveloperAdvertisements'),
-      where('userId', '==', userId)
+      collection(db, "RealEstateDeveloperAdvertisements"),
+      where("userId", "==", userId)
     );
     return onSnapshot(q, (snap) => {
       const ads = snap.docs.map((d) => {
@@ -654,7 +685,7 @@ class RealEstateDeveloperAdvertisement {
           ads: data.ads !== undefined ? data.ads : false,
           adExpiryTime: data.adExpiryTime,
           receipt_image: data.receipt_image,
-          reviewStatus: data.reviewStatus || 'pending',
+          reviewStatus: data.reviewStatus || "pending",
           reviewed_by: data.reviewed_by,
           review_note: data.review_note,
           adPackage: data.adPackage,
@@ -671,7 +702,7 @@ class RealEstateDeveloperAdvertisement {
   async #uploadImages(files = []) {
     const currentUser = auth.currentUser;
     if (!currentUser) throw new Error("يجب تسجيل الدخول أولاً قبل رفع الصور");
-    if (!this.#id) throw new Error('Ad ID is required for uploading images');
+    if (!this.#id) throw new Error("Ad ID is required for uploading images");
     const storage = getStorage();
     const urls = [];
     const limited = files.slice(0, 4);
@@ -690,57 +721,71 @@ class RealEstateDeveloperAdvertisement {
   async #uploadReceipt(file) {
     const currentUser = auth.currentUser;
     if (!currentUser) throw new Error("يجب تسجيل الدخول أولاً قبل رفع الإيصال");
-    if (!this.#id) throw new Error('Ad ID is required for uploading receipt');
+    if (!this.#id) throw new Error("Ad ID is required for uploading receipt");
     const storage = getStorage();
-    const refPath = ref(storage, `property_images/${this.userId}/${this.#id}/receipt.jpg`);
+    const refPath = ref(
+      storage,
+      `property_images/${this.userId}/${this.#id}/receipt.jpg`
+    );
     await uploadBytes(refPath, file);
     return await getDownloadURL(refPath);
   }
 
-async #deleteAllImages() {
-  const currentUser = auth.currentUser;
-  if (!currentUser) {
-    throw new Error("يجب تسجيل الدخول أولاً قبل حذف الصور");
-  }
+  async #deleteAllImages() {
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      throw new Error("يجب تسجيل الدخول أولاً قبل حذف الصور");
+    }
 
-  if (!this.#id) {
-    console.warn('No ad ID available for image deletion');
-    return;
-  }
+    if (!this.#id) {
+      console.warn("No ad ID available for image deletion");
+      return;
+    }
 
-  // Delete only images belonging to this specific ad
-  const dirRef = ref(getStorage(), `property_images/${this.userId}/${this.#id}`);
-  try {
-    const list = await listAll(dirRef);
-    for (const fileRef of list.items) await deleteObject(fileRef);
-    console.log(`Successfully deleted all images for ad ${this.#id}`);
-  } catch (error) {
-    console.warn(`Failed to delete images for ad ${this.#id}:`, error.message);
+    // Delete only images belonging to this specific ad
+    const dirRef = ref(
+      getStorage(),
+      `property_images/${this.userId}/${this.#id}`
+    );
+    try {
+      const list = await listAll(dirRef);
+      for (const fileRef of list.items) await deleteObject(fileRef);
+      console.log(`Successfully deleted all images for ad ${this.#id}`);
+    } catch (error) {
+      console.warn(
+        `Failed to delete images for ad ${this.#id}:`,
+        error.message
+      );
+    }
   }
-}
-
 
   // 🗑️ حذف إيصال الدفع
   async #deleteReceipt() {
-  const currentUser = auth.currentUser;
-  if (!currentUser) {
-    throw new Error("يجب تسجيل الدخول أولاً قبل حذف الإيصال");
-  }
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      throw new Error("يجب تسجيل الدخول أولاً قبل حذف الإيصال");
+    }
 
-  if (!this.#id) {
-    console.warn('No ad ID available for receipt deletion');
-    return;
-  }
+    if (!this.#id) {
+      console.warn("No ad ID available for receipt deletion");
+      return;
+    }
 
-  // Delete receipt using the new ad-specific path structure
-  const fileRef = ref(getStorage(), `property_images/${this.userId}/${this.#id}/receipt.jpg`);
-  try {
-    await deleteObject(fileRef);
-    console.log(`Successfully deleted receipt for ad ${this.#id}`);
-  } catch (error) {
-    console.warn(`Failed to delete receipt for ad ${this.#id}:`, error.message);
+    // Delete receipt using the new ad-specific path structure
+    const fileRef = ref(
+      getStorage(),
+      `property_images/${this.userId}/${this.#id}/receipt.jpg`
+    );
+    try {
+      await deleteObject(fileRef);
+      console.log(`Successfully deleted receipt for ad ${this.#id}`);
+    } catch (error) {
+      console.warn(
+        `Failed to delete receipt for ad ${this.#id}:`,
+        error.message
+      );
+    }
   }
-}
 
   // 📤 تجهيز بيانات الإعلان للتخزين
   #getAdData() {
@@ -749,9 +794,11 @@ async #deleteAllImages() {
     if (!currentUser) {
       throw new Error("يجب تسجيل الدخول أولاً قبل تجهيز بيانات العقار");
     }
-    
+
     // استخراج معلومات الباقة إذا كانت موجودة
-    let adPackageName = null, adPackagePrice = null, adPackageDuration = null;
+    let adPackageName = null,
+      adPackagePrice = null,
+      adPackageDuration = null;
     const pkgKey = String(this.adPackage);
     if (pkgKey && PACKAGE_INFO[pkgKey]) {
       adPackageName = PACKAGE_INFO[pkgKey].name;
