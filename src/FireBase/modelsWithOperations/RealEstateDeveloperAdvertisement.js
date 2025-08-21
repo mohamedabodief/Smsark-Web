@@ -372,7 +372,7 @@ class RealEstateDeveloperAdvertisement {
     return null;
   }
 
-  // 📥 جلب كل الإعلانات
+  // 📥 جلب كل الإعلانات (للمستخدمين المسجلين)
   static async getAll() {
     // التحقق من حالة تسجيل الدخول
     const currentUser = auth.currentUser;
@@ -390,6 +390,20 @@ class RealEstateDeveloperAdvertisement {
           id: d.id,
         })
     );
+  }
+
+  // 📥 جلب كل الإعلانات (للوصول العام - بدون تسجيل دخول)
+  static async getAllPublic() {
+    const snap = await getDocs(
+      collection(db, "RealEstateDeveloperAdvertisements")
+    );
+    return snap.docs.map((d) => {
+      const data = d.data();
+      return {
+        ...data,
+        id: d.id,
+      };
+    });
   }
 
   // 📥 جلب إعلانات حسب حالة المراجعة

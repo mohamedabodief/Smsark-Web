@@ -39,7 +39,7 @@ const toPlainDeveloperAd = (ad, index = 0) => ({
 export const fetchAllDeveloperAds = createAsyncThunk(
   "developerAds/fetchAll",
   async () => {
-    const ads = await RealEstateDeveloperAdvertisement.getAll();
+    const ads = await RealEstateDeveloperAdvertisement.getAllPublic();
     return ads.map((ad, index) => toPlainDeveloperAd(ad, index));
   }
 );
@@ -75,7 +75,7 @@ const developerAdsSlice = createSlice({
   },
   setDeveloperAdsByUser: (state, action) => {
     // Convert class instances to plain objects to ensure id is accessible
-    state.byUser = action.payload.map(ad => ({
+    state.byUser = action.payload.map((ad) => ({
       id: ad.id,
       description: ad.description,
       images: ad.images,
@@ -153,6 +153,7 @@ const developerAdsSlice = createSlice({
   },
 });
 
-export const { clearDeveloperAds ,setDeveloperAdsByUser } = developerAdsSlice.actions;
+export const { clearDeveloperAds, setDeveloperAdsByUser } =
+  developerAdsSlice.actions;
 
 export default developerAdsSlice.reducer;
