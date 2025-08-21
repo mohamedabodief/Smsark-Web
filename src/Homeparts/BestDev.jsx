@@ -1,17 +1,20 @@
-import { useAuth } from '../context/AuthContext';
 import {
-  Box, Typography, Card, CardMedia, CardContent, IconButton
-} from '@mui/material';
-import { ArrowBackIos, ArrowForwardIos } from '@mui/icons-material';
-import FavoriteButton from './FavoriteButton';
-import { useRef, useEffect, useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import RealEstateDeveloperAdvertisement from '../FireBase/modelsWithOperations/RealEstateDeveloperAdvertisement';
+  Box,
+  Typography,
+  Card,
+  CardMedia,
+  CardContent,
+  IconButton,
+} from "@mui/material";
+import { ArrowBackIos, ArrowForwardIos } from "@mui/icons-material";
+import FavoriteButton from "./FavoriteButton";
+import { useRef, useEffect, useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
+import RealEstateDeveloperAdvertisement from "../FireBase/modelsWithOperations/RealEstateDeveloperAdvertisement";
 
 export default function BestDev() {
   const sliderRef = useRef();
   const navigate = useNavigate();
-  const { user } = useAuth();
   const [offers, setOffers] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -24,7 +27,7 @@ export default function BestDev() {
       const activeAds = await RealEstateDeveloperAdvertisement.getActiveAds();
       setOffers(activeAds);
     } catch (error) {
-      console.error('Initialization error:', error);
+      console.error("Initialization error:", error);
     } finally {
       setLoading(false);
     }
@@ -33,17 +36,19 @@ export default function BestDev() {
   useEffect(() => {
     initializeAds();
 
-    // الاشتراك في تحديثات الإعلانات النشطة لو المستخدم مسجل دخول فقط
+    // الاشتراك في تحديثات الإعلانات النشطة
     let unsubscribe = () => {};
-    unsubscribe = RealEstateDeveloperAdvertisement.subscribeActiveAds((activeAds) => {
-      setOffers(activeAds);
-      setLoading(false);
-    });
+    unsubscribe = RealEstateDeveloperAdvertisement.subscribeActiveAds(
+      (activeAds) => {
+        setOffers(activeAds);
+        setLoading(false);
+      }
+    );
 
     const cardWidth = 344; // Card width for calculations
     const cardGap = 24; // Gap between cards (from your `gap: 3`)
     const scrollAmount = cardWidth + cardGap;
-    
+
     // Auto-scrolling logic
     let autoScrollInterval;
     const startAutoScroll = () => {
@@ -54,35 +59,46 @@ export default function BestDev() {
 
           if (container.scrollLeft >= maxScrollLeft) {
             // Jump back to the start of the duplicated set
-            container.scrollTo({ left: 0, behavior: 'auto' });
+            container.scrollTo({ left: 0, behavior: "auto" });
           }
           // Now scroll to the next card smoothly
-          container.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-
+          container.scrollBy({ left: scrollAmount, behavior: "smooth" });
         }, 2500); // 3-second interval
       }
     };
-    
+
     // Start auto-scroll
     startAutoScroll();
 
     // Clear interval when user interacts
     const container = sliderRef.current;
     if (container) {
-      container.addEventListener('wheel', () => clearInterval(autoScrollInterval), { once: true });
-      container.addEventListener('mousedown', () => clearInterval(autoScrollInterval), { once: true });
+      container.addEventListener(
+        "wheel",
+        () => clearInterval(autoScrollInterval),
+        { once: true }
+      );
+      container.addEventListener(
+        "mousedown",
+        () => clearInterval(autoScrollInterval),
+        { once: true }
+      );
     }
 
     return () => {
       unsubscribe();
       clearInterval(autoScrollInterval);
       if (container) {
-        container.removeEventListener('wheel', () => clearInterval(autoScrollInterval));
-        container.removeEventListener('mousedown', () => clearInterval(autoScrollInterval));
+        container.removeEventListener("wheel", () =>
+          clearInterval(autoScrollInterval)
+        );
+        container.removeEventListener("mousedown", () =>
+          clearInterval(autoScrollInterval)
+        );
       }
     };
   }, [initializeAds, offers.length]);
-  
+
   // Manual navigation logic
   const scroll = (direction) => {
     if (!sliderRef.current) return;
@@ -103,19 +119,48 @@ export default function BestDev() {
         أفضل عروض التطوير العقاري
       </Typography>
 
-      <Box sx={{ position: 'relative' }}>
-        <IconButton onClick={() => scroll('left')} sx={{ position: 'absolute', top: '50%', left: -10, transform: 'translateY(-50%)', zIndex: 1, backgroundColor: 'white', boxShadow: 2 }}>
-          <ArrowBackIos sx={{ color: 'grey' }} />
+      <Box sx={{ position: "relative" }}>
+        <IconButton
+          onClick={() => scroll("left")}
+          sx={{
+            position: "absolute",
+            top: "50%",
+            left: -10,
+            transform: "translateY(-50%)",
+            zIndex: 1,
+            backgroundColor: "white",
+            boxShadow: 2,
+          }}
+        >
+          <ArrowBackIos sx={{ color: "grey" }} />
         </IconButton>
 
-        <IconButton onClick={() => scroll('right')} sx={{ position: 'absolute', top: '50%', right: -10, transform: 'translateY(-50%)', zIndex: 1, backgroundColor: 'white', boxShadow: 2 }}>
-          <ArrowForwardIos sx={{ color: 'grey' }} />
+        <IconButton
+          onClick={() => scroll("right")}
+          sx={{
+            position: "absolute",
+            top: "50%",
+            right: -10,
+            transform: "translateY(-50%)",
+            zIndex: 1,
+            backgroundColor: "white",
+            boxShadow: 2,
+          }}
+        >
+          <ArrowForwardIos sx={{ color: "grey" }} />
         </IconButton>
 
-        <Box ref={sliderRef} sx={{
-          display: 'flex', overflowX: 'hidden', gap: 3, pb: 2, pl: 5,
-          '&::-webkit-scrollbar': { display: 'none' }
-        }}>
+        <Box
+          ref={sliderRef}
+          sx={{
+            display: "flex",
+            overflowX: "hidden",
+            gap: 3,
+            pb: 2,
+            pl: 5,
+            "&::-webkit-scrollbar": { display: "none" },
+          }}
+        >
           {loading ? (
             <Typography>...جاري تحميل العروض</Typography>
           ) : offers.length === 0 ? (
@@ -126,34 +171,58 @@ export default function BestDev() {
                 key={`${item?.id}-${index}`}
                 onClick={() => navigate(`/details/developmentAds/${item.id}`)}
                 sx={{
-                  cursor: 'pointer',
+                  cursor: "pointer",
                   flexShrink: 0,
-                  minWidth: { xs: 260, sm: 300, md: 320 },
-                  width: { xs: 260, sm: 300, md: 320 }
-                }}
-              >
-                <Card sx={{
                   minWidth: { xs: 260, sm: 300, md: 320 },
                   width: { xs: 260, sm: 300, md: 320 },
-                  scrollSnapAlign: 'start',
-                  flexShrink: 0,
-                  borderRadius: 3,
-                  position: 'relative',
-                  height: '100%'
-                }}>
-                  <CardMedia component="img" width='300' height="160" image={item.images?.[0] || '/no-img.jpeg'} />
+                }}
+              >
+                <Card
+                  sx={{
+                    minWidth: { xs: 260, sm: 300, md: 320 },
+                    width: { xs: 260, sm: 300, md: 320 },
+                    scrollSnapAlign: "start",
+                    flexShrink: 0,
+                    borderRadius: 3,
+                    position: "relative",
+                    height: "100%",
+                  }}
+                >
+                  <CardMedia
+                    component="img"
+                    width="300"
+                    height="160"
+                    image={item.images?.[0] || "/no-img.jpeg"}
+                  />
                   <FavoriteButton advertisementId={item.id} />
                   <CardContent dir="rtl">
                     <Typography color="primary" fontWeight="bold">
-                      {item.price_start_from?.toLocaleString()} - {item.price_end_to?.toLocaleString()} ج.م
+                      {item.price_start_from?.toLocaleString()} -{" "}
+                      {item.price_end_to?.toLocaleString()} ج.م
                     </Typography>
-                    <Typography variant="subtitle1">{item.developer_name}</Typography>
+                    <Typography variant="subtitle1">
+                      {item.developer_name}
+                    </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      {typeof item.location === 'object'
-                        ? `${item.location.governorate || ''} - ${item.location.city || ''}`
+                      {typeof item.location === "object"
+                        ? `${item.location.governorate || ""} - ${
+                            item.location.city || ""
+                          }`
                         : item.location}
                     </Typography>
-                    <Typography variant="body2" mt={1} sx={{ overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{item.description}</Typography>
+                    <Typography
+                      variant="body2"
+                      mt={1}
+                      sx={{
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        display: "-webkit-box",
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: "vertical",
+                      }}
+                    >
+                      {item.description}
+                    </Typography>
                   </CardContent>
                 </Card>
               </Box>
