@@ -4,16 +4,31 @@ import { ArrowBackIos, ArrowForwardIos } from '@mui/icons-material';
 import HomepageAdvertisement from '../FireBase/modelsWithOperations/HomepageAdvertisement';
 import { getStorage, ref, getDownloadURL } from 'firebase/storage';
 
-// ✅ دالة لتصحيح اللينك
-function fixStorageUrl(url) {
+async function fixStorageUrl(url) {
   if (!url) return '/no-image.svg';
 
-  // لو اللينك قديم فيه firebasestorage.app
-  if (url.includes('firebasestorage.app')) {
-    return url.replace('firebasestorage.app', 'appspot.com');
+  // لو gs:// → حوله لرابط قابل للعرض
+  if (url.startsWith('gs://')) {
+    try {
+      const storage = getStorage();
+      const path = url.split('gs://')[1].split('/').slice(1).join('/');
+      const storageRef = ref(storage, path);
+      const downloadUrl = await getDownloadURL(storageRef);
+      console.log('[FIXED gs:// URL]:', downloadUrl);
+      return downloadUrl;
+    } catch (err) {
+      console.error('Error fetching gs:// URL:', err);
+      return '/no-image.svg';
+    }
   }
 
-  return url;
+  // لو https:// firebasestorage → مباشر
+  if (url.startsWith('http')) {
+    console.log('[HTTP URL]:', url);
+    return url;
+  }
+
+  return '/no-image.svg';
 }
 
 export default function SimpleHeroSlider() {
@@ -22,37 +37,12 @@ export default function SimpleHeroSlider() {
 
   useEffect(() => {
     const unsubscribe = HomepageAdvertisement.subscribeActiveAds(async (data) => {
-      const storage = getStorage();
-
       const adsWithUrls = await Promise.all(
-        data.map(async (ad) => {
-          if (ad.image) {
-            // ✅ تصحيح اللينك قبل أي حاجة
-            let fixedUrl = fixStorageUrl(ad.image);
-
-            // لو gs:// → رجّع URL صحيح
-            if (fixedUrl.startsWith('gs://')) {
-              try {
-                const path = fixedUrl.replace('gs://smsark-alaqary.appspot.com/', '');
-                const storageRef = ref(storage, path);
-                const url = await getDownloadURL(storageRef);
-                return { ...ad, image: url };
-              } catch (err) {
-                console.error('Error fetching image URL:', err);
-                return { ...ad, image: '/no-image.svg' };
-              }
-            }
-
-            // لو لينك https:// بعد التصحيح
-            if (fixedUrl.startsWith('http')) {
-              return { ...ad, image: fixedUrl };
-            }
-          }
-
-          return { ...ad, image: '/no-image.svg' };
-        })
+        data.map(async (ad) => ({
+          ...ad,
+          image: await fixStorageUrl(ad.image),
+        }))
       );
-
       setAds(adsWithUrls);
       setIndex(0);
     });
@@ -68,13 +58,8 @@ export default function SimpleHeroSlider() {
     return () => clearInterval(interval);
   }, [ads.length]);
 
-  const nextSlide = () => {
-    setIndex((prev) => (prev + 1) % ads.length);
-  };
-
-  const prevSlide = () => {
-    setIndex((prev) => (prev - 1 + ads.length) % ads.length);
-  };
+  const nextSlide = () => setIndex((prev) => (prev + 1) % ads.length);
+  const prevSlide = () => setIndex((prev) => (prev - 1 + ads.length) % ads.length);
 
   return (
     <Box
@@ -88,16 +73,12 @@ export default function SimpleHeroSlider() {
         padding: 0,
       }}
     >
-      {ads.length > 0 && ads[index] && (
+      {ads.length > 0 && (
         <Box
           component="img"
           src={ads[index]?.image || '/no-image.svg'}
           alt="slider image"
-          sx={{
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-          }}
+          sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
         />
       )}
 
