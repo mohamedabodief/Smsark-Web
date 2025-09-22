@@ -2,6 +2,10 @@ import React from "react";
 import { Box, Container, Grid } from "@mui/material";
 import { Button } from "@mui/material";
 
+// استيراد الصور من مجلد assets
+import mobilePic from "../assets/mobile-pic-nb.png";
+import frame13 from "../assets/Frame 13.png";
+
 const MobilSection = () => {
   return (
     <Box
@@ -16,7 +20,7 @@ const MobilSection = () => {
     >
         <Box
           component="img"
-          src="/src/assets/mobile-pic-nb.png"
+          src={mobilePic}
           alt="تطبيق سمسارك العقاري"
           sx={{
             width: { xs: "100%", sm: 750 },
@@ -94,7 +98,7 @@ const MobilSection = () => {
             >
               <Box
                 component="img"
-                src="/src/assets/Frame 13.png"
+                src={frame13}
                 alt="عقارات مصر"
                 sx={{
                   width: { xs: "30%", sm: 145 },
