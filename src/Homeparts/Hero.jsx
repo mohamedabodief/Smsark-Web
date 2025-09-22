@@ -4,11 +4,22 @@ import { ArrowBackIos, ArrowForwardIos } from '@mui/icons-material';
 import HomepageAdvertisement from '../FireBase/modelsWithOperations/HomepageAdvertisement';
 import { getStorage, ref, getDownloadURL } from 'firebase/storage';
 
+// ✅ دالة لتصحيح اللينك
+function fixStorageUrl(url) {
+  if (!url) return '/no-image.svg';
+
+  // لو اللينك قديم فيه firebasestorage.app
+  if (url.includes('firebasestorage.app')) {
+    return url.replace('firebasestorage.app', 'appspot.com');
+  }
+
+  return url;
+}
+
 export default function SimpleHeroSlider() {
   const [ads, setAds] = useState([]);
   const [index, setIndex] = useState(0);
 
-  // Subscribe to active ads
   useEffect(() => {
     const unsubscribe = HomepageAdvertisement.subscribeActiveAds(async (data) => {
       const storage = getStorage();
@@ -16,10 +27,13 @@ export default function SimpleHeroSlider() {
       const adsWithUrls = await Promise.all(
         data.map(async (ad) => {
           if (ad.image) {
-            // لو اللينك gs://
-            if (ad.image.startsWith('gs://')) {
+            // ✅ تصحيح اللينك قبل أي حاجة
+            let fixedUrl = fixStorageUrl(ad.image);
+
+            // لو gs:// → رجّع URL صحيح
+            if (fixedUrl.startsWith('gs://')) {
               try {
-                const path = ad.image.replace('gs://smsark-alaqary.firebasestorage.app/', '');
+                const path = fixedUrl.replace('gs://smsark-alaqary.appspot.com/', '');
                 const storageRef = ref(storage, path);
                 const url = await getDownloadURL(storageRef);
                 return { ...ad, image: url };
@@ -29,9 +43,9 @@ export default function SimpleHeroSlider() {
               }
             }
 
-            // لو اللينك https:// جاهز
-            if (ad.image.startsWith('http')) {
-              return ad;
+            // لو لينك https:// بعد التصحيح
+            if (fixedUrl.startsWith('http')) {
+              return { ...ad, image: fixedUrl };
             }
           }
 
@@ -40,13 +54,12 @@ export default function SimpleHeroSlider() {
       );
 
       setAds(adsWithUrls);
-      setIndex(0); // Reset index if ads change
+      setIndex(0);
     });
 
     return () => unsubscribe();
   }, []);
 
-  // Auto-advance slider
   useEffect(() => {
     if (ads.length === 0) return;
     const interval = setInterval(() => {
@@ -55,7 +68,6 @@ export default function SimpleHeroSlider() {
     return () => clearInterval(interval);
   }, [ads.length]);
 
-  // Navigation functions
   const nextSlide = () => {
     setIndex((prev) => (prev + 1) % ads.length);
   };
