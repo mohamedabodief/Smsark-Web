@@ -15,19 +15,27 @@ export default function SimpleHeroSlider() {
 
       const adsWithUrls = await Promise.all(
         data.map(async (ad) => {
-          if (ad.image && ad.image.startsWith('gs://')) {
-            try {
-              // ✅ عدلنا هنا
-              const path = ad.image.replace('gs://smsark-alaqary.appspot.com/', '');
-              const storageRef = ref(storage, path);
-              const url = await getDownloadURL(storageRef);
-              return { ...ad, image: url };
-            } catch (err) {
-              console.error('Error fetching image URL:', err);
-              return { ...ad, image: '/no-image.svg' };
+          if (ad.image) {
+            // لو اللينك gs://
+            if (ad.image.startsWith('gs://')) {
+              try {
+                const path = ad.image.replace('gs://smsark-alaqary.firebasestorage.app/', '');
+                const storageRef = ref(storage, path);
+                const url = await getDownloadURL(storageRef);
+                return { ...ad, image: url };
+              } catch (err) {
+                console.error('Error fetching image URL:', err);
+                return { ...ad, image: '/no-image.svg' };
+              }
+            }
+
+            // لو اللينك https:// جاهز
+            if (ad.image.startsWith('http')) {
+              return ad;
             }
           }
-          return ad;
+
+          return { ...ad, image: '/no-image.svg' };
         })
       );
 
