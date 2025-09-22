@@ -17,7 +17,8 @@ export default function SimpleHeroSlider() {
         data.map(async (ad) => {
           if (ad.image && ad.image.startsWith('gs://')) {
             try {
-              const path = ad.image.replace('gs://smsark-alaqary.firebasestorage.app/', '');
+              // ✅ عدلنا هنا
+              const path = ad.image.replace('gs://smsark-alaqary.appspot.com/', '');
               const storageRef = ref(storage, path);
               const url = await getDownloadURL(storageRef);
               return { ...ad, image: url };
@@ -68,18 +69,16 @@ export default function SimpleHeroSlider() {
       }}
     >
       {ads.length > 0 && ads[index] && (
-        <>
-          <Box
-            component="img"
-            src={ads[index] && ads[index].image ? ads[index].image : '/no-image.svg'}
-            alt="slider image"
-            sx={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
-            }}
-          />
-        </>
+        <Box
+          component="img"
+          src={ads[index]?.image || '/no-image.svg'}
+          alt="slider image"
+          sx={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+          }}
+        />
       )}
 
       <IconButton
