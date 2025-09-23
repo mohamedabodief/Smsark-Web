@@ -17,10 +17,8 @@ function fixStorageUrl(url) {
 
 // ✅ fallback images
 const fallbackImages = [
-  '/main1.jpg',
-  '/main2.jpg',
+  // '/main1.jpg',
   '/main3.jpg',
-  '/main4.jpg',
 ];
 
 export default function SimpleHeroSlider() {
@@ -33,39 +31,44 @@ export default function SimpleHeroSlider() {
   };
 
   useEffect(() => {
-    const unsubscribe = HomepageAdvertisement.subscribeActiveAds(async (data) => {
-      const storage = getStorage();
+    const unsubscribe = HomepageAdvertisement.subscribeActiveAds(
+      async (data) => {
+        const storage = getStorage();
 
-      const adsWithUrls = await Promise.all(
-        data.map(async (ad) => {
-          if (ad.image) {
-            let fixedUrl = fixStorageUrl(ad.image);
+        const adsWithUrls = await Promise.all(
+          data.map(async (ad) => {
+            if (ad.image) {
+              let fixedUrl = fixStorageUrl(ad.image);
 
-            // gs:// → احصل على URL صحيح
-            if (fixedUrl.startsWith('gs://')) {
-              try {
-                const path = fixedUrl.replace('gs://smsark-alaqary.appspot.com/', '');
-                const storageRef = ref(storage, path);
-                const url = await getDownloadURL(storageRef);
-                return { ...ad, image: url };
-              } catch (err) {
-                console.error('Error fetching image URL:', err);
-                return { ...ad, image: getRandomFallback() };
+              // gs:// → احصل على URL صحيح
+              if (fixedUrl.startsWith('gs://')) {
+                try {
+                  const path = fixedUrl.replace(
+                    'gs://smsark-alaqary.appspot.com/',
+                    ''
+                  );
+                  const storageRef = ref(storage, path);
+                  const url = await getDownloadURL(storageRef);
+                  return { ...ad, image: url };
+                } catch (err) {
+                  console.error('Error fetching image URL:', err);
+                  return { ...ad, image: getRandomFallback() };
+                }
+              }
+
+              if (fixedUrl.startsWith('http')) {
+                return { ...ad, image: fixedUrl };
               }
             }
 
-            if (fixedUrl.startsWith('http')) {
-              return { ...ad, image: fixedUrl };
-            }
-          }
+            return { ...ad, image: getRandomFallback() };
+          })
+        );
 
-          return { ...ad, image: getRandomFallback() };
-        })
-      );
-
-      setAds(adsWithUrls);
-      setIndex(0);
-    });
+        setAds(adsWithUrls);
+        setIndex(0);
+      }
+    );
 
     return () => unsubscribe();
   }, []);
