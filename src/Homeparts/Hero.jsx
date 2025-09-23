@@ -4,10 +4,13 @@ import { ArrowBackIos, ArrowForwardIos } from '@mui/icons-material';
 import HomepageAdvertisement from '../FireBase/modelsWithOperations/HomepageAdvertisement';
 import { getStorage, ref, getDownloadURL } from 'firebase/storage';
 
-async function fixStorageUrl(url) {
-  if (!url) return '/no-image.svg';
+// ✅ صور fallback من public
+const fallbackImages = ['/main1.jpg', '/main2.jpg', '/main3.jpg', '/main4.jpg'];
 
-  // لو gs:// → حوله لرابط قابل للعرض
+async function fixStorageUrl(url) {
+  if (!url) return getRandomFallback();
+
+  // gs:// → حوله لرابط قابل للعرض
   if (url.startsWith('gs://')) {
     try {
       const storage = getStorage();
@@ -18,17 +21,22 @@ async function fixStorageUrl(url) {
       return downloadUrl;
     } catch (err) {
       console.error('Error fetching gs:// URL:', err);
-      return '/no-image.svg';
+      return getRandomFallback();
     }
   }
 
-  // لو https:// firebasestorage → مباشر
+  // https:// مباشر
   if (url.startsWith('http')) {
     console.log('[HTTP URL]:', url);
     return url;
   }
 
-  return '/no-image.svg';
+  return getRandomFallback();
+}
+
+// ✅ دالة لاختيار صورة fallback عشوائية
+function getRandomFallback() {
+  return fallbackImages[Math.floor(Math.random() * fallbackImages.length)];
 }
 
 export default function SimpleHeroSlider() {
@@ -43,7 +51,14 @@ export default function SimpleHeroSlider() {
           image: await fixStorageUrl(ad.image),
         }))
       );
-      setAds(adsWithUrls);
+
+      // لو مفيش أي إعلان، نملأ بـ fallback images
+      if (adsWithUrls.length === 0) {
+        setAds(fallbackImages.map((img) => ({ image: img })));
+      } else {
+        setAds(adsWithUrls);
+      }
+
       setIndex(0);
     });
 
@@ -76,7 +91,7 @@ export default function SimpleHeroSlider() {
       {ads.length > 0 && (
         <Box
           component="img"
-          src={ads[index]?.image || '/no-image.svg'}
+          src={ads[index]?.image || getRandomFallback()}
           alt="slider image"
           sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
         />
