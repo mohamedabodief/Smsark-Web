@@ -202,7 +202,8 @@ export default function BestFin() {
                     sx={{ backgroundSize: "contain" }}
                     width="300"
                     height="160"
-                    image={item?.images?.[0] || "/no-img.jpeg"}
+                    // image={item?.images?.[0] || "/build3.jpeg"}
+                    image={"/build3.jpeg"}
                   />
                   <FavoriteButton advertisementId={item?.id} />
 

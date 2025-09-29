@@ -111,7 +111,8 @@ const isSmallScreen = useMediaQuery(theme => theme.breakpoints.down('sm'));
 >
   {isSmallScreen ? (
     <img
-      src={imagesToShow[0]} 
+      // src={imagesToShow[0]} 
+      src={"/maxresdefault.jpg"}
       alt="صورة الإعلان"
       style={{ 
         width: '100%', 
@@ -132,7 +133,8 @@ const isSmallScreen = useMediaQuery(theme => theme.breakpoints.down('sm'));
           }}
         >
           <img
-            src={img}
+            // src={img}
+            src={"/maxresdefault.jpg"}
             alt={`صورة ${index + 1}`}
             style={{ 
               width: '100%', 

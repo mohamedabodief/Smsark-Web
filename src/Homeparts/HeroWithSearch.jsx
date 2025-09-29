@@ -4,71 +4,58 @@ import { ArrowBackIos, ArrowForwardIos } from '@mui/icons-material';
 import HomepageAdvertisement from '../FireBase/modelsWithOperations/HomepageAdvertisement';
 import { getStorage, ref, getDownloadURL } from 'firebase/storage';
 
-// ✅ دالة لتصحيح اللينك
-function fixStorageUrl(url) {
-  if (!url) return null;
+// ✅ صور fallback من public
+// const fallbackImages = ['/main1.jpg', '/main2.jpg', '/main3.jpg', '/main4.jpg'];
 
-  if (url.includes('firebasestorage.app')) {
-    return url.replace('firebasestorage.app', 'appspot.com');
+async function fixStorageUrl(url) {
+  if (!url) return "/main3.jpg"; // 👈 هنا بدل getRandomFallback استخدم main3
+
+  // gs:// → حوله لرابط قابل للعرض
+  if (url.startsWith('gs://')) {
+    try {
+      const storage = getStorage();
+      const path = url.split('gs://')[1].split('/').slice(1).join('/');
+      const storageRef = ref(storage, path);
+      const downloadUrl = await getDownloadURL(storageRef);
+      console.log('[FIXED gs:// URL]:', downloadUrl);
+      return downloadUrl;
+    } catch (err) {
+      console.error('Error fetching gs:// URL:', err);
+      return "/main3.jpg"; // 👈 هنا برضه لو حصل خطأ
+    }
   }
 
-  return url;
-}
+  // https:// مباشر
+  if (url.startsWith('http')) {
+    console.log('[HTTP URL]:', url);
+    return url;
+  }
 
-// ✅ fallback images
-const fallbackImages = [
-  // '/main1.jpg',
-  '/main3.jpg',
-];
+  return "/main3.jpg"; // 👈 fallback أساسي
+}
 
 export default function SimpleHeroSlider() {
   const [ads, setAds] = useState([]);
   const [index, setIndex] = useState(0);
 
-  // لتحديد fallback افتراضي
-  const getRandomFallback = () => {
-    return fallbackImages[Math.floor(Math.random() * fallbackImages.length)];
-  };
-
   useEffect(() => {
-    const unsubscribe = HomepageAdvertisement.subscribeActiveAds(
-      async (data) => {
-        const storage = getStorage();
+    const unsubscribe = HomepageAdvertisement.subscribeActiveAds(async (data) => {
+      const adsWithUrls = await Promise.all(
+        data.map(async (ad) => ({
+          ...ad,
+          image: await fixStorageUrl(ad.image),
+        }))
+      );
 
-        const adsWithUrls = await Promise.all(
-          data.map(async (ad) => {
-            if (ad.image) {
-              let fixedUrl = fixStorageUrl(ad.image);
-
-              // gs:// → احصل على URL صحيح
-              if (fixedUrl.startsWith('gs://')) {
-                try {
-                  const path = fixedUrl.replace(
-                    'gs://smsark-alaqary.appspot.com/',
-                    ''
-                  );
-                  const storageRef = ref(storage, path);
-                  const url = await getDownloadURL(storageRef);
-                  return { ...ad, image: url };
-                } catch (err) {
-                  console.error('Error fetching image URL:', err);
-                  return { ...ad, image: getRandomFallback() };
-                }
-              }
-
-              if (fixedUrl.startsWith('http')) {
-                return { ...ad, image: fixedUrl };
-              }
-            }
-
-            return { ...ad, image: getRandomFallback() };
-          })
-        );
-
+      // لو مفيش أي إعلان، نعرض main3 كغلاف
+      if (adsWithUrls.length === 0) {
+        setAds([{ image: "/main3.jpg" }]);
+      } else {
         setAds(adsWithUrls);
-        setIndex(0);
       }
-    );
+
+      setIndex(0);
+    });
 
     return () => unsubscribe();
   }, []);
@@ -81,36 +68,27 @@ export default function SimpleHeroSlider() {
     return () => clearInterval(interval);
   }, [ads.length]);
 
-  const nextSlide = () => {
-    setIndex((prev) => (prev + 1) % ads.length);
-  };
-
-  const prevSlide = () => {
-    setIndex((prev) => (prev - 1 + ads.length) % ads.length);
-  };
+  const nextSlide = () => setIndex((prev) => (prev + 1) % ads.length);
+  const prevSlide = () => setIndex((prev) => (prev - 1 + ads.length) % ads.length);
 
   return (
     <Box
       sx={{
         position: 'relative',
         width: '100%',
-        height: { xs: '50vh', md: '75vh' },
+        height: '30%',
         overflow: 'hidden',
         direction: 'rtl',
         margin: 0,
         padding: 0,
       }}
     >
-      {ads.length > 0 && ads[index] && (
+      {ads.length > 0 && (
         <Box
           component="img"
-          src={ads[index]?.image || getRandomFallback()}
+          src={ads[index]?.image || "/main3.jpg"} // 👈 هنا لو مفيش صورة، استخدم main3
           alt="slider image"
-          sx={{
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-          }}
+          sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
         />
       )}
 

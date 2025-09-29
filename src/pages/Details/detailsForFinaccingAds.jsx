@@ -288,7 +288,8 @@ function DetailsForFinaccingAds() {
                 }}
               >
                 <img
-                  src={mainImg}
+                  // src={mainImg}
+                  src={"/client-story-1.png"}
                   alt="Main"
                   style={{
                     width: "100%",
@@ -328,7 +329,8 @@ function DetailsForFinaccingAds() {
                     }}
                   >
                     <img
-                      src={src}
+                      // src={src}
+                      src={"/client-story-1.png"}
                       alt={`img-${index}`}
                       style={{
                         width: "100%",

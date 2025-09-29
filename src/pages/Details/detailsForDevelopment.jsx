@@ -403,7 +403,8 @@ function DetailsForDevelopment() {
             }}
           >
             <img
-              src={mainImage}
+              // src={mainImage}
+              src={"/12345.jpg"}
               alt="صورة العقار الرئيسية"
               style={{
                 width: "100%",
@@ -467,7 +468,8 @@ function DetailsForDevelopment() {
                     }}
                   >
                     <img
-                      src={src}
+                      // src={src}
+                      src={"/12345.jpg"}
                       alt={`صورة ${index + 1}`}
                       style={{
                         width: "100%",
